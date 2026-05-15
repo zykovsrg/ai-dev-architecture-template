@@ -1,5 +1,12 @@
 # Changelog
 
+## v4.1 — 2026-05-15
+
+- Fixed documentation inconsistencies after v4.0.
+- Updated `template/ai/architecture.md` version to `4.1`.
+- Added `ai/paused-tasks.md` and `ai/external-tools.md` to the README repository tree.
+- Added `task-switch` and `environment-check` to README main concepts.
+
 ## v4.0 — 2026-05-15
 
 - Added `docs/start-prompts.md`.
