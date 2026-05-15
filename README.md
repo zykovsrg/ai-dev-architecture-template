@@ -19,9 +19,11 @@ template/
   ai/
     architecture.md
     current-task.md
+    paused-tasks.md
     project-context.md
     decisions.md
     changelog.md
+    external-tools.md
     skills/
       bugfix-workflow/SKILL.md
       ui-review/SKILL.md
@@ -88,10 +90,14 @@ rsync -av --ignore-existing ~/Documents/ai-dev-architecture-template/template/ .
 - `AGENTS.md` — входной файл для Codex.
 - `CLAUDE.md` — входной файл для Claude Code.
 - `ai/current-task.md` — текущая задача.
+- `ai/paused-tasks.md` — задачи, временно поставленные на паузу через `task-switch`.
 - `ai/project-context.md` — проектный контекст и инварианты.
+- `ai/external-tools.md` — ожидаемые внешние tools и controlled methodologies.
 - `ai/skills/*/SKILL.md` — переиспользуемые процедуры.
 - `task-finish` — проверяет, можно ли закрыть задачу, и чистит контекст после подтверждения.
+- `task-switch` — безопасно переключает незавершённые задачи.
 - `architecture-update` — меняет правила AI-разработки только после явного подтверждения.
+- `environment-check` — проверяет установку архитектуры и внешние tools.
 
 Простые объяснения терминов — в `docs/concepts.md`.
 Готовые стартовые промты — в `docs/start-prompts.md`.
