@@ -1,0 +1,6 @@
+# macOS
+.DS_Store
+
+# local scratch
+_source/
+tmp/
