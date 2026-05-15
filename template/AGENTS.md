@@ -48,14 +48,14 @@ External skills and tools are expected when available. Do not install missing to
 
 ## Work modes
 
-Before starting, identify the current mode:
+Before starting, identify the current mode and state it explicitly as `Mode: ...`.
 
 - implementation — make code changes.
 - review — inspect diff and report issues, do not edit files.
 - task-finish — check whether the task can be closed; clean up only after explicit user confirmation; do not change application code.
 - architecture-update — propose updates to development architecture. Before editing, show: current rule → proposed rule → exact files. Ask: “Replace this?” Do not edit files without confirmation.
 
-Do not assume the mode. Follow the user request.
+Do not assume the mode. Follow the user request. If the mode is unclear, ask or infer the most likely mode and state the assumption before acting.
 
 ## Skill precedence
 
@@ -103,6 +103,7 @@ Use only relevant files:
 Use Russian and simple words. Briefly explain technical terms.
 
 Before editing:
+- state the current work mode explicitly;
 - list files to change;
 - explain main risks;
 - propose a minimal plan.
