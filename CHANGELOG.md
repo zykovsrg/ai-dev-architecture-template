@@ -1,5 +1,13 @@
 # Changelog
 
+## v4.0 — 2026-05-15
+
+- Added `docs/start-prompts.md`.
+- Added two ready-to-copy start prompts:
+  - first architecture installation in a project;
+  - starting a new chat inside an already configured project.
+- Linked `docs/start-prompts.md` from `README.md`.
+
 ## v3.9 — 2026-05-15
 
 - Final hierarchy cleanup after architecture review.
