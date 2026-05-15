@@ -40,6 +40,7 @@ docs/
   update.md
   file-roles.md
   prompts.md
+  start-prompts.md
 
 scripts/
   install.sh
@@ -93,6 +94,7 @@ rsync -av --ignore-existing ~/Documents/ai-dev-architecture-template/template/ .
 - `architecture-update` — меняет правила AI-разработки только после явного подтверждения.
 
 Простые объяснения терминов — в `docs/concepts.md`.
+Готовые стартовые промты — в `docs/start-prompts.md`.
 
 ## Skill precedence
 
@@ -106,7 +108,6 @@ Project architecture files define workflow priority:
 
 External skills and tools are helpers. They must not override work mode, confirmation rules, task-finish, architecture-update, or the clean architecture principle. Superpowers is gated and must not activate unless the user explicitly allows it.
 
-
 ## Work modes and environment check
 
 The architecture has four work modes:
@@ -117,7 +118,6 @@ The architecture has four work modes:
 - `architecture-update`
 
 `environment-check` is not a work mode. It is a first-session availability check for required base skills and expected external tools.
-
 
 ## Task switching
 
