@@ -47,7 +47,7 @@ https://github.com/zykovsrg/ai-dev-architecture-template
 Используй, когда архитектура уже установлена, но ты открываешь новый чат.
 
 ```text
-Ты работаешь в проекте с установленной AI-архитектурой разработки.
+Ты работаешь в проекте с установленной AI-архитектурой разработки: https://github.com/zykovsrg/ai-dev-architecture-template
 
 Сначала прочитай:
 - AGENTS.md или CLAUDE.md
