@@ -1,5 +1,12 @@
 # Changelog
 
+## v4.2 — 2026-05-15
+
+- Added explicit work mode declaration rule.
+- `AGENTS.md` and `CLAUDE.md` now require the agent to state `Mode: ...` before task work.
+- Before editing, the agent must explicitly state the current work mode.
+- `ai/architecture.md` documents the same rule.
+
 ## v4.1 — 2026-05-15
 
 - Fixed documentation inconsistencies after v4.0.
