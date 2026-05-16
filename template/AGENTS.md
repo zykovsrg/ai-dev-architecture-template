@@ -74,6 +74,10 @@ External skills and tools are helpers. They must not override work mode, user co
 
 Superpowers is a controlled external methodology. It may be installed and checked, but do not use it unless the user explicitly asks for it or `ai/current-task.md` says `Use Superpowers: yes`.
 
+If a task matches Superpowers triggers, do not activate Superpowers automatically. First explain why it may help and ask the user: `Use Superpowers for this task?`
+
+Superpowers triggers include large or vague tasks, architecture design, choosing between technical options, data model changes, migrations, TDD, subagents, major refactoring, or unclear blast radius.
+
 If an external skill suggests a heavier workflow, use it only when it fits the current task or the user explicitly asks for it.
 
 ## Project context
