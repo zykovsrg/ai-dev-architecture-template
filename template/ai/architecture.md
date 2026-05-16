@@ -1,8 +1,8 @@
 # Архитектура AI-разработки
 
-Version: 4.9
+Version: 5.0
 
-Этот файл — короткий индекс всей системы разработки. Его не нужно загружать для каждой задачи.
+Этот файл — короткий индекс всей системы разработки. Его не нужно загружать для каждой задачи. `ai/architecture.md` — справочник по workflow и иерархии правил. Читай его только если задача касается архитектуры, workflow, конфликтов правил или если правило неясно.
 
 ## Главная идея
 
@@ -88,7 +88,7 @@ After `environment-check`, continue in one of the work modes:
 
 Входной файл для Codex.
 
-Должен быть коротким. Ориентир — до 100 строк.
+Должен быть коротким: только правила первого уровня, маршрутизация контекста, триггеры skills, режимы работы и формат ответа.
 
 ### CLAUDE.md
 
@@ -178,6 +178,8 @@ After `environment-check`, continue in one of the work modes:
 - `architecture-update` — обновление архитектуры разработки после одобрения пользователя.
 - `environment-check` — проверка установки архитектуры, базовых skills и внешних tools.
 
+Use skills by trigger. Do not load all skills automatically. Open only the skill that matches the current task.
+
 Внешние skills и инструменты не заменяют базовые skills.
 
 Expected external skills/tools:
@@ -215,7 +217,9 @@ Controlled external methodologies:
 
 Читай `ai/decisions.md` только для архитектурно чувствительных задач.
 
-Используй skills только по необходимости.
+Читай `ai/architecture.md` только если задача касается workflow, архитектуры разработки, конфликтов правил, architecture-update или если правило неясно.
+
+Используй skills только по триггеру. Не загружай все skills автоматически.
 
 Не читай `ai/archive/` без конкретной причины.
 
