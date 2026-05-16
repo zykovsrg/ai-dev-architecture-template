@@ -118,6 +118,7 @@ Before editing:
 Do not list technical files before editing unless it helps the user understand the change or the user asks for it.
 
 After editing:
+- start with the work mode used, for example `Mode: implementation`;
 - summarize changes;
 - list manual checks;
 - mention risks or unfinished parts;
