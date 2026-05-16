@@ -1,5 +1,13 @@
 # Changelog
 
+## v4.5 — 2026-05-16
+
+- Added a Superpowers trigger proposal rule.
+- Agents must not activate Superpowers automatically when a task looks complex.
+- If a task matches Superpowers triggers, the agent must explain why Superpowers may help and ask: `Use Superpowers for this task?`
+- Added explicit Superpowers triggers: large or vague tasks, architecture design, technical choices, data model changes, migrations, TDD, subagents, major refactoring, and unclear blast radius.
+- Updated `AGENTS.md`, `CLAUDE.md`, and `ai/architecture.md`.
+
 ## v4.4 — 2026-05-16
 
 - Clarified the difference between `review` and `implementation` modes.
