@@ -1,12 +1,5 @@
 # Changelog
 
-## v5.0 — 2026-05-16
-
-- Compacted `AGENTS.md` and `CLAUDE.md` into short entry-point files.
-- Kept first-level behavioral rules, context routing, work modes, skill precedence, and output format in the entry files.
-- Moved detailed explanations and long-form rules into `ai/architecture.md` and skills.
-- Updated `ai/architecture.md` version to `5.0` and clarified that entry files are intentionally compact.
-
 ## v4.9 — 2026-05-16
 
 - Strengthened the session start check rule.
