@@ -1,5 +1,14 @@
 # Changelog
 
+## v4.3 — 2026-05-16
+
+- Simplified the pre-edit communication format for a non-developer user.
+- Replaced mandatory `Files to change / Risks / Minimal plan` with a shorter rule:
+  - state `Mode: ...`;
+  - briefly explain what will be done next in simple words;
+  - mention important risks only if they exist.
+- Clarified that technical file lists are optional unless useful or requested by the user.
+
 ## v4.2 — 2026-05-15
 
 - Added explicit work mode declaration rule.
