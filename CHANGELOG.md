@@ -1,5 +1,17 @@
 # Changelog
 
+## v4.6 — 2026-05-16
+
+- Added a required task memory reporting rule after edits.
+- Agents must explicitly say whether task memory changed.
+- If task memory changed, agents must list the exact files changed:
+  - `ai/current-task.md`
+  - `ai/changelog.md`
+  - `ai/decisions.md`
+  - `ai/project-context.md`
+  - `ai/paused-tasks.md`
+- Updated `AGENTS.md`, `CLAUDE.md`, and `ai/architecture.md`.
+
 ## v4.5 — 2026-05-16
 
 - Added a Superpowers trigger proposal rule.
