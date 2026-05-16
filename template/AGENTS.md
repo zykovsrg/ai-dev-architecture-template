@@ -23,6 +23,8 @@ This project uses a solo AI-development workflow.
 
 At the start of a new project session, use `environment-check` to check whether required base skills and expected external skills/tools are available.
 
+When entering an existing project, switching tools, or continuing in a new chat, run `environment-check` before suggesting next steps or starting implementation. Do not skip it unless the user explicitly says not to run it.
+
 `environment-check` is not a work mode. `task-switch` is also not a work mode; it is a safety workflow for switching between unfinished tasks. After the session check, continue in one of the work modes below.
 
 Required base skills:
