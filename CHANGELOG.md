@@ -1,5 +1,13 @@
 # Changelog
 
+## v5.0 — 2026-05-16
+
+- Compacted `AGENTS.md` and `CLAUDE.md` after review and approval.
+- Added explicit rule that `ai/architecture.md` and skills are not loaded by default.
+- Added explicit skill trigger routing to `AGENTS.md` and `CLAUDE.md` so skills still activate predictably.
+- Added `workflow ambiguity, architecture rules, or architecture update: ai/architecture.md` as an on-demand context rule.
+- Updated `ai/architecture.md` with on-demand architecture and skill-trigger rules.
+
 ## v4.9 — 2026-05-16
 
 - Strengthened the session start check rule.
