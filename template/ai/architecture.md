@@ -1,6 +1,6 @@
 # Архитектура AI-разработки
 
-Version: 4.3
+Version: 4.4
 
 Этот файл — короткий индекс всей системы разработки. Его не нужно загружать для каждой задачи.
 
@@ -19,12 +19,16 @@ Version: 4.3
 
 Before starting task work, the agent must explicitly state the mode as `Mode: ...`.
 
-- `implementation` — менять код.
-- `review` — проверять diff и сообщать о проблемах, но не редактировать файлы.
+- `implementation` — менять код, проектные файлы, тесты или рабочую память задачи.
+- `review` — читать файлы, проверять состояние проекта или diff, пересказывать контекст, сообщать о проблемах или предлагать следующий шаг; не редактировать файлы.
 - `task-finish` — проверять завершение задачи и чистить контекст только после подтверждения.
 - `architecture-update` — предлагать изменения архитектуры разработки, но не менять файлы без подтверждения.
 
 If the mode is unclear, the agent must ask or state the assumption before acting.
+
+Use `review` when the agent only reads files, summarizes context, inspects project state, runs `environment-check`, or suggests the next step without editing.
+
+Use `implementation` only when the agent is going to change application code, project files, tests, or task memory.
 
 ## Session start check
 
