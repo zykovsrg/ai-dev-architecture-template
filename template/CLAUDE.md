@@ -119,7 +119,15 @@ Do not list technical files before editing unless it helps the user understand t
 After editing:
 - summarize changes;
 - list manual checks;
-- mention risks or unfinished parts.
+- mention risks or unfinished parts;
+- explicitly say whether task memory changed.
+
+If task memory changed, list exactly which files changed:
+- ai/current-task.md
+- ai/changelog.md
+- ai/decisions.md
+- ai/project-context.md
+- ai/paused-tasks.md
 
 ## Task intake reminder
 
