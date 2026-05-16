@@ -1,5 +1,12 @@
 # Changelog
 
+## v4.7 — 2026-05-16
+
+- Added a scope control rule.
+- Agents must not expand user-confirmed scope during implementation.
+- If a larger scope looks useful, the agent must stop and ask before adding it.
+- Added the rule to `AGENTS.md`, `CLAUDE.md`, and `ai/architecture.md`.
+
 ## v4.6 — 2026-05-16
 
 - Added a required task memory reporting rule after edits.
