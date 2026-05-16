@@ -104,9 +104,10 @@ Use Russian and simple words. Briefly explain technical terms.
 
 Before editing:
 - state the current work mode explicitly;
-- list files to change;
-- explain main risks;
-- propose a minimal plan.
+- briefly explain what you will do next in simple words;
+- mention important risks only if they exist.
+
+Do not list technical files before editing unless it helps the user understand the change or the user asks for it.
 
 After editing:
 - summarize changes;
