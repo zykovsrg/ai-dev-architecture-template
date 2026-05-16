@@ -51,11 +51,14 @@ External skills and tools are expected when available. Do not install missing to
 Before starting, identify the current mode and state it explicitly as `Mode: ...`.
 
 - implementation — make code changes.
-- review — inspect diff and report issues, do not edit files.
+- review — read files, inspect state or diff, summarize context, or report issues; do not edit files.
 - task-finish — check whether the task can be closed; clean up only after explicit user confirmation; do not change application code.
 - architecture-update — propose updates to development architecture. Before editing, show: current rule → proposed rule → exact files. Ask: “Replace this?” Do not edit files without confirmation.
 
 Do not assume the mode. Follow the user request. If the mode is unclear, ask or infer the most likely mode and state the assumption before acting.
+
+Use `review` when you only read files, summarize context, inspect project state, run environment-check, or suggest the next step without editing.
+Use `implementation` only when you are going to change application code, project files, tests, or task memory.
 
 ## Skill precedence
 
