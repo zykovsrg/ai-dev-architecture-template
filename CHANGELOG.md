@@ -1,5 +1,12 @@
 # Changelog
 
+## v4.9 — 2026-05-16
+
+- Strengthened the session start check rule.
+- When entering an existing project, switching tools, or continuing in a new chat, agents must run `environment-check` before suggesting next steps or starting implementation.
+- Agents may skip `environment-check` only if the user explicitly says not to run it.
+- Updated `AGENTS.md`, `CLAUDE.md`, and `ai/architecture.md`.
+
 ## v4.8 — 2026-05-16
 
 - Added a required mode line to the final report after edits.
