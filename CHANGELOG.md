@@ -1,5 +1,12 @@
 # Changelog
 
+## v4.4 — 2026-05-16
+
+- Clarified the difference between `review` and `implementation` modes.
+- `review` now explicitly covers reading files, summarizing context, inspecting project state, running `environment-check`, and suggesting the next step without editing.
+- `implementation` is now reserved for changes to application code, project files, tests, or task memory.
+- Updated `AGENTS.md`, `CLAUDE.md`, and `ai/architecture.md`.
+
 ## v4.3 — 2026-05-16
 
 - Simplified the pre-edit communication format for a non-developer user.
