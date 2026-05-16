@@ -1,6 +1,6 @@
 # Архитектура AI-разработки
 
-Version: 4.8
+Version: 4.9
 
 Этот файл — короткий индекс всей системы разработки. Его не нужно загружать для каждой задачи.
 
@@ -37,6 +37,8 @@ Use `implementation` only when the agent is going to change application code, pr
 `task-switch` is also not a work mode. It is a safety workflow for switching between unfinished tasks.
 
 At the start of a new project session, use `environment-check` to check whether required base skills and expected external skills/tools are available.
+
+When entering an existing project, switching tools, or continuing in a new chat, run `environment-check` before suggesting next steps or starting implementation. Do not skip it unless the user explicitly says not to run it.
 
 This check is not a deep audit. It is a quick availability check.
 
