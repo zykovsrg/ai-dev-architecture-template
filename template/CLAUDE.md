@@ -6,6 +6,7 @@ This project uses a solo AI-development workflow.
 
 - Make a short plan before editing code.
 - Prefer minimal diffs.
+- Do not expand user-confirmed scope during implementation. If a larger scope looks useful, stop and ask first.
 - Do not accumulate technical debt or temporary solutions. Keep the application architecture clean.
 - Do not rewrite large files unless necessary.
 - Do not mix refactoring with bugfixes unless explicitly asked.
