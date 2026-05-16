@@ -1,6 +1,6 @@
 # Архитектура AI-разработки
 
-Version: 4.4
+Version: 4.5
 
 Этот файл — короткий индекс всей системы разработки. Его не нужно загружать для каждой задачи.
 
@@ -335,6 +335,20 @@ Use Superpowers only when:
 - the user explicitly asks to use it;
 - `ai/current-task.md` says `Use Superpowers: yes`;
 - the task is large, vague, risky, or requires design, TDD, or subagent-driven development.
+
+If a task matches Superpowers triggers, do not activate Superpowers automatically. First explain why it may help and ask the user: `Use Superpowers for this task?`
+
+Superpowers triggers include:
+
+- large or vague tasks;
+- architecture design;
+- choosing between technical options;
+- data model changes;
+- migrations;
+- TDD;
+- subagents;
+- major refactoring;
+- unclear blast radius.
 
 Do not use Superpowers for:
 
