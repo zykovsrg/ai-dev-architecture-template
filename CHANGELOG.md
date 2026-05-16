@@ -1,5 +1,11 @@
 # Changelog
 
+## v4.8 — 2026-05-16
+
+- Added a required mode line to the final report after edits.
+- After editing, agents must start the report with the work mode used, for example `Mode: implementation`.
+- Updated `AGENTS.md`, `CLAUDE.md`, and `ai/architecture.md`.
+
 ## v4.7 — 2026-05-16
 
 - Added a scope control rule.
