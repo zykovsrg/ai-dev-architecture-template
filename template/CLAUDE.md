@@ -58,6 +58,7 @@ Read extra context only when relevant:
 - project behavior, storage, or UI: `ai/project-context.md`
 - architecture-sensitive work: `ai/decisions.md`
 - workflow ambiguity, architecture rules, or architecture update: `ai/architecture.md`
+- plan-driven or Superpowers execution: relevant `docs/superpowers/specs/*`, `docs/superpowers/plans/*`, and the plan-driven rules in `ai/architecture.md`
 
 ## Skill precedence
 
