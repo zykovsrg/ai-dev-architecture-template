@@ -1,6 +1,6 @@
 # Архитектура AI-разработки
 
-Version: 5.1
+Version: 5.2
 
 Этот файл — короткий индекс всей системы разработки. Его не нужно загружать для каждой задачи. `ai/architecture.md` — справочник по workflow и иерархии правил. Читай его только если задача касается архитектуры, workflow, конфликтов правил или если правило неясно.
 
@@ -221,6 +221,12 @@ Controlled external methodologies:
 
 Читай `ai/architecture.md` только если задача касается workflow, архитектуры разработки, конфликтов правил, architecture-update или если правило неясно.
 
+Для plan-driven или Superpowers-задач читай только релевантные файлы:
+
+- `docs/superpowers/specs/<spec>.md`
+- `docs/superpowers/plans/<plan>.md`
+- при необходимости — этот раздел архитектуры про plan-driven работу.
+
 Используй skills только по триггеру. Не загружай все skills автоматически.
 
 Не читай `ai/archive/` без конкретной причины.
@@ -280,6 +286,87 @@ Controlled external methodologies:
 
 - быстрый безопасный фикс;
 - правильное архитектурное решение.
+
+## Plan-driven work with Superpowers
+
+Этот раздел применяется только к задачам, которые явно ведутся через Superpowers planning, writing-plans, subagent-driven-development или похожий plan-driven workflow.
+
+Обычные задачи не обязаны использовать эти правила.
+
+### Источник правды по прогрессу
+
+Для plan-driven работы `docs/superpowers/plans/<plan>.md` — источник правды по прогрессу выполнения плана.
+
+- Не используй внутренний TodoWrite как единственный источник прогресса.
+- После завершения каждой задачи плана обновляй чекбокс в `docs/superpowers/plans/<plan>.md`.
+- Если задача плана частично выполнена, оставь чекбокс пустым и добавь короткую заметку под задачей.
+- Если задача отменена или перенесена, явно пометь это в плане короткой строкой `Note:`.
+
+Пример:
+
+```markdown
+- [x] Task 2 — Add app wrapper
+  - Note: chose minimal wrapper over Xcode project to avoid restructuring Package.swift.
+- [ ] Task 3 — Add UI smoke tests
+  - Note: blocked until .app bundle launches reliably.
+```
+
+### Промежуточные решения
+
+Мелкие judgment calls по ходу plan-driven работы фиксируй рядом с соответствующей задачей плана через короткую `Note:`.
+
+Используй `ai/decisions.md` только для устойчивых архитектурных, продуктовых, workflow-решений или решений по модели данных.
+
+Не дублируй одно и то же решение одновременно в plan notes, `ai/decisions.md` и `ai/changelog.md`.
+
+Правило выбора места:
+
+- `docs/superpowers/plans/<plan>.md` — мелкие решения и локальные причины внутри конкретной задачи плана.
+- `ai/decisions.md` — решения, которые будущие агенты должны помнить вне текущего плана.
+- `ai/changelog.md` — заметные итоговые изменения, а не каждый микрошаг.
+
+### Commit convention
+
+Для plan-driven коммитов используй проверяемую конвенцию:
+
+```text
+Plan Task <N>: <short action>
+```
+
+Примеры:
+
+```text
+Plan Task 1: add app bundle wrapper
+Plan Task 2: add Info.plist generation
+Plan Task 3: add UI smoke test target
+Plan Cleanup: update task handoff
+```
+
+Проверка без специальных инструментов:
+
+```bash
+git log --oneline --grep="Plan Task"
+git log --oneline --grep="Plan Cleanup"
+```
+
+Если коммит закрывает несколько задач плана, в сообщении укажи диапазон:
+
+```text
+Plan Tasks 4-5: add bundle smoke checks
+```
+
+Но по умолчанию предпочитай один логический plan task на один коммит.
+
+### Handoff между агентами
+
+Если агент останавливается посреди plan-driven выполнения, он должен оставить быстрый handoff в конце плана или в `ai/current-task.md`:
+
+- последний завершённый plan task;
+- следующий plan task;
+- известные блокеры;
+- последние релевантные коммиты.
+
+Не создавай отдельный progress-файл без явной причины. Прогресс плана живёт в самом `docs/superpowers/plans/<plan>.md`.
 
 ## Task switching
 
