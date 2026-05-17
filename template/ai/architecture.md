@@ -1,6 +1,6 @@
 # Архитектура AI-разработки
 
-Version: 5.2
+Version: 5.3
 
 Этот файл — короткий индекс всей системы разработки. Его не нужно загружать для каждой задачи. `ai/architecture.md` — справочник по workflow и иерархии правил. Читай его только если задача касается архитектуры, workflow, конфликтов правил или если правило неясно.
 
@@ -182,6 +182,12 @@ After `environment-check`, continue in one of the work modes:
 
 Use skills by trigger. Do not load all skills automatically. Open only the skill that matches the current task.
 
+### Optional project skills
+
+Optional project skills may be installed only in projects where they are useful. They are not required base skills and must not make `environment-check` fail when absent.
+
+- `frontend-design` — optional project skill for UI composition, visual hierarchy, frontend component design, and UX improvements. Use only for UI/frontend/design tasks when `ai/skills/frontend-design/SKILL.md` is installed.
+
 Внешние skills и инструменты не заменяют базовые skills.
 
 Expected external skills/tools:
@@ -201,10 +207,10 @@ Controlled external methodologies:
 1. `AGENTS.md` / `CLAUDE.md`
 2. `ai/current-task.md`
 3. релевантный базовый skill
-4. expected external skills/tools
+4. optional project skills and expected external skills/tools
 5. controlled external methodologies
 
-Внешние skills и tools помогают, но не управляют процессом. Они не могут отменять режим работы, правила подтверждения, `task-finish`, `architecture-update`, `environment-check`, принцип чистой архитектуры и проектные правила из `ai/project-context.md`.
+Optional project skills, external skills and tools help the agent, but do not control the workflow. They must not override work mode, confirmation rules, `task-finish`, `architecture-update`, `environment-check`, clean architecture principle, or project-specific rules in `ai/project-context.md`.
 
 ## Контекст и токены
 
