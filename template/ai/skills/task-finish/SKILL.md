@@ -7,6 +7,7 @@ description: |
   - the user asks whether the task is complete
   - the user says "проверь, можно ли закрыть задачу", "можно ставить done", or similar
   - implementation and review are finished and closure decision remains
+  - implementation or review suggests the current task may be complete
   - the user explicitly confirms that the task is completed and asks to clean up
   Does NOT activate for:
   - writing code
@@ -35,9 +36,11 @@ Answer:
 3. Can Status be changed to done?
 4. What should be moved to `ai/changelog.md`?
 5. Should anything be added to `ai/decisions.md`?
+6. Can `ai/current-task.md` be cleaned after user confirmation?
 
 Rules:
 
+- If implementation or review suggests the task is complete, propose this check instead of declaring the task closed.
 - Do not mark the task as done if manual UI checks are still required.
 - Do not mark the task as done if required automated tests were not added, not run, or not explicitly replaced with a justified manual checklist.
 - Do not clean `ai/current-task.md` without user confirmation.
