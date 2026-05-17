@@ -1,5 +1,15 @@
 # Changelog
 
+## v5.2 — 2026-05-17
+
+- Added plan-driven workflow rules for Superpowers and subagent-driven development.
+- `docs/superpowers/plans/<plan>.md` is now the source of truth for plan progress.
+- Agents must update plan checkboxes after each completed plan task.
+- Local judgment calls should be recorded as short `Note:` entries under the relevant plan task.
+- Added a verifiable commit convention for plan-driven work: `Plan Task <N>: <short action>` and `Plan Cleanup: <short action>`.
+- Added a decision entry documenting why plan files, plan notes, and commit conventions are used for handoff.
+- Updated `AGENTS.md`, `CLAUDE.md`, `ai/architecture.md`, and `ai/decisions.md`.
+
 ## v5.1 — 2026-05-17
 
 - Strengthened the task completion handoff rule.
