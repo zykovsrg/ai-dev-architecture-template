@@ -1,5 +1,12 @@
 # Changelog
 
+## v5.4 — 2026-05-17
+
+- Updated `environment-check` to check optional project skills for presence.
+- Added `frontend-design` to the optional project skills check.
+- Missing optional project skills are reported as `not installed, not a blocker` and must not fail `environment-check`.
+- Optional project skills must not be restored, installed, or created unless the user explicitly asks.
+
 ## v5.3 — 2026-05-17
 
 - Added `frontend-design` as an optional project skill.
