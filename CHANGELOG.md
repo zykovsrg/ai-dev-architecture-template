@@ -1,5 +1,12 @@
 # Changelog
 
+## v5.1 — 2026-05-17
+
+- Strengthened the task completion handoff rule.
+- If implementation or review suggests the current task may be complete, agents must not declare it closed.
+- Agents must propose `task-finish` and wait for user confirmation before checking closure or cleaning `ai/current-task.md`.
+- Updated `AGENTS.md`, `CLAUDE.md`, `ai/architecture.md`, and `task-finish` skill.
+
 ## v5.0 — 2026-05-16
 
 - Compacted `AGENTS.md` and `CLAUDE.md` after review and approval.
