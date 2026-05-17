@@ -1,6 +1,6 @@
 # Архитектура AI-разработки
 
-Version: 5.0
+Version: 5.1
 
 Этот файл — короткий индекс всей системы разработки. Его не нужно загружать для каждой задачи. `ai/architecture.md` — справочник по workflow и иерархии правил. Читай его только если задача касается архитектуры, workflow, конфликтов правил или если правило неясно.
 
@@ -29,6 +29,8 @@ If the mode is unclear, the agent must ask or state the assumption before acting
 Use `review` when the agent only reads files, summarizes context, inspects project state, runs `environment-check`, or suggests the next step without editing.
 
 Use `implementation` only when the agent is going to change application code, project files, tests, or task memory.
+
+If implementation or review suggests the current task may be complete, the agent must not declare the task closed. It must propose `task-finish` and wait for user confirmation.
 
 ## Session start check
 
@@ -250,6 +252,7 @@ Controlled external methodologies:
 3. Перечислить ручные проверки.
 4. Назвать риски или незавершённые части.
 5. Явно сказать, менялась ли task memory.
+6. Если задача выглядит завершённой, предложить `task-finish`, а не объявлять задачу закрытой.
 
 Если task memory менялась, агент должен перечислить точные файлы:
 
