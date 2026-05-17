@@ -32,6 +32,8 @@ State the mode explicitly before task work as `Mode: ...`.
 
 Use `review` when only reading, checking, or summarizing. Use `implementation` only when changing files.
 
+If implementation/review suggests the current task may be complete, do not declare it closed. Propose `task-finish` and wait for the user to confirm.
+
 ## Context and skill routing
 
 Do not read all files from `ai/` automatically.
@@ -81,7 +83,8 @@ After editing:
 - summarize changes;
 - list checks;
 - mention risks or unfinished parts;
-- explicitly say whether task memory changed.
+- explicitly say whether task memory changed;
+- if the task appears complete, propose `task-finish` instead of saying the task is closed.
 
 If task memory changed, list exact files changed:
 - `ai/current-task.md`
