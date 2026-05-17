@@ -49,6 +49,7 @@ Use skills by trigger. Do not load all skills automatically. Open only the skill
 - release or merge: `ai/skills/release-check/SKILL.md`
 - tests: `ai/skills/write-tests/SKILL.md`
 - UI: `ai/skills/ui-review/SKILL.md`
+- frontend design, if installed: `ai/skills/frontend-design/SKILL.md`
 - copy: `ai/skills/copy-review/SKILL.md`
 - security: `ai/skills/security-review/SKILL.md`
 - bugfix: `ai/skills/bugfix-workflow/SKILL.md`
