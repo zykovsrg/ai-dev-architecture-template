@@ -1,5 +1,12 @@
 # Changelog
 
+## v5.3 — 2026-05-17
+
+- Added `frontend-design` as an optional project skill.
+- Added optional routing for `ai/skills/frontend-design/SKILL.md` in `AGENTS.md` and `CLAUDE.md`.
+- Clarified that optional project skills are not required base skills and must not make `environment-check` fail when absent.
+- Updated skill precedence wording to include optional project skills below base skills.
+
 ## v5.2 — 2026-05-17
 
 - Added plan-driven workflow rules for Superpowers and subagent-driven development.
