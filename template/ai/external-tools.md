@@ -8,6 +8,32 @@ The agent must check expected external tools and controlled external methodologi
 
 The agent must not install or activate anything without explicit user confirmation.
 
+## Optional project skills
+
+Optional project skills are installed only in projects where they are useful.
+
+Missing optional project skills are warnings, not blockers.
+
+### frontend-design
+
+Type: optional project skill
+
+Source:
+https://github.com/anthropics/skills/tree/main/skills/frontend-design
+
+Purpose:
+Frontend design, UI composition, visual hierarchy, component design, and UX improvements.
+
+Expected: optional, only for projects with UI/frontend/design tasks.
+
+How to check:
+- project skill file: `ai/skills/frontend-design/SKILL.md`
+
+Missing means:
+Work can continue. UI/frontend design guidance is unavailable until the skill is installed in the project.
+
+Install only after explicit user confirmation.
+
 ## Expected external skills and tools
 
 These tools should be installed when available.
@@ -17,6 +43,9 @@ Missing expected external tools are warnings, not blockers.
 ### code-review-graph
 
 Type: external code analysis tool
+
+Source:
+https://github.com/tirth8205/code-review-graph
 
 Purpose:
 Code dependency graph, affected-files analysis, blast-radius review, and token-efficient code review.
@@ -117,22 +146,26 @@ During environment check, return:
    - present
    - missing
 
-2. Expected external skills and tools:
+2. Optional project skills:
+   - present
+   - not installed, not a blocker
+
+3. Expected external skills and tools:
    - present
    - missing
    - not confirmed
 
-3. Controlled external methodologies:
+4. Controlled external methodologies:
    - present
    - missing
    - not confirmed
    - activation status: not active unless explicitly requested
 
-4. Blockers:
+5. Blockers:
    - only missing required base skills are blockers
-   - missing external tools are warnings, not blockers
+   - missing optional project skills and external tools are warnings, not blockers
 
-5. Recommended next action:
+6. Recommended next action:
    - restore missing base skills from the template
-   - install or configure missing external tools only after explicit user confirmation
+   - install or configure missing optional project skills and external tools only after explicit user confirmation
    - activate Superpowers only after explicit user confirmation
