@@ -6,6 +6,7 @@
 - Added `frontend-design` to the optional project skills check.
 - Missing optional project skills are reported as `not installed, not a blocker` and must not fail `environment-check`.
 - Optional project skills must not be restored, installed, or created unless the user explicitly asks.
+- Added source URLs for `frontend-design` and `code-review-graph` to `ai/external-tools.md` so agents know where to get them.
 
 ## v5.3 — 2026-05-17
 
