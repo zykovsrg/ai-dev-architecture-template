@@ -1,6 +1,6 @@
 # Архитектура AI-разработки
 
-Version: 5.3
+Version: 5.4
 
 Этот файл — короткий индекс всей системы разработки. Его не нужно загружать для каждой задачи. `ai/architecture.md` — справочник по workflow и иерархии правил. Читай его только если задача касается архитектуры, workflow, конфликтов правил или если правило неясно.
 
@@ -141,11 +141,11 @@ After `environment-check`, continue in one of the work modes:
 
 ### ai/external-tools.md
 
-Список ожидаемых внешних skills, tools и controlled methodologies.
+Список ожидаемых внешних skills, tools и controlled methodologies, включая source URLs для установки.
 
 Используется при `environment-check`.
 
-Отсутствие внешних tools — предупреждение, а не блокер.
+Отсутствие optional skills и внешних tools — предупреждение, а не блокер.
 
 ## Язык общения и файлов
 
@@ -186,13 +186,13 @@ Use skills by trigger. Do not load all skills automatically. Open only the skill
 
 Optional project skills may be installed only in projects where they are useful. They are not required base skills and must not make `environment-check` fail when absent.
 
-- `frontend-design` — optional project skill for UI composition, visual hierarchy, frontend component design, and UX improvements. Use only for UI/frontend/design tasks when `ai/skills/frontend-design/SKILL.md` is installed.
+- `frontend-design` — optional project skill for UI composition, visual hierarchy, frontend component design, and UX improvements. Use only for UI/frontend/design tasks when `ai/skills/frontend-design/SKILL.md` is installed. Source URL lives in `ai/external-tools.md`.
 
 Внешние skills и инструменты не заменяют базовые skills.
 
 Expected external skills/tools:
 
-- `code-review-graph` — основной инструмент для анализа связей в коде, code review и blast-radius analysis.
+- `code-review-graph` — основной инструмент для анализа связей в коде, code review и blast-radius analysis. Source URL lives in `ai/external-tools.md`.
 - `agent-skills-for-context-engineering` — дополнительные skills для работы с контекстом.
 - `claude-seo` — SEO-набор skills.
 
