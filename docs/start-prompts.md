@@ -44,7 +44,9 @@ https://github.com/zykovsrg/ai-dev-architecture-template
    - проверь expected external skills/tools;
    - проверь controlled external methodologies.
 6. Ничего не устанавливай дополнительно без моего подтверждения.
-7. После проверки скажи:
+7. Перед использованием внешнего skill, init workflow или setup-команды сначала прочитай AGENTS.md или CLAUDE.md и проверь правила protected architecture files.
+8. Внешние skills/tools могут предлагать изменения protected architecture files, но не могут применять их без моего явного подтверждения.
+9. После проверки скажи:
    - что установлено корректно;
    - чего не хватает;
    - что нужно заполнить вручную;
@@ -60,6 +62,7 @@ https://github.com/zykovsrg/ai-dev-architecture-template
 - Я не разработчик, объясняй технические термины простыми словами.
 - Не меняй код приложения.
 - Не делай больших изменений без плана и подтверждения.
+- Не меняй AGENTS.md, CLAUDE.md, ai/architecture.md, ai/current-task.md, ai/project-context.md, ai/decisions.md, ai/changelog.md, ai/paused-tasks.md, ai/external-tools.md, ai/skills/*/SKILL.md, .claude/ или .codex/ без режима architecture-update и моего явного подтверждения.
 ```
 
 ## 2. Переход в новый диалог или другой ИИ-агент внутри проекта
@@ -106,6 +109,10 @@ https://github.com/zykovsrg/ai-dev-architecture-template
 
 Файл `docs/superpowers/plans/<нужный plan>.md` — источник правды по прогрессу plan-driven задачи. Проверяй прогресс по чекбоксам и `Note:` в этом файле. Не полагайся только на TodoWrite, историю чата или память предыдущего агента.
 
+Перед использованием внешнего skill, init workflow или setup-команды сначала прочитай AGENTS.md или CLAUDE.md и проверь правила protected architecture files.
+
+Внешние skills/tools могут предлагать изменения protected architecture files, но не могут применять их без моего явного подтверждения.
+
 Если после проверки не хватает обязательных файлов архитектуры, покажи список недостающих файлов и предложи восстановить их из шаблона. Не создавай и не перезаписывай файлы без моего подтверждения.
 
 Если ai/current-task.md содержит активную задачу:
@@ -129,6 +136,7 @@ https://github.com/zykovsrg/ai-dev-architecture-template
 - Я не разработчик, объясняй технические термины простыми словами.
 - Не редактируй файлы без моего подтверждения, если задача не требует реализации.
 - Не перезаписывай ai/current-task.md, если там есть незавершённая задача.
+- Не меняй AGENTS.md, CLAUDE.md, ai/architecture.md, ai/current-task.md, ai/project-context.md, ai/decisions.md, ai/changelog.md, ai/paused-tasks.md, ai/external-tools.md, ai/skills/*/SKILL.md, .claude/ или .codex/ без режима architecture-update и моего явного подтверждения.
 - Если я прошу другую задачу при незавершённой текущей, используй task-switch.
 - Если задача завершена, используй task-finish.
 - Superpowers используй только если я явно попрошу или если в ai/current-task.md написано: Use Superpowers: yes.
