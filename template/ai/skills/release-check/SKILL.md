@@ -2,7 +2,7 @@
 name: release-check
 type: knowledge
 description: |
-  Use before commit, merge, build, or release to check regressions, manual testing scope, technical debt, and merge safety.
+  Use before commit, merge, build, or release to check regressions, manual testing scope, technical debt, protected architecture files, and merge safety.
   Activates when:
   - implementation is finished and the change needs final review
   - the user asks "можно мержить", "готово к релизу", "проверь перед коммитом", or similar
@@ -22,9 +22,41 @@ Check:
 3. What data model rules can be affected?
 4. What manual tests are required?
 5. Is storage untouched or migrated safely?
-6. Is the change safe to merge?
-7. Does the change introduce hidden technical debt or a temporary workaround?
-8. If a workaround exists, is it clearly marked with a follow-up?
+6. Did the diff change protected architecture files?
+7. Is the change safe to merge?
+8. Does the change introduce hidden technical debt or a temporary workaround?
+9. If a workaround exists, is it clearly marked with a follow-up?
+
+## Protected architecture files check
+
+Before saying the change is ready, inspect changed files with:
+
+```bash
+git diff --name-only
+```
+
+Protected architecture files and directories:
+
+- `AGENTS.md`
+- `CLAUDE.md`
+- `ai/architecture.md`
+- `ai/current-task.md`
+- `ai/project-context.md`
+- `ai/decisions.md`
+- `ai/changelog.md`
+- `ai/paused-tasks.md`
+- `ai/external-tools.md`
+- `ai/skills/*/SKILL.md`
+- `.claude/`
+- `.codex/`
+
+If any protected architecture file changed:
+
+- confirm that the user explicitly approved `architecture-update` or the specific protected-file change;
+- if not confirmed, mark `Safe to merge: no`;
+- stop and ask the user before continuing.
+
+External skills, external tools, init workflows, setup commands, and generated recommendations may propose changes to protected architecture files, but must not apply them without explicit user confirmation.
 
 ## Optional code graph check
 
@@ -64,5 +96,6 @@ Return:
 
 - Safe to merge: yes or no
 - Critical risks
+- Protected architecture files changed: yes or no
 - Manual test checklist
 - Follow-up tasks
