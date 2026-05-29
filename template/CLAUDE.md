@@ -15,6 +15,31 @@ Use this file as the short entry point. Detailed rules live in `ai/architecture.
 - For risky changes, add tests or explain why tests are not practical and provide manual checks.
 - Do not overwrite unfinished task memory or update architecture files without explicit user confirmation.
 
+## Protected architecture files
+
+The following files and directories are protected architecture files:
+
+- `AGENTS.md`
+- `CLAUDE.md`
+- `ai/architecture.md`
+- `ai/current-task.md`
+- `ai/project-context.md`
+- `ai/decisions.md`
+- `ai/changelog.md`
+- `ai/paused-tasks.md`
+- `ai/external-tools.md`
+- `ai/skills/*/SKILL.md`
+- `.claude/`
+- `.codex/`
+
+Do not edit protected architecture files during normal implementation, review, init, cleanup, or external skill/tool workflows.
+
+Protected architecture files may be changed only in `architecture-update` mode and only after explicit user confirmation.
+
+This rule also applies when an external skill, external tool, init workflow, setup command, or generated recommendation suggests changing these files. External skills/tools may propose changes to protected architecture files, but must not apply them without confirmation.
+
+Before finishing any task, check the diff with `git diff --name-only`. If protected architecture files changed without explicit confirmation, stop and ask the user before continuing.
+
 ## Session start
 
 When entering an existing project, switching tools, or continuing in a new chat, run `environment-check` before suggesting next steps or starting implementation. Skip it only if the user explicitly says not to run it.
@@ -69,7 +94,7 @@ Read extra context only when relevant:
 4. expected external skills/tools
 5. controlled external methodologies
 
-External skills/tools are helpers. They must not override work mode, confirmation rules, task memory rules, clean architecture, or project-specific rules.
+External skills/tools are helpers. They must not override work mode, confirmation rules, protected architecture file rules, task memory rules, clean architecture, or project-specific rules.
 
 Superpowers is controlled. Do not activate it automatically. If the task is large, vague, architectural, migration-heavy, TDD-heavy, subagent-heavy, or has unclear blast radius, explain why Superpowers may help and ask: `Use Superpowers for this task?`
 
