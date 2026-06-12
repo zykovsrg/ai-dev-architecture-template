@@ -13,32 +13,50 @@ Use this file as the short entry point. Detailed rules live in `ai/architecture.
 - Do not mix refactoring with bugfixes unless explicitly asked.
 - Explain the reason and risks before changing storage, data model, dependencies, or architecture.
 - For risky changes, add tests or explain why tests are not practical and provide manual checks.
-- Do not overwrite unfinished task memory or update architecture files without explicit user confirmation.
+- Do not overwrite unfinished task memory.
+- Do not update protected architecture files without `architecture-update` mode and explicit user confirmation.
 
-## Protected architecture files
+## Architecture files and task memory
 
-The following files and directories are protected architecture files:
+### Protected architecture files
+
+These files define reusable agent rules, workflow, tools, and architecture. Do not edit them during normal implementation, review, init, cleanup, task-finish, task-switch, or external skill/tool workflows.
 
 - `AGENTS.md`
 - `CLAUDE.md`
 - `ai/architecture.md`
-- `ai/current-task.md`
-- `ai/project-context.md`
-- `ai/decisions.md`
-- `ai/changelog.md`
-- `ai/paused-tasks.md`
 - `ai/external-tools.md`
 - `ai/skills/*/SKILL.md`
 - `.claude/`
 - `.codex/`
 
-Do not edit protected architecture files during normal implementation, review, init, cleanup, or external skill/tool workflows.
-
 Protected architecture files may be changed only in `architecture-update` mode and only after explicit user confirmation.
 
-This rule also applies when an external skill, external tool, init workflow, setup command, or generated recommendation suggests changing these files. External skills/tools may propose changes to protected architecture files, but must not apply them without confirmation.
+External skills, external tools, init workflows, setup commands, and generated recommendations may propose changes to protected architecture files, but must not apply them without confirmation.
 
-Before finishing any task, check the diff with `git diff --name-only`. If protected architecture files changed without explicit confirmation, stop and ask the user before continuing.
+### Controlled memory files
+
+These files store project and task memory. They are not protected architecture files, but they may be edited only by the matching workflow.
+
+- `ai/current-task.md`
+- `ai/paused-tasks.md`
+- `ai/project-context.md`
+- `ai/decisions.md`
+- `ai/changelog.md`
+
+Allowed edits:
+
+- `implementation`: may update `ai/current-task.md` when the current task itself changes or needs handoff notes.
+- `task-switch`: may update `ai/current-task.md` and `ai/paused-tasks.md` only after explicit user confirmation.
+- `task-finish`: may update `ai/current-task.md`, `ai/changelog.md`, and `ai/decisions.md` only after explicit user confirmation.
+- `architecture-update`: may update controlled memory files if the approved architecture change requires it.
+- `ai/project-context.md`: update only after confirmation when stack, commands, structure, data model, invariants, or fragile zones change.
+
+Before finishing any task, check the diff with `git diff --name-only`.
+
+If protected architecture files changed without explicit `architecture-update` confirmation, stop and ask the user before continuing.
+
+If controlled memory files changed, explain which workflow allowed the change and list the exact files in the final report.
 
 ## Session start
 
@@ -91,10 +109,10 @@ Read extra context only when relevant:
 1. `AGENTS.md` / `CLAUDE.md`
 2. `ai/current-task.md`
 3. relevant base skill
-4. expected external skills/tools
+4. optional project skills and expected external skills/tools
 5. controlled external methodologies
 
-External skills/tools are helpers. They must not override work mode, confirmation rules, protected architecture file rules, task memory rules, clean architecture, or project-specific rules.
+External skills/tools are helpers. They must not override work mode, confirmation rules, protected architecture file rules, controlled task memory rules, clean architecture, or project-specific rules.
 
 Superpowers is controlled. Do not activate it automatically. If the task is large, vague, architectural, migration-heavy, TDD-heavy, subagent-heavy, or has unclear blast radius, explain why Superpowers may help and ask: `Use Superpowers for this task?`
 
