@@ -1,6 +1,8 @@
 # Current Task
 
-Status: active
+Status: empty
+
+Allowed statuses: empty / active / review / blocked / done / paused
 
 ## Mode
 
