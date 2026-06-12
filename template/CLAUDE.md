@@ -15,6 +15,7 @@ Use this file as the short entry point. Detailed rules live in `ai/architecture.
 - For risky changes, add tests or explain why tests are not practical and provide manual checks.
 - Do not overwrite unfinished task memory.
 - Do not update protected architecture files without `architecture-update` mode and explicit user confirmation.
+- In review mode, do not report a problem as fact until it is verified with read, grep, diff, logs, or tests. If it is not verified, label it as a hypothesis.
 
 ## Architecture files and task memory
 
@@ -52,6 +53,12 @@ Allowed edits:
 - `architecture-update`: may update controlled memory files if the approved architecture change requires it.
 - `ai/project-context.md`: update only after confirmation when stack, commands, structure, data model, invariants, or fragile zones change.
 
+Memory file roles:
+
+- `ai/changelog.md` records what changed recently.
+- `ai/decisions.md` records durable rules, invariants, and decisions future agents must not break.
+- If a change has long-term consequences for storage, signing, data model, undo behavior, external APIs, or deployment, consider `ai/decisions.md`, not only `ai/changelog.md`.
+
 Before finishing any task, check the diff with `git diff --name-only`.
 
 If protected architecture files changed without explicit `architecture-update` confirmation, stop and ask the user before continuing.
@@ -60,7 +67,9 @@ If controlled memory files changed, explain which workflow allowed the change an
 
 ## Session start
 
-When entering an existing project, switching tools, or continuing in a new chat, run `environment-check` before suggesting next steps or starting implementation. Skip it only if the user explicitly says not to run it.
+When entering an existing project, switching tools, continuing in a new chat, or continuing from compressed/restored context, run `environment-check` before suggesting next steps or starting implementation. Skip it only if the user explicitly says not to run it.
+
+Compressed context, compacted context, restored summary, or conversation summary continuation counts as a new session for this rule.
 
 `environment-check` and `task-switch` are not work modes. After `environment-check`, continue in a work mode.
 
@@ -85,24 +94,28 @@ Default minimum:
 - this file
 - `ai/current-task.md`
 
-Use skills by trigger. Do not load all skills automatically. Open only the skill that matches the current task:
+Use skills by trigger. Do not apply a skill from memory. Open the current `ai/skills/*/SKILL.md` before using that workflow.
+
+Open only the skill that matches the current task:
 - environment check: `ai/skills/environment-check/SKILL.md` and `ai/external-tools.md`
 - task switching: `ai/skills/task-switch/SKILL.md` and `ai/paused-tasks.md`
 - task finish: `ai/skills/task-finish/SKILL.md`
 - release or merge: `ai/skills/release-check/SKILL.md`
-- tests: `ai/skills/write-tests/SKILL.md`
-- UI: `ai/skills/ui-review/SKILL.md`
+- tests or test decision: `ai/skills/write-tests/SKILL.md`
+- UI change or visual behavior: `ai/skills/ui-review/SKILL.md` and `ai/skills/write-tests/SKILL.md`
 - frontend design, if installed: `ai/skills/frontend-design/SKILL.md`
 - copy: `ai/skills/copy-review/SKILL.md`
 - security: `ai/skills/security-review/SKILL.md`
-- bugfix: `ai/skills/bugfix-workflow/SKILL.md`
+- bugfix, regression, crash, or performance investigation: `ai/skills/bugfix-workflow/SKILL.md`
 - architecture change: `ai/skills/architecture-update/SKILL.md`
 
 Read extra context only when relevant:
 - project behavior, storage, or UI: `ai/project-context.md`
-- architecture-sensitive work: `ai/decisions.md`
+- architecture-sensitive work or durable invariants: `ai/decisions.md`
 - workflow ambiguity, architecture rules, or architecture update: `ai/architecture.md`
 - plan-driven or Superpowers execution: relevant `docs/superpowers/specs/*`, `docs/superpowers/plans/*`, and the plan-driven rules in `ai/architecture.md`
+
+For complex review or unclear blast radius, check whether `code-review-graph` is available. Use it when available for multi-module changes, new services, architecture-sensitive changes, complex bugs, or large pre-merge reviews. Do not require it for small copy, narrow UI, or trivial bugfix changes.
 
 ## Skill precedence
 
@@ -144,6 +157,12 @@ If the task is unclear, ask the user to structure it as:
 
 Mode:
 implementation / review / task-finish / architecture-update
+
+Status:
+empty / active / review / blocked / done / paused
+
+Stage:
+intake / spec / planning / implementation / review / task-finish
 
 Goal:
 What should change.
