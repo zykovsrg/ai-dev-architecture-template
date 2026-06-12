@@ -5,10 +5,14 @@ description: |
   Use at the start of a new project session to check whether required base skills, optional project skills, and expected external skills/tools are available.
   Activates when:
   - starting work in a project after installing the architecture
+  - entering an existing project
+  - switching tools or agents
+  - continuing in a new chat
+  - continuing from compressed, compacted, restored, or summarized context
   - user asks "проверь окружение", "всё ли установлено", "первый запуск", or similar
   - before the first real implementation task in a project
   Does NOT activate for:
-  - every normal task
+  - every normal task inside the same uninterrupted session
   - small follow-up questions
   - checking application dependencies
 ---
@@ -18,6 +22,21 @@ description: |
 This skill checks whether the AI-development architecture is installed correctly.
 
 It does not check application dependencies.
+
+## Session boundary rule
+
+Run this check before suggesting next steps or starting implementation when the agent enters a new session.
+
+The following count as a new session:
+
+- new chat;
+- switching from one AI tool to another;
+- context compaction;
+- compressed context resume;
+- restored summary;
+- conversation summary continuation.
+
+Skip only if the user explicitly says not to run `environment-check`.
 
 ## Required base skills
 
@@ -91,7 +110,7 @@ Return:
 4. Expected external tools present.
 5. Expected external tools missing or not confirmed.
 6. Controlled external methodologies present, missing, or not confirmed.
-7. Whether the architecture is ready for the first task.
+7. Whether the architecture is ready for the first task or resumed task.
 8. What to restore from the template if something required is missing.
 
 Explain in Russian with simple words.
@@ -103,6 +122,5 @@ Explain in Russian with simple words.
 - Do not treat missing external tools as blockers, but report them clearly.
 - Do not install missing tools without explicit user confirmation.
 - Do not change application code.
-
 - Do not activate Superpowers during environment check. Only report whether it is present, missing, or not confirmed.
 - Superpowers is a controlled methodology, not the default workflow.
