@@ -16,6 +16,8 @@ description: |
 
 # Task Switch
 
+Open this skill before applying task-switch. Do not rely on memory.
+
 This skill prevents accidental loss of task context.
 
 Use it when `ai/current-task.md` contains an unfinished task and the user asks for a different task.
@@ -34,6 +36,8 @@ Treat the new request as a different task if at least one of these is true:
 
 Treat the new request as the same task if it clarifies, narrows, tests, reviews, or completes the current goal.
 
+Small UI iterations can stay in the same task if they clarify the same UI goal. If they create a new deliverable or change Done criteria, check whether `task-switch` is needed.
+
 If unsure, do not guess. Ask the user:
 
 "Похоже, это новая задача, а текущая ещё не закрыта. Переключаемся или продолжаем текущую?"
@@ -50,15 +54,16 @@ Do not edit files in Phase 1.
 Return:
 
 1. Current unfinished task.
-2. New requested task.
-3. Risk of switching.
-4. Recommended option:
+2. Current Status and Stage.
+3. New requested task.
+4. Risk of switching.
+5. Recommended option:
    - continue current task;
    - pause current task and start a new one;
    - finish current task through `task-finish`;
    - discard current task and replace it.
-5. What would be written to `ai/paused-tasks.md` if the current task is paused.
-6. What would be written to `ai/current-task.md` for the new task.
+6. What would be written to `ai/paused-tasks.md` if the current task is paused.
+7. What would be written to `ai/current-task.md` for the new task, including Status and Stage.
 
 Ask for explicit user confirmation before editing files.
 
@@ -72,6 +77,8 @@ Allowed actions:
 2. Replace `ai/current-task.md` with the new task.
 3. Keep the new task short and structured.
 4. Preserve open risks and useful handoff notes.
+5. Set `Status: active` for a new active task.
+6. Set `Stage` to the real next stage: `intake`, `spec`, `planning`, `implementation`, or `review`.
 
 Do not change application code.
 
