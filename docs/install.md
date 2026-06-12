@@ -64,13 +64,17 @@ ai/skills/write-tests/SKILL.md
 
 ## 5. Заполнить проектные файлы
 
-Для каждого проекта нужно отдельно заполнить:
+После установки обязательно заполни:
 
 - `ai/project-context.md`
-- `ai/decisions.md`
-- `ai/changelog.md
-ai/external-tools.md`
-- `ai/current-task.md
-ai/paused-tasks.md`
+- `ai/current-task.md`
 
-Готовые промты есть в `docs/prompts.md`.
+Можно оставить пустыми шаблонами до появления реальных решений, изменений или пауз:
+
+- `ai/decisions.md`
+- `ai/changelog.md`
+- `ai/paused-tasks.md`
+
+`ai/external-tools.md` обычно не нужно менять после установки. Обновляй его только если меняется список ожидаемых внешних skills, tools или controlled methodologies.
+
+Готовые промты есть в `docs/prompts.md` и `docs/start-prompts.md`.
