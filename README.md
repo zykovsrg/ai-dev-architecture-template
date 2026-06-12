@@ -69,12 +69,18 @@ cd /path/to/project
 rsync -av --ignore-existing ~/Documents/ai-dev-architecture-template/template/ ./
 ```
 
-После этого заполни проектные файлы:
+После этого обязательно заполни:
 
 - `ai/project-context.md`
+- `ai/current-task.md`
+
+Можно оставить пустыми шаблонами до появления реальных данных:
+
 - `ai/decisions.md`
 - `ai/changelog.md`
-- `ai/current-task.md`
+- `ai/paused-tasks.md`
+
+`ai/external-tools.md` обычно не нужно менять после установки. Обновляй его только если меняется список ожидаемых внешних skills, tools или controlled methodologies.
 
 ## Источник правды
 
@@ -101,6 +107,38 @@ rsync -av --ignore-existing ~/Documents/ai-dev-architecture-template/template/ .
 
 Простые объяснения терминов — в `docs/concepts.md`.
 Готовые стартовые промты — в `docs/start-prompts.md`.
+
+## Architecture files and task memory
+
+### Protected architecture files
+
+Это правила архитектуры. Их нельзя менять в обычной задаче.
+
+- `AGENTS.md`
+- `CLAUDE.md`
+- `ai/architecture.md`
+- `ai/external-tools.md`
+- `ai/skills/*/SKILL.md`
+- `.claude/`
+- `.codex/`
+
+Меняются только через `architecture-update` и только после явного подтверждения.
+
+### Controlled memory files
+
+Это рабочая память проекта и задачи. Её можно менять, но только через подходящий workflow.
+
+- `ai/current-task.md`
+- `ai/paused-tasks.md`
+- `ai/project-context.md`
+- `ai/decisions.md`
+- `ai/changelog.md`
+
+Примеры:
+
+- `task-switch` может менять `ai/current-task.md` и `ai/paused-tasks.md` после подтверждения;
+- `task-finish` может менять `ai/current-task.md`, `ai/changelog.md` и `ai/decisions.md` после подтверждения;
+- `ai/project-context.md` меняется только если изменились стек, команды, структура, модель данных, инварианты или хрупкие зоны.
 
 ## Skill precedence
 
