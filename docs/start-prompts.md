@@ -5,6 +5,41 @@
 1. первая установка архитектуры в проект;
 2. переход в новый диалог или другой ИИ-агент внутри уже подключённого проекта.
 
+## Ключевые правила для обоих промтов
+
+Перед использованием промта важно помнить разделение файлов:
+
+### Protected architecture files
+
+Это правила архитектуры. Их нельзя менять в обычной задаче.
+
+- `AGENTS.md`
+- `CLAUDE.md`
+- `ai/architecture.md`
+- `ai/external-tools.md`
+- `ai/skills/*/SKILL.md`
+- `.claude/`
+- `.codex/`
+
+Менять их можно только через `architecture-update` после явного подтверждения пользователя.
+
+### Controlled memory files
+
+Это рабочая память проекта и задачи.
+
+- `ai/current-task.md`
+- `ai/paused-tasks.md`
+- `ai/project-context.md`
+- `ai/decisions.md`
+- `ai/changelog.md`
+
+Их можно менять только через подходящий workflow:
+
+- `implementation` — обновить текущую задачу или handoff;
+- `task-switch` — поставить задачу на паузу или заменить текущую после подтверждения;
+- `task-finish` — записать итог, важные решения и очистить текущую задачу после подтверждения;
+- `architecture-update` — обновить память, если это часть подтверждённого изменения архитектуры.
+
 ## 1. Первая установка архитектуры в проект
 
 Используй, когда архитектура ещё не подключена к проекту.
@@ -13,7 +48,6 @@
 Ты работаешь в проекте как AI coding agent.
 
 Мне нужно впервые установить AI-архитектуру разработки из репозитория:
-
 https://github.com/zykovsrg/ai-dev-architecture-template
 
 Описание задачи:
@@ -31,38 +65,33 @@ https://github.com/zykovsrg/ai-dev-architecture-template
 <вставь сюда критерии готовности>
 
 Задача:
-1. Проверь, есть ли в проекте уже файлы:
-   - AGENTS.md
-   - CLAUDE.md
-   - ai/
+1. Проверь, есть ли в проекте файлы AGENTS.md, CLAUDE.md и папка ai/.
 2. Не перезаписывай существующие файлы без моего подтверждения.
-3. Если архитектура ещё не установлена, предложи безопасный способ установки через шаблон.
-4. Если после установки не хватает обязательных файлов архитектуры, покажи список недостающих файлов и предложи создать их из шаблона. Создавай недостающие файлы только после моего подтверждения.
-5. После установки выполни environment-check:
-   - проверь обязательные файлы;
-   - проверь базовые skills;
-   - проверь expected external skills/tools;
-   - проверь controlled external methodologies.
+3. Если архитектура ещё не установлена, предложи безопасную установку из шаблона.
+4. Если после установки не хватает обязательных файлов, покажи список и предложи восстановить их из шаблона.
+5. После установки выполни environment-check.
 6. Ничего не устанавливай дополнительно без моего подтверждения.
-7. Перед использованием внешнего skill, init workflow или setup-команды сначала прочитай AGENTS.md или CLAUDE.md и проверь правила protected architecture files.
-8. Внешние skills/tools могут предлагать изменения protected architecture files, но не могут применять их без моего явного подтверждения.
-9. После проверки скажи:
-   - что установлено корректно;
-   - чего не хватает;
-   - что нужно заполнить вручную;
-   - готова ли архитектура к первой задаче.
+7. Перед использованием внешнего skill, init workflow или setup-команды сначала прочитай AGENTS.md или CLAUDE.md.
+8. Соблюдай разделение protected architecture files и controlled memory files.
+
+После проверки скажи:
+- что установлено корректно;
+- чего не хватает;
+- что нужно заполнить вручную;
+- готова ли архитектура к первой задаче.
 
 После установки:
-- для нового проекта сначала заполни `ai/project-context.md` и `ai/current-task.md`;
-- `ai/decisions.md` и `ai/changelog.md` можно оставить пустыми шаблонами до появления реальных решений и изменений;
-- для уже существующего проекта используй `docs/prompts.md`, чтобы собрать `project-context.md`, `decisions.md` и `changelog.md` из текущих файлов и истории Git.
+- для нового проекта сначала заполни ai/project-context.md и ai/current-task.md;
+- ai/decisions.md, ai/changelog.md и ai/paused-tasks.md можно оставить пустыми шаблонами;
+- ai/external-tools.md меняй только если меняется список expected external tools или controlled methodologies.
 
 Важные правила:
 - Общайся со мной на русском.
 - Я не разработчик, объясняй технические термины простыми словами.
-- Не меняй код приложения.
+- Не меняй код приложения при установке архитектуры.
 - Не делай больших изменений без плана и подтверждения.
-- Не меняй AGENTS.md, CLAUDE.md, ai/architecture.md, ai/current-task.md, ai/project-context.md, ai/decisions.md, ai/changelog.md, ai/paused-tasks.md, ai/external-tools.md, ai/skills/*/SKILL.md, .claude/ или .codex/ без режима architecture-update и моего явного подтверждения.
+- Protected architecture files меняй только через architecture-update после моего явного подтверждения.
+- Controlled memory files меняй только через подходящий workflow.
 ```
 
 ## 2. Переход в новый диалог или другой ИИ-агент внутри проекта
@@ -70,7 +99,8 @@ https://github.com/zykovsrg/ai-dev-architecture-template
 Используй, когда архитектура уже установлена, но ты открываешь новый чат или переходишь к другому ИИ-агенту.
 
 ```text
-Ты работаешь в проекте с установленной AI-архитектурой разработки: https://github.com/zykovsrg/ai-dev-architecture-template
+Ты работаешь в проекте с установленной AI-архитектурой разработки:
+https://github.com/zykovsrg/ai-dev-architecture-template
 
 Папка проекта:
 <вставь путь к проекту>
@@ -92,30 +122,22 @@ https://github.com/zykovsrg/ai-dev-architecture-template
 Сначала сделай environment-check. Ничего не редактируй.
 
 Затем прочитай только:
-- AGENTS.md или CLAUDE.md
-- ai/current-task.md
+- AGENTS.md или CLAUDE.md;
+- ai/current-task.md.
 
 Не читай всю папку ai автоматически.
 
 Если нужно для понимания задачи, дополнительно открой только релевантные файлы:
-- ai/project-context.md
-- ai/decisions.md
-- ai/changelog.md
-- нужный ai/skills/*/SKILL.md
+- ai/project-context.md;
+- ai/decisions.md;
+- ai/changelog.md;
+- нужный ai/skills/*/SKILL.md.
 
-Если текущая задача ведётся через Superpowers / plan-driven workflow, дополнительно открой только релевантные файлы:
-- docs/superpowers/specs/<нужный spec>.md
-- docs/superpowers/plans/<нужный plan>.md
+Если текущая задача ведётся через Superpowers или другой plan-driven workflow, дополнительно открой только релевантные файлы:
+- docs/superpowers/specs/<нужный spec>.md;
+- docs/superpowers/plans/<нужный plan>.md.
 
-Файл `docs/superpowers/plans/<нужный plan>.md` — источник правды по прогрессу plan-driven задачи. Проверяй прогресс по чекбоксам и `Note:` в этом файле. Не полагайся только на TodoWrite, историю чата или память предыдущего агента.
-
-Перед использованием внешнего skill, init workflow или setup-команды сначала прочитай AGENTS.md или CLAUDE.md и проверь правила protected architecture files.
-
-Внешние skills/tools могут предлагать изменения protected architecture files, но не могут применять их без моего явного подтверждения.
-
-Если после проверки не хватает обязательных файлов архитектуры, покажи список недостающих файлов и предложи восстановить их из шаблона. Не создавай и не перезаписывай файлы без моего подтверждения.
-
-Если ai/current-task.md содержит активную задачу:
+Если ai/current-task.md содержит активную незавершённую задачу:
 1. Кратко перескажи текущую задачу.
 2. Назови mode.
 3. Назови relevant files.
@@ -124,7 +146,7 @@ https://github.com/zykovsrg/ai-dev-architecture-template
 6. Скажи, нужен ли task-switch.
 7. Скажи, нужен ли Superpowers.
 
-Если ai/current-task.md пустой или содержит шаблон:
+Если ai/current-task.md имеет Status: empty или содержит пустой шаблон:
 1. Попроси меня поставить задачу в формате:
    - Mode
    - Goal
@@ -136,7 +158,8 @@ https://github.com/zykovsrg/ai-dev-architecture-template
 - Я не разработчик, объясняй технические термины простыми словами.
 - Не редактируй файлы без моего подтверждения, если задача не требует реализации.
 - Не перезаписывай ai/current-task.md, если там есть незавершённая задача.
-- Не меняй AGENTS.md, CLAUDE.md, ai/architecture.md, ai/current-task.md, ai/project-context.md, ai/decisions.md, ai/changelog.md, ai/paused-tasks.md, ai/external-tools.md, ai/skills/*/SKILL.md, .claude/ или .codex/ без режима architecture-update и моего явного подтверждения.
+- Protected architecture files меняй только через architecture-update после моего явного подтверждения.
+- Controlled memory files меняй только через подходящий workflow.
 - Если я прошу другую задачу при незавершённой текущей, используй task-switch.
 - Если задача завершена, используй task-finish.
 - Superpowers используй только если я явно попрошу или если в ai/current-task.md написано: Use Superpowers: yes.
