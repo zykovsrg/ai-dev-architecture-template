@@ -48,7 +48,7 @@
 | `.claude/` | только `architecture-update` после подтверждения |
 | `.codex/` | только `architecture-update` после подтверждения |
 | `ai/current-task.md` | `implementation`, `task-switch`, `task-finish`; не перезаписывать незавершённую задачу без подтверждения |
-| `ai/paused-tasks.md` | только `task-switch` после подтверждения |
+| `ai/paused-tasks.md` | `task-switch`; также можно фиксировать removal task для TEMP diagnostics после подтверждения |
 | `ai/project-context.md` | после подтверждения, если изменились стек, команды, структура, модель данных, инварианты или хрупкие зоны |
 | `ai/decisions.md` | `task-finish` или `architecture-update`, если появилось важное устойчивое решение |
 | `ai/changelog.md` | `task-finish` или заметное изменение в рамках реализации |
@@ -100,9 +100,14 @@
 
 Одна текущая задача.
 
-В пустом шаблоне должен быть статус `empty`. Активная задача получает статус `active`.
+В пустом шаблоне должны быть:
 
-Допустимые статусы:
+```text
+Status: empty
+Stage: intake
+```
+
+`Status` показывает состояние задачи:
 
 - `empty`
 - `active`
@@ -111,11 +116,24 @@
 - `done`
 - `paused`
 
+`Stage` показывает этап работы:
+
+- `intake`
+- `spec`
+- `planning`
+- `implementation`
+- `review`
+- `task-finish`
+
+Не записывай в `Status` свободный текст вроде `spec done, planning next`. Для этого есть `Stage` и handoff notes.
+
 ### `ai/paused-tasks.md`
 
 Короткий список задач, которые временно поставили на паузу через `task-switch`.
 
 Это не backlog и не список идей.
+
+Если TEMP diagnostics закоммичены в main, здесь можно завести отдельную removal task с критериями удаления.
 
 ### `ai/project-context.md`
 
@@ -129,11 +147,24 @@
 - инварианты;
 - хрупкие зоны.
 
+Если агент обнаружил устаревший project-context, он должен предложить отдельный update после подтверждения, а не просто упомянуть это в changelog.
+
 ### `ai/decisions.md`
 
 Только важные активные решения.
 
 Используй для решений, которые будущие агенты не должны случайно сломать.
+
+Примеры:
+
+- data model invariant;
+- storage path или migration rule;
+- signing, sandboxing, entitlements, deployment или local setup requirement;
+- undo или redo invariant;
+- sync behavior;
+- recurrence, scheduling или time logic;
+- architecture boundary;
+- agent workflow rule that must persist across sessions.
 
 Не используй для мелких багфиксов, цветов, отступов и обычной истории изменений.
 
@@ -142,6 +173,10 @@
 Последние заметные изменения проекта.
 
 Ориентир — хранить последние 2–4 недели. Старые записи переносить в `ai/archive/`.
+
+`changelog` отвечает на вопрос: что изменилось.
+
+`decisions` отвечает на вопрос: что нельзя забыть и сломать в будущем.
 
 ### `ai/external-tools.md`
 
@@ -157,6 +192,8 @@
 
 Не нужно загружать все skills сразу. Открывай только тот skill, который нужен для текущей задачи.
 
+Если задача попадает под trigger skill, агент должен открыть актуальный файл skill. Не работай по памяти.
+
 ## 7. Связанные workflows
 
 ### `environment-check`
@@ -164,6 +201,8 @@
 Проверяет установку архитектуры, базовые skills, expected external tools и controlled methodologies.
 
 Это не work mode и не глубокий аудит.
+
+Запускается при новой сессии, новом чате, смене tools/агента и после compressed context или restored summary.
 
 ### `task-switch`
 
@@ -176,3 +215,15 @@
 Проверяет, можно ли закрыть задачу.
 
 После подтверждения пользователя может обновить `ai/changelog.md`, `ai/decisions.md` и очистить `ai/current-task.md`.
+
+### `release-check`
+
+Проверяет готовность к commit, merge, build или release.
+
+Для сложных изменений должен проверить необходимость `code-review-graph`.
+
+### `bugfix-workflow`
+
+Используется для багов, крашей, регрессий и performance-проблем.
+
+Для багов и performance-задач сначала нужен репро или замер. Если причина не доказана, итог фиксируется как mitigation, а не как доказанный root cause.
