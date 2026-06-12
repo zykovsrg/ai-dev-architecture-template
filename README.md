@@ -74,6 +74,11 @@ rsync -av --ignore-existing ~/Documents/ai-dev-architecture-template/template/ .
 - `ai/project-context.md`
 - `ai/current-task.md`
 
+В `ai/current-task.md` должны быть отдельные поля:
+
+- `Status` — состояние задачи: `empty / active / review / blocked / done / paused`;
+- `Stage` — этап работы: `intake / spec / planning / implementation / review / task-finish`.
+
 Можно оставить пустыми шаблонами до появления реальных данных:
 
 - `ai/decisions.md`
@@ -98,6 +103,8 @@ rsync -av --ignore-existing ~/Documents/ai-dev-architecture-template/template/ .
 - `ai/current-task.md` — текущая задача.
 - `ai/paused-tasks.md` — задачи, временно поставленные на паузу через `task-switch`.
 - `ai/project-context.md` — проектный контекст и инварианты.
+- `ai/decisions.md` — устойчивые решения и инварианты, которые будущие агенты не должны сломать.
+- `ai/changelog.md` — последние заметные изменения.
 - `ai/external-tools.md` — ожидаемые внешние tools и controlled methodologies.
 - `ai/skills/*/SKILL.md` — переиспользуемые процедуры.
 - `task-finish` — проверяет, можно ли закрыть задачу, и чистит контекст после подтверждения.
@@ -140,6 +147,16 @@ rsync -av --ignore-existing ~/Documents/ai-dev-architecture-template/template/ .
 - `task-finish` может менять `ai/current-task.md`, `ai/changelog.md` и `ai/decisions.md` после подтверждения;
 - `ai/project-context.md` меняется только если изменились стек, команды, структура, модель данных, инварианты или хрупкие зоны.
 
+## Skill routing
+
+Если задача попадает под trigger skill, агент должен открыть актуальный `ai/skills/*/SKILL.md`. Не нужно применять skill по памяти.
+
+- UI-задачи: `ui-review` + `write-tests`.
+- Баги, краши, регрессии, performance: `bugfix-workflow`.
+- Pre-merge или сложное review: `release-check`; если доступен и нужен — `code-review-graph`.
+- Закрытие задачи: `task-finish`.
+- Переключение задачи: `task-switch`.
+
 ## Skill precedence
 
 Project architecture files define workflow priority:
@@ -150,7 +167,7 @@ Project architecture files define workflow priority:
 4. expected external skills/tools
 5. controlled external methodologies
 
-External skills and tools are helpers. They must not override work mode, confirmation rules, task-finish, architecture-update, or the clean architecture principle. Superpowers is gated and must not activate unless the user explicitly allows it.
+External skills and tools are helpers. They must not override work mode, confirmation rules, task-finish, architecture-update, environment-check, protected architecture file rules, controlled memory rules, or the clean architecture principle. Superpowers is gated and must not activate unless the user explicitly allows it.
 
 ## Work modes and environment check
 
@@ -161,7 +178,9 @@ The architecture has four work modes:
 - `task-finish`
 - `architecture-update`
 
-`environment-check` is not a work mode. It is a first-session availability check for required base skills and expected external tools.
+`environment-check` is not a work mode. It is an availability check for required base skills and expected external tools.
+
+Run `environment-check` when entering an existing project, switching tools or agents, continuing in a new chat, or continuing after compressed context, compacted context, restored summary, or conversation summary continuation.
 
 ## Task switching
 
