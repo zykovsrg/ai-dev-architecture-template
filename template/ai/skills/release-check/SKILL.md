@@ -2,7 +2,7 @@
 name: release-check
 type: knowledge
 description: |
-  Use before commit, merge, build, or release to check regressions, manual testing scope, technical debt, protected architecture files, and merge safety.
+  Use before commit, merge, build, or release to check regressions, manual testing scope, technical debt, protected architecture files, controlled memory files, and merge safety.
   Activates when:
   - implementation is finished and the change needs final review
   - the user asks "можно мержить", "готово к релизу", "проверь перед коммитом", or similar
@@ -23,11 +23,12 @@ Check:
 4. What manual tests are required?
 5. Is storage untouched or migrated safely?
 6. Did the diff change protected architecture files?
-7. Is the change safe to merge?
-8. Does the change introduce hidden technical debt or a temporary workaround?
-9. If a workaround exists, is it clearly marked with a follow-up?
+7. Did the diff change controlled memory files?
+8. Is the change safe to merge?
+9. Does the change introduce hidden technical debt or a temporary workaround?
+10. If a workaround exists, is it clearly marked with a follow-up?
 
-## Protected architecture files check
+## Architecture and memory file check
 
 Before saying the change is ready, inspect changed files with:
 
@@ -40,21 +41,31 @@ Protected architecture files and directories:
 - `AGENTS.md`
 - `CLAUDE.md`
 - `ai/architecture.md`
+- `ai/external-tools.md`
+- `ai/skills/*/SKILL.md`
+- `.claude/`
+- `.codex/`
+
+Controlled memory files:
+
 - `ai/current-task.md`
 - `ai/project-context.md`
 - `ai/decisions.md`
 - `ai/changelog.md`
 - `ai/paused-tasks.md`
-- `ai/external-tools.md`
-- `ai/skills/*/SKILL.md`
-- `.claude/`
-- `.codex/`
 
 If any protected architecture file changed:
 
 - confirm that the user explicitly approved `architecture-update` or the specific protected-file change;
 - if not confirmed, mark `Safe to merge: no`;
 - stop and ask the user before continuing.
+
+If any controlled memory file changed:
+
+- confirm that the change is allowed by the active workflow;
+- confirm that required user confirmation was received for `task-switch`, `task-finish`, or project-context updates;
+- if not confirmed, mark `Safe to merge: no`;
+- explain which memory files changed and why.
 
 External skills, external tools, init workflows, setup commands, and generated recommendations may propose changes to protected architecture files, but must not apply them without explicit user confirmation.
 
@@ -97,5 +108,6 @@ Return:
 - Safe to merge: yes or no
 - Critical risks
 - Protected architecture files changed: yes or no
+- Controlled memory files changed: yes or no
 - Manual test checklist
 - Follow-up tasks
