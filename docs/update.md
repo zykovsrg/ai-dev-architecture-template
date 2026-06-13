@@ -1,51 +1,84 @@
 # Инструкция по обновлению
 
-## Обновить репозиторий шаблона
+## 1. Обновить репозиторий шаблона
 
 ```bash
 cd ~/Documents/ai-dev-architecture-template
 git pull origin main
 ```
 
-## Добавить новые файлы шаблона в проект
+## 2. Добавить новые файлы шаблона в проект
 
 ```bash
 cd /path/to/project
 rsync -av --ignore-existing ~/Documents/ai-dev-architecture-template/template/ ./
 ```
 
-Эта команда копирует только те файлы, которых ещё нет в проекте.
+Эта команда копирует только те файлы, которых ещё нет в проекте. Она не перезаписывает существующие файлы.
 
-## Обновить уже существующие файлы
-
-Не перезаписывай существующие `AGENTS.md`, `CLAUDE.md` или `ai/skills/*/SKILL.md` вслепую.
+## 3. Не перезаписывать файлы вслепую
 
 Сначала сравни шаблон и проект:
 
 ```bash
 diff -ru ~/Documents/ai-dev-architecture-template/template/AGENTS.md ./AGENTS.md
 diff -ru ~/Documents/ai-dev-architecture-template/template/CLAUDE.md ./CLAUDE.md
+diff -ru ~/Documents/ai-dev-architecture-template/template/ai/architecture.md ./ai/architecture.md
+diff -ru ~/Documents/ai-dev-architecture-template/template/ai/external-tools.md ./ai/external-tools.md
 diff -ru ~/Documents/ai-dev-architecture-template/template/ai/skills ./ai/skills
 ```
 
-Проектные файлы нельзя перезаписывать без отдельной проверки:
+## 4. Protected architecture files
 
-- `ai/project-context.md`
+Эти файлы задают правила работы агентов. Обновляй их только через `architecture-update` и после подтверждения пользователя:
+
+- `AGENTS.md`
+- `CLAUDE.md`
+- `ai/architecture.md`
+- `ai/external-tools.md`
+- `ai/skills/*/SKILL.md`
+- `.claude/`
+- `.codex/`
+
+При обновлении существующего проекта не копируй их поверх текущих файлов без diff и ревью.
+
+## 5. Controlled memory files
+
+Эти файлы содержат память конкретного проекта. Не заменяй их шаблоном:
+
 - `ai/current-task.md`
+- `ai/paused-tasks.md`
+- `ai/project-context.md`
 - `ai/decisions.md`
 - `ai/changelog.md`
 
-## Правило безопасного обновления
+Их можно обновлять только как проектную память:
+
+- `ai/current-task.md` — через текущую задачу, `task-switch` или `task-finish`;
+- `ai/paused-tasks.md` — через `task-switch`;
+- `ai/project-context.md` — после подтверждения, если изменились стек, команды, структура, модель данных, инварианты или хрупкие зоны;
+- `ai/decisions.md` — когда появилось устойчивое решение, которое будущие агенты не должны сломать;
+- `ai/changelog.md` — для заметных изменений за последние 2–4 недели.
+
+## 6. Правило безопасного обновления
 
 Для уже существующего проекта:
 
 1. Сравни файлы шаблона и проекта.
-2. Сохрани проектные добавления.
-3. Попроси агента предложить точные изменения.
-4. Применяй только одобренные изменения.
-5. Перед коммитом запусти ревью.
+2. Отдели protected architecture files от controlled memory files.
+3. Сохрани проектные добавления.
+4. Попроси агента предложить точные изменения.
+5. Применяй только одобренные изменения.
+6. Перед коммитом запусти `release-check`.
+
+## 7. Когда полезен code-review-graph
+
+Предложи `code-review-graph`, если:
 
 - непонятно, какие файлы связаны между собой;
 - diff затрагивает несколько модулей;
 - есть риск сломать соседние экраны или зависимости;
-- нужно быстро понять радиус изменений.
+- нужно быстро понять радиус изменений;
+- обновление затрагивает новые сервисы, резолверы, adapters или architecture-sensitive logic.
+
+Если `code-review-graph` недоступен, это предупреждение, а не блокер по умолчанию.
