@@ -20,9 +20,11 @@ Open this skill before applying UI review. Do not rely on memory.
 
 ## Pair with tests
 
-For UI changes, also open `ai/skills/write-tests/SKILL.md` and make an explicit test decision.
+For UI behavior, screen state, layout logic, scrolling, rendering logic, or interaction changes, also open `ai/skills/write-tests/SKILL.md` and make an explicit test decision.
 
-It is acceptable to conclude that automated tests are not practical for a visual-only change, but the conclusion must be explicit and accompanied by a manual UI checklist.
+For purely decorative visual changes, `write-tests` is optional unless the change can affect behavior, state, layout logic, accessibility, or interaction.
+
+If automated tests are not practical, provide a manual UI checklist.
 
 ## Check
 
