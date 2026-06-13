@@ -25,7 +25,7 @@ Do not edit files.
 Check:
 1. Are all required files present?
 2. Are AGENTS.md and CLAUDE.md short enough?
-3. Are all 10 base skills present, including environment-check?
+3. Are all 10 base skills present, including task-switch and environment-check?
 4. Does task-finish replace old task-completion-check and task-cleanup?
 5. Are permanent AI-facing instruction files in English?
 6. Are project-specific files still templates and not filled with data from another project?
@@ -162,6 +162,9 @@ Mode: review
 Goal:
 Check whether AI development architecture is installed correctly in this project.
 
+Use:
+- ai/skills/environment-check/SKILL.md
+
 Read:
 - AGENTS.md
 - CLAUDE.md
@@ -171,8 +174,16 @@ Read:
 - ai/project-context.md
 - ai/decisions.md
 - ai/changelog.md
-- ai/skills/task-finish/SKILL.md
+- ai/external-tools.md
+- ai/skills/bugfix-workflow/SKILL.md
+- ai/skills/ui-review/SKILL.md
+- ai/skills/security-review/SKILL.md
 - ai/skills/release-check/SKILL.md
+- ai/skills/copy-review/SKILL.md
+- ai/skills/write-tests/SKILL.md
+- ai/skills/task-finish/SKILL.md
+- ai/skills/task-switch/SKILL.md
+- ai/skills/architecture-update/SKILL.md
 - ai/skills/environment-check/SKILL.md
 
 Do not edit files.
@@ -195,24 +206,35 @@ Mode: review
 Goal:
 Compare the current project AI architecture with the updated template and propose a safe update plan.
 
-Compare:
+Compare protected architecture files:
 - ~/Documents/ai-dev-architecture-template/template/AGENTS.md with ./AGENTS.md
 - ~/Documents/ai-dev-architecture-template/template/CLAUDE.md with ./CLAUDE.md
 - ~/Documents/ai-dev-architecture-template/template/ai/architecture.md with ./ai/architecture.md
+- ~/Documents/ai-dev-architecture-template/template/ai/external-tools.md with ./ai/external-tools.md
 - ~/Documents/ai-dev-architecture-template/template/ai/skills/*/SKILL.md with ./ai/skills/*/SKILL.md
+
+Do not overwrite controlled memory files:
+- ai/current-task.md
+- ai/paused-tasks.md
+- ai/project-context.md
+- ai/decisions.md
+- ai/changelog.md
 
 Do not edit files.
 
 Important:
-- Do not overwrite project-specific files: ai/project-context.md, ai/current-task.md, ai/decisions.md, ai/changelog.md.
+- Protected architecture files may be updated only after explicit approval.
+- Controlled memory files must not be replaced from the template.
 - Preserve project-specific additions unless they are outdated or duplicated.
+- If the update has unclear blast radius, recommend code-review-graph.
 
 Return:
 1. Which template files changed.
-2. Which project files should be updated.
-3. What project-specific content must be preserved.
-4. What exact changes you recommend.
-5. Whether it is safe to apply the update.
+2. Which protected architecture files should be updated.
+3. Which controlled memory files must be preserved.
+4. What project-specific content must be preserved.
+5. What exact changes you recommend.
+6. Whether it is safe to apply the update.
 
 Explain in Russian with simple words.
 ```
@@ -237,6 +259,7 @@ Check required files:
 - ai/project-context.md
 - ai/decisions.md
 - ai/changelog.md
+- ai/external-tools.md
 - ai/skills/bugfix-workflow/SKILL.md
 - ai/skills/ui-review/SKILL.md
 - ai/skills/security-review/SKILL.md
@@ -244,6 +267,7 @@ Check required files:
 - ai/skills/copy-review/SKILL.md
 - ai/skills/write-tests/SKILL.md
 - ai/skills/task-finish/SKILL.md
+- ai/skills/task-switch/SKILL.md
 - ai/skills/architecture-update/SKILL.md
 - ai/skills/environment-check/SKILL.md
 
@@ -255,7 +279,7 @@ Check expected external skills and tools:
 Check controlled external methodologies:
 - Superpowers
 
-Check optional external alternatives only if relevant:
+Check optional external alternatives only if relevant.
 
 Do not edit files.
 Do not install missing tools.
@@ -270,7 +294,6 @@ Return:
 
 Explain in Russian with simple words.
 ```
-
 
 ## Switch to another task safely
 
