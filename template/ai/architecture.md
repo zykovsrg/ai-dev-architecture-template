@@ -1,8 +1,8 @@
 # Архитектура AI-разработки
 
-Version: 5.6
+Version: 5.7
 
-Этот файл — короткий индекс системы разработки. Его не нужно загружать для каждой задачи. Читай его только если задача касается workflow, конфликтов правил, architecture-update или если правило неясно.
+Этот файл — справочник по workflow и иерархии правил. Его не нужно загружать для каждой задачи. Читай его только если задача касается workflow, конфликтов правил, architecture-update или если правило неясно.
 
 ## Главная идея
 
@@ -175,7 +175,7 @@ Project context:
 
 Target length: up to 150 lines.
 
-If project-context content becomes stale, do not only mention it in chat or changelog. Propose an `architecture-update` task and wait for confirmation before editing architecture or memory rules.
+If project-context content becomes stale, do not only mention it in chat or changelog. Propose a project-context update and wait for confirmation.
 
 ### ai/decisions.md
 
@@ -225,7 +225,7 @@ Persistent AI-facing instruction files should be in English:
 - `CLAUDE.md`
 - `ai/skills/*/SKILL.md`
 
-Project memory files may be in Russian or English:
+Repository reference and memory files may be in Russian or English:
 
 - `ai/current-task.md`
 - `ai/project-context.md`
@@ -257,9 +257,11 @@ Open only the skill that matches the current task. Do not load all skills automa
 
 ### UI changes and tests
 
-For UI changes, use `ui-review`.
+For UI behavior, screen state, layout logic, scrolling, rendering logic, or interaction changes, use `ui-review` and `write-tests`.
 
-Also use `write-tests` to make an explicit test decision. It is acceptable to conclude that automated tests are not practical for a visual-only change, but this must be stated by the test workflow and paired with manual checks.
+For purely decorative visual changes, use `ui-review`. Use `write-tests` only if behavior, state, layout logic, accessibility, or interaction can be affected.
+
+If automated tests are not practical for a UI change, provide a manual UI checklist.
 
 ### Bugfix and performance work
 
@@ -298,7 +300,7 @@ Expected external skills/tools:
 
 Controlled external methodologies:
 
-- `Superpowers` — checked at startup, but used only after explicit permission.
+- `Superpowers` — checked at startup, but activated only after explicit permission.
 
 ## Skill precedence
 
@@ -616,15 +618,7 @@ Monthly:
 
 Superpowers may be installed and checked, but it is a controlled external methodology.
 
-Use Superpowers only when:
-
-- the user explicitly asks to use it;
-- `ai/current-task.md` says `Use Superpowers: yes`;
-- the task is large, vague, risky, or requires design, TDD, or subagent-driven development.
-
-If a task matches Superpowers triggers, do not activate Superpowers automatically. First explain why it may help and ask: `Use Superpowers for this task?`
-
-Superpowers triggers include:
+Superpowers may be proposed for:
 
 - large or vague tasks;
 - architecture design;
@@ -635,6 +629,14 @@ Superpowers triggers include:
 - subagents;
 - major refactoring;
 - unclear blast radius.
+
+Superpowers may be activated only when:
+
+- the user explicitly asks to use it;
+- the user explicitly confirms the agent's proposal to use it;
+- `ai/current-task.md` says `Use Superpowers: yes`.
+
+Do not activate Superpowers automatically only because a task matches a trigger. First explain why it may help and ask: `Use Superpowers for this task?`
 
 Do not use Superpowers for:
 
