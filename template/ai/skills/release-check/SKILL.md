@@ -116,17 +116,21 @@ If `code-review-graph` should have been used but is unavailable, report it as a 
 
 If the change affects any of:
 
-- test framework
-- build tool or package manager
-- major library, ORM, or external API
-- directory or file structure
-- environment variables or config keys
-- coding conventions documented in `ai/project-context.md`
+- test framework;
+- build tool or package manager;
+- major library, ORM, or external API;
+- directory or file structure;
+- environment variables or config keys;
+- coding conventions documented in `ai/project-context.md`;
+- stack, commands, data model, invariants, or fragile zones documented in `ai/project-context.md`.
 
 Then:
 
-- Remind the user to update `ai/project-context.md` and relevant skills.
-- Recommend not merging until AI instructions reflect the new reality.
+- remind the user that `ai/project-context.md` may need a controlled memory update after confirmation;
+- if relevant skills or protected architecture files must change, recommend an `architecture-update` task;
+- recommend not merging until either the memory/instruction update is completed or the user explicitly accepts it as a follow-up.
+
+Do not treat `ai/project-context.md` and `ai/skills/*/SKILL.md` as the same class of file: `ai/project-context.md` is controlled memory, while skills are protected architecture files.
 
 ## Review fact check
 
