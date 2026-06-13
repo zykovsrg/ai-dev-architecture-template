@@ -109,10 +109,21 @@ Expected to be installed when available, but gated.
 Purpose:
 Spec-first planning, TDD-first development, subagent-driven development, stronger verification, and branch-finishing workflows.
 
-Use only when:
+May be proposed for:
+- large or vague tasks;
+- architecture design;
+- choosing between technical options;
+- data model changes;
+- migrations;
+- TDD;
+- subagents;
+- major refactoring;
+- unclear blast radius.
+
+May be activated only when:
 - the user explicitly asks to use Superpowers;
-- `ai/current-task.md` says `Use Superpowers: yes`;
-- the task is large, vague, risky, or requires design, TDD, or subagent-driven development.
+- the user explicitly confirms the agent's proposal to use Superpowers;
+- `ai/current-task.md` says `Use Superpowers: yes`.
 
 Do not use for:
 - small bugfixes;
