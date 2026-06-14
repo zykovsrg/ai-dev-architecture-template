@@ -62,6 +62,7 @@ Check that these files exist:
 - `ai/architecture.md`
 - `ai/current-task.md`
 - `ai/paused-tasks.md`
+- `ai/future-tasks.md`
 - `ai/project-context.md`
 - `ai/decisions.md`
 - `ai/changelog.md`
