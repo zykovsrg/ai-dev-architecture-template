@@ -4,6 +4,8 @@ Use this file only when an unfinished task is intentionally paused through `task
 
 Do not use it as a backlog.
 
+Do not use it for ideas or future implementation tasks. Use `ai/future-tasks.md` for that.
+
 Keep entries short.
 
 ## Template
