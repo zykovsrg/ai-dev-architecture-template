@@ -16,6 +16,12 @@ rsync -av --ignore-existing ~/Documents/ai-dev-architecture-template/template/ .
 
 Эта команда копирует только те файлы, которых ещё нет в проекте. Она не перезаписывает существующие файлы.
 
+После v6.0 проверь, появился ли новый файл:
+
+```bash
+test -f ai/future-tasks.md || cp ~/Documents/ai-dev-architecture-template/template/ai/future-tasks.md ai/future-tasks.md
+```
+
 ## 3. Не перезаписывать файлы вслепую
 
 Сначала сравни шаблон и проект:
@@ -48,6 +54,7 @@ diff -ru ~/Documents/ai-dev-architecture-template/template/ai/skills ./ai/skills
 
 - `ai/current-task.md`
 - `ai/paused-tasks.md`
+- `ai/future-tasks.md`
 - `ai/project-context.md`
 - `ai/decisions.md`
 - `ai/changelog.md`
@@ -56,6 +63,7 @@ diff -ru ~/Documents/ai-dev-architecture-template/template/ai/skills ./ai/skills
 
 - `ai/current-task.md` — через текущую задачу, `task-switch` или `task-finish`;
 - `ai/paused-tasks.md` — через `task-switch`;
+- `ai/future-tasks.md` — для будущих задач, которые явно сохранены пользователем или подтверждены как future task candidates;
 - `ai/project-context.md` — после подтверждения, если изменились стек, команды, структура, модель данных, инварианты или хрупкие зоны;
 - `ai/decisions.md` — когда появилось устойчивое решение, которое будущие агенты не должны сломать;
 - `ai/changelog.md` — для заметных изменений за последние 2–4 недели.
