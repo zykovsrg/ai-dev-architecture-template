@@ -32,6 +32,7 @@
 
 - `ai/current-task.md`
 - `ai/paused-tasks.md`
+- `ai/future-tasks.md`
 - `ai/project-context.md`
 - `ai/decisions.md`
 - `ai/changelog.md`
@@ -48,7 +49,8 @@
 | `.claude/` | только `architecture-update` после подтверждения |
 | `.codex/` | только `architecture-update` после подтверждения |
 | `ai/current-task.md` | `implementation`, `task-switch`, `task-finish`; не перезаписывать незавершённую задачу без подтверждения |
-| `ai/paused-tasks.md` | `task-switch`; также можно фиксировать removal task для TEMP diagnostics после подтверждения |
+| `ai/paused-tasks.md` | `task-switch`; также можно фиксировать removal task для TEMP diagnostics после подтверждённого `task-finish`, если это именно незавершённая работа |
+| `ai/future-tasks.md` | `implementation` после явной просьбы сохранить идею, `task-finish` после подтверждения кандидатов, `task-switch` при promotion |
 | `ai/project-context.md` | после подтверждения, если изменились стек, команды, структура, модель данных, инварианты или хрупкие зоны |
 | `ai/decisions.md` | `task-finish` или `architecture-update`, если появилось важное устойчивое решение |
 | `ai/changelog.md` | `task-finish` или заметное изменение в рамках реализации |
@@ -75,6 +77,7 @@
 - `ai/decisions.md`
 - `ai/changelog.md`
 - `ai/paused-tasks.md`
+- `ai/future-tasks.md`
 
 ## 6. Роли основных файлов
 
@@ -133,7 +136,28 @@ Stage: intake
 
 Это не backlog и не список идей.
 
-Если TEMP diagnostics закоммичены в main, здесь можно завести отдельную removal task с критериями удаления.
+Если TEMP diagnostics закоммичены в main, здесь можно завести отдельную removal task с критериями удаления только после подтверждённого workflow.
+
+### `ai/future-tasks.md`
+
+Список идей и будущих задач, которые не входят в текущий scope.
+
+Это backlog, но не активная работа.
+
+Используй для:
+
+- идей, которые появились во время реализации или ревью;
+- non-blocking follow-up investigations;
+- missing test seams, если они полезны, но не входят в текущую задачу;
+- крупных улучшений или рефакторингов на потом;
+- явных просьб пользователя: `запиши на потом`, `добавь в будущие задачи`, `потом надо сделать`.
+
+Не используй для:
+
+- незавершённой активной задачи — для этого `ai/paused-tasks.md`;
+- истории уже сделанных изменений — для этого `ai/changelog.md`;
+- устойчивых решений — для этого `ai/decisions.md`;
+- блокирующей уборки, без которой нельзя закрыть текущую задачу.
 
 ### `ai/project-context.md`
 
@@ -178,6 +202,8 @@ Stage: intake
 
 `decisions` отвечает на вопрос: что нельзя забыть и сломать в будущем.
 
+`future-tasks` отвечает на вопрос: что можно сделать позже, но не надо смешивать с текущей задачей.
+
 ### `ai/external-tools.md`
 
 Список ожидаемых внешних skills, tools и controlled methodologies.
@@ -210,11 +236,13 @@ Stage: intake
 
 Используется, когда текущая задача не завершена, а пользователь просит перейти к другой.
 
+Также используется, когда пользователь явно продвигает запись из `ai/future-tasks.md` в текущую задачу.
+
 ### `task-finish`
 
 Проверяет, можно ли закрыть задачу.
 
-После подтверждения пользователя может обновить `ai/changelog.md`, `ai/decisions.md` и очистить `ai/current-task.md`.
+После подтверждения пользователя может обновить `ai/changelog.md`, `ai/decisions.md`, подтверждённые записи в `ai/future-tasks.md` и очистить `ai/current-task.md`.
 
 ### `release-check`
 
@@ -227,3 +255,5 @@ Stage: intake
 Используется для багов, крашей, регрессий и performance-проблем.
 
 Для багов и performance-задач сначала нужен репро или замер. Если причина не доказана, итог фиксируется как mitigation, а не как доказанный root cause.
+
+Non-blocking follow-up work после диагностики предлагается для `ai/future-tasks.md`, а не добавляется в текущий bugfix scope.
