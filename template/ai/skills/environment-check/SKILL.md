@@ -76,6 +76,7 @@ Currently known optional project skills:
 - `ai/skills/frontend-design/SKILL.md`
 
 Missing optional project skills are not blockers.
+
 Report optional project skills as:
 
 - `present`
@@ -113,8 +114,52 @@ Return:
 6. Controlled external methodologies present, missing, or not confirmed.
 7. Whether the architecture is ready for the first task or resumed task.
 8. What to restore from the template if something required is missing.
+9. Available next commands and skills.
 
 Explain in Russian with simple words.
+
+## Available next commands and skills block
+
+Always end the environment-check response with a short block titled:
+
+```text
+Доступные следующие команды и skills
+```
+
+This block is a menu, not an instruction to run all workflows.
+Do not activate any listed skill automatically unless the user asks or the next task clearly triggers it.
+
+Include these base options:
+
+- `environment-check` — повторно проверить архитектуру после смены агента, нового чата или восстановления контекста.
+- `task-switch` — переключиться на другую задачу, поставить текущую на паузу или продвинуть future task в текущую задачу.
+- `task-finish` — проверить, можно ли закрыть текущую задачу, и выполнить cleanup после подтверждения.
+- `architecture-update` — изменить правила архитектуры, workflow, skills или защищённые architecture files.
+- `bugfix-workflow` — разбирать баги, регрессии, flaky behavior, debug requests и performance-проблемы.
+- `ui-review` — проверить UI, layout, визуальные состояния и поведение интерфейса.
+- `write-tests` — решить, нужны ли тесты, и добавить тесты для рискованных изменений.
+- `release-check` — проверить diff перед commit, merge или релизом.
+- `security-review` — проверить изменения на риски безопасности.
+- `copy-review` — проверить пользовательские тексты.
+- `future-tasks` — сохранить идею на потом в `ai/future-tasks.md`; отдельного skill нет.
+
+If optional project skills are present, add them under:
+
+```text
+Опционально доступно
+```
+
+Example:
+
+- `frontend-design` — UI/frontend/design задачи, если `ai/skills/frontend-design/SKILL.md` установлен.
+
+If expected external tools are present or not confirmed, mention them separately under:
+
+```text
+Внешние tools и methodologies
+```
+
+For Superpowers, always say that it is controlled and must not be activated automatically.
 
 ## Rules
 
