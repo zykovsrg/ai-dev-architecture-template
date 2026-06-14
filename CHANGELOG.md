@@ -1,5 +1,11 @@
 # Changelog
 
+## v6.3 — 2026-06-14
+
+- Updated `environment-check` to include a short snapshot of the current task and future tasks before the final commands/skills menu.
+- Clarified that the task snapshot is informational only and must not modify task memory or activate any workflow automatically.
+- Synced `AGENTS.md` and `CLAUDE.md` with the new post-check task snapshot rule.
+
 ## v6.2 — 2026-06-14
 
 - Added `scripts/update-installed-architecture.sh` for safe automated updates in projects where the architecture is already installed.
@@ -69,7 +75,7 @@
 ## v5.1 — 2026-05-17
 
 - Strengthened the task completion handoff rule.
-- If implementation or review suggests the current task may be complete, agents must not declare it closed.
+- If implementation or review suggests the current task may be complete, agents must not declare the task closed.
 - Agents must propose `task-finish` and wait for user confirmation before checking closure or cleaning `ai/current-task.md`.
 - Updated `AGENTS.md`, `CLAUDE.md`, `ai/architecture.md`, and `task-finish` skill.
 
@@ -78,11 +84,3 @@
 - Compacted `AGENTS.md` and `CLAUDE.md` after review and approval.
 - Added explicit rule that `ai/architecture.md` and skills are not loaded by default.
 - Added explicit skill trigger routing to `AGENTS.md` and `CLAUDE.md` so skills still activate predictably.
-- Added `workflow ambiguity, architecture rules, or architecture update: ai/architecture.md` as an on-demand context rule.
-- Updated `ai/architecture.md` with on-demand architecture and skill-trigger rules.
-
-## v4.9 — 2026-05-16
-
-- Strengthened the session start check rule.
-- When entering an existing project, switching tools, or continuing in a new chat, agents must run `environment-check` before suggesting next steps or starting implementation.
-- Agents may skip `environment-check` only if the user explicitly says not to run it.
