@@ -79,4 +79,18 @@ ai/skills/write-tests/SKILL.md
 
 `ai/external-tools.md` обычно не нужно менять после установки. Обновляй его только если меняется список ожидаемых внешних skills, tools или controlled methodologies.
 
+## 6. Запустить environment-check
+
+После установки попроси агента запустить `environment-check`.
+
+Проверка должна сказать:
+
+- какие обязательные файлы и skills на месте;
+- чего не хватает;
+- какие optional skills или external tools не подтверждены;
+- готова ли архитектура к первой задаче;
+- какие следующие commands и skills доступны.
+
+Финальный список commands и skills — это меню, а не команда запускать всё подряд.
+
 Готовые промты есть в `docs/prompts.md` и `docs/start-prompts.md`.
