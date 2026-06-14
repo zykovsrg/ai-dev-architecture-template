@@ -114,7 +114,7 @@ rsync -av --ignore-existing ~/Documents/ai-dev-architecture-template/template/ .
 - `task-finish` — проверяет, можно ли закрыть задачу, и чистит контекст после подтверждения.
 - `task-switch` — безопасно переключает незавершённые задачи.
 - `architecture-update` — меняет правила AI-разработки только после явного подтверждения.
-- `environment-check` — проверяет установку архитектуры и внешние tools.
+- `environment-check` — проверяет установку архитектуры и внешние tools; после проверки показывает меню доступных следующих commands и skills.
 
 Простые объяснения терминов — в `docs/concepts.md`.
 Готовые стартовые промты — в `docs/start-prompts.md`.
@@ -188,6 +188,8 @@ The architecture has four work modes:
 `environment-check` is not a work mode. It is an availability check for required base skills and expected external tools.
 
 Run `environment-check` when entering an existing project, switching tools or agents, continuing in a new chat, or continuing after compressed context, compacted context, restored summary, or conversation summary continuation.
+
+After `environment-check`, the agent must show a short menu of available next commands and skills. This menu is informational only and must not trigger any listed workflow automatically.
 
 ## Task switching
 
