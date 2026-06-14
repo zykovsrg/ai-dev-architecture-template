@@ -19,7 +19,7 @@ description: |
 
 Disciplined diagnosis workflow for hard bugs and performance regressions.
 
-Source of inspiration: Matt Pocock's `diagnose` skill. This project keeps its own architecture and adapts the method to `ai/current-task.md`, `ai/decisions.md`, `ai/changelog.md`, and `task-finish`.
+Source of inspiration: Matt Pocock's `diagnose` skill. This project keeps its own architecture and adapts the method to `ai/current-task.md`, `ai/decisions.md`, `ai/changelog.md`, `ai/future-tasks.md`, and `task-finish`.
 
 ## Core rule
 
@@ -45,6 +45,8 @@ The final report must say:
 - what follow-up would prove or disprove the root cause
 
 During confirmed `task-finish` cleanup, record the mitigation clearly in `ai/changelog.md` when it is notable enough for changelog history.
+
+Non-blocking follow-up investigations, missing test seams, and larger refactors discovered during diagnosis should be proposed for `ai/future-tasks.md`, not implemented inside the bugfix unless the user explicitly expands scope.
 
 ## Phase 1 — Build a feedback loop
 
@@ -123,6 +125,8 @@ If temporary diagnostics remain in main, do not write cleanup history directly. 
 
 If task memory is being maintained, add removal criteria to `ai/current-task.md` Done criteria or handoff notes when appropriate. Record the retained diagnostics in `ai/changelog.md` only during confirmed `task-finish` cleanup if the retention is notable. Do not update `ai/paused-tasks.md` unless the agent is running `task-switch`.
 
+Do not use `ai/future-tasks.md` for required TEMP diagnostic removal if the current task cannot safely close without that removal. Use `ai/future-tasks.md` only for non-blocking future improvements or investigations.
+
 ## Phase 5 — Fix and regression test
 
 Before fixing, decide whether a correct regression-test seam exists.
@@ -143,6 +147,7 @@ If no correct seam exists:
 2. Explain why available seams would give false confidence.
 3. Add the best practical check: integration test, manual checklist, profiler baseline, or reproduction script.
 4. Flag the missing seam as possible architecture debt if relevant.
+5. Propose a future task for the missing seam if it is useful but outside the current bugfix scope.
 
 ## Phase 6 — Verification handoff
 
@@ -154,11 +159,11 @@ Before saying the implementation is ready:
 4. Delete throwaway scripts, or move useful scripts to a clearly named debug or test location.
 5. State the proven root cause, or mark it as unproven.
 6. State why the fix is minimal and does not include unrelated refactoring.
-7. Mention any missing test seam, fragile area, or architecture follow-up.
+7. Mention any missing test seam, fragile area, architecture follow-up, or future task candidate.
 
 Then propose `task-finish` if the task appears complete.
 
-Do not run cleanup yourself. Do not update `ai/changelog.md`, `ai/decisions.md`, or clear `ai/current-task.md` unless the user confirms `task-finish` cleanup.
+Do not run cleanup yourself. Do not update `ai/changelog.md`, `ai/decisions.md`, `ai/future-tasks.md`, or clear `ai/current-task.md` unless the user confirms `task-finish` cleanup or explicitly asks to save a future task.
 
 ## Do not
 
@@ -169,3 +174,4 @@ Do not run cleanup yourself. Do not update `ai/changelog.md`, `ai/decisions.md`,
 - Do not present an unverified hypothesis as proven root cause.
 - Do not leave temporary diagnostics without a removal path.
 - Do not create `CONTEXT.md`, `docs/adr/`, or a parallel documentation system unless the project explicitly requires it.
+- Do not hide unresolved follow-up work in `ai/paused-tasks.md`; use `ai/future-tasks.md` only for non-blocking future work.
