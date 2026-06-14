@@ -42,12 +42,14 @@ docs/
   concepts.md
   install.md
   update.md
+  update-installed-projects.md
   file-roles.md
   prompts.md
   start-prompts.md
 
 scripts/
   install.sh
+  update-installed-architecture.sh
 ```
 
 ## Быстрая установка в проект
@@ -89,6 +91,33 @@ rsync -av --ignore-existing ~/Documents/ai-dev-architecture-template/template/ .
 - `ai/future-tasks.md`
 
 `ai/external-tools.md` обычно не нужно менять после установки. Обновляй его только если меняется список ожидаемых внешних skills, tools или controlled methodologies.
+
+## Быстрое обновление в уже используемом проекте
+
+Перейди в проект и сначала запусти dry run:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-template/main/scripts/update-installed-architecture.sh | bash -s -- --dry-run
+```
+
+Если diff нормальный, примени обновление и сразу закоммить:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-template/main/scripts/update-installed-architecture.sh | bash -s -- --apply --commit
+```
+
+Updater обновляет protected architecture files и base skills, но не перезаписывает рабочую память проекта:
+
+```text
+ai/project-context.md
+ai/current-task.md
+ai/decisions.md
+ai/changelog.md
+ai/paused-tasks.md
+ai/future-tasks.md
+```
+
+Подробная инструкция — в `docs/update-installed-projects.md`.
 
 ## Источник правды
 
