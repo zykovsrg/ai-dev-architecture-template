@@ -76,7 +76,7 @@ Common triggers:
 - tests or test decision: `ai/skills/write-tests/SKILL.md`
 - UI behavior, screen state, layout logic, or interaction: `ai/skills/ui-review/SKILL.md` and `ai/skills/write-tests/SKILL.md`
 - purely decorative visual UI change: `ai/skills/ui-review/SKILL.md`; use `write-tests` only if behavior, state, layout logic, or interaction can be affected
-- bugfix, regression, crash, or performance investigation: `ai/skills/bugfix-workflow/SKILL.md`
+- bugfix, regression, crash, flaky behavior, debug request, or performance investigation: `ai/skills/bugfix-workflow/SKILL.md`
 - architecture change: `ai/skills/architecture-update/SKILL.md`
 
 Read extra context only when relevant:
