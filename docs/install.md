@@ -48,6 +48,7 @@ ai/changelog.md
 ai/external-tools.md
 ai/current-task.md
 ai/paused-tasks.md
+ai/future-tasks.md
 ai/decisions.md
 ai/project-context.md
 ai/skills/architecture-update/SKILL.md
@@ -69,11 +70,12 @@ ai/skills/write-tests/SKILL.md
 - `ai/project-context.md`
 - `ai/current-task.md`
 
-Можно оставить пустыми шаблонами до появления реальных решений, изменений или пауз:
+Можно оставить пустыми шаблонами до появления реальных решений, изменений, пауз или будущих задач:
 
 - `ai/decisions.md`
 - `ai/changelog.md`
 - `ai/paused-tasks.md`
+- `ai/future-tasks.md`
 
 `ai/external-tools.md` обычно не нужно менять после установки. Обновляй его только если меняется список ожидаемых внешних skills, tools или controlled methodologies.
 
