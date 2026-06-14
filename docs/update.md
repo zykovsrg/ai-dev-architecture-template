@@ -78,6 +78,9 @@ diff -ru ~/Documents/ai-dev-architecture-template/template/ai/skills ./ai/skills
 4. Попроси агента предложить точные изменения.
 5. Применяй только одобренные изменения.
 6. Перед коммитом запусти `release-check`.
+7. После обновления запусти `environment-check` и проверь финальное меню доступных commands и skills.
+
+Меню после `environment-check` справочное. Оно не означает, что агент должен автоматически запускать `task-switch`, `task-finish`, `architecture-update` или другие workflow.
 
 ## 7. Когда полезен code-review-graph
 
