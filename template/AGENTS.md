@@ -10,6 +10,7 @@ Use this file as the short entry point. Detailed rules live in `ai/architecture.
 - Keep persistent AI-facing instructions in English.
 - Prefer minimal diffs and clean architecture.
 - Do not expand user-confirmed scope. If a larger scope looks useful, stop and ask first.
+- Capture useful out-of-scope ideas as future task candidates instead of implementing them inside the current task.
 - Do not mix refactoring with bugfixes unless explicitly asked.
 - Explain the reason and risks before changing storage, data model, dependencies, or architecture.
 - For risky changes, add tests or explain why tests are not practical and provide manual checks.
@@ -33,6 +34,7 @@ Controlled memory files store project and task memory. They may be edited only b
 
 - `ai/current-task.md`
 - `ai/paused-tasks.md`
+- `ai/future-tasks.md`
 - `ai/project-context.md`
 - `ai/decisions.md`
 - `ai/changelog.md`
@@ -70,7 +72,8 @@ Use skills by trigger. Do not apply a skill from memory. Open the current `ai/sk
 
 Common triggers:
 - environment check: `ai/skills/environment-check/SKILL.md` and `ai/external-tools.md`
-- task switching: `ai/skills/task-switch/SKILL.md` and `ai/paused-tasks.md`
+- task switching: `ai/skills/task-switch/SKILL.md`, `ai/current-task.md`, and `ai/paused-tasks.md`
+- future task capture or promotion: `ai/future-tasks.md`; no separate skill is required
 - task finish: `ai/skills/task-finish/SKILL.md`
 - release or merge: `ai/skills/release-check/SKILL.md`
 - tests or test decision: `ai/skills/write-tests/SKILL.md`
@@ -82,6 +85,7 @@ Common triggers:
 Read extra context only when relevant:
 - project behavior, storage, or UI: `ai/project-context.md`
 - architecture-sensitive work or durable invariants: `ai/decisions.md`
+- future task review, capture, or promotion: `ai/future-tasks.md`
 - workflow ambiguity or architecture update: `ai/architecture.md`
 - plan-driven or Superpowers execution: relevant `docs/superpowers/specs/*`, `docs/superpowers/plans/*`, and plan-driven rules in `ai/architecture.md`
 
@@ -112,4 +116,5 @@ After editing:
 - list checks;
 - mention risks or unfinished parts;
 - explicitly say whether task memory changed;
+- if task memory changed, list exact controlled memory files changed;
 - if the task appears complete, propose `task-finish` instead of saying the task is closed.
