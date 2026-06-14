@@ -1,5 +1,12 @@
 # Changelog
 
+## v5.9 — 2026-06-14
+
+- Fixed `bugfix-workflow` wording so mitigations are recorded in `ai/changelog.md` only during confirmed `task-finish` cleanup.
+- Clarified that retained temporary diagnostics must be reported in the verification handoff and, when needed, tracked in `ai/current-task.md` rather than written directly to cleanup history.
+- Clarified that `ai/paused-tasks.md` must not be updated by `bugfix-workflow`; it remains owned by `task-switch`.
+- Synced README skill routing with the current bugfix triggers: flaky behavior and debug requests.
+
 ## v5.8 — 2026-06-14
 
 - Documented the adapted diagnose-style loop inside `bugfix-workflow`.
