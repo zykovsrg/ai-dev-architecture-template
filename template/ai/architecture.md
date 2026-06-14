@@ -1,6 +1,6 @@
 # Архитектура AI-разработки
 
-Version: 5.8
+Version: 6.0
 
 Этот файл — справочник по workflow и иерархии правил. Его не нужно загружать для каждой задачи. Читай его только если задача касается workflow, конфликтов правил, architecture-update или если правило неясно.
 
@@ -11,11 +11,21 @@ Version: 5.8
 - Чат — временная рабочая память.
 - `AGENTS.md` и `CLAUDE.md` — короткие входные файлы для AI-агентов.
 - `ai/current-task.md` хранит текущую задачу.
+- `ai/paused-tasks.md` хранит незавершённые задачи, поставленные на паузу через `task-switch`.
+- `ai/future-tasks.md` хранит идеи и будущие задачи, которые не входят в текущий scope.
 - `ai/project-context.md` хранит проектный контекст.
 - `ai/decisions.md` хранит устойчивые решения и инварианты.
 - `ai/changelog.md` хранит последние заметные изменения.
 - `ai/skills/*/SKILL.md` хранит переиспользуемые процедуры.
 - Git хранит полную историю изменений.
+
+Главное правило для идей на потом:
+
+```text
+Future tasks are captured, not executed.
+```
+
+Если во время работы появляется полезная идея вне текущей задачи, агент должен защитить текущий scope: предложить записать идею в `ai/future-tasks.md`, но не реализовывать её без явного promotion.
 
 ## Режимы работы
 
@@ -85,6 +95,7 @@ Controlled memory files store project and task memory. They are not protected ar
 
 - `ai/current-task.md`
 - `ai/paused-tasks.md`
+- `ai/future-tasks.md`
 - `ai/project-context.md`
 - `ai/decisions.md`
 - `ai/changelog.md`
@@ -92,8 +103,10 @@ Controlled memory files store project and task memory. They are not protected ar
 Allowed edits:
 
 - `implementation`: may update `ai/current-task.md` when the current task itself changes, Stage changes, or needs handoff notes.
+- `implementation`: may update `ai/future-tasks.md` only when the user explicitly asks to save a future task or confirms a proposed future task candidate.
 - `task-switch`: may update `ai/current-task.md` and `ai/paused-tasks.md` only after explicit user confirmation.
-- `task-finish`: may update `ai/current-task.md`, `ai/changelog.md`, and `ai/decisions.md` only after explicit user confirmation.
+- `task-switch`: may promote an entry from `ai/future-tasks.md` into `ai/current-task.md` after explicit user confirmation.
+- `task-finish`: may update `ai/current-task.md`, `ai/changelog.md`, `ai/decisions.md`, and confirmed `ai/future-tasks.md` entries only after explicit user confirmation.
 - `architecture-update`: may update controlled memory files if the approved architecture change requires it.
 - `ai/project-context.md`: update only after confirmation when stack, commands, structure, data model, invariants, or fragile zones change.
 
@@ -160,6 +173,35 @@ Short list of tasks paused through `task-switch`.
 
 This is not a backlog. Use it only for unfinished tasks that need to be resumed.
 
+### ai/future-tasks.md
+
+Backlog of ideas and future implementation tasks that are useful but outside the current task scope.
+
+This is not active work and not paused work.
+
+Use it for:
+
+- ideas discovered during implementation or review;
+- non-blocking follow-up investigations;
+- missing test seams that are useful but outside the current task;
+- larger refactors or improvements that should not expand the current scope;
+- user requests like `запиши на потом`, `добавь в будущие задачи`, `потом надо сделать`.
+
+Do not use it for:
+
+- unfinished active work — use `ai/paused-tasks.md` through `task-switch`;
+- completed change history — use `ai/changelog.md`;
+- durable decisions and invariants — use `ai/decisions.md`;
+- blocking cleanup needed before the current task can close — keep it in `ai/current-task.md` or handle it before `task-finish`.
+
+Allowed statuses:
+
+```text
+idea / ready / blocked / promoted / done / dropped
+```
+
+A future task can become active only after explicit user instruction or confirmation. When promoted, copy it into `ai/current-task.md` and mark the original entry as `promoted`.
+
 ### ai/project-context.md
 
 Project context:
@@ -199,11 +241,13 @@ Used by `environment-check`.
 
 Missing optional skills and external tools are warnings, not blockers.
 
-## Changelog vs decisions
+## Changelog vs decisions vs future tasks
 
 Use `ai/changelog.md` for what changed recently.
 
 Use `ai/decisions.md` for what future agents must not forget or break.
+
+Use `ai/future-tasks.md` for what may be useful later but is not part of the current task.
 
 Put long-term rules in `ai/decisions.md`, not only in `ai/changelog.md`, when they affect:
 
@@ -216,6 +260,10 @@ Put long-term rules in `ai/decisions.md`, not only in `ai/changelog.md`, when th
 - external APIs;
 - architecture boundaries;
 - agent workflow that must persist across sessions.
+
+Do not write future plans into `ai/changelog.md` as if they were completed work.
+
+Do not write durable rules into `ai/future-tasks.md`; future tasks are work items, not decisions.
 
 ## Language
 
@@ -233,6 +281,7 @@ Repository reference and memory files may be in Russian or English:
 - `ai/decisions.md`
 - `ai/changelog.md`
 - `ai/paused-tasks.md`
+- `ai/future-tasks.md`
 
 The agent should communicate with the user in Russian and explain technical terms simply.
 
@@ -247,7 +296,7 @@ Base skills:
 - `copy-review` — user-facing text.
 - `write-tests` — test decision and tests for risky changes.
 - `task-finish` — closing a task and cleaning context after confirmation.
-- `task-switch` — switching between unfinished tasks without losing context.
+- `task-switch` — switching between unfinished tasks without losing context; may promote confirmed future tasks into current work.
 - `architecture-update` — updating development architecture after user approval.
 - `environment-check` — checking architecture installation and tool availability.
 
@@ -278,6 +327,7 @@ Skill: bugfix-workflow
 
 - `ai/current-task.md` for task scope and Done criteria;
 - `ai/decisions.md` for active invariants before architecture-sensitive changes;
+- `ai/future-tasks.md` for non-blocking follow-up work that must not expand the bugfix scope;
 - `task-finish` for completion checks and cleanup after user confirmation.
 
 It must not create `CONTEXT.md`, `docs/adr/`, or another parallel documentation system unless the project explicitly requires it.
@@ -305,6 +355,34 @@ Fix status: mitigated
 ```
 
 Record this in the final report and, when relevant, in `ai/changelog.md` during confirmed `task-finish` cleanup.
+
+### Future task capture
+
+Use future task capture when a useful idea appears but does not belong to the current confirmed scope.
+
+Typical triggers:
+
+- `запиши на потом`;
+- `добавь в будущие задачи`;
+- `потом надо сделать`;
+- `давай позже реализуем`;
+- a useful non-blocking improvement appears during implementation, review, bugfix, or task-finish.
+
+If the user explicitly asks to save it, append it to `ai/future-tasks.md`.
+
+If the idea appears implicitly, propose the future task first and wait for confirmation before editing.
+
+A future task entry should include:
+
+- short title;
+- status;
+- priority if clear;
+- source or context;
+- proposed task;
+- acceptance criteria;
+- promotion notes if needed.
+
+Do not implement a future task unless the user explicitly promotes it to the current task.
 
 ### Active decision check
 
@@ -377,6 +455,8 @@ Read `ai/project-context.md` only if the task concerns project behavior, archite
 
 Read `ai/decisions.md` only for architecture-sensitive tasks, durable invariants, or release checks where relevant.
 
+Read `ai/future-tasks.md` only when the user asks to capture, review, promote, search, or clean future tasks, or when a workflow explicitly needs it.
+
 Read `ai/architecture.md` only if the task concerns workflow, development architecture, rule conflicts, architecture-update, or if a rule is unclear.
 
 For plan-driven or Superpowers tasks, read only relevant files:
@@ -402,6 +482,8 @@ Do not list technical files before editing unless it helps the user understand t
 Do not expand user-confirmed scope.
 
 If it becomes useful to do more, stop and ask before adding new scope.
+
+If a useful idea is outside the current task, capture it as a future task candidate instead of implementing it.
 
 If a user request changes goal, work mode, relevant files, Done criteria, or creates a separate deliverable, decide whether `task-switch` is needed.
 
@@ -433,6 +515,7 @@ If task memory changed, list exact files:
 - `ai/decisions.md`
 - `ai/project-context.md`
 - `ai/paused-tasks.md`
+- `ai/future-tasks.md`
 
 ## Clean architecture principle
 
@@ -444,7 +527,7 @@ Temporary workarounds are allowed only as exceptions. If a workaround is used:
 2. Explain why it is needed now.
 3. Explain what risk it creates.
 4. Add a follow-up: what to replace, where, and when.
-5. Decide whether to record it in `ai/changelog.md` or `ai/decisions.md`.
+5. Decide whether to record it in `ai/changelog.md`, `ai/decisions.md`, or `ai/future-tasks.md`.
 
 Do not fix bugs in a way that worsens data model, screen consistency, or project readability.
 
@@ -459,9 +542,9 @@ Temporary diagnostic code in main is allowed only if intentionally kept for the 
 
 If TEMP diagnostics remain in main, create an explicit removal record in one of:
 
-- `ai/paused-tasks.md`;
+- `ai/paused-tasks.md` if the active task is being paused through `task-switch`;
 - Done criteria of `ai/current-task.md`;
-- `ai/changelog.md`.
+- `ai/changelog.md` during confirmed `task-finish` cleanup.
 
 The record must include:
 
@@ -472,6 +555,8 @@ The record must include:
 - risk if it stays too long.
 
 A note buried inside an unrelated task is not enough for committed TEMP diagnostics.
+
+Do not use `ai/future-tasks.md` for required TEMP diagnostic cleanup if the current task cannot safely close without that cleanup.
 
 ## Plan-driven work with Superpowers
 
@@ -523,6 +608,7 @@ Choice rule:
 - `docs/superpowers/plans/<plan>.md` — local reasons inside one plan.
 - `ai/decisions.md` — decisions future agents must remember outside the current plan.
 - `ai/changelog.md` — notable final changes, not every micro-step.
+- `ai/future-tasks.md` — future work that should not expand the current plan unless promoted.
 
 ### Commit convention
 
@@ -575,7 +661,8 @@ First show:
    - continue current task;
    - pause current task and start a new one;
    - finish current task through `task-finish`;
-   - discard current task and replace it.
+   - discard current task and replace it;
+   - promote a future task into `ai/current-task.md`.
 
 Only update `ai/current-task.md` after explicit user confirmation.
 
@@ -601,7 +688,7 @@ If unsure, ask:
 
 If the current task is paused, write a short entry to `ai/paused-tasks.md`.
 
-Do not use `ai/paused-tasks.md` as a backlog.
+Do not use `ai/paused-tasks.md` as a backlog. Use `ai/future-tasks.md` for future ideas and tasks.
 
 ## Architecture update
 
@@ -628,12 +715,14 @@ After each task:
 
 - update `ai/changelog.md` if there was a notable change;
 - update `ai/decisions.md` if an important durable decision appeared;
+- add confirmed out-of-scope follow-up work to `ai/future-tasks.md`;
 - clean `ai/current-task.md` only after user confirmation.
 
 Weekly:
 
 - shorten `ai/changelog.md`;
-- move old entries to `ai/archive/`.
+- move old entries to `ai/archive/`;
+- review `ai/future-tasks.md` and mark stale tasks as `dropped` after confirmation.
 
 Monthly:
 
