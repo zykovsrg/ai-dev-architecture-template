@@ -90,7 +90,7 @@ Steps:
 1. Add a short summary to `ai/changelog.md`.
 2. If the task introduced an important architecture, product, data model, workflow, storage, signing, sandboxing, sync, undo, or agent-process decision, add it to `ai/decisions.md`.
 3. If the user confirmed future task candidates, append them to `ai/future-tasks.md`.
-4. If temporary diagnostics remain, create or update a removal note in `ai/paused-tasks.md`, `ai/current-task.md` Done criteria, or `ai/changelog.md`.
+4. If temporary diagnostics remain, keep removal criteria in `ai/current-task.md` Done criteria or handoff notes. Record retained diagnostics in `ai/changelog.md` only during confirmed cleanup if the retention is notable. Do not write TEMP diagnostics cleanup work to `ai/paused-tasks.md`.
 5. Clean `ai/current-task.md`.
 6. Leave a blank template for the next task in `ai/current-task.md` with `Status: empty` and `Stage: intake`.
 
@@ -99,5 +99,5 @@ Rules:
 - Do not edit application files.
 - Do not change code.
 - Do not remove important unresolved risks.
-- If there are unresolved risks, move them to changelog, paused-tasks, future-tasks, or leave them in the new task template depending on whether they are completed history, paused active work, future ideas, or blocking current context.
+- If there are unresolved risks, move them to changelog, future-tasks, or leave them in the new task template depending on whether they are completed history, future ideas, or blocking current context. Use `ai/paused-tasks.md` only for paused active work created through `task-switch`.
 - Do not add minor implementation details to `ai/decisions.md`.
