@@ -8,6 +8,7 @@
 - переходить между AI-агентами без потери контекста задачи;
 - тратить меньше токенов;
 - не копить скрытый технический долг;
+- отделять текущую задачу от будущих идей;
 - отделять проектные правила от универсальных правил работы агента.
 
 ## Структура репозитория
@@ -20,6 +21,7 @@ template/
     architecture.md
     current-task.md
     paused-tasks.md
+    future-tasks.md
     project-context.md
     decisions.md
     changelog.md
@@ -84,6 +86,7 @@ rsync -av --ignore-existing ~/Documents/ai-dev-architecture-template/template/ .
 - `ai/decisions.md`
 - `ai/changelog.md`
 - `ai/paused-tasks.md`
+- `ai/future-tasks.md`
 
 `ai/external-tools.md` обычно не нужно менять после установки. Обновляй его только если меняется список ожидаемых внешних skills, tools или controlled methodologies.
 
@@ -102,6 +105,7 @@ rsync -av --ignore-existing ~/Documents/ai-dev-architecture-template/template/ .
 - `CLAUDE.md` — входной файл для Claude Code.
 - `ai/current-task.md` — текущая задача.
 - `ai/paused-tasks.md` — задачи, временно поставленные на паузу через `task-switch`.
+- `ai/future-tasks.md` — идеи и будущие задачи, которые не входят в текущий scope.
 - `ai/project-context.md` — проектный контекст и инварианты.
 - `ai/decisions.md` — устойчивые решения и инварианты, которые будущие агенты не должны сломать.
 - `ai/changelog.md` — последние заметные изменения.
@@ -137,6 +141,7 @@ rsync -av --ignore-existing ~/Documents/ai-dev-architecture-template/template/ .
 
 - `ai/current-task.md`
 - `ai/paused-tasks.md`
+- `ai/future-tasks.md`
 - `ai/project-context.md`
 - `ai/decisions.md`
 - `ai/changelog.md`
@@ -144,7 +149,8 @@ rsync -av --ignore-existing ~/Documents/ai-dev-architecture-template/template/ .
 Примеры:
 
 - `task-switch` может менять `ai/current-task.md` и `ai/paused-tasks.md` после подтверждения;
-- `task-finish` может менять `ai/current-task.md`, `ai/changelog.md` и `ai/decisions.md` после подтверждения;
+- `task-switch` может продвинуть запись из `ai/future-tasks.md` в `ai/current-task.md` после подтверждения;
+- `task-finish` может менять `ai/current-task.md`, `ai/changelog.md`, `ai/decisions.md` и подтверждённые записи в `ai/future-tasks.md`;
 - `ai/project-context.md` меняется только если изменились стек, команды, структура, модель данных, инварианты или хрупкие зоны.
 
 ## Skill routing
@@ -153,6 +159,7 @@ rsync -av --ignore-existing ~/Documents/ai-dev-architecture-template/template/ .
 
 - UI-задачи: `ui-review` + `write-tests`.
 - Баги, краши, регрессии, flaky behavior, debug requests, performance: `bugfix-workflow`.
+- Идеи на потом и будущие задачи: записывать в `ai/future-tasks.md`; отдельный skill не нужен.
 - Pre-merge или сложное review: `release-check`; если доступен и нужен — `code-review-graph`.
 - Закрытие задачи: `task-finish`.
 - Переключение задачи: `task-switch`.
@@ -189,5 +196,7 @@ If `ai/current-task.md` has an unfinished task and the user asks for a different
 The agent should use `task-switch`, show the current task, the new task, the risk of switching, and ask for confirmation.
 
 Paused tasks are stored briefly in `ai/paused-tasks.md`.
+
+Future ideas are stored separately in `ai/future-tasks.md`.
 
 A request is treated as a different task when it changes the goal, work mode, main files, Done criteria, or creates a separate deliverable.
