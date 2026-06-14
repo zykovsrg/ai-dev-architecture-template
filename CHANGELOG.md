@@ -6,6 +6,9 @@
 - Clarified that the menu must not activate any listed workflow automatically.
 - Synced `README.md` and docs with the new post-check output rule.
 - Fixed stale documentation that still allowed TEMP diagnostics cleanup work to be stored in `ai/paused-tasks.md`; paused tasks remain owned by `task-switch`.
+- Removed the remaining `task-finish` cleanup wording that allowed TEMP diagnostics removal notes in `ai/paused-tasks.md`.
+- Restricted `ai/changelog.md` updates in `docs/file-roles.md` to confirmed `task-finish` or approved `architecture-update` workflows.
+- Updated `scripts/install.sh` next steps to run `environment-check` and treat its final menu as informational.
 
 ## v6.0 — 2026-06-14
 
@@ -124,7 +127,6 @@
   - state `Mode: ...`;
   - briefly explain what will be done next in simple words;
   - mention important risks only if they exist.
-- Clarified that technical file lists are optional unless useful or requested by the user.
 
 ## v4.2 — 2026-05-15
 
