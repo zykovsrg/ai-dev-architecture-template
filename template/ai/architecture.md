@@ -1,6 +1,6 @@
 # Архитектура AI-разработки
 
-Version: 5.7
+Version: 5.8
 
 Этот файл — справочник по workflow и иерархии правил. Его не нужно загружать для каждой задачи. Читай его только если задача касается workflow, конфликтов правил, architecture-update или если правило неясно.
 
@@ -240,7 +240,7 @@ The agent should communicate with the user in Russian and explain technical term
 
 Base skills:
 
-- `bugfix-workflow` — bugs, regressions, crashes, performance problems, broken state.
+- `bugfix-workflow` — bugs, regressions, crashes, flaky behavior, debug requests, performance investigations, and broken state; uses a diagnose-style loop.
 - `ui-review` — user-visible UI, layout, visual states, interaction feedback.
 - `security-review` — security risks.
 - `release-check` — pre-commit, pre-merge, build, or release review.
@@ -265,7 +265,35 @@ If automated tests are not practical for a UI change, provide a manual UI checkl
 
 ### Bugfix and performance work
 
-For bugs, crashes, regressions, and performance work, use `bugfix-workflow`.
+For bugs, crashes, regressions, flaky behavior, debug requests, and performance investigations, use `bugfix-workflow`.
+
+There is no separate `Mode: bugfix`. Treat bug work as:
+
+```text
+Mode: implementation
+Skill: bugfix-workflow
+```
+
+`bugfix-workflow` adapts Matt Pocock's `diagnose` method to this architecture. It must use this repository's sources of truth:
+
+- `ai/current-task.md` for task scope and Done criteria;
+- `ai/decisions.md` for active invariants before architecture-sensitive changes;
+- `task-finish` for completion checks and cleanup after user confirmation.
+
+It must not create `CONTEXT.md`, `docs/adr/`, or another parallel documentation system unless the project explicitly requires it.
+
+Use the diagnose-style loop:
+
+1. Build the fastest practical feedback loop.
+2. Reproduce the issue before changing code, or state why it cannot be reproduced.
+3. Minimize the reproduction to the smallest useful scenario.
+4. Generate 3–5 falsifiable hypotheses.
+5. Test hypotheses with targeted instrumentation.
+6. Apply the smallest clean fix.
+7. Add or update a regression test when a correct test seam exists.
+8. Re-run the original reproduction or measurement loop.
+9. Remove temporary diagnostics unless intentionally kept with a removal record.
+10. Propose `task-finish` if the task appears complete.
 
 Do not write a full spec or implementation plan based only on an unverified hypothesis.
 
@@ -276,7 +304,7 @@ Root cause: unproven
 Fix status: mitigated
 ```
 
-Record this in the final report and, when relevant, in `ai/changelog.md`.
+Record this in the final report and, when relevant, in `ai/changelog.md` during confirmed `task-finish` cleanup.
 
 ### Active decision check
 
