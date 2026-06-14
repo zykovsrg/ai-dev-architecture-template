@@ -1,5 +1,12 @@
 # Changelog
 
+## v6.1 — 2026-06-14
+
+- Updated `environment-check` to end with an informational menu of available next commands and skills.
+- Clarified that the menu must not activate any listed workflow automatically.
+- Synced `README.md`, `ai/architecture.md`, and docs with the new post-check output rule.
+- Fixed stale documentation that still allowed TEMP diagnostics cleanup work to be stored in `ai/paused-tasks.md`; paused tasks remain owned by `task-switch`.
+
 ## v6.0 — 2026-06-14
 
 - Added `ai/future-tasks.md` as a controlled memory file for out-of-scope ideas and future implementation tasks.
@@ -138,5 +145,6 @@
 - Added `docs/start-prompts.md`.
 - Added two ready-to-copy start prompts:
   - first architecture installation in a project;
-  - starting a new chat inside an already configured project.
-- Linked `docs/start-prompts.md` from `README.md`.
+  - continuation in a new chat or another agent.
+- Added `scripts/install.sh` for copying the template into projects without overwriting existing files.
+- Updated README structure and installation instructions.
