@@ -1,5 +1,13 @@
 # Changelog
 
+## v6.2 — 2026-06-14
+
+- Added `scripts/update-installed-architecture.sh` for safe automated updates in projects where the architecture is already installed.
+- Added `docs/update-installed-projects.md` with dry-run, apply, commit, local-source, and multi-project update workflows.
+- Clarified that updater overwrites protected architecture files and base skills, but never overwrites controlled memory files.
+- Updated `README.md` and `docs/update.md` to prefer the updater workflow for existing projects.
+- Updated `MANIFEST.json` to include previously missing files and the new updater files.
+
 ## v6.1 — 2026-06-14
 
 - Updated `environment-check` to end with an informational menu of available next commands and skills.
@@ -78,75 +86,3 @@
 - Strengthened the session start check rule.
 - When entering an existing project, switching tools, or continuing in a new chat, agents must run `environment-check` before suggesting next steps or starting implementation.
 - Agents may skip `environment-check` only if the user explicitly says not to run it.
-- Updated `AGENTS.md`, `CLAUDE.md`, and `ai/architecture.md`.
-
-## v4.8 — 2026-05-16
-
-- Added a required mode line to the final report after edits.
-- After editing, agents must start the report with the work mode used, for example `Mode: implementation`.
-- Updated `AGENTS.md`, `CLAUDE.md`, and `ai/architecture.md`.
-
-## v4.7 — 2026-05-16
-
-- Added a scope control rule.
-- Agents must not expand user-confirmed scope during implementation.
-- If a larger scope looks useful, the agent must stop and ask before adding it.
-- Added the rule to `AGENTS.md`, `CLAUDE.md`, and `ai/architecture.md`.
-
-## v4.6 — 2026-05-16
-
-- Added a required task memory reporting rule after edits.
-- Agents must explicitly say whether task memory changed.
-- If task memory changed, agents must list the exact files changed:
-  - `ai/current-task.md`
-  - `ai/changelog.md`
-  - `ai/decisions.md`
-  - `ai/project-context.md`
-  - `ai/paused-tasks.md`
-- Updated `AGENTS.md`, `CLAUDE.md`, and `ai/architecture.md`.
-
-## v4.5 — 2026-05-16
-
-- Added a Superpowers trigger proposal rule.
-- Agents must not activate Superpowers automatically when a task looks complex.
-- If a task matches Superpowers triggers, the agent must explain why Superpowers may help and ask: `Use Superpowers for this task?`
-- Added explicit Superpowers triggers: large or vague tasks, architecture design, technical choices, data model changes, migrations, TDD, subagents, major refactoring, and unclear blast radius.
-- Updated `AGENTS.md`, `CLAUDE.md`, and `ai/architecture.md`.
-
-## v4.4 — 2026-05-16
-
-- Clarified the difference between `review` and `implementation` modes.
-- `review` now explicitly covers reading files, summarizing context, inspecting project state, running `environment-check`, and suggesting the next step without editing.
-- `implementation` is now reserved for changes to application code, project files, tests, or task memory.
-- Updated `AGENTS.md`, `CLAUDE.md`, and `ai/architecture.md`.
-
-## v4.3 — 2026-05-16
-
-- Simplified the pre-edit communication format for a non-developer user.
-- Replaced mandatory `Files to change / Risks / Minimal plan` with a shorter rule:
-  - state `Mode: ...`;
-  - briefly explain what will be done next in simple words;
-  - mention important risks only if they exist.
-
-## v4.2 — 2026-05-15
-
-- Added explicit work mode declaration rule.
-- `AGENTS.md` and `CLAUDE.md` now require the agent to state `Mode: ...` before task work.
-- Before editing, the agent must explicitly state the current work mode.
-- `ai/architecture.md` documents the same rule.
-
-## v4.1 — 2026-05-15
-
-- Fixed documentation inconsistencies after v4.0.
-- Updated `template/ai/architecture.md` version to `4.1`.
-- Added `ai/paused-tasks.md` and `ai/external-tools.md` to the README repository tree.
-- Added `task-switch` and `environment-check` to README main concepts.
-
-## v4.0 — 2026-05-15
-
-- Added `docs/start-prompts.md`.
-- Added two ready-to-copy start prompts:
-  - first architecture installation in a project;
-  - continuation in a new chat or another agent.
-- Added `scripts/install.sh` for copying the template into projects without overwriting existing files.
-- Updated README structure and installation instructions.
