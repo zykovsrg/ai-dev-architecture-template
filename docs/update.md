@@ -1,13 +1,69 @@
 # Инструкция по обновлению
 
-## 1. Обновить репозиторий шаблона
+Для уже используемых проектов основной способ обновления — автоматический updater:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-template/main/scripts/update-installed-architecture.sh | bash -s -- --dry-run
+```
+
+Если diff нормальный:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-template/main/scripts/update-installed-architecture.sh | bash -s -- --apply --commit
+```
+
+Подробная инструкция — в `docs/update-installed-projects.md`.
+
+## Что делает updater
+
+Updater обновляет protected architecture files:
+
+```text
+AGENTS.md
+CLAUDE.md
+ai/architecture.md
+ai/external-tools.md
+ai/skills/*
+```
+
+Controlled memory files не перезаписываются:
+
+```text
+ai/current-task.md
+ai/paused-tasks.md
+ai/future-tasks.md
+ai/project-context.md
+ai/decisions.md
+ai/changelog.md
+```
+
+Если controlled memory file отсутствует, updater создаёт его из шаблона. Если файл уже есть, он остаётся как есть.
+
+## 1. Обновить репозиторий шаблона вручную
+
+Если используешь локальный клон шаблона:
 
 ```bash
 cd ~/Documents/ai-dev-architecture-template
 git pull origin main
 ```
 
-## 2. Добавить новые файлы шаблона в проект
+## 2. Запустить updater из локального клона
+
+```bash
+cd /path/to/project
+bash ~/Documents/ai-dev-architecture-template/scripts/update-installed-architecture.sh --source ~/Documents/ai-dev-architecture-template --dry-run
+```
+
+Применить и закоммитить:
+
+```bash
+bash ~/Documents/ai-dev-architecture-template/scripts/update-installed-architecture.sh --source ~/Documents/ai-dev-architecture-template --apply --commit
+```
+
+## 3. Если updater недоступен
+
+Можно вручную добавить новые файлы шаблона без перезаписи существующих файлов:
 
 ```bash
 cd /path/to/project
@@ -22,7 +78,7 @@ rsync -av --ignore-existing ~/Documents/ai-dev-architecture-template/template/ .
 test -f ai/future-tasks.md || cp ~/Documents/ai-dev-architecture-template/template/ai/future-tasks.md ai/future-tasks.md
 ```
 
-## 3. Не перезаписывать файлы вслепую
+## 4. Не перезаписывать файлы вслепую
 
 Сначала сравни шаблон и проект:
 
@@ -34,7 +90,7 @@ diff -ru ~/Documents/ai-dev-architecture-template/template/ai/external-tools.md 
 diff -ru ~/Documents/ai-dev-architecture-template/template/ai/skills ./ai/skills
 ```
 
-## 4. Protected architecture files
+## 5. Protected architecture files
 
 Эти файлы задают правила работы агентов. Обновляй их только через `architecture-update` и после подтверждения пользователя:
 
@@ -48,7 +104,7 @@ diff -ru ~/Documents/ai-dev-architecture-template/template/ai/skills ./ai/skills
 
 При обновлении существующего проекта не копируй их поверх текущих файлов без diff и ревью.
 
-## 5. Controlled memory files
+## 6. Controlled memory files
 
 Эти файлы содержат память конкретного проекта. Не заменяй их шаблоном:
 
@@ -66,23 +122,22 @@ diff -ru ~/Documents/ai-dev-architecture-template/template/ai/skills ./ai/skills
 - `ai/future-tasks.md` — для будущих задач, которые явно сохранены пользователем или подтверждены как future task candidates;
 - `ai/project-context.md` — после подтверждения, если изменились стек, команды, структура, модель данных, инварианты или хрупкие зоны;
 - `ai/decisions.md` — когда появилось устойчивое решение, которое будущие агенты не должны сломать;
-- `ai/changelog.md` — для заметных изменений за последние 2–4 недели.
+- `ai/changelog.md` — через подтверждённый `task-finish` или approved `architecture-update`.
 
-## 6. Правило безопасного обновления
+## 7. Правило безопасного обновления
 
 Для уже существующего проекта:
 
-1. Сравни файлы шаблона и проекта.
-2. Отдели protected architecture files от controlled memory files.
-3. Сохрани проектные добавления.
-4. Попроси агента предложить точные изменения.
-5. Применяй только одобренные изменения.
-6. Перед коммитом запусти `release-check`.
-7. После обновления запусти `environment-check` и проверь финальное меню доступных commands и skills.
+1. Запусти updater в `--dry-run`.
+2. Сравни protected architecture files и controlled memory files.
+3. Убедись, что проектные добавления не будут потеряны.
+4. Применяй обновление только если diff понятен.
+5. Перед merge или релизом запусти `release-check`.
+6. После обновления запусти `environment-check` и проверь финальное меню доступных commands и skills.
 
 Меню после `environment-check` справочное. Оно не означает, что агент должен автоматически запускать `task-switch`, `task-finish`, `architecture-update` или другие workflow.
 
-## 7. Когда полезен code-review-graph
+## 8. Когда полезен code-review-graph
 
 Предложи `code-review-graph`, если:
 
