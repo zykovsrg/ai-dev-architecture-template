@@ -49,6 +49,8 @@ Compressed context, compacted context, restored summary, or conversation summary
 
 `environment-check` and `task-switch` are not work modes. After `environment-check`, continue in a work mode.
 
+A successful `environment-check` response must end with a short menu of available next commands and skills. This menu is informational and must not automatically activate the listed workflows.
+
 ## Work modes
 
 State the mode explicitly before task work as `Mode: ...`.
