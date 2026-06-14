@@ -1,5 +1,13 @@
 # Changelog
 
+## v6.0 — 2026-06-14
+
+- Added `ai/future-tasks.md` as a controlled memory file for out-of-scope ideas and future implementation tasks.
+- Clarified that `ai/paused-tasks.md` is only for interrupted active work and must not be used as a backlog.
+- Added future task capture and promotion rules to `AGENTS.md`, `CLAUDE.md`, `ai/architecture.md`, `task-switch`, `task-finish`, and `bugfix-workflow`.
+- Updated `environment-check` so `ai/future-tasks.md` is a required entry file.
+- Updated README and docs to include the new file role and safe update instructions.
+
 ## v5.9 — 2026-06-14
 
 - Fixed `bugfix-workflow` wording so mitigations are recorded in `ai/changelog.md` only during confirmed `task-finish` cleanup.
