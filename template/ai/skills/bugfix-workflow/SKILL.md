@@ -35,12 +35,16 @@ First build evidence:
 4. Identify the smallest likely affected area.
 5. Check relevant active invariants in `ai/decisions.md` before changing architecture-sensitive code.
 
-If the issue cannot be reproduced, the fix can still be shipped as a mitigation, but the final report and `ai/changelog.md` must say:
+If the issue cannot be reproduced, the fix can still be shipped as a mitigation.
+
+The final report must say:
 
 - `Root cause: unproven`
 - `Fix status: mitigated`
 - what evidence supports the mitigation
 - what follow-up would prove or disprove the root cause
+
+During confirmed `task-finish` cleanup, record the mitigation clearly in `ai/changelog.md` when it is notable enough for changelog history.
 
 ## Phase 1 — Build a feedback loop
 
@@ -109,13 +113,15 @@ Rules:
 
 Temporary diagnostic code may be committed only when keeping it is intentional and useful for the next step.
 
-If temporary diagnostics remain in main, create an explicit removal record in `ai/paused-tasks.md`, `ai/current-task.md` Done criteria, or `ai/changelog.md`:
+If temporary diagnostics remain in main, do not write cleanup history directly. In the verification handoff, report:
 
 - diagnostic code location;
 - why it remains;
 - when to remove it;
 - removal criteria;
 - risk if it stays too long.
+
+If task memory is being maintained, add removal criteria to `ai/current-task.md` Done criteria or handoff notes when appropriate. Record the retained diagnostics in `ai/changelog.md` only during confirmed `task-finish` cleanup if the retention is notable. Do not update `ai/paused-tasks.md` unless the agent is running `task-switch`.
 
 ## Phase 5 — Fix and regression test
 
