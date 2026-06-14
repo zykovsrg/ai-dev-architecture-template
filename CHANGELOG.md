@@ -4,7 +4,7 @@
 
 - Updated `environment-check` to end with an informational menu of available next commands and skills.
 - Clarified that the menu must not activate any listed workflow automatically.
-- Synced `README.md`, `ai/architecture.md`, and docs with the new post-check output rule.
+- Synced `README.md` and docs with the new post-check output rule.
 - Fixed stale documentation that still allowed TEMP diagnostics cleanup work to be stored in `ai/paused-tasks.md`; paused tasks remain owned by `task-switch`.
 
 ## v6.0 — 2026-06-14
