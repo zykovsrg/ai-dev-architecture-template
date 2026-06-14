@@ -1,6 +1,6 @@
 # Архитектура AI-разработки
 
-Version: 6.0
+Version: 6.1
 
 Этот файл — справочник по workflow и иерархии правил. Его не нужно загружать для каждой задачи. Читай его только если задача касается workflow, конфликтов правил, architecture-update или если правило неясно.
 
@@ -63,6 +63,21 @@ Compressed context, compacted context, restored summary, and conversation summar
 Skip only if the user explicitly says not to run `environment-check`.
 
 This check is not a deep audit. It is a quick availability check.
+
+After a successful `environment-check`, the agent must show a short "Available next commands and skills" menu.
+
+The menu must include only available workflows/skills relevant to this architecture, for example:
+
+```text
+- `environment-check` — re-run the installation and environment availability check.
+- `task-switch` — pause the current task, resume a paused task, or promote a confirmed future task.
+- `task-finish` — verify whether the current task is complete and run cleanup only after confirmation.
+- `architecture-update` — propose and apply approved architecture changes.
+- `bugfix-workflow` — diagnose bugs, regressions, flaky behavior, debug requests, crashes, and performance issues.
+- `future-tasks` — record useful ideas that should not expand the current task scope.
+```
+
+This menu is informational. The agent must not start any listed workflow automatically unless the user explicitly chooses it.
 
 After `environment-check`, continue in one of the work modes:
 
@@ -298,7 +313,7 @@ Base skills:
 - `task-finish` — closing a task and cleaning context after confirmation.
 - `task-switch` — switching between unfinished tasks without losing context; may promote confirmed future tasks into current work.
 - `architecture-update` — updating development architecture after user approval.
-- `environment-check` — checking architecture installation and tool availability.
+- `environment-check` — checking architecture installation, tool availability, and printing the available next commands/skills menu.
 
 Use skills by trigger. Do not apply skills from memory. Open the current `ai/skills/*/SKILL.md` before using that workflow.
 
