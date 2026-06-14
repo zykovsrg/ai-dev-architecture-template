@@ -49,7 +49,7 @@
 | `.claude/` | только `architecture-update` после подтверждения |
 | `.codex/` | только `architecture-update` после подтверждения |
 | `ai/current-task.md` | `implementation`, `task-switch`, `task-finish`; не перезаписывать незавершённую задачу без подтверждения |
-| `ai/paused-tasks.md` | `task-switch`; также можно фиксировать removal task для TEMP diagnostics после подтверждённого `task-finish`, если это именно незавершённая работа |
+| `ai/paused-tasks.md` | только `task-switch`; не использовать как backlog, future tasks или список cleanup-работ |
 | `ai/future-tasks.md` | `implementation` после явной просьбы сохранить идею, `task-finish` после подтверждения кандидатов, `task-switch` при promotion |
 | `ai/project-context.md` | после подтверждения, если изменились стек, команды, структура, модель данных, инварианты или хрупкие зоны |
 | `ai/decisions.md` | `task-finish` или `architecture-update`, если появилось важное устойчивое решение |
@@ -134,9 +134,7 @@ Stage: intake
 
 Короткий список задач, которые временно поставили на паузу через `task-switch`.
 
-Это не backlog и не список идей.
-
-Если TEMP diagnostics закоммичены в main, здесь можно завести отдельную removal task с критериями удаления только после подтверждённого workflow.
+Это не backlog, не список идей и не место для cleanup-работ.
 
 ### `ai/future-tasks.md`
 
@@ -229,6 +227,8 @@ Stage: intake
 Это не work mode и не глубокий аудит.
 
 Запускается при новой сессии, новом чате, смене tools/агента и после compressed context или restored summary.
+
+После проверки агент должен вывести короткое меню доступных следующих commands и skills. Это меню справочное: оно не запускает `task-switch`, `task-finish`, `architecture-update` или другие workflow автоматически.
 
 ### `task-switch`
 
