@@ -2,7 +2,7 @@
 name: environment-check
 type: knowledge
 description: |
-  Use at the start of a new project session to check whether required base skills, optional project skills, and expected external skills/tools are available.
+  Use at the start of a new project session to check whether required base skills, optional project skills, expected external skills/tools, current task state, and future task state are available.
   Activates when:
   - starting work in a project after installing the architecture
   - entering an existing project
@@ -102,6 +102,48 @@ Controlled external methodologies:
 Do not install missing external tools automatically.
 If a tool cannot be verified, report it as `not confirmed`.
 
+## Current and future task snapshot
+
+Read:
+
+- `ai/current-task.md`
+- `ai/future-tasks.md`
+
+Include a short task snapshot in the response before the final commands/skills menu.
+
+Use the title:
+
+```text
+Текущая и будущие задачи
+```
+
+For `ai/current-task.md`, report only the operational summary:
+
+- current task title or short goal, if present;
+- `Status`;
+- `Stage`;
+- next step or open blocker, if obvious from the file.
+
+If there is no active task, say that no active current task is recorded.
+
+For `ai/future-tasks.md`, report only a compact summary:
+
+- total number of future task entries, if easy to count;
+- count by status, if statuses are present;
+- up to 5 active useful entries, prioritizing `ready`, `idea`, and `blocked`.
+
+If `ai/future-tasks.md` is empty, say that no future tasks are recorded.
+
+Do not paste the full files. Do not rewrite task wording unless summarizing for readability.
+
+This snapshot is informational. It must not:
+
+- edit `ai/current-task.md`;
+- edit `ai/future-tasks.md`;
+- promote a future task;
+- mark a task as done, dropped, or paused;
+- start `task-switch` or `task-finish` automatically.
+
 ## Output
 
 Return:
@@ -112,9 +154,11 @@ Return:
 4. Expected external tools present.
 5. Expected external tools missing or not confirmed.
 6. Controlled external methodologies present, missing, or not confirmed.
-7. Whether the architecture is ready for the first task or resumed task.
-8. What to restore from the template if something required is missing.
-9. Available next commands and skills.
+7. Current task snapshot.
+8. Future tasks snapshot.
+9. Whether the architecture is ready for the first task or resumed task.
+10. What to restore from the template if something required is missing.
+11. Available next commands and skills.
 
 Explain in Russian with simple words.
 
@@ -168,5 +212,7 @@ For Superpowers, always say that it is controlled and must not be activated auto
 - Do not treat missing external tools as blockers, but report them clearly.
 - Do not install missing tools without explicit user confirmation.
 - Do not change application code.
+- Do not edit controlled memory files during environment-check.
+- Do not promote, pause, finish, drop, or start tasks during environment-check.
 - Do not activate Superpowers during environment check. Only report whether it is present, missing, or not confirmed.
 - Superpowers is a controlled methodology, not the default workflow.
