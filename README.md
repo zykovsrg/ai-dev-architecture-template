@@ -152,7 +152,7 @@ rsync -av --ignore-existing ~/Documents/ai-dev-architecture-template/template/ .
 Если задача попадает под trigger skill, агент должен открыть актуальный `ai/skills/*/SKILL.md`. Не нужно применять skill по памяти.
 
 - UI-задачи: `ui-review` + `write-tests`.
-- Баги, краши, регрессии, performance: `bugfix-workflow`.
+- Баги, краши, регрессии, flaky behavior, debug requests, performance: `bugfix-workflow`.
 - Pre-merge или сложное review: `release-check`; если доступен и нужен — `code-review-graph`.
 - Закрытие задачи: `task-finish`.
 - Переключение задачи: `task-switch`.
