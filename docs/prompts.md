@@ -14,6 +14,7 @@ Read:
 - ai/architecture.md
 - ai/current-task.md
 - ai/paused-tasks.md
+- ai/future-tasks.md
 - ai/project-context.md
 - ai/decisions.md
 - ai/changelog.md
@@ -30,6 +31,7 @@ Check:
 5. Are permanent AI-facing instruction files in English?
 6. Are project-specific files still templates and not filled with data from another project?
 7. Is there duplicated or conflicting guidance?
+8. Does environment-check end with an informational menu of available next commands and skills?
 
 Return:
 1. What is correct.
@@ -171,6 +173,7 @@ Read:
 - ai/architecture.md
 - ai/current-task.md
 - ai/paused-tasks.md
+- ai/future-tasks.md
 - ai/project-context.md
 - ai/decisions.md
 - ai/changelog.md
@@ -194,6 +197,11 @@ Return:
 3. What may waste tokens.
 4. What must be filled with project-specific information.
 5. Whether the architecture is ready for the first task.
+6. Available next commands and skills.
+
+Important:
+- The available next commands and skills section is informational.
+- Do not activate any listed workflow automatically.
 
 Explain in Russian with simple words.
 ```
@@ -216,6 +224,7 @@ Compare protected architecture files:
 Do not overwrite controlled memory files:
 - ai/current-task.md
 - ai/paused-tasks.md
+- ai/future-tasks.md
 - ai/project-context.md
 - ai/decisions.md
 - ai/changelog.md
@@ -227,6 +236,7 @@ Important:
 - Controlled memory files must not be replaced from the template.
 - Preserve project-specific additions unless they are outdated or duplicated.
 - If the update has unclear blast radius, recommend code-review-graph.
+- After applying approved updates, run environment-check and show the available commands/skills menu.
 
 Return:
 1. Which template files changed.
@@ -256,6 +266,7 @@ Check required files:
 - ai/architecture.md
 - ai/current-task.md
 - ai/paused-tasks.md
+- ai/future-tasks.md
 - ai/project-context.md
 - ai/decisions.md
 - ai/changelog.md
@@ -279,55 +290,10 @@ Check expected external skills and tools:
 Check controlled external methodologies:
 - Superpowers
 
-Check optional external alternatives only if relevant.
+Return the required environment-check result and end with:
+- available next commands and skills;
+- optional skills if present;
+- external tools and controlled methodologies status.
 
-Do not edit files.
-Do not install missing tools.
-
-Return:
-1. Required files present.
-2. Required files missing.
-3. Optional tools present.
-4. Expected external tools missing or not confirmed. Controlled external methodologies and optional alternatives are not blockers.
-5. Whether the architecture is ready for the first task.
-6. What to restore from the template if something is missing.
-
-Explain in Russian with simple words.
-```
-
-## Switch to another task safely
-
-```text
-Mode: review
-
-Goal:
-Check whether the current unfinished task can be paused or replaced safely.
-
-Use:
-- ai/skills/task-switch/SKILL.md
-
-Read:
-- ai/current-task.md
-- ai/paused-tasks.md
-
-Do not edit files.
-
-First:
-Decide whether this is a different task. A task is different if the new request changes the goal, work mode, main files, Done criteria, or creates a separate deliverable.
-
-Return:
-1. Current unfinished task.
-2. New requested task.
-3. Risk of switching.
-4. Recommended option:
-   - continue current task;
-   - pause current task and start a new one;
-   - finish current task through task-finish;
-   - discard current task and replace it.
-5. What would be written to ai/paused-tasks.md.
-6. What would be written to ai/current-task.md.
-
-Ask for explicit confirmation before editing files.
-
-Explain in Russian with simple words.
+Do not activate any listed workflow automatically.
 ```
