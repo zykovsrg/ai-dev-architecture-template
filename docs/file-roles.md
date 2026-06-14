@@ -53,7 +53,7 @@
 | `ai/future-tasks.md` | `implementation` после явной просьбы сохранить идею, `task-finish` после подтверждения кандидатов, `task-switch` при promotion |
 | `ai/project-context.md` | после подтверждения, если изменились стек, команды, структура, модель данных, инварианты или хрупкие зоны |
 | `ai/decisions.md` | `task-finish` или `architecture-update`, если появилось важное устойчивое решение |
-| `ai/changelog.md` | `task-finish` или заметное изменение в рамках реализации |
+| `ai/changelog.md` | `task-finish` after confirmation; `architecture-update` if the approved architecture change requires it |
 
 ## 4. Шаблонные файлы
 
