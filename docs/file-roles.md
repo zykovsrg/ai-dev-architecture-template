@@ -13,8 +13,10 @@
 - `ai/architecture.md`
 - `ai/external-tools.md`
 - `ai/skills/*/SKILL.md`
-- `.claude/`
-- `.codex/`
+- `.claude/` (создаётся проектом по необходимости; в шаблоне отсутствует)
+- `.codex/` (создаётся проектом по необходимости; в шаблоне отсутствует)
+
+`.claude/` и `.codex/` — это папки настроек самих инструментов (Claude Code и Codex): разрешения, свои команды, хуки. Это не инструкция для ИИ, а конфиг программы. В шаблоне их нет; они становятся защищёнными, только если вы их создадите.
 
 Когда можно менять:
 
@@ -53,7 +55,7 @@
 | `ai/future-tasks.md` | `implementation` после явной просьбы сохранить идею, `task-finish` после подтверждения кандидатов, `task-switch` при promotion |
 | `ai/project-context.md` | после подтверждения, если изменились стек, команды, структура, модель данных, инварианты или хрупкие зоны |
 | `ai/decisions.md` | `task-finish` или `architecture-update`, если появилось важное устойчивое решение |
-| `ai/changelog.md` | `task-finish` after confirmation; `architecture-update` if the approved architecture change requires it |
+| `ai/changelog.md` | `task-finish` после подтверждения; `architecture-update`, если этого требует одобренное изменение архитектуры |
 
 ## 4. Шаблонные файлы
 

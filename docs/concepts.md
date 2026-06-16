@@ -139,9 +139,8 @@ Environment check — это быстрая проверка первого за
 1. `AGENTS.md` или `CLAUDE.md`
 2. `ai/current-task.md`
 3. нужный базовый skill
-4. ожидаемые внешние skills и tools
+4. optional project skills и ожидаемые внешние skills/tools
 5. controlled external methodologies
-6. optional alternatives
 
 Внешний skill не должен отменять режим работы, правила подтверждения, task-finish, architecture-update и принцип чистой архитектуры.
 

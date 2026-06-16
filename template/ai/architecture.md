@@ -1,6 +1,6 @@
 # Архитектура AI-разработки
 
-Version: 6.1
+Version: 6.3
 
 Этот файл — справочник по workflow и иерархии правил. Его не нужно загружать для каждой задачи. Читай его только если задача касается workflow, конфликтов правил, architecture-update или если правило неясно.
 
@@ -64,7 +64,9 @@ Skip only if the user explicitly says not to run `environment-check`.
 
 This check is not a deep audit. It is a quick availability check.
 
-After a successful `environment-check`, the agent must show a short "Available next commands and skills" menu.
+After a successful `environment-check`, before the menu, the agent must show a short snapshot of the current task (title, `Status`, `Stage`, next step or blocker) and a compact summary of future tasks. This snapshot is informational and must not edit task memory or activate any workflow.
+
+Then the agent must show a short "Available next commands and skills" menu.
 
 The menu must include only available workflows/skills relevant to this architecture, for example:
 

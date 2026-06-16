@@ -56,6 +56,7 @@ Controlled memory files:
 - `ai/decisions.md`
 - `ai/changelog.md`
 - `ai/paused-tasks.md`
+- `ai/future-tasks.md`
 
 If any protected architecture file changed:
 

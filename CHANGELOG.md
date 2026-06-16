@@ -1,5 +1,19 @@
 # Changelog
 
+## v6.4 — 2026-06-16
+
+- Bumped `ai/architecture.md` to version `6.3` and synced its `environment-check` section with the v6.3 task-snapshot rule (header was stale at `6.1`).
+- Unified the skill-precedence list across `README.md` and `docs/concepts.md` to the canonical 5-level form; removed the extra `optional alternatives` level.
+- Added `ai/future-tasks.md` to the controlled memory list in `release-check`.
+- Added `Source` URLs for `agent-skills-for-context-engineering` and `claude-seo` in `ai/external-tools.md`.
+- Marked `.claude/` and `.codex/` as project-created folders absent from the template, with a short explanation in `docs/file-roles.md`.
+- Added a warning in `docs/update-installed-projects.md` that `--apply` overwrites protected files wholesale.
+- Differentiated `AGENTS.md` (Codex) and `CLAUDE.md` (Claude Code): tool-named titles, cross-reference, and tool-specific skill-activation note.
+- Added `ai/external-tools.md` to the `environment-check` required entry files.
+- Clarified the transient `paused` status in `ai/current-task.md`.
+- Removed `MANIFEST.json` (unused, drifted from the file set).
+- Removed a stale template-sync question in `docs/prompts.md`; translated an English row in the `docs/file-roles.md` matrix; noted that `scripts/install.sh` mirrors the rsync install in `README.md`.
+
 ## v6.3 — 2026-06-14
 
 - Updated `environment-check` to include a short snapshot of the current task and future tasks before the final commands/skills menu.

@@ -27,11 +27,10 @@ Check:
 1. Are all required files present?
 2. Are AGENTS.md and CLAUDE.md short enough?
 3. Are all 10 base skills present, including task-switch and environment-check?
-4. Does task-finish replace old task-completion-check and task-cleanup?
-5. Are permanent AI-facing instruction files in English?
-6. Are project-specific files still templates and not filled with data from another project?
-7. Is there duplicated or conflicting guidance?
-8. Does environment-check end with an informational menu of available next commands and skills?
+4. Are permanent AI-facing instruction files in English?
+5. Are project-specific files still templates and not filled with data from another project?
+6. Is there duplicated or conflicting guidance?
+7. Does environment-check end with an informational menu of available next commands and skills?
 
 Return:
 1. What is correct.

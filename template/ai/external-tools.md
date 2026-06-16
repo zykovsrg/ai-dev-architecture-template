@@ -67,6 +67,9 @@ Work can continue, but dependency graph review and blast-radius analysis may be 
 
 Type: external skillset
 
+Source:
+https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering
+
 Purpose:
 Additional context-engineering skills and workflows.
 
@@ -82,6 +85,9 @@ Work can continue, but extra context-engineering skills are unavailable.
 ### claude-seo
 
 Type: external SEO skillset
+
+Source:
+https://github.com/AgricIDaniel/claude-seo
 
 Purpose:
 SEO, content, audit, and semantic-core tasks.

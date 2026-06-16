@@ -1,6 +1,8 @@
-# AI Development Entry Point
+# AI Development Entry Point — Codex
 
 This project uses a solo AI-development workflow.
+
+This is the entry file for Codex. The matching entry file for Claude Code is `CLAUDE.md`. The two must stay equal in meaning; only the tool-specific notes below differ.
 
 Use this file as the short entry point. Detailed rules live in `ai/architecture.md` and relevant `ai/skills/*/SKILL.md`. Do not load them by default. Open them only when the task needs those details or when a workflow rule is unclear.
 
@@ -70,7 +72,7 @@ Default minimum:
 - this file
 - `ai/current-task.md`
 
-Use skills by trigger. Do not apply a skill from memory. Open the current `ai/skills/*/SKILL.md` before using that workflow.
+Codex does not auto-activate skills. When a trigger matches, open the matching `ai/skills/*/SKILL.md` file manually before applying that workflow. Do not work from memory.
 
 Common triggers:
 - environment check: `ai/skills/environment-check/SKILL.md` and `ai/external-tools.md`

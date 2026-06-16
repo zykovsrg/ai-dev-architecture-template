@@ -66,6 +66,7 @@ Check that these files exist:
 - `ai/project-context.md`
 - `ai/decisions.md`
 - `ai/changelog.md`
+- `ai/external-tools.md`
 
 ## Optional project skills
 

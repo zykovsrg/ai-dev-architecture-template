@@ -73,6 +73,8 @@ cd /path/to/project
 rsync -av --ignore-existing ~/Documents/ai-dev-architecture-template/template/ ./
 ```
 
+То же самое делает скрипт `scripts/install.sh` — он оборачивает эту команду rsync и печатает следующие шаги.
+
 После этого обязательно заполни:
 
 - `ai/project-context.md`
@@ -200,7 +202,7 @@ Project architecture files define workflow priority:
 1. `AGENTS.md` / `CLAUDE.md`
 2. `ai/current-task.md`
 3. relevant base skill
-4. expected external skills/tools
+4. optional project skills and expected external skills/tools
 5. controlled external methodologies
 
 External skills and tools are helpers. They must not override work mode, confirmation rules, task-finish, architecture-update, environment-check, protected architecture file rules, controlled memory rules, or the clean architecture principle. Superpowers is gated and must not activate unless the user explicitly allows it.
