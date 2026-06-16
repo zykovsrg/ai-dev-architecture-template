@@ -1,6 +1,6 @@
 # Архитектура AI-разработки
 
-Version: 6.3
+Version: 6.5
 
 Этот файл — справочник по workflow и иерархии правил. Его не нужно загружать для каждой задачи. Читай его только если задача касается workflow, конфликтов правил, architecture-update или если правило неясно.
 
@@ -300,7 +300,20 @@ Repository reference and memory files may be in Russian or English:
 - `ai/paused-tasks.md`
 - `ai/future-tasks.md`
 
-The agent should communicate with the user in Russian and explain technical terms simply.
+## Talking to the user (beginner-friendly)
+
+The user is not a developer. Write to someone who is just starting to learn IT.
+
+- Communicate in Russian.
+- Do not assume any prior development knowledge.
+- Explain every technical term in plain words the first time it appears in a reply. This includes everyday-for-developers words like commit, diff, merge, branch, rollback, dependency, environment, schema, cache.
+- Do not just say what you will do — explain why, in simple steps, so the user understands the logic, not only the action.
+- Prefer short, concrete analogies when they make an idea clearer.
+- Avoid unexplained jargon, English-only tech words without a gloss, and dense abbreviations.
+- If a concept is unavoidably complex, break it into small numbered steps.
+- It is better to over-explain than to leave the user guessing.
+
+This rule applies to all user-facing communication, including mode statements, risk notes, and final reports. It does not change the language of persistent AI-facing instruction files, which stay in English.
 
 ## Skills
 

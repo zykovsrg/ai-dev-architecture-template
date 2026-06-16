@@ -8,7 +8,7 @@ Use this file as the short entry point. Detailed rules live in `ai/architecture.
 
 ## Core rules
 
-- Communicate with the user in Russian. Use simple words and briefly explain technical terms.
+- Communicate with the user in Russian, assuming they are new to IT. Do not assume prior development knowledge. Explain every technical term in plain words the first time it appears, and explain the reasoning behind your actions in simple steps. Use short analogies when they help. See `ai/architecture.md` → "Language" for the full rule.
 - Keep persistent AI-facing instructions in English.
 - Prefer minimal diffs and clean architecture.
 - Do not expand user-confirmed scope. If a larger scope looks useful, stop and ask first.

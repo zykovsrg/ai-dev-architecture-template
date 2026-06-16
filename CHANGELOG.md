@@ -1,5 +1,9 @@
 # Changelog
 
+## v6.5 — 2026-06-16
+
+- Strengthened the language rule: the agent must explain to the user as if they are new to IT — define every technical term on first use, explain the reasoning behind actions in simple steps, and use short analogies. Added a dedicated "Talking to the user (beginner-friendly)" section to `ai/architecture.md` and the short version to `AGENTS.md` / `CLAUDE.md`. Bumped `ai/architecture.md` to `6.5`.
+
 ## v6.4 — 2026-06-16
 
 - Bumped `ai/architecture.md` to version `6.3` and synced its `environment-check` section with the v6.3 task-snapshot rule (header was stale at `6.1`).
