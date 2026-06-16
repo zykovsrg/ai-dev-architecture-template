@@ -322,11 +322,11 @@ Keep the precedence list inline ONLY in: `template/ai/architecture.md`, `templat
 
 Remove it (replace with a one-line reference) from: `README.md`, `docs/prompts.md`, `docs/update-installed-projects.md`, `template/ai/external-tools.md`, `template/ai/skills/release-check/SKILL.md`, `template/ai/skills/environment-check/SKILL.md` — wherever the numbered 1–5 precedence list is repeated.
 
-- [ ] **Step 1: Find precedence copies**
+- [x] **Step 1: Find precedence copies**
 
 Run: `grep -rln --include='*.md' "relevant base skill\|нужный базовый skill" . | sort`
 
-- [ ] **Step 2: Replace copies outside the 4 kept files**
+- [x] **Step 2: Replace copies outside the 4 kept files**
 
 In each file NOT in the keep-list, delete the numbered precedence list and insert:
 
@@ -336,17 +336,18 @@ In each file NOT in the keep-list, delete the numbered precedence list and inser
 
 (For English AI files like the skills, use: `See ai/architecture.md → "Skill precedence" for rule priority.`)
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 Run: `bash scripts/check-consistency.sh`
 Expected: both `OK` lines, exit 0 (precedence is not script-checked; this confirms nothing else broke).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add -A
 git commit -m "refactor: keep precedence list in 4 canonical files, link the rest"
 ```
+- Note: The precedence list was only found in README.md outside the 4 kept files (template/ai/external-tools.md, docs/prompts.md, docs/update-installed-projects.md, release-check/SKILL.md, environment-check/SKILL.md did not have the numbered precedence list). Only README.md was changed.
 
 ---
 
@@ -356,7 +357,7 @@ git commit -m "refactor: keep precedence list in 4 canonical files, link the res
 - `template/ai/skills/architecture-update/SKILL.md`
 - `template/ai/skills/release-check/SKILL.md`
 
-- [ ] **Step 1: Add a step to architecture-update**
+- [x] **Step 1: Add a step to architecture-update**
 
 In `template/ai/skills/architecture-update/SKILL.md`, in the `## Steps` list, after the final step (step 10 "Sync the architecture repository documentation…"), add:
 
@@ -364,7 +365,7 @@ In `template/ai/skills/architecture-update/SKILL.md`, in the `## Steps` list, af
 11. After editing any canonical list (a `<!-- canon:... -->` block), run `bash scripts/check-consistency.sh` and confirm it passes before finishing. If it fails, fix the named holder so all copies match.
 ```
 
-- [ ] **Step 2: Add the check to release-check**
+- [x] **Step 2: Add the check to release-check**
 
 In `template/ai/skills/release-check/SKILL.md`, in the numbered `Check:` list near the top, add a new item:
 
@@ -372,12 +373,12 @@ In `template/ai/skills/release-check/SKILL.md`, in the numbered `Check:` list ne
 12. Do the canonical lists pass `bash scripts/check-consistency.sh`? If the script fails, mark `Safe to merge: no`.
 ```
 
-- [ ] **Step 3: Verify the script still passes (markers were added to release-check earlier)**
+- [x] **Step 3: Verify the script still passes (markers were added to release-check earlier)**
 
 Run: `bash scripts/check-consistency.sh`
 Expected: both `OK` lines, exit 0.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add template/ai/skills/architecture-update/SKILL.md template/ai/skills/release-check/SKILL.md
@@ -392,7 +393,7 @@ git commit -m "feat: run consistency check in architecture-update and release-ch
 - `template/ai/architecture.md` (new subsection + version bump)
 - `CHANGELOG.md`
 
-- [ ] **Step 1: Add a "Canonical lists and the consistency check" subsection**
+- [x] **Step 1: Add a "Canonical lists and the consistency check" subsection**
 
 In `template/ai/architecture.md`, after the "Architecture files and task memory" section, add:
 
@@ -413,11 +414,11 @@ Human docs (`README.md`, other `docs/*`) do not repeat these lists; they link to
 markers so the check covers it.
 ```
 
-- [ ] **Step 2: Bump the architecture version**
+- [x] **Step 2: Bump the architecture version**
 
 In `template/ai/architecture.md`, change the version header from `Version: 6.5` to `Version: 6.6`.
 
-- [ ] **Step 3: Add a changelog entry**
+- [x] **Step 3: Add a changelog entry**
 
 At the top of `CHANGELOG.md` (above `## v6.5`), add:
 
@@ -431,17 +432,18 @@ At the top of `CHANGELOG.md` (above `## v6.5`), add:
 - Documented the system in `ai/architecture.md` and bumped it to `6.6`.
 ```
 
-- [ ] **Step 4: Final full verification**
+- [x] **Step 4: Final full verification**
 
 Run: `bash scripts/check-consistency.sh; echo "exit=$?"`
 Expected: both `OK` lines, `All canonical lists are consistent.`, `exit=0`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add template/ai/architecture.md CHANGELOG.md
 git commit -m "docs: document canonical-lists system; bump architecture to 6.6"
 ```
+- Note: The plan's example prose for the new section used `<!-- canon:protected-files -->` verbatim. This triggered the awk marker-detection in the check script (the exact marker string appeared inline in the new section text). Fixed by rephrasing to `<!-- canon:NAME -->` … `<!-- /canon:NAME -->` which is clear but doesn't match the awk extraction pattern.
 
 ---
 
