@@ -24,6 +24,7 @@ Use this file as the short entry point. Detailed rules live in `ai/architecture.
 
 Protected architecture files define reusable workflow rules and may be changed only in `architecture-update` mode after explicit user confirmation:
 
+<!-- canon:protected-files -->
 - `AGENTS.md`
 - `CLAUDE.md`
 - `ai/architecture.md`
@@ -31,6 +32,7 @@ Protected architecture files define reusable workflow rules and may be changed o
 - `ai/skills/*/SKILL.md`
 - `.claude/`
 - `.codex/`
+<!-- /canon:protected-files -->
 
 Controlled memory files store project and task memory. They may be edited only by the matching workflow described in `ai/architecture.md` and relevant skills:
 

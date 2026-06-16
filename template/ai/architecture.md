@@ -94,6 +94,7 @@ After `environment-check`, continue in one of the work modes:
 
 Protected architecture files define reusable agent rules, workflows, tools, and architecture. They may be changed only in `architecture-update` mode and only after explicit user confirmation.
 
+<!-- canon:protected-files -->
 - `AGENTS.md`
 - `CLAUDE.md`
 - `ai/architecture.md`
@@ -101,6 +102,7 @@ Protected architecture files define reusable agent rules, workflows, tools, and 
 - `ai/skills/*/SKILL.md`
 - `.claude/`
 - `.codex/`
+<!-- /canon:protected-files -->
 
 Do not edit protected architecture files during normal implementation, review, init, cleanup, task-finish, task-switch, or external skill/tool workflows.
 

@@ -41,6 +41,7 @@ git diff --name-only
 
 Protected architecture files and directories:
 
+<!-- canon:protected-files -->
 - `AGENTS.md`
 - `CLAUDE.md`
 - `ai/architecture.md`
@@ -48,6 +49,7 @@ Protected architecture files and directories:
 - `ai/skills/*/SKILL.md`
 - `.claude/`
 - `.codex/`
+<!-- /canon:protected-files -->
 
 Controlled memory files:
 

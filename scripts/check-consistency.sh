@@ -12,9 +12,9 @@ fail=0
 
 # extract_block FILE MARKER -> prints one path per line (first `backtick` token)
 extract_block() {
-  awk -v open="<!-- $2 -->" -v close="<!-- /$2 -->" '
-    index($0, open)  { inb=1; next }
-    index($0, close) { inb=0 }
+  awk -v open="<!-- $2 -->" -v endmark="<!-- /$2 -->" '
+    index($0, open)    { inb=1; next }
+    index($0, endmark) { inb=0 }
     inb { print }
   ' "$1" \
   | grep -E '^[[:space:]]*[-*][[:space:]].*`' \
