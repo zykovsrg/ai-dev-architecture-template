@@ -1,5 +1,13 @@
 # Changelog
 
+## v6.6 — 2026-06-16
+
+- Single source of truth for the protected-files and controlled-memory lists: holders now wrap each list in `<!-- canon:... -->` markers, and `scripts/check-consistency.sh` verifies all copies match.
+- Removed the duplicated lists from human docs (`README.md`, `docs/*`); they now link to `docs/file-roles.md`.
+- Deduplicated the skill-precedence list to 4 canonical files; the rest link to `ai/architecture.md`.
+- Wired the consistency check into `architecture-update` and `release-check`.
+- Documented the system in `ai/architecture.md` and bumped it to `6.6`.
+
 ## v6.5 — 2026-06-16
 
 - Strengthened the language rule: the agent must explain to the user as if they are new to IT — define every technical term on first use, explain the reasoning behind actions in simple steps, and use short analogies. Added a dedicated "Talking to the user (beginner-friendly)" section to `ai/architecture.md` and the short version to `AGENTS.md` / `CLAUDE.md`. Bumped `ai/architecture.md` to `6.5`.

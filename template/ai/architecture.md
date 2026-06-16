@@ -1,6 +1,6 @@
 # Архитектура AI-разработки
 
-Version: 6.5
+Version: 6.6
 
 Этот файл — справочник по workflow и иерархии правил. Его не нужно загружать для каждой задачи. Читай его только если задача касается workflow, конфликтов правил, architecture-update или если правило неясно.
 
@@ -140,6 +140,21 @@ git diff --name-only
 If protected architecture files changed without explicit `architecture-update` confirmation, stop and ask the user before continuing.
 
 If controlled memory files changed, explain which workflow allowed the change and list the exact files in the final report.
+
+## Canonical lists and the consistency check
+
+The protected-files and controlled-memory lists are duplicated in a few "holder"
+files: `ai/architecture.md`, `CLAUDE.md`, `AGENTS.md`, `docs/file-roles.md`, and the
+`release-check` skill. Each copy is wrapped in invisible HTML-comment markers, for example
+`<!-- canon:NAME -->` … `<!-- /canon:NAME -->` where NAME is `protected-files` or `controlled-memory`.
+
+`scripts/check-consistency.sh` compares the file paths inside matching markers across
+all holders and fails if any copy drifts. Run it after editing any marked list. It is
+also run by `architecture-update` and `release-check`.
+
+Human docs (`README.md`, other `docs/*`) do not repeat these lists; they link to
+`docs/file-roles.md`. When you add a new copy of a canonical list, wrap it in the same
+markers so the check covers it.
 
 ## Current task status and stage
 
