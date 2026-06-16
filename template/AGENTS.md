@@ -36,12 +36,14 @@ Protected architecture files define reusable workflow rules and may be changed o
 
 Controlled memory files store project and task memory. They may be edited only by the matching workflow described in `ai/architecture.md` and relevant skills:
 
+<!-- canon:controlled-memory -->
 - `ai/current-task.md`
 - `ai/paused-tasks.md`
 - `ai/future-tasks.md`
 - `ai/project-context.md`
 - `ai/decisions.md`
 - `ai/changelog.md`
+<!-- /canon:controlled-memory -->
 
 Before finishing any task, check `git diff --name-only`. If protected architecture files changed without approval, stop and ask the user. If controlled memory files changed, explain which workflow allowed it.
 

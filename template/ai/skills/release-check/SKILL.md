@@ -53,12 +53,14 @@ Protected architecture files and directories:
 
 Controlled memory files:
 
+<!-- canon:controlled-memory -->
 - `ai/current-task.md`
+- `ai/paused-tasks.md`
+- `ai/future-tasks.md`
 - `ai/project-context.md`
 - `ai/decisions.md`
 - `ai/changelog.md`
-- `ai/paused-tasks.md`
-- `ai/future-tasks.md`
+<!-- /canon:controlled-memory -->
 
 If any protected architecture file changed:
 

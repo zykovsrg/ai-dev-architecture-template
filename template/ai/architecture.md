@@ -112,12 +112,14 @@ External skills, external tools, init workflows, setup commands, and generated r
 
 Controlled memory files store project and task memory. They are not protected architecture files, but they may be edited only by the matching workflow.
 
+<!-- canon:controlled-memory -->
 - `ai/current-task.md`
 - `ai/paused-tasks.md`
 - `ai/future-tasks.md`
 - `ai/project-context.md`
 - `ai/decisions.md`
 - `ai/changelog.md`
+<!-- /canon:controlled-memory -->
 
 Allowed edits:
 

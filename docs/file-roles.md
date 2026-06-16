@@ -34,12 +34,14 @@
 
 Файлы:
 
+<!-- canon:controlled-memory -->
 - `ai/current-task.md`
 - `ai/paused-tasks.md`
 - `ai/future-tasks.md`
 - `ai/project-context.md`
 - `ai/decisions.md`
 - `ai/changelog.md`
+<!-- /canon:controlled-memory -->
 
 ## 3. Матрица прав на редактирование
 
