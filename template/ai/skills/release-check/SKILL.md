@@ -30,7 +30,7 @@ Check:
 9. Is the change safe to merge?
 10. Does the change introduce hidden technical debt, temporary diagnostics, or a temporary workaround?
 11. If temporary code or a workaround exists, is it clearly marked with a follow-up or removal task?
-12. Do the canonical lists pass `bash scripts/check-consistency.sh`? If the script fails, mark `Safe to merge: no`.
+12. If `scripts/check-consistency.sh` exists (architecture template repository only; it is not present in installed projects), do the canonical lists pass `bash scripts/check-consistency.sh`? If the script fails, mark `Safe to merge: no`.
 
 ## Architecture and memory file check
 

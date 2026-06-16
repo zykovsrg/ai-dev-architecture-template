@@ -1,6 +1,6 @@
 # Архитектура AI-разработки
 
-Version: 6.6
+Version: 6.7
 
 Этот файл — справочник по workflow и иерархии правил. Его не нужно загружать для каждой задачи. Читай его только если задача касается workflow, конфликтов правил, architecture-update или если правило неясно.
 
@@ -151,6 +151,11 @@ files: `ai/architecture.md`, `CLAUDE.md`, `AGENTS.md`, `docs/file-roles.md`, and
 `scripts/check-consistency.sh` compares the file paths inside matching markers across
 all holders and fails if any copy drifts. Run it after editing any marked list. It is
 also run by `architecture-update` and `release-check`.
+
+This script lives in the architecture template repository and is NOT copied into
+installed projects. Inside a project the marker comments are harmless but inert, and
+the consistency check simply does not apply — `architecture-update` and `release-check`
+skip it when the script is absent.
 
 Human docs (`README.md`, other `docs/*`) do not repeat these lists; they link to
 `docs/file-roles.md`. When you add a new copy of a canonical list, wrap it in the same

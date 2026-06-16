@@ -1,5 +1,9 @@
 # Changelog
 
+## v6.7 — 2026-06-16
+
+- Fixed a v6.6 bug: `architecture-update` and `release-check` told the agent to run `scripts/check-consistency.sh`, which only exists in the architecture template repository and is absent in installed projects. Both skills now guard the call with an existence check and skip it in projects. Documented the scope in `ai/architecture.md` and signposted the canonical lists from the updater docs. Bumped `ai/architecture.md` to `6.7`.
+
 ## v6.6 — 2026-06-16
 
 - Single source of truth for the protected-files and controlled-memory lists: holders now wrap each list in `<!-- canon:... -->` markers, and `scripts/check-consistency.sh` verifies all copies match.
