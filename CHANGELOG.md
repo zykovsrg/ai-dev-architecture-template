@@ -1,5 +1,9 @@
 # Changelog
 
+## v6.8 — 2026-06-16
+
+- Added a `--check` mode to `scripts/update-installed-architecture.sh`: it compares the architecture version installed in a project (`ai/architecture.md` `Version:`) with the source and, if the project is behind, prints both versions and shows a dry-run preview without changing anything (exit 0 = up to date, 1 = update available). Numeric major.minor comparison (6.10 > 6.9). Documented in `README.md`, `docs/update.md`, `docs/update-installed-projects.md`. Bumped `ai/architecture.md` to `6.8`.
+
 ## v6.7 — 2026-06-16
 
 - Fixed a v6.6 bug: `architecture-update` and `release-check` told the agent to run `scripts/check-consistency.sh`, which only exists in the architecture template repository and is absent in installed projects. Both skills now guard the call with an existence check and skip it in projects. Documented the scope in `ai/architecture.md` and signposted the canonical lists from the updater docs. Bumped `ai/architecture.md` to `6.7`.

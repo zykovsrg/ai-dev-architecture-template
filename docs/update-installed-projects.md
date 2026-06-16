@@ -35,6 +35,17 @@ ai/future-tasks.md
 
 Списки выше описывают поведение апдейтера. Канонические полные списки защищённых файлов и controlled memory — в [file-roles.md](file-roles.md).
 
+## Проверить версию
+
+Чтобы узнать, отстаёт ли архитектура в проекте, запусти проверку версии. Она сравнивает версию проекта с последней в репозитории и, если проект отстаёт, показывает dry-run, ничего не меняя:
+
+```bash
+cd /path/to/project
+curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-template/main/scripts/update-installed-architecture.sh | bash -s -- --check
+```
+
+Код выхода `0` — актуально, `1` — доступно обновление. Локально из клона: `bash scripts/update-installed-architecture.sh --source /path/to/ai-dev-architecture-template --check`.
+
 ## Быстрый безопасный запуск
 
 Перейди в проект:

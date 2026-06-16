@@ -6,6 +6,7 @@ REF="main"
 MODE="dry-run"
 DO_COMMIT="false"
 ALLOW_DIRTY="false"
+CHECK="false"
 PROJECT_DIR="$PWD"
 SOURCE_DIR=""
 COMMIT_MESSAGE="chore: update AI development architecture"
@@ -22,6 +23,8 @@ Safe updater for projects where ai-dev-architecture-template is already installe
 Default mode is --dry-run: print the architecture diff without changing files.
 
 Options:
+  --check            Compare the project architecture version with the source and,
+                     if the project is behind, show a dry-run preview. Never writes.
   --dry-run          Show planned changes only. Default.
   --apply            Apply architecture updates.
   --commit           Apply updates and commit them.
@@ -32,10 +35,32 @@ Options:
   -h, --help         Show this help.
 
 Examples:
+  curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-template/main/scripts/update-installed-architecture.sh | bash -s -- --check
   curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-template/main/scripts/update-installed-architecture.sh | bash -s -- --dry-run
   curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-template/main/scripts/update-installed-architecture.sh | bash -s -- --apply --commit
   bash scripts/update-installed-architecture.sh --project /path/to/project --source /path/to/ai-dev-architecture-template --dry-run
 EOF
+}
+
+# read_arch_version FILE -> prints the X.Y after "Version:" on the first matching line, or empty
+read_arch_version() {
+  [ -f "$1" ] || return 0
+  sed -n -E 's/^Version:[[:space:]]*([0-9]+\.[0-9]+).*/\1/p' "$1" | head -n 1
+}
+
+# version_lt A B -> exit 0 (true) if version A is strictly less than B, comparing major then minor numerically
+version_lt() {
+  awk -v a="$1" -v b="$2" '
+    BEGIN {
+      na = split(a, pa, ".")
+      nb = split(b, pb, ".")
+      amaj = pa[1] + 0; amin = (na > 1 ? pa[2] + 0 : 0)
+      bmaj = pb[1] + 0; bmin = (nb > 1 ? pb[2] + 0 : 0)
+      if (amaj < bmaj) exit 0
+      if (amaj > bmaj) exit 1
+      if (amin < bmin) exit 0
+      exit 1
+    }'
 }
 
 die() {
@@ -79,6 +104,10 @@ while [ "$#" -gt 0 ]; do
       ;;
     --allow-dirty)
       ALLOW_DIRTY="true"
+      ;;
+    --check)
+      CHECK="true"
+      MODE="dry-run"
       ;;
     -h|--help)
       usage
@@ -258,9 +287,37 @@ resolve_source_template
 
 echo "Project: $PROJECT_DIR"
 echo "Source template: $SOURCE_TEMPLATE"
-echo "Mode: $MODE"
+if [ "$CHECK" = "true" ]; then
+  echo "Mode: check"
+else
+  echo "Mode: $MODE"
+fi
 if [ "$DO_COMMIT" = "true" ]; then
   echo "Commit: enabled"
+fi
+
+DRY_RUN_EXIT=0
+
+if [ "$CHECK" = "true" ]; then
+  source_version="$(read_arch_version "$SOURCE_TEMPLATE/ai/architecture.md")"
+  project_version="$(read_arch_version "$PROJECT_DIR/ai/architecture.md")"
+  [ -n "$source_version" ] || die "Could not read architecture version from the source template."
+
+  echo ""
+  if [ -z "$project_version" ]; then
+    echo "Project architecture version: unknown (no readable 'Version:' line)."
+    echo "Latest architecture version:  v$source_version"
+    echo "Could not read the project version — recommend updating. Preview below."
+    DRY_RUN_EXIT=1
+  elif version_lt "$project_version" "$source_version"; then
+    echo "Project architecture version: v$project_version"
+    echo "Latest architecture version:  v$source_version"
+    echo "Update available. Preview below (no files are changed)."
+    DRY_RUN_EXIT=1
+  else
+    echo "Architecture is up to date (v$project_version)."
+    exit 0
+  fi
 fi
 
 if [ "$MODE" = "dry-run" ]; then
@@ -283,7 +340,7 @@ if [ "$MODE" = "dry-run" ]; then
     echo "Or from GitHub:"
     echo "  curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-template/main/scripts/update-installed-architecture.sh | bash -s -- --apply --commit"
   fi
-  exit 0
+  exit "$DRY_RUN_EXIT"
 fi
 
 for_each_architecture_file copy_file

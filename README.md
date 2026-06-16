@@ -96,6 +96,12 @@ rsync -av --ignore-existing ~/Documents/ai-dev-architecture-template/template/ .
 
 ## Быстрое обновление в уже используемом проекте
 
+Сначала можно проверить, отстаёт ли версия архитектуры в проекте (печатает версии и dry-run, ничего не меняя):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-template/main/scripts/update-installed-architecture.sh | bash -s -- --check
+```
+
 Перейди в проект и сначала запусти dry run:
 
 ```bash
