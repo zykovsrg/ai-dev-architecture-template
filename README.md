@@ -152,30 +152,9 @@ ai/future-tasks.md
 
 ## Architecture files and task memory
 
-### Protected architecture files
+### Protected architecture files и controlled memory files
 
-Это правила архитектуры. Их нельзя менять в обычной задаче.
-
-- `AGENTS.md`
-- `CLAUDE.md`
-- `ai/architecture.md`
-- `ai/external-tools.md`
-- `ai/skills/*/SKILL.md`
-- `.claude/`
-- `.codex/`
-
-Меняются только через `architecture-update` и только после явного подтверждения.
-
-### Controlled memory files
-
-Это рабочая память проекта и задачи. Её можно менять, но только через подходящий workflow.
-
-- `ai/current-task.md`
-- `ai/paused-tasks.md`
-- `ai/future-tasks.md`
-- `ai/project-context.md`
-- `ai/decisions.md`
-- `ai/changelog.md`
+Полные списки защищённых файлов и controlled memory — в [docs/file-roles.md](docs/file-roles.md).
 
 Примеры:
 

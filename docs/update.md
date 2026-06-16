@@ -90,30 +90,11 @@ diff -ru ~/Documents/ai-dev-architecture-template/template/ai/external-tools.md 
 diff -ru ~/Documents/ai-dev-architecture-template/template/ai/skills ./ai/skills
 ```
 
-## 5. Protected architecture files
+## 5. Protected architecture files и controlled memory files
 
-Эти файлы задают правила работы агентов. Обновляй их только через `architecture-update` и после подтверждения пользователя:
+Полные списки защищённых файлов и controlled memory — в [docs/file-roles.md](file-roles.md).
 
-- `AGENTS.md`
-- `CLAUDE.md`
-- `ai/architecture.md`
-- `ai/external-tools.md`
-- `ai/skills/*/SKILL.md`
-- `.claude/`
-- `.codex/`
-
-При обновлении существующего проекта не копируй их поверх текущих файлов без diff и ревью.
-
-## 6. Controlled memory files
-
-Эти файлы содержат память конкретного проекта. Не заменяй их шаблоном:
-
-- `ai/current-task.md`
-- `ai/paused-tasks.md`
-- `ai/future-tasks.md`
-- `ai/project-context.md`
-- `ai/decisions.md`
-- `ai/changelog.md`
+При обновлении существующего проекта не копируй protected architecture files поверх текущих файлов без diff и ревью. Controlled memory files не заменяй шаблоном.
 
 Их можно обновлять только как проектную память:
 

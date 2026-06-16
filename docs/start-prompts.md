@@ -8,30 +8,9 @@
 
 ## Ключевые правила для всех промтов
 
-### Protected architecture files
+### Protected architecture files и controlled memory files
 
-Это правила архитектуры. Их нельзя менять в обычной задаче.
-
-- `AGENTS.md`
-- `CLAUDE.md`
-- `ai/architecture.md`
-- `ai/external-tools.md`
-- `ai/skills/*/SKILL.md`
-- `.claude/`
-- `.codex/`
-
-Менять их можно только через `architecture-update` после явного подтверждения пользователя.
-
-### Controlled memory files
-
-Это рабочая память проекта и задачи.
-
-- `ai/current-task.md`
-- `ai/paused-tasks.md`
-- `ai/future-tasks.md`
-- `ai/project-context.md`
-- `ai/decisions.md`
-- `ai/changelog.md`
+Полные списки защищённых файлов и controlled memory — в [docs/file-roles.md](file-roles.md).
 
 Их можно менять только через подходящий workflow:
 
