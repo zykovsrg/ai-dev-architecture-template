@@ -10,7 +10,7 @@
 
 ### Protected architecture files и controlled memory files
 
-Полные списки защищённых файлов и controlled memory — в [docs/file-roles.md](file-roles.md).
+Полные списки защищённых файлов и controlled memory — в [file-roles.md](file-roles.md).
 
 Их можно менять только через подходящий workflow:
 

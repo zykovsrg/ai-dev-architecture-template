@@ -17,7 +17,7 @@ extract_block() {
     index($0, endmark) { inb=0 }
     inb { print }
   ' "$1" \
-  | grep -E '^[[:space:]]*[-*][[:space:]].*`' \
+  | { grep -E '^[[:space:]]*[-*][[:space:]].*`' || true; } \
   | sed -E 's/^[^`]*`([^`]+)`.*/\1/'
 }
 
@@ -57,7 +57,11 @@ EOF
 
   if [ "$marker_ok" -eq 1 ]; then
     n="$(printf '%s\n' "$files" | grep -c . || true)"
-    echo "OK [$marker] — $n holders consistent"
+    if [ "$n" -lt 2 ]; then
+      echo "WARN: only $n holder for $marker — nothing to cross-check"
+    else
+      echo "OK [$marker] — $n holders consistent"
+    fi
   fi
 done
 

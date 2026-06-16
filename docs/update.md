@@ -92,7 +92,7 @@ diff -ru ~/Documents/ai-dev-architecture-template/template/ai/skills ./ai/skills
 
 ## 5. Protected architecture files и controlled memory files
 
-Полные списки защищённых файлов и controlled memory — в [docs/file-roles.md](file-roles.md).
+Полные списки защищённых файлов и controlled memory — в [file-roles.md](file-roles.md).
 
 При обновлении существующего проекта не копируй protected architecture files поверх текущих файлов без diff и ревью. Controlled memory files не заменяй шаблоном.
 
