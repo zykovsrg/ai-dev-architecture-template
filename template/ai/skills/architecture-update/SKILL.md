@@ -60,6 +60,7 @@ Examples of stale or durable content that may need an update:
 8. Wait for explicit user confirmation.
 9. Only after confirmation, update files.
 10. Sync the architecture repository documentation if available. If repo access is not available, return the exact text that must be added or replaced.
+11. After editing any canonical list (a `<!-- canon:... -->` block), run `bash scripts/check-consistency.sh` and confirm it passes before finishing. If it fails, fix the named holder so all copies match.
 
 ## Rules
 
