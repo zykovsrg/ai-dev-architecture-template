@@ -60,7 +60,7 @@
 **Files:**
 - Create: `scripts/check-consistency.sh`
 
-- [ ] **Step 1: Write the script**
+- [x] **Step 1: Write the script**
 
 Create `scripts/check-consistency.sh` with exactly this content:
 
@@ -137,16 +137,16 @@ echo ""
 echo "All canonical lists are consistent."
 ```
 
-- [ ] **Step 2: Make it executable**
+- [x] **Step 2: Make it executable**
 
 Run: `chmod +x scripts/check-consistency.sh`
 
-- [ ] **Step 3: Run it on the current repo (no markers yet)**
+- [x] **Step 3: Run it on the current repo (no markers yet)**
 
 Run: `bash scripts/check-consistency.sh`
 Expected: prints `WARN: no holders found for canon:protected-files` and the same for `canon:controlled-memory`, then `All canonical lists are consistent.` and exits 0. (No markers exist yet, so there is nothing to compare.)
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add scripts/check-consistency.sh
@@ -164,7 +164,7 @@ git commit -m "feat: add canonical-lists consistency check script"
 - `docs/file-roles.md` (section "## 1. Protected architecture files")
 - `template/ai/skills/release-check/SKILL.md` (after "Protected architecture files and directories:")
 
-- [ ] **Step 1: Add markers around each protected-files bullet list**
+- [x] **Step 1: Add markers around each protected-files bullet list**
 
 In each file, locate the existing protected-files bullet list and wrap it. The bullets must be exactly the canonical order above. Insert the opening marker on its own line immediately before the first bullet and the closing marker immediately after the last bullet. Example (architecture.md / CLAUDE.md / AGENTS.md / release-check — plain list):
 
@@ -196,19 +196,20 @@ For `docs/file-roles.md`, the bullets carry Russian annotations on `.claude/` an
 
 Do not change any path or its order. If a holder currently has a different order, reorder it to match the canonical order.
 
-- [ ] **Step 2: Run the consistency check**
+- [x] **Step 2: Run the consistency check**
 
 Run: `bash scripts/check-consistency.sh`
 Expected: `OK [canon:protected-files] — 5 holders consistent`, plus the `WARN` line for `canon:controlled-memory` (still no markers), then `All canonical lists are consistent.`, exit 0.
 
 If instead you see `MISMATCH [canon:protected-files]`, read the printed `diff`: it names the file and the differing path. Fix that holder's list to match the canonical order, then re-run until it says OK.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add template/ai/architecture.md template/CLAUDE.md template/AGENTS.md docs/file-roles.md template/ai/skills/release-check/SKILL.md
 git commit -m "refactor: mark protected-files list as canonical in holders"
 ```
+- Note: Script had a bug — `close` is a reserved word in macOS system awk. Renamed to `endmark` in the awk block. Fix included in this commit alongside Task 2 changes.
 
 ---
 
@@ -216,7 +217,7 @@ git commit -m "refactor: mark protected-files list as canonical in holders"
 
 **Files (Modify):** same 5 holder files as Task 2. In `release-check`, the controlled-memory list is currently in a different order and must be normalized.
 
-- [ ] **Step 1: Add markers around each controlled-memory bullet list**
+- [x] **Step 1: Add markers around each controlled-memory bullet list**
 
 Wrap the existing controlled-memory list in each holder with the canonical order:
 
@@ -233,14 +234,14 @@ Wrap the existing controlled-memory list in each holder with the canonical order
 
 In `template/ai/skills/release-check/SKILL.md` the list currently reads `current-task, project-context, decisions, changelog, paused-tasks, future-tasks` — reorder it to the canonical order above before adding markers.
 
-- [ ] **Step 2: Run the consistency check**
+- [x] **Step 2: Run the consistency check**
 
 Run: `bash scripts/check-consistency.sh`
 Expected: `OK [canon:protected-files] — 5 holders consistent`, `OK [canon:controlled-memory] — 5 holders consistent`, then `All canonical lists are consistent.`, exit 0.
 
 If `MISMATCH`, fix the named file per the printed diff and re-run until OK.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add template/ai/architecture.md template/CLAUDE.md template/AGENTS.md docs/file-roles.md template/ai/skills/release-check/SKILL.md
@@ -253,22 +254,22 @@ git commit -m "refactor: mark controlled-memory list as canonical in holders"
 
 **Files:** none committed — this is a deliberate-break-and-revert verification.
 
-- [ ] **Step 1: Break one holder on purpose**
+- [x] **Step 1: Break one holder on purpose**
 
 In `template/CLAUDE.md`, inside the `canon:protected-files` block, delete the `` - `.codex/` `` line (leave the markers).
 
-- [ ] **Step 2: Run the check and confirm it fails**
+- [x] **Step 2: Run the check and confirm it fails**
 
 Run: `bash scripts/check-consistency.sh`
 Expected: exit code non-zero; output contains `MISMATCH [canon:protected-files]`, names `template/CLAUDE.md` as `differs`, and the diff shows `.codex/` missing.
 
 Verify exit code: `bash scripts/check-consistency.sh; echo "exit=$?"` → `exit=1`.
 
-- [ ] **Step 3: Revert the break**
+- [x] **Step 3: Revert the break**
 
 Run: `git checkout -- template/CLAUDE.md`
 
-- [ ] **Step 4: Confirm green again**
+- [x] **Step 4: Confirm green again**
 
 Run: `bash scripts/check-consistency.sh; echo "exit=$?"`
 Expected: both `OK` lines, `All canonical lists are consistent.`, `exit=0`.
@@ -281,13 +282,13 @@ Expected: both `OK` lines, `All canonical lists are consistent.`, `exit=0`.
 
 **Files (Modify):** `README.md`, `docs/concepts.md`, `docs/install.md`, `docs/update.md`, `docs/update-installed-projects.md`, `docs/prompts.md`, `docs/start-prompts.md`.
 
-- [ ] **Step 1: Find every duplicated block**
+- [x] **Step 1: Find every duplicated block**
 
 Run: `grep -rn "ai/external-tools.md\|ai/paused-tasks.md" README.md docs/*.md | grep -v file-roles.md`
 
 This lists the human-doc locations that still inline a protected-files or controlled-memory block. (`docs/file-roles.md` is the canonical human page — never strip it.)
 
-- [ ] **Step 2: Replace each inline block with a reference line**
+- [x] **Step 2: Replace each inline block with a reference line**
 
 For each protected-files or controlled-memory bullet block found in Step 1, delete the bullet list and put in its place:
 
@@ -297,18 +298,19 @@ For each protected-files or controlled-memory bullet block found in Step 1, dele
 
 Use href `file-roles.md` from inside `docs/`; use `docs/file-roles.md` from `README.md`. Keep any surrounding explanatory sentence that is still useful; only the repeated bullet list is removed. Do not remove incidental single-file mentions in prose (e.g. a sentence about `ai/current-task.md`) — only the enumerated lists.
 
-- [ ] **Step 3: Verify no stray blocks remain and the check still passes**
+- [x] **Step 3: Verify no stray blocks remain and the check still passes**
 
 Run: `grep -rn "ai/external-tools.md" README.md docs/install.md docs/update.md docs/start-prompts.md | grep -v file-roles.md || echo "no protected blocks left in link-only docs"`
 Run: `bash scripts/check-consistency.sh`
 Expected: still both `OK` lines and exit 0 (link-only docs have no markers, so they are not compared).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add README.md docs/concepts.md docs/install.md docs/update.md docs/update-installed-projects.md docs/prompts.md docs/start-prompts.md
 git commit -m "refactor: link human docs to canonical file-roles instead of duplicating lists"
 ```
+- Note: docs/concepts.md, docs/install.md, docs/update-installed-projects.md, docs/prompts.md had no full enumerated protected-files or controlled-memory bullet blocks (only incidental prose or code-block mentions). Only README.md, docs/update.md, and docs/start-prompts.md had the actual enumerated lists that were replaced.
 
 ---
 

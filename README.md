@@ -176,15 +176,7 @@ ai/future-tasks.md
 
 ## Skill precedence
 
-Project architecture files define workflow priority:
-
-1. `AGENTS.md` / `CLAUDE.md`
-2. `ai/current-task.md`
-3. relevant base skill
-4. optional project skills and expected external skills/tools
-5. controlled external methodologies
-
-External skills and tools are helpers. They must not override work mode, confirmation rules, task-finish, architecture-update, environment-check, protected architecture file rules, controlled memory rules, or the clean architecture principle. Superpowers is gated and must not activate unless the user explicitly allows it.
+Порядок приоритета правил см. в `ai/architecture.md` → раздел "Skill precedence".
 
 ## Work modes and environment check
 
