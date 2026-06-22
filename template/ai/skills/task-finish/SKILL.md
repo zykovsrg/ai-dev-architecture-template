@@ -20,7 +20,7 @@ description: |
 
 Open this skill before applying task-finish. Do not rely on memory.
 
-This skill has two phases.
+This skill has three phases.
 
 ## Phase 1 — Check
 
@@ -43,6 +43,7 @@ Answer:
 6. Are there TEMP diagnostics or workarounds that need a removal task?
 7. Which out-of-scope ideas, missing test seams, follow-up investigations, or non-blocking improvements should be proposed for `ai/future-tasks.md`?
 8. Can `ai/current-task.md` be cleaned after user confirmation?
+9. How should the result be saved: GitHub push, local commit, or local fallback archive/patch?
 
 ## Changelog vs decisions vs future tasks
 
@@ -78,6 +79,9 @@ Do not add new scope to the completed task just because a future task was discov
 - If the task created a durable architecture, product, workflow, data model, storage, signing, sandboxing, sync, or undo rule, suggest adding it to `ai/decisions.md`.
 - If an issue was only mitigated and root cause is unproven, record that clearly in `ai/changelog.md`.
 - If an idea is useful but outside the current task, propose adding it to `ai/future-tasks.md` instead of implementing it during cleanup.
+- Do not claim the task is closed until the result is saved.
+- If a GitHub remote is configured, default to commit and push after cleanup.
+- If GitHub is not configured, use local-only saving and explain the limitation.
 
 ## Phase 2 — Cleanup
 
@@ -101,3 +105,42 @@ Rules:
 - Do not remove important unresolved risks.
 - If there are unresolved risks, move them to changelog, future-tasks, or leave them in the new task template depending on whether they are completed history, future ideas, or blocking current context. Use `ai/paused-tasks.md` only for paused active work created through `task-switch`.
 - Do not add minor implementation details to `ai/decisions.md`.
+
+## Phase 3 — Save result
+
+Use after Phase 2 cleanup, unless Phase 1 concluded that the task cannot close.
+
+First inspect:
+
+```bash
+git status --short
+git remote -v
+```
+
+If a GitHub remote exists:
+
+1. Stage the completed task changes.
+2. Commit with a clear message.
+3. Push the current branch to GitHub.
+4. Report the pushed branch and commit.
+
+If Git exists but no GitHub remote exists:
+
+1. Stage the completed task changes.
+2. Commit locally with a clear message.
+3. Tell the user that the task is saved only on this computer and has not been pushed to GitHub.
+4. Offer the GitHub setup path as a follow-up, not as an automatic action.
+
+If Git is unavailable:
+
+1. Create a local fallback: patch, archive, or clear list of changed files.
+2. Tell the user exactly where the fallback was saved.
+3. Explain that this is weaker than Git because history and sync are not automatic.
+
+Rules:
+
+- Do not push if the user explicitly chose local-only mode.
+- Do not push secrets, temporary diagnostics, or unresolved workarounds.
+- If commit fails, do not claim the task is closed; report the reason and keep or restore enough task context for retry.
+- If local commit succeeds but push fails, report `Saved locally, not pushed to GitHub` and ask whether to retry push or accept local-only closure.
+- If the selected save step succeeds, the task can be reported as closed.

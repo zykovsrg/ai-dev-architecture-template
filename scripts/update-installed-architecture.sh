@@ -128,9 +128,11 @@ PROJECT_ROOT="$(git rev-parse --show-toplevel)"
 cd "$PROJECT_ROOT"
 PROJECT_DIR="$PROJECT_ROOT"
 
-if [ ! -f "AGENTS.md" ] && [ ! -d "ai" ]; then
-  die "This does not look like a project with the AI development architecture installed. Use scripts/install.sh first."
-fi
+for required_arch_file in "AGENTS.md" "ai/architecture.md" "ai/current-task.md"; do
+  if [ ! -f "$required_arch_file" ]; then
+    die "This does not look like a project with the AI development architecture installed. Missing required file: $required_arch_file. Use scripts/install.sh first."
+  fi
+done
 
 if [ "$MODE" = "apply" ] && [ "$ALLOW_DIRTY" != "true" ] && [ -n "$(git status --porcelain)" ]; then
   die "Working tree is not clean. Commit or stash project changes first, or rerun with --allow-dirty."

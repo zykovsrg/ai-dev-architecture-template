@@ -54,7 +54,7 @@
 | `ai/skills/*/SKILL.md` | только `architecture-update` после подтверждения |
 | `.claude/` | только `architecture-update` после подтверждения |
 | `.codex/` | только `architecture-update` после подтверждения |
-| `ai/current-task.md` | `implementation`, `task-switch`, `task-finish`; не перезаписывать незавершённую задачу без подтверждения |
+| `ai/current-task.md` | `task-intake`, `implementation`, `task-switch`, `task-finish`; `task-intake` может записать первую задачу, но не перезаписывает незавершённую без `task-switch` |
 | `ai/paused-tasks.md` | только `task-switch`; не использовать как backlog, future tasks или список cleanup-работ |
 | `ai/future-tasks.md` | `implementation` после явной просьбы сохранить идею, `task-finish` после подтверждения кандидатов, `task-switch` при promotion |
 | `ai/project-context.md` | после подтверждения, если изменились стек, команды, структура, модель данных, инварианты или хрупкие зоны |
@@ -236,6 +236,18 @@ Stage: intake
 
 После проверки агент должен вывести короткое меню доступных следующих commands и skills. Это меню справочное: оно не запускает `task-switch`, `task-finish`, `architecture-update` или другие workflow автоматически.
 
+### `task-intake`
+
+Принимает новую рабочую задачу.
+
+Используется перед реальной работой после `environment-check`.
+
+Если `ai/current-task.md` пустой, записывает новую задачу в текущую память.
+
+Если текущая задача не завершена, а пользователь просит другую, передаёт управление в `task-switch`.
+
+Если пользователь просит сохранить идею на потом, не делает её текущей задачей, а использует `ai/future-tasks.md`.
+
 ### `task-switch`
 
 Защищает `ai/current-task.md` от случайной перезаписи.
@@ -250,16 +262,18 @@ Stage: intake
 
 После подтверждения пользователя может обновить `ai/changelog.md`, `ai/decisions.md`, подтверждённые записи в `ai/future-tasks.md` и очистить `ai/current-task.md`.
 
+После cleanup результат должен быть сохранён: push на GitHub, если GitHub настроен, или local-only fallback, если GitHub недоступен.
+
 ### `release-check`
 
 Проверяет готовность к commit, merge, build или release.
 
 Для сложных изменений должен проверить необходимость `code-review-graph`.
 
-### `bugfix-workflow`
+### Superpowers for bugs and complex tasks
 
-Используется для багов, крашей, регрессий и performance-проблем.
+Локальный `bugfix-workflow` больше не используется.
 
-Для багов и performance-задач сначала нужен репро или замер. Если причина не доказана, итог фиксируется как mitigation, а не как доказанный root cause.
+Баги, краши, регрессии, flaky behavior, debug requests, performance-проблемы и сложные задачи должны идти через Superpowers, если он доступен.
 
-Non-blocking follow-up work после диагностики предлагается для `ai/future-tasks.md`, а не добавляется в текущий bugfix scope.
+Если Superpowers отсутствует, агент должен сказать об этом и спросить, установить/настроить его или продолжать вручную.

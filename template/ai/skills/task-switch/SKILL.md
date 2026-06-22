@@ -2,8 +2,9 @@
 name: task-switch
 type: mixed
 description: |
-  Use when the current task is unfinished and the user asks to start a different task, pause the current task, replace it, promote a future task, or switch focus.
+  Use when task-intake detects that the current task is unfinished and the user asks to start a different task, pause the current task, replace it, promote a future task, or switch focus.
   Activates when:
+  - task-intake classifies the request as a different task while ai/current-task.md is unfinished
   - ai/current-task.md contains an unfinished task and the user asks for a different task
   - user says "переключимся", "давай другую задачу", "поставим на паузу", "сейчас срочно другое", or similar
   - the user wants to pause, replace, resume a task, or promote a task from ai/future-tasks.md
@@ -20,7 +21,7 @@ Open this skill before applying task-switch. Do not rely on memory.
 
 This skill prevents accidental loss of task context.
 
-Use it when `ai/current-task.md` contains an unfinished task and the user asks for a different task.
+Use it when `task-intake` decides that `ai/current-task.md` contains an unfinished task and the user is asking for a different task.
 
 Use it also when the user explicitly promotes an entry from `ai/future-tasks.md` into the current task.
 
@@ -43,6 +44,24 @@ Small UI iterations can stay in the same task if they clarify the same UI goal. 
 If unsure, do not guess. Ask the user:
 
 "Похоже, это новая задача, а текущая ещё не закрыта. Переключаемся или продолжаем текущую?"
+
+## Examples
+
+Different task:
+
+- Current task: "Add onboarding screen"; new request: "Fix login crash".
+- Current task: "Review payment diff"; new request: "Create release checklist".
+- Current task: "Implement settings UI"; new request: "Save this idea for later and start analytics".
+
+Same task:
+
+- Current task: "Add onboarding screen"; new request: "Make the first step clearer".
+- Current task: "Fix login crash"; new request: "Run the failing login test again".
+- Current task: "Review payment diff"; new request: "Check the same diff for security risks".
+
+Future idea, not a switch:
+
+- Current task remains active; user says "запиши на потом". Use `ai/future-tasks.md` instead of replacing current work.
 
 ## Future task promotion
 
@@ -73,16 +92,17 @@ Return:
 1. Current unfinished task.
 2. Current Status and Stage.
 3. New requested task.
-4. Risk of switching.
-5. Recommended option:
+4. Why `task-intake` classified it as a different task.
+5. Risk of switching.
+6. Recommended option:
    - continue current task;
    - pause current task and start a new one;
    - finish current task through `task-finish`;
    - discard current task and replace it;
    - promote a future task into `ai/current-task.md`.
-6. What would be written to `ai/paused-tasks.md` if the current task is paused.
-7. What would be written to `ai/current-task.md` for the new task, including Status and Stage.
-8. What would change in `ai/future-tasks.md` if a future task is promoted.
+7. What would be written to `ai/paused-tasks.md` if the current task is paused.
+8. What would be written to `ai/current-task.md` for the new task, including Status and Stage.
+9. What would change in `ai/future-tasks.md` if a future task is promoted.
 
 Ask for explicit user confirmation before editing files.
 

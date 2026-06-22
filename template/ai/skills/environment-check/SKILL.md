@@ -42,7 +42,7 @@ Skip only if the user explicitly says not to run `environment-check`.
 
 Check that these files exist:
 
-- `ai/skills/bugfix-workflow/SKILL.md`
+- `ai/skills/task-intake/SKILL.md`
 - `ai/skills/ui-review/SKILL.md`
 - `ai/skills/security-review/SKILL.md`
 - `ai/skills/release-check/SKILL.md`
@@ -95,7 +95,6 @@ Check whether expected external skills and tools are available:
 
 - code-review-graph
 - agent-skills-for-context-engineering
-- claude-seo
 
 Controlled external methodologies:
 - Superpowers
@@ -177,10 +176,10 @@ Do not activate any listed skill automatically unless the user asks or the next 
 Include these base options:
 
 - `environment-check` — повторно проверить архитектуру после смены агента, нового чата или восстановления контекста.
+- `task-intake` — принять новую задачу, записать её в `ai/current-task.md` или решить, нужен ли `task-switch`.
 - `task-switch` — переключиться на другую задачу, поставить текущую на паузу или продвинуть future task в текущую задачу.
 - `task-finish` — проверить, можно ли закрыть текущую задачу, и выполнить cleanup после подтверждения.
 - `architecture-update` — изменить правила архитектуры, workflow, skills или защищённые architecture files.
-- `bugfix-workflow` — разбирать баги, регрессии, flaky behavior, debug requests и performance-проблемы.
 - `ui-review` — проверить UI, layout, визуальные состояния и поведение интерфейса.
 - `write-tests` — решить, нужны ли тесты, и добавить тесты для рискованных изменений.
 - `release-check` — проверить diff перед commit, merge или релизом.
@@ -204,7 +203,7 @@ If expected external tools are present or not confirmed, mention them separately
 Внешние tools и methodologies
 ```
 
-For Superpowers, always say that it is controlled and must not be activated automatically.
+For Superpowers, always say that it is controlled and is the expected path for bugs and complex tasks when available.
 
 ## Rules
 

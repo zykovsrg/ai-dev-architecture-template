@@ -1,5 +1,16 @@
 # Changelog
 
+## v6.9 — 2026-06-21
+
+- Added `task-intake` as the first workflow for real user tasks: empty `ai/current-task.md` is now populated before work starts, and unfinished-task conflicts route through `task-switch`.
+- Removed the local `bugfix-workflow` base skill. Bugs, regressions, crashes, flaky behavior, debug requests, performance investigations, and complex tasks now route to Superpowers when available, with an explicit install/configure vs manual fallback decision when missing.
+- Added a human-facing start screen in `docs/start-here.md` and a local-only usage guide in `docs/no-github.md`.
+- Updated `task-finish` so closing a task includes saving the result: GitHub push when configured, local commit or patch/archive fallback when GitHub is unavailable.
+- Hardened `scripts/update-installed-architecture.sh` so it requires `AGENTS.md`, `ai/architecture.md`, and `ai/current-task.md` before updating.
+- Made `scripts/install.sh` portable by resolving `template/` next to the script before falling back to `~/Documents`.
+- Removed `claude-seo` from the base external tools list and added `scripts/smoke-test.sh` for install/update safety checks.
+- Compacted `AGENTS.md` and `CLAUDE.md` back into short entry files after adding the v6.9 task-intake and Superpowers routing rules.
+
 ## v6.8 — 2026-06-16
 
 - Added a `--check` mode to `scripts/update-installed-architecture.sh`: it compares the architecture version installed in a project (`ai/architecture.md` `Version:`) with the source and, if the project is behind, prints both versions and shows a dry-run preview without changing anything (exit 0 = up to date, 1 = update available). Numeric major.minor comparison (6.10 > 6.9). Documented in `README.md`, `docs/update.md`, `docs/update-installed-projects.md`. Bumped `ai/architecture.md` to `6.8`.

@@ -26,7 +26,7 @@ Do not edit files.
 Check:
 1. Are all required files present?
 2. Are AGENTS.md and CLAUDE.md short enough?
-3. Are all 10 base skills present, including task-switch and environment-check?
+3. Are all 10 base skills present, including task-intake, task-switch, and environment-check?
 4. Are permanent AI-facing instruction files in English?
 5. Are project-specific files still templates and not filled with data from another project?
 6. Is there duplicated or conflicting guidance?
@@ -177,7 +177,7 @@ Read:
 - ai/decisions.md
 - ai/changelog.md
 - ai/external-tools.md
-- ai/skills/bugfix-workflow/SKILL.md
+- ai/skills/task-intake/SKILL.md
 - ai/skills/ui-review/SKILL.md
 - ai/skills/security-review/SKILL.md
 - ai/skills/release-check/SKILL.md
@@ -197,10 +197,12 @@ Return:
 4. What must be filled with project-specific information.
 5. Whether the architecture is ready for the first task.
 6. Available next commands and skills.
+7. Whether task-intake is ready to record the first task.
 
 Important:
 - The available next commands and skills section is informational.
 - Do not activate any listed workflow automatically.
+- Before real task work, use task-intake.
 
 Explain in Russian with simple words.
 ```
@@ -236,6 +238,7 @@ Important:
 - Preserve project-specific additions unless they are outdated or duplicated.
 - If the update has unclear blast radius, recommend code-review-graph.
 - After applying approved updates, run environment-check and show the available commands/skills menu.
+- Before the next real task, use task-intake.
 
 Return:
 1. Which template files changed.
@@ -270,7 +273,7 @@ Check required files:
 - ai/decisions.md
 - ai/changelog.md
 - ai/external-tools.md
-- ai/skills/bugfix-workflow/SKILL.md
+- ai/skills/task-intake/SKILL.md
 - ai/skills/ui-review/SKILL.md
 - ai/skills/security-review/SKILL.md
 - ai/skills/release-check/SKILL.md
@@ -284,7 +287,6 @@ Check required files:
 Check expected external skills and tools:
 - code-review-graph
 - agent-skills-for-context-engineering
-- claude-seo
 
 Check controlled external methodologies:
 - Superpowers
@@ -293,6 +295,7 @@ Return the required environment-check result and end with:
 - available next commands and skills;
 - optional skills if present;
 - external tools and controlled methodologies status.
+- note that Superpowers is expected for bugs and complex tasks when available.
 
 Do not activate any listed workflow automatically.
 ```

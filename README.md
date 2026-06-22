@@ -11,6 +11,19 @@
 - отделять текущую задачу от будущих идей;
 - отделять проектные правила от универсальных правил работы агента.
 
+## Стартовый экран
+
+Если вы открыли архитектуру впервые, начните с [docs/start-here.md](docs/start-here.md).
+
+Там есть пошаговые сценарии:
+
+- новый проект;
+- проект со старой версией архитектуры;
+- постановка первой задачи;
+- установка и использование Superpowers для багов и сложных задач;
+- закрытие задачи через commit/push;
+- работа без GitHub.
+
 ## Структура репозитория
 
 ```text
@@ -27,7 +40,7 @@ template/
     changelog.md
     external-tools.md
     skills/
-      bugfix-workflow/SKILL.md
+      task-intake/SKILL.md
       ui-review/SKILL.md
       security-review/SKILL.md
       release-check/SKILL.md
@@ -39,6 +52,7 @@ template/
       environment-check/SKILL.md
 
 docs/
+  start-here.md
   concepts.md
   install.md
   update.md
@@ -46,6 +60,7 @@ docs/
   file-roles.md
   prompts.md
   start-prompts.md
+  no-github.md
 
 scripts/
   install.sh
@@ -95,6 +110,16 @@ rsync -av --ignore-existing ~/Documents/ai-dev-architecture-template/template/ .
 `ai/external-tools.md` обычно не нужно менять после установки. Обновляй его только если меняется список ожидаемых внешних skills, tools или controlled methodologies.
 
 ## Быстрое обновление в уже используемом проекте
+
+Безопасный способ: скачать скрипт, посмотреть его и только потом запускать:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-template/main/scripts/update-installed-architecture.sh -o /tmp/update-installed-architecture.sh
+less /tmp/update-installed-architecture.sh
+bash /tmp/update-installed-architecture.sh --check
+```
+
+Быстрый способ ниже использует `curl | bash`: он сразу запускает скачанный из интернета скрипт. Используй его только если доверяешь источнику.
 
 Сначала можно проверить, отстаёт ли версия архитектуры в проекте (печатает версии и dry-run, ничего не меняя):
 
@@ -148,11 +173,13 @@ ai/future-tasks.md
 - `ai/changelog.md` — последние заметные изменения.
 - `ai/external-tools.md` — ожидаемые внешние tools и controlled methodologies.
 - `ai/skills/*/SKILL.md` — переиспользуемые процедуры.
+- `task-intake` — принимает новую задачу и записывает её в `ai/current-task.md` или запускает `task-switch`.
 - `task-finish` — проверяет, можно ли закрыть задачу, и чистит контекст после подтверждения.
 - `task-switch` — безопасно переключает незавершённые задачи.
 - `architecture-update` — меняет правила AI-разработки только после явного подтверждения.
 - `environment-check` — проверяет установку архитектуры и внешние tools; после проверки показывает меню доступных следующих commands и skills.
 
+Стартовый экран — в `docs/start-here.md`.
 Простые объяснения терминов — в `docs/concepts.md`.
 Готовые стартовые промты — в `docs/start-prompts.md`.
 
@@ -167,6 +194,7 @@ ai/future-tasks.md
 - `task-switch` может менять `ai/current-task.md` и `ai/paused-tasks.md` после подтверждения;
 - `task-switch` может продвинуть запись из `ai/future-tasks.md` в `ai/current-task.md` после подтверждения;
 - `task-finish` может менять `ai/current-task.md`, `ai/changelog.md`, `ai/decisions.md` и подтверждённые записи в `ai/future-tasks.md`;
+- после `task-finish` результат должен быть сохранён: push на GitHub, если он настроен, или local-only fallback без GitHub;
 - `ai/project-context.md` меняется только если изменились стек, команды, структура, модель данных, инварианты или хрупкие зоны.
 
 ## Skill routing
@@ -174,7 +202,8 @@ ai/future-tasks.md
 Если задача попадает под trigger skill, агент должен открыть актуальный `ai/skills/*/SKILL.md`. Не нужно применять skill по памяти.
 
 - UI-задачи: `ui-review` + `write-tests`.
-- Баги, краши, регрессии, flaky behavior, debug requests, performance: `bugfix-workflow`.
+- Новые задачи: `task-intake`.
+- Баги, краши, регрессии, flaky behavior, debug requests, performance и сложные задачи: Superpowers, если он доступен.
 - Идеи на потом и будущие задачи: записывать в `ai/future-tasks.md`; отдельный skill не нужен.
 - Pre-merge или сложное review: `release-check`; если доступен и нужен — `code-review-graph`.
 - Закрытие задачи: `task-finish`.
@@ -198,6 +227,8 @@ The architecture has four work modes:
 Run `environment-check` when entering an existing project, switching tools or agents, continuing in a new chat, or continuing after compressed context, compacted context, restored summary, or conversation summary continuation.
 
 After `environment-check`, the agent must show a short menu of available next commands and skills. This menu is informational only and must not trigger any listed workflow automatically.
+
+Before the first real task after `environment-check`, the agent must run `task-intake`.
 
 ## Task switching
 

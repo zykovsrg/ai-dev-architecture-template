@@ -51,9 +51,9 @@ ai/paused-tasks.md
 ai/future-tasks.md
 ai/decisions.md
 ai/project-context.md
+ai/skills/task-intake/SKILL.md
 ai/skills/architecture-update/SKILL.md
 ai/skills/environment-check/SKILL.md
-ai/skills/bugfix-workflow/SKILL.md
 ai/skills/copy-review/SKILL.md
 ai/skills/release-check/SKILL.md
 ai/skills/security-review/SKILL.md
@@ -93,4 +93,5 @@ ai/skills/write-tests/SKILL.md
 
 Финальный список commands и skills — это меню, а не команда запускать всё подряд.
 
+Стартовый экран — в `docs/start-here.md`.
 Готовые промты есть в `docs/prompts.md` и `docs/start-prompts.md`.
