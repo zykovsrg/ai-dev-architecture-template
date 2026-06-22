@@ -82,25 +82,6 @@ How to check:
 Missing means:
 Work can continue, but extra context-engineering skills are unavailable.
 
-### claude-seo
-
-Type: external SEO skillset
-
-Source:
-https://github.com/AgricIDaniel/claude-seo
-
-Purpose:
-SEO, content, audit, and semantic-core tasks.
-
-Expected: yes, if available.
-
-How to check:
-- check the user's configured Claude Code, Codex, or local skills directories
-- if unsure, report `not confirmed`
-
-Missing means:
-Work can continue, but external SEO-specific workflows are unavailable.
-
 ## Controlled external methodologies
 
 These tools may be installed and checked, but they must not become the default workflow.
@@ -110,12 +91,13 @@ These tools may be installed and checked, but they must not become the default w
 Type: full external development methodology
 
 Status:
-Expected to be installed when available, but gated.
+Expected to be installed when available. Required for bugs and complex tasks when available.
 
 Purpose:
 Spec-first planning, TDD-first development, subagent-driven development, stronger verification, and branch-finishing workflows.
 
-May be proposed for:
+Use for:
+- bugs, regressions, crashes, flaky behavior, debug requests, and performance investigations;
 - large or vague tasks;
 - architecture design;
 - choosing between technical options;
@@ -126,13 +108,16 @@ May be proposed for:
 - major refactoring;
 - unclear blast radius.
 
-May be activated only when:
+For bugs and complex tasks:
+- use Superpowers when it is available;
+- if it is missing or not confirmed, ask whether to install/configure it or continue with a manual fallback.
+
+For other tasks, activate only when:
 - the user explicitly asks to use Superpowers;
 - the user explicitly confirms the agent's proposal to use Superpowers;
 - `ai/current-task.md` says `Use Superpowers: yes`.
 
 Do not use for:
-- small bugfixes;
 - copy changes;
 - simple UI tweaks;
 - narrow tasks with known relevant files;
@@ -153,7 +138,7 @@ How to check:
 - if unsure, report `not confirmed`
 
 Missing means:
-Work can continue. Superpowers workflows are unavailable until installed.
+Simple work can continue. For bugs and complex tasks, stop and ask whether to install/configure Superpowers or continue with a manual fallback.
 
 ## Reporting format
 
@@ -180,9 +165,10 @@ During environment check, return:
 
 5. Blockers:
    - only missing required base skills are blockers
-   - missing optional project skills and external tools are warnings, not blockers
+   - missing optional project skills and external tools are warnings, not blockers for simple tasks
+   - missing Superpowers is a warning for simple tasks, but requires an explicit user decision for bugs and complex tasks
 
 6. Recommended next action:
    - restore missing base skills from the template
    - install or configure missing optional project skills and external tools only after explicit user confirmation
-   - activate Superpowers only after explicit user confirmation
+   - for bugs and complex tasks, use Superpowers when available or ask the user to choose install/configure vs manual fallback

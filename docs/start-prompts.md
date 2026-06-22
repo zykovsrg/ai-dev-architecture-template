@@ -15,8 +15,9 @@
 Их можно менять только через подходящий workflow:
 
 - `implementation` — обновить текущую задачу, Stage, handoff или явно подтверждённую future task;
+- `task-intake` — записать первую задачу в `ai/current-task.md` или определить, нужен ли `task-switch`;
 - `task-switch` — поставить задачу на паузу, заменить текущую после подтверждения или продвинуть future task;
-- `task-finish` — записать итог, важные решения, подтверждённые future tasks и очистить текущую задачу после подтверждения;
+- `task-finish` — записать итог, важные решения, подтверждённые future tasks, очистить текущую задачу после подтверждения и сохранить результат;
 - `architecture-update` — обновить память, если это часть подтверждённого изменения архитектуры.
 
 ### Skills
@@ -25,7 +26,7 @@
 
 Для UI-задач открой `ui-review` и `write-tests`.
 
-Для багов, крашей, flaky behavior, debug requests и performance-задач открой `bugfix-workflow`.
+Для багов, крашей, flaky behavior, debug requests, performance-задач и сложной работы используй Superpowers, если он доступен. Если Superpowers не установлен, скажи об этом и спроси, установить/настроить его или продолжить вручную.
 
 Для идей на потом используй `ai/future-tasks.md`; отдельного skill нет.
 
@@ -67,10 +68,11 @@ https://github.com/zykovsrg/ai-dev-architecture-template
 3. Если архитектура ещё не установлена, предложи безопасную установку из шаблона.
 4. Если после установки не хватает обязательных файлов, покажи список и предложи восстановить их из шаблона.
 5. После установки выполни environment-check.
-6. Ничего не устанавливай дополнительно без моего подтверждения.
-7. Перед использованием внешнего skill, init workflow или setup-команды сначала прочитай AGENTS.md или CLAUDE.md.
-8. Соблюдай разделение protected architecture files и controlled memory files.
-9. Если нужен workflow из skill — открой актуальный ai/skills/*/SKILL.md, не работай по памяти.
+6. Перед первой рабочей задачей используй task-intake и запиши задачу в ai/current-task.md.
+7. Ничего не устанавливай дополнительно без моего подтверждения.
+8. Перед использованием внешнего skill, init workflow или setup-команды сначала прочитай AGENTS.md или CLAUDE.md.
+9. Соблюдай разделение protected architecture files и controlled memory files.
+10. Если нужен workflow из skill — открой актуальный ai/skills/*/SKILL.md, не работай по памяти.
 
 После проверки скажи:
 - что установлено корректно;
@@ -92,6 +94,7 @@ https://github.com/zykovsrg/ai-dev-architecture-template
 - Я не разработчик, объясняй технические термины простыми словами.
 - Не меняй код приложения при установке архитектуры.
 - Не делай больших изменений без плана и подтверждения.
+- Баги и сложные задачи прогоняй через Superpowers, если он доступен.
 - Protected architecture files меняй только через architecture-update после моего явного подтверждения.
 - Controlled memory files меняй только через подходящий workflow.
 ```
@@ -125,7 +128,9 @@ https://github.com/zykovsrg/ai-dev-architecture-template
 
 После environment-check покажи доступные следующие commands и skills. Не запускай перечисленные workflow автоматически.
 
-Затем прочитай только:
+Затем используй task-intake перед рабочей задачей.
+
+После этого прочитай только:
 - AGENTS.md или CLAUDE.md;
 - ai/current-task.md.
 
@@ -152,7 +157,7 @@ https://github.com/zykovsrg/ai-dev-architecture-template
 5. Назови Done criteria.
 6. Скажи, что нужно сделать следующим безопасным шагом.
 7. Скажи, нужен ли task-switch.
-8. Скажи, нужен ли Superpowers.
+8. Скажи, нужен ли Superpowers. Для багов и сложных задач Superpowers ожидается, если доступен.
 
 Если ai/current-task.md имеет Status: empty или содержит пустой шаблон:
 1. Попроси меня поставить задачу в формате:
@@ -167,13 +172,14 @@ https://github.com/zykovsrg/ai-dev-architecture-template
 - Общайся со мной на русском.
 - Я не разработчик, объясняй технические термины простыми словами.
 - Не редактируй файлы без моего подтверждения, если задача не требует реализации.
+- Перед рабочей задачей используй task-intake.
 - Не перезаписывай ai/current-task.md, если там есть незавершённая задача.
 - Protected architecture files меняй только через architecture-update после моего явного подтверждения.
 - Controlled memory files меняй только через подходящий workflow.
 - Если я прошу другую задачу при незавершённой текущей, используй task-switch.
 - Если задача завершена, используй task-finish.
 - Если я прошу сохранить идею на потом, используй ai/future-tasks.md.
-- Superpowers используй только если я явно попрошу или если в ai/current-task.md написано: Use Superpowers: yes.
+- Superpowers используй для багов и сложных задач, если он доступен; для остальных задач — если я явно попрошу или если в ai/current-task.md написано: Use Superpowers: yes.
 ```
 
 ## 3. Продолжение после compressed context или restored summary
@@ -192,13 +198,14 @@ https://github.com/zykovsrg/ai-dev-architecture-template
 1. Покажи доступные следующие commands и skills. Не запускай перечисленные workflow автоматически.
 2. Прочитай AGENTS.md или CLAUDE.md.
 3. Прочитай ai/current-task.md.
-4. Если задача plan-driven, прочитай только релевантный docs/superpowers/plans/<plan>.md и при необходимости spec.
-5. Не полагайся только на summary. Проверь факты через файлы.
-6. Назови текущие Mode, Status, Stage, Goal, relevant files и Done criteria.
-7. Проверь, не расходится ли summary с файлами.
-8. Если есть расхождение, считай файлы источником правды и сообщи мне.
-9. Если нужен skill, открой актуальный ai/skills/*/SKILL.md.
-10. Если задача выглядит завершённой, предложи task-finish, но не закрывай её без подтверждения.
+4. Используй task-intake перед продолжением рабочей задачи.
+5. Если задача plan-driven, прочитай только релевантный docs/superpowers/plans/<plan>.md и при необходимости spec.
+6. Не полагайся только на summary. Проверь факты через файлы.
+7. Назови текущие Mode, Status, Stage, Goal, relevant files и Done criteria.
+8. Проверь, не расходится ли summary с файлами.
+9. Если есть расхождение, считай файлы источником правды и сообщи мне.
+10. Если нужен skill, открой актуальный ai/skills/*/SKILL.md.
+11. Если задача выглядит завершённой, предложи task-finish, но не закрывай её без подтверждения и сохранения результата.
 
 В review mode не сообщай о проблеме как о факте, пока не проверил её через read, grep, diff, logs или tests. Если не проверено — называй это гипотезой.
 ```

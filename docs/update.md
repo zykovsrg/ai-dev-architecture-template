@@ -1,5 +1,17 @@
 # Инструкция по обновлению
 
+## Безопасный способ
+
+Самый безопасный путь — скачать скрипт, посмотреть его и только потом запускать.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-template/main/scripts/update-installed-architecture.sh -o /tmp/update-installed-architecture.sh
+less /tmp/update-installed-architecture.sh
+bash /tmp/update-installed-architecture.sh --check
+```
+
+`curl | bash` ниже удобнее, но он сразу запускает скачанный из интернета скрипт. Используй его только если доверяешь источнику и понимаешь, что команда будет делать.
+
 ## Сначала — проверить версию
 
 Быстрая команда сравнивает версию архитектуры в проекте с последней в репозитории. Если проект отстаёт, она печатает версии и сразу показывает dry-run (превью изменений), **ничего не меняя**:
@@ -10,7 +22,7 @@ curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-templa
 
 Код выхода: `0` — всё актуально, `1` — есть обновление. Если архитектура устарела, примените обновление командами ниже.
 
-## Обновление
+## Быстрое обновление
 
 Для уже используемых проектов основной способ обновления — автоматический updater:
 
@@ -112,7 +124,7 @@ diff -ru ~/Documents/ai-dev-architecture-template/template/ai/skills ./ai/skills
 
 Их можно обновлять только как проектную память:
 
-- `ai/current-task.md` — через текущую задачу, `task-switch` или `task-finish`;
+- `ai/current-task.md` — через `task-intake`, текущую задачу, `task-switch` или `task-finish`;
 - `ai/paused-tasks.md` — через `task-switch`;
 - `ai/future-tasks.md` — для будущих задач, которые явно сохранены пользователем или подтверждены как future task candidates;
 - `ai/project-context.md` — после подтверждения, если изменились стек, команды, структура, модель данных, инварианты или хрупкие зоны;

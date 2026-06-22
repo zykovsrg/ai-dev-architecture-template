@@ -1,6 +1,6 @@
 # Архитектура AI-разработки
 
-Version: 6.8
+Version: 6.9
 
 Этот файл — справочник по workflow и иерархии правил. Его не нужно загружать для каждой задачи. Читай его только если задача касается workflow, конфликтов правил, architecture-update или если правило неясно.
 
@@ -27,6 +27,14 @@ Future tasks are captured, not executed.
 
 Если во время работы появляется полезная идея вне текущей задачи, агент должен защитить текущий scope: предложить записать идею в `ai/future-tasks.md`, но не реализовывать её без явного promotion.
 
+Главное правило для новой работы:
+
+```text
+Every real task goes through task-intake first.
+```
+
+Если `ai/current-task.md` пустой, новая задача должна быть записана туда до начала работы. Если там уже есть незавершённая задача, агент должен решить, это продолжение или переключение через `task-switch`.
+
 ## Режимы работы
 
 Before starting task work, the agent must explicitly state the mode as `Mode: ...`.
@@ -48,7 +56,7 @@ If implementation or review suggests the current task may be complete, the agent
 
 `environment-check` is not a work mode.
 
-`task-switch` is also not a work mode. It is a safety workflow for switching between unfinished tasks.
+`task-intake` and `task-switch` are also not work modes. `task-intake` captures new work into task memory. `task-switch` protects unfinished work when the user changes focus.
 
 Run `environment-check` before suggesting next steps or starting implementation when:
 
@@ -72,10 +80,11 @@ The menu must include only available workflows/skills relevant to this architect
 
 ```text
 - `environment-check` — re-run the installation and environment availability check.
+- `task-intake` — record the first task or decide whether a new request continues or switches the current task.
 - `task-switch` — pause the current task, resume a paused task, or promote a confirmed future task.
 - `task-finish` — verify whether the current task is complete and run cleanup only after confirmation.
 - `architecture-update` — propose and apply approved architecture changes.
-- `bugfix-workflow` — diagnose bugs, regressions, flaky behavior, debug requests, crashes, and performance issues.
+- `Superpowers` — required path for bugs and complex tasks when available.
 - `future-tasks` — record useful ideas that should not expand the current task scope.
 ```
 
@@ -87,6 +96,8 @@ After `environment-check`, continue in one of the work modes:
 - `review`
 - `task-finish`
 - `architecture-update`
+
+Before the first real task after `environment-check`, run `task-intake`.
 
 ## Architecture files and task memory
 
@@ -125,6 +136,7 @@ Allowed edits:
 
 - `implementation`: may update `ai/current-task.md` when the current task itself changes, Stage changes, or needs handoff notes.
 - `implementation`: may update `ai/future-tasks.md` only when the user explicitly asks to save a future task or confirms a proposed future task candidate.
+- `task-intake`: may create or update `ai/current-task.md` when it is empty and the user has provided a real task.
 - `task-switch`: may update `ai/current-task.md` and `ai/paused-tasks.md` only after explicit user confirmation.
 - `task-switch`: may promote an entry from `ai/future-tasks.md` into `ai/current-task.md` after explicit user confirmation.
 - `task-finish`: may update `ai/current-task.md`, `ai/changelog.md`, `ai/decisions.md`, and confirmed `ai/future-tasks.md` entries only after explicit user confirmation.
@@ -343,7 +355,7 @@ This rule applies to all user-facing communication, including mode statements, r
 
 Base skills:
 
-- `bugfix-workflow` — bugs, regressions, crashes, flaky behavior, debug requests, performance investigations, and broken state; uses a diagnose-style loop.
+- `task-intake` — captures a new user task into `ai/current-task.md`, detects whether a request is a continuation or a different task, and routes unfinished-task changes to `task-switch`.
 - `ui-review` — user-visible UI, layout, visual states, interaction feedback.
 - `security-review` — security risks.
 - `release-check` — pre-commit, pre-merge, build, or release review.
@@ -366,49 +378,34 @@ For purely decorative visual changes, use `ui-review`. Use `write-tests` only if
 
 If automated tests are not practical for a UI change, provide a manual UI checklist.
 
-### Bugfix and performance work
+### Task intake
 
-For bugs, crashes, regressions, flaky behavior, debug requests, and performance investigations, use `bugfix-workflow`.
+For every real user task, use `task-intake` before starting work.
+
+If `ai/current-task.md` has `Status: empty`, `task-intake` records the task in `ai/current-task.md` before implementation or review begins.
+
+If `ai/current-task.md` contains unfinished work and the user's request changes the goal, work mode, main files, Done criteria, or deliverable, `task-intake` must stop and invoke `task-switch`.
+
+If the request is only a clarification, test, review, or finish step for the current goal, continue the current task and update Stage or handoff notes only when useful.
+
+### Bugfix, performance, and complex work
+
+This architecture no longer includes a local `bugfix-workflow` skill.
+
+For bugs, crashes, regressions, flaky behavior, debug requests, performance investigations, large/vague tasks, major refactors, data model changes, migrations, TDD-heavy tasks, or unclear blast radius, use Superpowers when available.
+
+If Superpowers is missing or not confirmed, the agent must say that the task normally requires Superpowers and ask whether to install/configure it or continue with a manual fallback.
+
+Do not pretend there is still a local bugfix workflow. Do not create `CONTEXT.md`, `docs/adr/`, or another parallel documentation system unless the project explicitly requires it.
 
 There is no separate `Mode: bugfix`. Treat bug work as:
 
 ```text
 Mode: implementation
-Skill: bugfix-workflow
+Workflow: task-intake + Superpowers
 ```
 
-`bugfix-workflow` adapts Matt Pocock's `diagnose` method to this architecture. It must use this repository's sources of truth:
-
-- `ai/current-task.md` for task scope and Done criteria;
-- `ai/decisions.md` for active invariants before architecture-sensitive changes;
-- `ai/future-tasks.md` for non-blocking follow-up work that must not expand the bugfix scope;
-- `task-finish` for completion checks and cleanup after user confirmation.
-
-It must not create `CONTEXT.md`, `docs/adr/`, or another parallel documentation system unless the project explicitly requires it.
-
-Use the diagnose-style loop:
-
-1. Build the fastest practical feedback loop.
-2. Reproduce the issue before changing code, or state why it cannot be reproduced.
-3. Minimize the reproduction to the smallest useful scenario.
-4. Generate 3–5 falsifiable hypotheses.
-5. Test hypotheses with targeted instrumentation.
-6. Apply the smallest clean fix.
-7. Add or update a regression test when a correct test seam exists.
-8. Re-run the original reproduction or measurement loop.
-9. Remove temporary diagnostics unless intentionally kept with a removal record.
-10. Propose `task-finish` if the task appears complete.
-
-Do not write a full spec or implementation plan based only on an unverified hypothesis.
-
-First try to reproduce or measure the issue. If root cause cannot be proven, mark the fix as mitigation:
-
-```text
-Root cause: unproven
-Fix status: mitigated
-```
-
-Record this in the final report and, when relevant, in `ai/changelog.md` during confirmed `task-finish` cleanup.
+The task must still use this repository's sources of truth: `ai/current-task.md` for scope, `ai/decisions.md` for durable invariants, `ai/future-tasks.md` for non-blocking follow-up ideas, and `task-finish` for closure.
 
 ### Future task capture
 
@@ -420,7 +417,7 @@ Typical triggers:
 - `добавь в будущие задачи`;
 - `потом надо сделать`;
 - `давай позже реализуем`;
-- a useful non-blocking improvement appears during implementation, review, bugfix, or task-finish.
+- a useful non-blocking improvement appears during implementation, review, Superpowers-driven bug work, or task-finish.
 
 If the user explicitly asks to save it, append it to `ai/future-tasks.md`.
 
@@ -456,11 +453,10 @@ Expected external skills/tools:
 
 - `code-review-graph` — main tool for code review and blast-radius analysis when available. Source URL lives in `ai/external-tools.md`.
 - `agent-skills-for-context-engineering` — additional context-engineering skills.
-- `claude-seo` — SEO skill set.
 
 Controlled external methodologies:
 
-- `Superpowers` — checked at startup, but activated only after explicit permission.
+- `Superpowers` — checked at startup; required for bugs and complex tasks when available.
 
 ## Skill precedence
 
@@ -702,7 +698,7 @@ Do not create a separate progress file without a clear reason. Plan progress liv
 
 ## Task switching
 
-Use `task-switch` when `ai/current-task.md` contains an unfinished task and the user asks for a different task.
+`task-intake` decides whether a request is new, continued, or future work. Use `task-switch` when `ai/current-task.md` contains an unfinished task and `task-intake` classifies the user request as a different task.
 
 Do not overwrite `ai/current-task.md` automatically.
 
@@ -743,6 +739,21 @@ If unsure, ask:
 If the current task is paused, write a short entry to `ai/paused-tasks.md`.
 
 Do not use `ai/paused-tasks.md` as a backlog. Use `ai/future-tasks.md` for future ideas and tasks.
+
+## Task finish and saving work
+
+Closing a task means both:
+
+1. The task is verified and task memory is cleaned through `task-finish`.
+2. The result is saved.
+
+Default save behavior:
+
+- If a GitHub remote is configured, create a commit and push the branch to GitHub after confirmed `task-finish` cleanup.
+- If Git is available but GitHub is not configured, create a local commit and tell the user that the work is saved only on this computer.
+- If Git is unavailable, create a clear local fallback such as a patch or archive and tell the user where it is.
+
+Do not claim that a task is closed until the save step is complete or the user explicitly accepts a local-only fallback.
 
 ## Architecture update
 
@@ -791,6 +802,7 @@ Superpowers may be installed and checked, but it is a controlled external method
 
 Superpowers may be proposed for:
 
+- bugs, crashes, regressions, flaky behavior, debug requests, and performance investigations;
 - large or vague tasks;
 - architecture design;
 - choosing between technical options;
@@ -801,17 +813,16 @@ Superpowers may be proposed for:
 - major refactoring;
 - unclear blast radius.
 
-Superpowers may be activated only when:
+Superpowers should be used for bugs and complex tasks when available. For other work, it may be activated when:
 
 - the user explicitly asks to use it;
 - the user explicitly confirms the agent's proposal to use it;
 - `ai/current-task.md` says `Use Superpowers: yes`.
 
-Do not activate Superpowers automatically only because a task matches a trigger. First explain why it may help and ask: `Use Superpowers for this task?`
+For a bug or complex task, state that Superpowers is the expected path and use it when it is available. If it is unavailable, ask whether to install/configure it or continue manually.
 
 Do not use Superpowers for:
 
-- small bugfixes;
 - copy changes;
 - simple UI tweaks;
 - narrow tasks with known relevant files;

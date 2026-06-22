@@ -39,6 +39,17 @@ ai/future-tasks.md
 
 Чтобы узнать, отстаёт ли архитектура в проекте, запусти проверку версии. Она сравнивает версию проекта с последней в репозитории и, если проект отстаёт, показывает dry-run, ничего не меняя:
 
+Безопасный вариант:
+
+```bash
+cd /path/to/project
+curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-template/main/scripts/update-installed-architecture.sh -o /tmp/update-installed-architecture.sh
+less /tmp/update-installed-architecture.sh
+bash /tmp/update-installed-architecture.sh --check
+```
+
+Быстрый вариант:
+
 ```bash
 cd /path/to/project
 curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-template/main/scripts/update-installed-architecture.sh | bash -s -- --check
@@ -61,6 +72,8 @@ curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-templa
 ```
 
 Dry run ничего не меняет. Он только показывает diff.
+
+Если не хочешь запускать скачанный скрипт сразу, скачай его в `/tmp`, посмотри через `less`, затем запусти `bash /tmp/update-installed-architecture.sh --dry-run`.
 
 Если diff нормальный, примени обновление и сразу закоммить:
 
@@ -148,6 +161,8 @@ Run environment-check.
 ```
 
 Финальное меню после `environment-check` — справочное. Оно не означает, что агент должен автоматически запускать `task-switch`, `task-finish`, `architecture-update` или другие workflow.
+
+Перед следующей рабочей задачей агент должен использовать `task-intake`.
 
 ## Внимание: --apply перезаписывает защищённые файлы целиком
 
