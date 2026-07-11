@@ -75,7 +75,8 @@ The start screen is independent:
 
 Keep `AGENTS.md` and `CLAUDE.md` short. Add only one equivalent routing line to
 each file pointing explicit start/help requests to the new skill. The expected
-growth is about 15-25 words per file, below one percent of their current size.
+growth is no more than 42 bytes per file, below one percent of their current
+size.
 
 Store the detailed workflow in `ai/skills/start-screen/SKILL.md`. Add the
 high-level behavior to `ai/architecture.md`. Mirror installed-project files in
