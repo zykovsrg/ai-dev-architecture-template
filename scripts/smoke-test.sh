@@ -47,6 +47,7 @@ bash "$ROOT/scripts/install.sh" "$PROJECT" >/dev/null
 assert_contains "$PROJECT/AGENTS.md" "custom agent entry"
 assert_file "$PROJECT/ai/current-task.md"
 assert_file "$PROJECT/ai/skills/task-intake/SKILL.md"
+assert_file "$PROJECT/ai/skills/start-screen/SKILL.md"
 assert_not_exists "$PROJECT/ai/skills/bugfix-workflow/SKILL.md"
 
 printf '# Current Task\n\nStatus: active\n\nStage: implementation\n\n## Goal\n\nKeep this project memory.\n' > "$PROJECT/ai/current-task.md"

@@ -64,6 +64,7 @@ current `ai/skills/*/SKILL.md` before using that workflow.
 
 Common triggers:
 
+- start: ai/skills/start-screen/SKILL.md
 - environment check: `ai/skills/environment-check/SKILL.md`, `ai/external-tools.md`
 - new task/change: `ai/skills/task-intake/SKILL.md`
 - task switching: `ai/skills/task-switch/SKILL.md`, `ai/current-task.md`, `ai/paused-tasks.md`
