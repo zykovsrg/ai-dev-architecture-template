@@ -96,27 +96,34 @@ After recording the task, continue in the correct work mode.
 
 ## Existing unfinished current task
 
-Treat the request as a different task if at least one is true:
+A new request is a different task by default.
 
-1. The goal changes.
-2. The work mode changes.
-3. The main files or project area change.
-4. The Done criteria change.
-5. The request creates a separate deliverable.
-6. The old task would remain unfinished after the new request.
-7. The user says "новая задача", "другая задача", "переключимся", "сейчас нужно другое", or similar.
+Treat it as a continuation ONLY if it fits the recorded Done criteria of the
+current task, meaning at least one of:
 
-If it is a different task, stop and invoke `task-switch`. Do not overwrite
-`ai/current-task.md` directly.
+1. It directly advances the recorded Done criteria.
+2. It fixes or adjusts work just produced for this task.
+3. It runs tests, checks, or review of this same work.
+4. It answers a question the agent asked.
 
-Treat the request as a continuation if it clarifies, narrows, tests, reviews, or
-finishes the current goal.
-
-If unsure, ask:
+Everything else is a different task, even if it touches the same files or the
+same screen. Do not start work. Ask one question with three options and wait:
 
 ```text
-Похоже, это может быть новая задача, а текущая ещё не закрыта. Переключаемся через task-switch или продолжаем текущую?
+Этот запрос выходит за Done criteria текущей задачи. Как поступим?
+1. Расширить текущую задачу — я обновлю Goal и Done criteria в ai/current-task.md.
+2. Переключиться на новую задачу через task-switch.
+3. Записать в ai/future-tasks.md и продолжить текущую задачу.
 ```
+
+If the user chooses to extend, update `Goal` and `Done criteria` in
+`ai/current-task.md` before starting the work. Never grow scope silently.
+
+If the user chooses to switch, stop and invoke `task-switch`. Do not overwrite
+`ai/current-task.md` directly.
+
+If the user chooses future-tasks, append the request to `ai/future-tasks.md`
+and continue the current task.
 
 ## Bugs and complex tasks
 
@@ -143,6 +150,7 @@ and wait for confirmation before editing.
 
 - Do not start implementation while `ai/current-task.md` is empty.
 - Do not silently overwrite an active, review, blocked, or paused task.
+- Do not extend the current task without updating Goal and Done criteria first.
 - Do not use `ai/paused-tasks.md` as a backlog.
 - Do not implement a future task unless the user promotes it to current work.
 - Keep the current task short enough to read quickly in a new chat.
