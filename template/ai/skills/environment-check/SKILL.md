@@ -43,6 +43,7 @@ Skip only if the user explicitly says not to run `environment-check`.
 Check that these files exist:
 
 - `ai/skills/task-intake/SKILL.md`
+- `ai/skills/start-screen/SKILL.md`
 - `ai/skills/ui-review/SKILL.md`
 - `ai/skills/security-review/SKILL.md`
 - `ai/skills/release-check/SKILL.md`
@@ -186,6 +187,7 @@ Include these base options:
 - `security-review` — проверить изменения на риски безопасности.
 - `copy-review` — проверить пользовательские тексты.
 - `future-tasks` — сохранить идею на потом в `ai/future-tasks.md`; отдельного skill нет.
+- `start-screen` — по явному запросу кратко объяснить архитектуру и показать текущую задачу; автоматически не показывается.
 
 If optional project skills are present, add them under:
 

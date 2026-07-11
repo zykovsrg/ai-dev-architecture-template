@@ -26,7 +26,7 @@ Do not edit files.
 Check:
 1. Are all required files present?
 2. Are AGENTS.md and CLAUDE.md short enough?
-3. Are all 10 base skills present, including task-intake, task-switch, and environment-check?
+3. Are all 11 base skills present, including task-intake, task-switch, and environment-check?
 4. Are permanent AI-facing instruction files in English?
 5. Are project-specific files still templates and not filled with data from another project?
 6. Is there duplicated or conflicting guidance?
@@ -178,6 +178,7 @@ Read:
 - ai/changelog.md
 - ai/external-tools.md
 - ai/skills/task-intake/SKILL.md
+- ai/skills/start-screen/SKILL.md
 - ai/skills/ui-review/SKILL.md
 - ai/skills/security-review/SKILL.md
 - ai/skills/release-check/SKILL.md
@@ -274,6 +275,7 @@ Check required files:
 - ai/changelog.md
 - ai/external-tools.md
 - ai/skills/task-intake/SKILL.md
+- ai/skills/start-screen/SKILL.md
 - ai/skills/ui-review/SKILL.md
 - ai/skills/security-review/SKILL.md
 - ai/skills/release-check/SKILL.md

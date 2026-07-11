@@ -41,6 +41,7 @@ template/
     external-tools.md
     skills/
       task-intake/SKILL.md
+      start-screen/SKILL.md
       ui-review/SKILL.md
       security-review/SKILL.md
       release-check/SKILL.md

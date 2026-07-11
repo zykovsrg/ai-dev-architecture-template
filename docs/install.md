@@ -52,6 +52,7 @@ ai/future-tasks.md
 ai/decisions.md
 ai/project-context.md
 ai/skills/task-intake/SKILL.md
+ai/skills/start-screen/SKILL.md
 ai/skills/architecture-update/SKILL.md
 ai/skills/environment-check/SKILL.md
 ai/skills/copy-review/SKILL.md
