@@ -4,3 +4,4 @@
 # local scratch
 _source/
 tmp/
+.worktrees/
