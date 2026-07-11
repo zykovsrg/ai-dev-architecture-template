@@ -1,6 +1,6 @@
 # Архитектура AI-разработки
 
-Version: 6.10
+Version: 6.11
 
 Этот файл — справочник по workflow и иерархии правил. Его не нужно загружать для каждой задачи. Читай его только если задача касается workflow, конфликтов правил, architecture-update или если правило неясно.
 
@@ -104,6 +104,10 @@ Before the first real task after `environment-check`, run `task-intake`.
 The start screen is separate from `environment-check`. Show it only after an explicit user request such as "покажи стартовый экран", "с чего начать", or "как работать с архитектурой". Never show it automatically at a session boundary or during a repeated environment check.
 
 Use `ai/skills/start-screen/SKILL.md`. The screen is read-only, uses plain Russian for a non-developer, stays close to one normal screen, and ends with the current task goal, `Status`, `Stage`, and next step or blocker. It shows skill/tool categories only; the full catalog is a separate request.
+
+### Task boundary
+
+The recorded Done criteria in `ai/current-task.md` define the task boundary. A new request is a different task by default; it continues the current task only if it fits the recorded Done criteria. Extending the boundary requires user confirmation and a written update of `Goal` and `Done criteria` before work starts. Details live in `task-intake` and `task-switch`.
 
 ## Architecture files and task memory
 
