@@ -1,6 +1,6 @@
 # Архитектура AI-разработки
 
-Version: 6.9
+Version: 6.10
 
 Этот файл — справочник по workflow и иерархии правил. Его не нужно загружать для каждой задачи. Читай его только если задача касается workflow, конфликтов правил, architecture-update или если правило неясно.
 
@@ -98,6 +98,12 @@ After `environment-check`, continue in one of the work modes:
 - `architecture-update`
 
 Before the first real task after `environment-check`, run `task-intake`.
+
+### On-demand start screen
+
+The start screen is separate from `environment-check`. Show it only after an explicit user request such as "покажи стартовый экран", "с чего начать", or "как работать с архитектурой". Never show it automatically at a session boundary or during a repeated environment check.
+
+Use `ai/skills/start-screen/SKILL.md`. The screen is read-only, uses plain Russian for a non-developer, stays close to one normal screen, and ends with the current task goal, `Status`, `Stage`, and next step or blocker. It shows skill/tool categories only; the full catalog is a separate request.
 
 ## Architecture files and task memory
 
@@ -365,6 +371,7 @@ Base skills:
 - `task-switch` — switching between unfinished tasks without losing context; may promote confirmed future tasks into current work.
 - `architecture-update` — updating development architecture after user approval.
 - `environment-check` — checking architecture installation, tool availability, and printing the available next commands/skills menu.
+- `start-screen` — short read-only orientation shown only after an explicit user request.
 
 Use skills by trigger. Do not apply skills from memory. Open the current `ai/skills/*/SKILL.md` before using that workflow.
 
