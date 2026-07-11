@@ -1,122 +1,56 @@
 # AI Dev Architecture Template
 
-Переиспользуемая архитектура одиночной AI-разработки для проектов, где используются Codex, Claude Code или другие coding agents.
+Готовая архитектура для разработки с AI-агентами: Codex, Claude Code и другими coding agents. Подходит для одиночной работы над проектом.
 
-Главная идея:
+## Что это решает
 
-- хранить важный контекст в репозитории, а не только в чате;
-- переходить между AI-агентами без потери контекста задачи;
-- тратить меньше токенов;
-- не копить скрытый технический долг;
-- отделять текущую задачу от будущих идей;
-- отделять проектные правила от универсальных правил работы агента.
+AI-агент забывает контекст между чатами. Эта архитектура хранит контекст в файлах репозитория, поэтому:
 
-## Стартовый экран
+- задачу можно продолжить в новом чате или в другом агенте без пересказа;
+- текущая задача, будущие идеи и принятые решения лежат в разных файлах и не смешиваются;
+- агент тратит меньше токенов: читает только нужные файлы, а не всю историю;
+- правила проекта не теряются и не превращаются в скрытый технический долг.
 
-Если вы открыли архитектуру впервые, начните с [docs/start-here.md](docs/start-here.md).
+## С чего начать
 
-Там есть пошаговые сценарии:
+Впервые здесь — откройте [docs/start-here.md](docs/start-here.md). Там пошаговые сценарии: новый проект, обновление старой версии, первая задача, работа с Superpowers, закрытие задачи, работа без GitHub.
 
-- новый проект;
-- проект со старой версией архитектуры;
-- постановка первой задачи;
-- установка и использование Superpowers для багов и сложных задач;
-- закрытие задачи через commit/push;
-- работа без GitHub.
+Непонятные термины объясняются в [docs/concepts.md](docs/concepts.md).
 
-## Структура репозитория
+## Установка в проект
 
-```text
-template/
-  AGENTS.md
-  CLAUDE.md
-  ai/
-    architecture.md
-    current-task.md
-    paused-tasks.md
-    future-tasks.md
-    project-context.md
-    decisions.md
-    changelog.md
-    external-tools.md
-    skills/
-      task-intake/SKILL.md
-      start-screen/SKILL.md
-      ui-review/SKILL.md
-      security-review/SKILL.md
-      release-check/SKILL.md
-      copy-review/SKILL.md
-      write-tests/SKILL.md
-      task-finish/SKILL.md
-      task-switch/SKILL.md
-      architecture-update/SKILL.md
-      environment-check/SKILL.md
+Самый простой путь — [универсальный стартовый промт](prompt/README.md). Скопируйте его в AI-агента, открытого в папке проекта. Агент сам установит или обновит архитектуру.
 
-docs/
-  start-here.md
-  concepts.md
-  install.md
-  update.md
-  update-installed-projects.md
-  file-roles.md
-  prompts.md
-  start-prompts.md
-  no-github.md
+Ручной способ:
 
-scripts/
-  install.sh
-  update-installed-architecture.sh
-```
+1. Склонируйте репозиторий шаблона (один раз):
 
-## Быстрая установка в проект
+   ```bash
+   cd ~/Documents
+   git clone git@github.com:zykovsrg/ai-dev-architecture-template.git
+   ```
 
-Самый простой путь — [универсальный стартовый промт](prompt/README.md): скопируйте его в AI-агента, открытого в папке проекта, и он сам установит или обновит архитектуру.
+2. Перейдите в свой проект:
 
-Ручной способ ниже.
+   ```bash
+   cd /path/to/project
+   ```
 
-Один раз склонируй репозиторий шаблона:
+3. Скопируйте файлы шаблона. Команда не перезаписывает уже существующие файлы:
 
-```bash
-cd ~/Documents
-git clone git@github.com:zykovsrg/ai-dev-architecture-template.git
-```
+   ```bash
+   rsync -av --ignore-existing ~/Documents/ai-dev-architecture-template/template/ ./
+   ```
 
-Перейди в проект:
+   То же самое делает скрипт `scripts/install.sh`.
 
-```bash
-cd /path/to/project
-```
+4. Заполните `ai/project-context.md` (что за проект) и `ai/current-task.md` (текущая задача). Остальные файлы памяти — `ai/decisions.md`, `ai/changelog.md`, `ai/paused-tasks.md`, `ai/future-tasks.md` — можно оставить пустыми шаблонами.
 
-Скопируй шаблонные файлы без перезаписи существующих файлов:
+Подробности — в [docs/install.md](docs/install.md). Удаление — в [docs/uninstall.md](docs/uninstall.md).
 
-```bash
-rsync -av --ignore-existing ~/Documents/ai-dev-architecture-template/template/ ./
-```
+## Обновление в уже используемом проекте
 
-То же самое делает скрипт `scripts/install.sh` — он оборачивает эту команду rsync и печатает следующие шаги.
-
-После этого обязательно заполни:
-
-- `ai/project-context.md`
-- `ai/current-task.md`
-
-В `ai/current-task.md` должны быть отдельные поля:
-
-- `Status` — состояние задачи: `empty / active / review / blocked / done / paused`;
-- `Stage` — этап работы: `intake / spec / planning / implementation / review / task-finish`.
-
-Можно оставить пустыми шаблонами до появления реальных данных:
-
-- `ai/decisions.md`
-- `ai/changelog.md`
-- `ai/paused-tasks.md`
-- `ai/future-tasks.md`
-
-`ai/external-tools.md` обычно не нужно менять после установки. Обновляй его только если меняется список ожидаемых внешних skills, tools или controlled methodologies.
-
-## Быстрое обновление в уже используемом проекте
-
-Безопасный способ: скачать скрипт, посмотреть его и только потом запускать:
+Безопасный способ: скачать скрипт, посмотреть его глазами, затем запустить:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-template/main/scripts/update-installed-architecture.sh -o /tmp/update-installed-architecture.sh
@@ -124,125 +58,68 @@ less /tmp/update-installed-architecture.sh
 bash /tmp/update-installed-architecture.sh --check
 ```
 
-Быстрый способ ниже использует `curl | bash`: он сразу запускает скачанный из интернета скрипт. Используй его только если доверяешь источнику.
-
-Сначала можно проверить, отстаёт ли версия архитектуры в проекте (печатает версии и dry-run, ничего не меняя):
+`--check` печатает версии и dry-run, ничего не меняя. Дальше:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-template/main/scripts/update-installed-architecture.sh | bash -s -- --check
+bash /tmp/update-installed-architecture.sh --dry-run   # показать, что изменится
+bash /tmp/update-installed-architecture.sh --apply --commit   # применить и закоммитить
 ```
 
-Перейди в проект и сначала запусти dry run:
+Скрипт обновляет файлы архитектуры и base skills, но не трогает рабочую память проекта: `ai/project-context.md`, `ai/current-task.md`, `ai/decisions.md`, `ai/changelog.md`, `ai/paused-tasks.md`, `ai/future-tasks.md`.
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-template/main/scripts/update-installed-architecture.sh | bash -s -- --dry-run
-```
+Подробная инструкция — в [docs/update-installed-projects.md](docs/update-installed-projects.md).
 
-Если diff нормальный, примени обновление и сразу закоммить:
+## Как устроены файлы
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-template/main/scripts/update-installed-architecture.sh | bash -s -- --apply --commit
-```
-
-Updater обновляет protected architecture files и base skills, но не перезаписывает рабочую память проекта:
-
-```text
-ai/project-context.md
-ai/current-task.md
-ai/decisions.md
-ai/changelog.md
-ai/paused-tasks.md
-ai/future-tasks.md
-```
-
-Подробная инструкция — в `docs/update-installed-projects.md`.
-
-## Источник правды
-
-Этот GitHub-репозиторий — источник правды для архитектуры.
-
-- `README.md`
-- `CHANGELOG.md`
-- `docs/`
-- `template/`
-
-## Главные понятия
+Входные файлы — их агент читает всегда:
 
 - `AGENTS.md` — входной файл для Codex.
 - `CLAUDE.md` — входной файл для Claude Code.
+
+Файлы памяти проекта — их агент читает по необходимости:
+
 - `ai/current-task.md` — текущая задача.
-- `ai/paused-tasks.md` — задачи, временно поставленные на паузу через `task-switch`.
-- `ai/future-tasks.md` — идеи и будущие задачи, которые не входят в текущий scope.
-- `ai/project-context.md` — проектный контекст и инварианты.
-- `ai/decisions.md` — устойчивые решения и инварианты, которые будущие агенты не должны сломать.
+- `ai/paused-tasks.md` — задачи, поставленные на паузу через `task-switch`.
+- `ai/future-tasks.md` — идеи и будущие задачи вне текущей работы.
+- `ai/project-context.md` — что за проект: стек, структура, хрупкие места.
+- `ai/decisions.md` — устойчивые решения, которые будущие агенты не должны сломать.
 - `ai/changelog.md` — последние заметные изменения.
-- `ai/external-tools.md` — ожидаемые внешние tools и controlled methodologies.
-- `ai/skills/*/SKILL.md` — переиспользуемые процедуры.
-- `task-intake` — принимает новую задачу и записывает её в `ai/current-task.md` или запускает `task-switch`.
-- `task-finish` — проверяет, можно ли закрыть задачу, и чистит контекст после подтверждения.
+- `ai/external-tools.md` — ожидаемые внешние tools и методологии.
+
+Skills — переиспользуемые процедуры в `ai/skills/*/SKILL.md`. Всего 11 base skills:
+
+- `task-intake` — принимает новую задачу и записывает её в `ai/current-task.md`.
 - `task-switch` — безопасно переключает незавершённые задачи.
-- `architecture-update` — меняет правила AI-разработки только после явного подтверждения.
-- `environment-check` — проверяет установку архитектуры и внешние tools; после проверки показывает меню доступных следующих commands и skills.
-
-Стартовый экран — в `docs/start-here.md`.
-Простые объяснения терминов — в `docs/concepts.md`.
-Готовые стартовые промты — в `docs/start-prompts.md`.
-
-## Architecture files and task memory
-
-### Protected architecture files и controlled memory files
+- `task-finish` — проверяет, можно ли закрыть задачу, и чистит контекст после подтверждения.
+- `environment-check` — проверяет установку архитектуры и внешние tools, показывает меню.
+- `start-screen` — короткий стартовый экран по запросу.
+- `architecture-update` — меняет правила разработки только после явного подтверждения.
+- `ui-review` — проверка UI-задач.
+- `write-tests` — тесты для рискованных изменений.
+- `security-review` — проверка безопасности.
+- `release-check` — проверка перед merge или релизом.
+- `copy-review` — проверка текстов.
 
 Полные списки защищённых файлов и controlled memory — в [docs/file-roles.md](docs/file-roles.md).
 
-Примеры:
+## Структура репозитория
 
-- `task-switch` может менять `ai/current-task.md` и `ai/paused-tasks.md` после подтверждения;
-- `task-switch` может продвинуть запись из `ai/future-tasks.md` в `ai/current-task.md` после подтверждения;
-- `task-finish` может менять `ai/current-task.md`, `ai/changelog.md`, `ai/decisions.md` и подтверждённые записи в `ai/future-tasks.md`;
-- после `task-finish` результат должен быть сохранён: push на GitHub, если он настроен, или local-only fallback без GitHub;
-- `ai/project-context.md` меняется только если изменились стек, команды, структура, модель данных, инварианты или хрупкие зоны.
+```text
+template/   — то, что копируется в ваш проект (AGENTS.md, CLAUDE.md, ai/)
+prompt/     — универсальный стартовый промт
+docs/       — документация: установка, обновление, понятия, сценарии
+scripts/    — install.sh, update-installed-architecture.sh, check-consistency.sh
+```
 
-## Skill routing
+Этот GitHub-репозиторий — источник правды для архитектуры.
 
-Если задача попадает под trigger skill, агент должен открыть актуальный `ai/skills/*/SKILL.md`. Не нужно применять skill по памяти.
+## Как агент работает с задачами
 
-- UI-задачи: `ui-review` + `write-tests`.
-- Новые задачи: `task-intake`.
-- Баги, краши, регрессии, flaky behavior, debug requests, performance и сложные задачи: Superpowers, если он доступен.
-- Идеи на потом и будущие задачи: записывать в `ai/future-tasks.md`; отдельный skill не нужен.
-- Pre-merge или сложное review: `release-check`; если доступен и нужен — `code-review-graph`.
-- Закрытие задачи: `task-finish`.
-- Переключение задачи: `task-switch`.
+- Новая сессия или новый чат: агент запускает `environment-check` и показывает меню. Меню ничего не запускает само.
+- Перед реальной работой: `task-intake` записывает задачу в `ai/current-task.md`.
+- Новый запрос по умолчанию считается другой задачей. Он остаётся в текущей задаче, только если попадает в записанные Done criteria. Иначе агент задаёт вопрос: расширить задачу, переключиться через `task-switch` или записать в `ai/future-tasks.md`.
+- Незавершённая задача не перезаписывается молча — только через `task-switch` с подтверждением.
+- Закрытие задачи — через `task-finish`. Если настроен GitHub remote, результат обязательно коммитится и пушится; без GitHub — сохраняется локально с объяснением.
+- Баги, регрессии, краши и сложные задачи: агент использует Superpowers, если он доступен.
 
-## Skill precedence
-
-Порядок приоритета правил см. в `ai/architecture.md` → раздел "Skill precedence".
-
-## Work modes and environment check
-
-The architecture has four work modes:
-
-- `implementation`
-- `review`
-- `task-finish`
-- `architecture-update`
-
-`environment-check` is not a work mode. It is an availability check for required base skills and expected external tools.
-
-Run `environment-check` when entering an existing project, switching tools or agents, continuing in a new chat, or continuing after compressed context, compacted context, restored summary, or conversation summary continuation.
-
-After `environment-check`, the agent must show a short menu of available next commands and skills. This menu is informational only and must not trigger any listed workflow automatically.
-
-Before the first real task after `environment-check`, the agent must run `task-intake`.
-
-## Task switching
-
-If `ai/current-task.md` has an unfinished task and the user asks for a different task, the agent must not overwrite it silently.
-
-The agent should use `task-switch`, show the current task, the new task, the risk of switching, and ask for confirmation.
-
-Paused tasks are stored briefly in `ai/paused-tasks.md`.
-
-Future ideas are stored separately in `ai/future-tasks.md`.
-
-A request is treated as a different task when it changes the goal, work mode, main files, Done criteria, or creates a separate deliverable.
+Режимы работы: `implementation`, `review`, `task-finish`, `architecture-update`. Порядок приоритета правил — в `ai/architecture.md`, раздел «Skill precedence».

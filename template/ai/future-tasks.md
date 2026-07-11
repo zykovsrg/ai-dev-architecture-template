@@ -11,7 +11,7 @@ This is a backlog, not active work.
 - Do not use this file for completed change history. Use `ai/changelog.md` for what changed.
 - Do not use this file for durable architecture or product decisions. Use `ai/decisions.md` for rules future agents must not break.
 - Keep entries short, actionable, and linked to the context where they appeared.
-- If a future task becomes active, copy it into `ai/current-task.md` and mark the original entry as `promoted`.
+- If a future task becomes active, copy it into `ai/current-task.md` and mark the original entry as `promoted`. When that task is closed through `task-finish`, its entry is deleted from this file; the trace stays in `ai/changelog.md`.
 
 ## Statuses
 

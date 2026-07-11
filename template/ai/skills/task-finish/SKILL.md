@@ -80,7 +80,7 @@ Do not add new scope to the completed task just because a future task was discov
 - If an issue was only mitigated and root cause is unproven, record that clearly in `ai/changelog.md`.
 - If an idea is useful but outside the current task, propose adding it to `ai/future-tasks.md` instead of implementing it during cleanup.
 - Do not claim the task is closed until the result is saved.
-- If a GitHub remote is configured, default to commit and push after cleanup.
+- If `git remote -v` shows a `github.com` remote, commit and push are mandatory closure steps, not defaults. The task is not closed until the push succeeds or the user explicitly accepts local-only closure after a reported push failure.
 - If GitHub is not configured, use local-only saving and explain the limitation.
 
 ## Phase 2 — Cleanup
@@ -94,9 +94,12 @@ Steps:
 1. Add a short summary to `ai/changelog.md`.
 2. If the task introduced an important architecture, product, data model, workflow, storage, signing, sandboxing, sync, undo, or agent-process decision, add it to `ai/decisions.md`.
 3. If the user confirmed future task candidates, append them to `ai/future-tasks.md`.
-4. If temporary diagnostics remain, keep removal criteria in `ai/current-task.md` Done criteria or handoff notes. Record retained diagnostics in `ai/changelog.md` only during confirmed cleanup if the retention is notable. Do not write TEMP diagnostics cleanup work to `ai/paused-tasks.md`.
-5. Clean `ai/current-task.md`.
-6. Leave a blank template for the next task in `ai/current-task.md` with `Status: empty` and `Stage: intake`.
+4. If the completed task was promoted from `ai/future-tasks.md`, delete its
+   entry from that file. The history lives in `ai/changelog.md`; do not keep
+   `promoted` or `done` entries in the backlog.
+5. If temporary diagnostics remain, keep removal criteria in `ai/current-task.md` Done criteria or handoff notes. Record retained diagnostics in `ai/changelog.md` only during confirmed cleanup if the retention is notable. Do not write TEMP diagnostics cleanup work to `ai/paused-tasks.md`.
+6. Clean `ai/current-task.md`.
+7. Leave a blank template for the next task in `ai/current-task.md` with `Status: empty` and `Stage: intake`.
 
 Rules:
 
@@ -123,6 +126,10 @@ If a GitHub remote exists:
 2. Commit with a clear message.
 3. Push the current branch to GitHub.
 4. Report the pushed branch and commit.
+
+A GitHub remote means any remote whose URL points to `github.com`. With such
+a remote present, do not report the task as closed while the push has not
+succeeded and the user has not been told why.
 
 If Git exists but no GitHub remote exists:
 

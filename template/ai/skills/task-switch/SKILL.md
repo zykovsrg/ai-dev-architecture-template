@@ -80,7 +80,7 @@ When promoting a future task:
 4. Set `Stage` to the real next stage: `intake`, `spec`, `planning`, `implementation`, or `review`.
 5. Mark the original future task as `Status: promoted` and add a short promotion note.
 
-Do not delete the original future task during promotion unless the user explicitly asks.
+Do not delete the original future task during promotion. It is deleted later by `task-finish` when the promoted task is closed; if the switch is abandoned, the entry stays in the backlog.
 
 ## Phase 1 — Check
 
