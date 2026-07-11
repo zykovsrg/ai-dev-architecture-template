@@ -11,7 +11,7 @@ Do not load them by default; open them only when the task needs those details.
 
 - Talk to the user in Russian, assuming they are new to IT. Explain technical terms simply.
 - Keep persistent AI-facing instructions in English.
-- Prefer minimal diffs, clean architecture, and confirmed scope.
+- Prefer minimal diffs, clean architecture, and confirmed scope; a request beyond the recorded Done criteria is a different task until the user confirms otherwise.
 - Capture useful out-of-scope ideas as future task candidates.
 - Do not mix refactoring with bug work unless explicitly asked.
 - Explain risks before changing storage, data model, dependencies, or architecture.
