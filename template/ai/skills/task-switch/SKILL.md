@@ -27,19 +27,19 @@ Use it also when the user explicitly promotes an entry from `ai/future-tasks.md`
 
 ## How to decide whether this is a different task
 
-Treat the new request as a different task if at least one of these is true:
+A new request is a different task by default.
 
-1. The goal changes.
-2. The work mode changes.
-3. The main relevant files or project area change.
-4. The Done criteria change.
-5. The new request does not help complete the current task.
-6. The new request creates a separate deliverable.
-7. The current task would remain unfinished after doing the new request.
+It is the same task ONLY if it fits the recorded Done criteria of the current
+task: it directly advances them, fixes or adjusts work just produced for this
+task, runs tests, checks, or review of this same work, or answers the agent's
+question.
 
-Treat the new request as the same task if it clarifies, narrows, tests, reviews, or completes the current goal.
+If the request needs a new Done criterion, it is a different task, even if it
+touches the same files or the same UI.
 
-Small UI iterations can stay in the same task if they clarify the same UI goal. If they create a new deliverable or change Done criteria, check whether `task-switch` is needed.
+Small iterations stay in the same task only while they serve the recorded
+Done criteria. If a request needs a new Done criterion, use the three-option
+question from `task-intake` instead of deciding silently.
 
 If unsure, do not guess. Ask the user:
 
@@ -53,11 +53,16 @@ Different task:
 - Current task: "Review payment diff"; new request: "Create release checklist".
 - Current task: "Implement settings UI"; new request: "Save this idea for later and start analytics".
 
-Same task:
+Same task (fits the recorded Done criteria):
 
 - Current task: "Add onboarding screen"; new request: "Make the first step clearer".
 - Current task: "Fix login crash"; new request: "Run the failing login test again".
 - Current task: "Review payment diff"; new request: "Check the same diff for security risks".
+
+Different task even though it looks close:
+
+- Current task: "Add onboarding screen"; new request: "Also add a settings screen" — needs a new Done criterion.
+- Current task: "Fix login crash"; new request: "Improve login screen layout" — does not advance the recorded Done criteria.
 
 Future idea, not a switch:
 
