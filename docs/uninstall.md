@@ -1,18 +1,18 @@
-# Как удалить архитектуру
+# How to remove the architecture
 
-Не удаляйте папку `ai/` целиком без проверки. В ней может храниться история текущих, приостановленных и будущих задач, решения проекта и журнал изменений.
+Do not delete the `ai/` folder wholesale without checking it first. It may hold the history of current, paused, and future tasks, project decisions, and the changelog.
 
-Попросите агента: `Помоги удалить AI development architecture`.
+Ask the agent: `Help me remove the AI development architecture`.
 
-Перед изменениями агент должен:
+Before making changes, the agent must:
 
-1. показать файлы, которые относятся к архитектуре;
-2. отметить файлы, где может быть содержимое проекта;
-3. предложить резервную копию памяти задач;
-4. спросить, нужно убрать только правила или также историю задач;
-5. показать итоговый план удаления;
-6. получить отдельное подтверждение.
+1. show the files that belong to the architecture;
+2. flag files that may contain project content;
+3. offer a backup of the task memory;
+4. ask whether to remove only the rules or also the task history;
+5. show the final removal plan;
+6. get a separate confirmation.
 
-Безопасный вариант по умолчанию — убрать правила и skills архитектуры, но сохранить копию `ai/current-task.md`, `ai/paused-tasks.md`, `ai/future-tasks.md`, `ai/project-context.md`, `ai/decisions.md` и `ai/changelog.md`.
+The safe default is to remove the architecture rules and skills but keep a copy of `ai/current-task.md`, `ai/paused-tasks.md`, `ai/future-tasks.md`, `ai/project-context.md`, `ai/decisions.md`, and `ai/changelog.md`.
 
-`AGENTS.md`, `CLAUDE.md`, `.claude/` и `.codex/` могут содержать не только файлы этой архитектуры. Агент должен изменить их выборочно, а не удалять целиком.
+`AGENTS.md`, `CLAUDE.md`, `.claude/`, and `.codex/` may contain more than this architecture's files. The agent must edit them selectively, not delete them wholesale.

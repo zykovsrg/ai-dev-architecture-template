@@ -1,12 +1,12 @@
-# Обновление архитектуры в уже используемых проектах
+# Updating the architecture in projects already using it
 
-Эта инструкция нужна для проектов, где архитектура уже установлена.
+This guide is for projects where the architecture is already installed.
 
-Цель обновления: быстро подтянуть актуальные правила и base skills из `zykovsrg/ai-dev-architecture-template`, не затирая рабочую память конкретного проекта.
+The goal of the update: quickly pull the current rules and base skills from `zykovsrg/ai-dev-architecture-template` without wiping the working memory of the specific project.
 
-## Что обновляется автоматически
+## What is updated automatically
 
-Updater обновляет protected architecture files:
+The updater updates the protected architecture files:
 
 ```text
 AGENTS.md
@@ -16,11 +16,11 @@ ai/external-tools.md
 ai/skills/*
 ```
 
-Если в шаблоне появятся `.claude/` или `.codex/`, updater также сможет подтянуть файлы из этих директорий.
+If `.claude/` or `.codex/` appear in the template, the updater will also be able to pull files from those directories.
 
-## Что не перезаписывается
+## What is not overwritten
 
-Updater не затирает controlled memory files проекта:
+The updater does not wipe the project's controlled memory files:
 
 ```text
 ai/project-context.md
@@ -31,15 +31,15 @@ ai/paused-tasks.md
 ai/future-tasks.md
 ```
 
-Если memory-файла нет, updater создаст его из шаблона. Если файл уже есть, он останется как есть.
+If a memory file is missing, the updater creates it from the template. If the file already exists, it stays as is.
 
-Списки выше описывают поведение апдейтера. Канонические полные списки защищённых файлов и controlled memory — в [file-roles.md](file-roles.md).
+The lists above describe the updater's behavior. The canonical full lists of protected files and controlled memory are in [file-roles.md](file-roles.md).
 
-## Проверить версию
+## Check the version
 
-Чтобы узнать, отстаёт ли архитектура в проекте, запусти проверку версии. Она сравнивает версию проекта с последней в репозитории и, если проект отстаёт, показывает dry-run, ничего не меняя:
+To find out whether the architecture in the project is behind, run the version check. It compares the project's version with the latest in the repository and, if the project is behind, shows a dry-run without changing anything:
 
-Безопасный вариант:
+Safe way:
 
 ```bash
 cd /path/to/project
@@ -48,50 +48,50 @@ less /tmp/update-installed-architecture.sh
 bash /tmp/update-installed-architecture.sh --check
 ```
 
-Быстрый вариант:
+Quick way:
 
 ```bash
 cd /path/to/project
 curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-template/main/scripts/update-installed-architecture.sh | bash -s -- --check
 ```
 
-Код выхода `0` — актуально, `1` — доступно обновление. Локально из клона: `bash scripts/update-installed-architecture.sh --source /path/to/ai-dev-architecture-template --check`.
+Exit code `0` — up to date, `1` — an update is available. Locally from a clone: `bash scripts/update-installed-architecture.sh --source /path/to/ai-dev-architecture-template --check`.
 
-## Быстрый безопасный запуск
+## Quick safe run
 
-Перейди в проект:
+Go to the project:
 
 ```bash
 cd /path/to/project
 ```
 
-Сначала запусти dry run:
+Run a dry run first:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-template/main/scripts/update-installed-architecture.sh | bash -s -- --dry-run
 ```
 
-Dry run ничего не меняет. Он только показывает diff.
+The dry run changes nothing. It only shows the diff.
 
-Если не хочешь запускать скачанный скрипт сразу, скачай его в `/tmp`, посмотри через `less`, затем запусти `bash /tmp/update-installed-architecture.sh --dry-run`.
+If you do not want to run the downloaded script right away, download it to `/tmp`, review it with `less`, then run `bash /tmp/update-installed-architecture.sh --dry-run`.
 
-Если diff нормальный, примени обновление и сразу закоммить:
+If the diff looks fine, apply the update and commit right away:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-template/main/scripts/update-installed-architecture.sh | bash -s -- --apply --commit
 ```
 
-Коммит будет называться:
+The commit will be named:
 
 ```text
 chore: update AI development architecture
 ```
 
-## Если проект не в чистом состоянии
+## If the project is not in a clean state
 
-По умолчанию updater не применяет изменения, если в проекте уже есть незакоммиченные изменения.
+By default the updater does not apply changes if the project already has uncommitted changes.
 
-Сначала лучше сохранить текущую работу:
+It is better to save the current work first:
 
 ```bash
 git status
@@ -99,32 +99,32 @@ git add .
 git commit -m "wip: save current work"
 ```
 
-Если ты сознательно хочешь применить обновление поверх незакоммиченных изменений, добавь флаг:
+If you deliberately want to apply the update on top of uncommitted changes, add the flag:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-template/main/scripts/update-installed-architecture.sh | bash -s -- --apply --commit --allow-dirty
 ```
 
-Используй `--allow-dirty` только если понимаешь, какие изменения уже есть в проекте.
+Use `--allow-dirty` only if you understand which changes already exist in the project.
 
-## Локальное обновление из клона архитектуры
+## Local update from a clone of the architecture
 
-Если репозиторий архитектуры уже скачан локально:
+If the architecture repository is already downloaded locally:
 
 ```bash
 cd /path/to/project
 bash /path/to/ai-dev-architecture-template/scripts/update-installed-architecture.sh --source /path/to/ai-dev-architecture-template --dry-run
 ```
 
-Применить и закоммитить:
+Apply and commit:
 
 ```bash
 bash /path/to/ai-dev-architecture-template/scripts/update-installed-architecture.sh --source /path/to/ai-dev-architecture-template --apply --commit
 ```
 
-## Обновление нескольких проектов
+## Updating several projects
 
-Создай список проектов:
+Create a list of projects:
 
 ```bash
 cat > ~/ai-projects.txt <<'EOF'
@@ -134,7 +134,7 @@ cat > ~/ai-projects.txt <<'EOF'
 EOF
 ```
 
-Сначала проверь dry run по каждому проекту:
+First check the dry run for each project:
 
 ```bash
 while read project; do
@@ -143,7 +143,7 @@ while read project; do
 done < ~/ai-projects.txt
 ```
 
-Если всё ок, применяй:
+If everything is fine, apply:
 
 ```bash
 while read project; do
@@ -152,31 +152,31 @@ while read project; do
 done < ~/ai-projects.txt
 ```
 
-## После обновления
+## After the update
 
-После обновления открой проект в Codex или Claude Code и попроси агента:
+After the update, open the project in Codex or Claude Code and ask the agent:
 
 ```text
 Run environment-check.
 ```
 
-Финальное меню после `environment-check` — справочное. Оно не означает, что агент должен автоматически запускать `task-switch`, `task-finish`, `architecture-update` или другие workflow.
+The final menu after `environment-check` is informational. It does not mean the agent should automatically run `task-switch`, `task-finish`, `architecture-update`, or other workflows.
 
-Перед следующей рабочей задачей агент должен использовать `task-intake`.
+Before the next working task, the agent must use `task-intake`.
 
-## Внимание: --apply перезаписывает защищённые файлы целиком
+## Warning: --apply overwrites protected files wholesale
 
-`--apply` копирует свежие версии защищённых файлов (`AGENTS.md`, `CLAUDE.md`, скиллы) поверх текущих. Если вы вручную меняли эти файлы под свой проект и закоммитили, ваши правки будут затёрты. Проверка чистоты дерева ловит только незакоммиченные изменения, не закоммиченные.
+`--apply` copies fresh versions of the protected files (`AGENTS.md`, `CLAUDE.md`, skills) over the current ones. If you manually customized these files for your project and committed the changes, your edits will be wiped. The clean-tree check only catches uncommitted changes, not committed ones.
 
-Поэтому всегда сначала `--dry-run` и читайте diff. Контролируемая память проекта (`ai/current-task.md`, `ai/decisions.md` и т.д.) при этом не трогается.
+So always run `--dry-run` first and read the diff. The project's controlled memory (`ai/current-task.md`, `ai/decisions.md`, etc.) is not touched.
 
-## Когда не использовать updater
+## When not to use the updater
 
-Не используй updater вместо полноценного review, если:
+Do not use the updater instead of a full review if:
 
-- проект сильно поменял собственные `AGENTS.md` или `CLAUDE.md`;
-- в `ai/skills/` есть локальные изменения base skills;
-- ты не уверен, какие правила проекта были изменены вручную;
-- проект сейчас находится в середине рискованного refactor.
+- the project has heavily customized its own `AGENTS.md` or `CLAUDE.md`;
+- there are local changes to base skills in `ai/skills/`;
+- you are not sure which project rules were changed manually;
+- the project is in the middle of a risky refactor.
 
-В таких случаях сначала запускай `--dry-run`, затем проси агента провести `architecture-update` review diff.
+In those cases, run `--dry-run` first, then ask the agent to do an `architecture-update` review of the diff.

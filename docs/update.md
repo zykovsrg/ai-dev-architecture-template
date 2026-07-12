@@ -1,10 +1,10 @@
-# Инструкция по обновлению
+# Update guide
 
-Самый простой способ — [универсальный стартовый промт](../prompt/README.md): скопируйте его в AI-агента, открытого в папке проекта, и он проверит версию и предложит обновление. Инструкция ниже — для ручного обновления.
+The easiest way is the [universal start prompt](../README.md#установка-в-проект-универсальный-стартовый-промт): copy it into an AI agent opened in the project folder, and it will check the version and offer an update. The instructions below are for manual updating.
 
-## Безопасный способ
+## Safe way
 
-Самый безопасный путь — скачать скрипт, посмотреть его и только потом запускать.
+The safest path is to download the script, review it, and only then run it.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-template/main/scripts/update-installed-architecture.sh -o /tmp/update-installed-architecture.sh
@@ -12,37 +12,37 @@ less /tmp/update-installed-architecture.sh
 bash /tmp/update-installed-architecture.sh --check
 ```
 
-`curl | bash` ниже удобнее, но он сразу запускает скачанный из интернета скрипт. Используй его только если доверяешь источнику и понимаешь, что команда будет делать.
+The `curl | bash` form below is more convenient, but it immediately runs a script downloaded from the internet. Use it only if you trust the source and understand what the command will do.
 
-## Сначала — проверить версию
+## First — check the version
 
-Быстрая команда сравнивает версию архитектуры в проекте с последней в репозитории. Если проект отстаёт, она печатает версии и сразу показывает dry-run (превью изменений), **ничего не меняя**:
+The quick command compares the architecture version in the project with the latest in the repository. If the project is behind, it prints the versions and immediately shows a dry-run (a preview of changes), **without changing anything**:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-template/main/scripts/update-installed-architecture.sh | bash -s -- --check
 ```
 
-Код выхода: `0` — всё актуально, `1` — есть обновление. Если архитектура устарела, примените обновление командами ниже.
+Exit code: `0` — up to date, `1` — an update is available. If the architecture is out of date, apply the update with the commands below.
 
-## Быстрое обновление
+## Quick update
 
-Для уже используемых проектов основной способ обновления — автоматический updater:
+For projects already in use, the main update path is the automatic updater:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-template/main/scripts/update-installed-architecture.sh | bash -s -- --dry-run
 ```
 
-Если diff нормальный:
+If the diff looks fine:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-template/main/scripts/update-installed-architecture.sh | bash -s -- --apply --commit
 ```
 
-Подробная инструкция — в `docs/update-installed-projects.md`.
+The detailed guide is in `docs/update-installed-projects.md`.
 
-## Что делает updater
+## What the updater does
 
-Updater обновляет protected architecture files:
+The updater updates the protected architecture files:
 
 ```text
 AGENTS.md
@@ -52,7 +52,7 @@ ai/external-tools.md
 ai/skills/*
 ```
 
-Controlled memory files не перезаписываются:
+Controlled memory files are not overwritten:
 
 ```text
 ai/current-task.md
@@ -63,52 +63,52 @@ ai/decisions.md
 ai/changelog.md
 ```
 
-Списки выше описывают поведение апдейтера. Канонические полные списки защищённых файлов и controlled memory — в [file-roles.md](file-roles.md).
+The lists above describe the updater's behavior. The canonical full lists of protected files and controlled memory are in [file-roles.md](file-roles.md).
 
-Если controlled memory file отсутствует, updater создаёт его из шаблона. Если файл уже есть, он остаётся как есть.
+If a controlled memory file is missing, the updater creates it from the template. If the file already exists, it stays as is.
 
-## 1. Обновить репозиторий шаблона вручную
+## 1. Update the template repository manually
 
-Если используешь локальный клон шаблона:
+If you use a local clone of the template:
 
 ```bash
 cd ~/Documents/ai-dev-architecture-template
 git pull origin main
 ```
 
-## 2. Запустить updater из локального клона
+## 2. Run the updater from the local clone
 
 ```bash
 cd /path/to/project
 bash ~/Documents/ai-dev-architecture-template/scripts/update-installed-architecture.sh --source ~/Documents/ai-dev-architecture-template --dry-run
 ```
 
-Применить и закоммитить:
+Apply and commit:
 
 ```bash
 bash ~/Documents/ai-dev-architecture-template/scripts/update-installed-architecture.sh --source ~/Documents/ai-dev-architecture-template --apply --commit
 ```
 
-## 3. Если updater недоступен
+## 3. If the updater is unavailable
 
-Можно вручную добавить новые файлы шаблона без перезаписи существующих файлов:
+You can manually add new template files without overwriting existing ones:
 
 ```bash
 cd /path/to/project
 rsync -av --ignore-existing ~/Documents/ai-dev-architecture-template/template/ ./
 ```
 
-Эта команда копирует только те файлы, которых ещё нет в проекте. Она не перезаписывает существующие файлы.
+This command copies only files that do not yet exist in the project. It does not overwrite existing files.
 
-После v6.0 проверь, появился ли новый файл:
+After v6.0, check whether the new file appeared:
 
 ```bash
 test -f ai/future-tasks.md || cp ~/Documents/ai-dev-architecture-template/template/ai/future-tasks.md ai/future-tasks.md
 ```
 
-## 4. Не перезаписывать файлы вслепую
+## 4. Do not overwrite files blindly
 
-Сначала сравни шаблон и проект:
+First compare the template with the project:
 
 ```bash
 diff -ru ~/Documents/ai-dev-architecture-template/template/AGENTS.md ./AGENTS.md
@@ -118,42 +118,42 @@ diff -ru ~/Documents/ai-dev-architecture-template/template/ai/external-tools.md 
 diff -ru ~/Documents/ai-dev-architecture-template/template/ai/skills ./ai/skills
 ```
 
-## 5. Protected architecture files и controlled memory files
+## 5. Protected architecture files and controlled memory files
 
-Полные списки защищённых файлов и controlled memory — в [file-roles.md](file-roles.md).
+The full lists of protected files and controlled memory are in [file-roles.md](file-roles.md).
 
-При обновлении существующего проекта не копируй protected architecture files поверх текущих файлов без diff и ревью. Controlled memory files не заменяй шаблоном.
+When updating an existing project, do not copy protected architecture files over the current files without a diff and review. Do not replace controlled memory files with the template.
 
-Их можно обновлять только как проектную память:
+They may be updated only as project memory:
 
-- `ai/current-task.md` — через `task-intake`, текущую задачу, `task-switch` или `task-finish`;
-- `ai/paused-tasks.md` — через `task-switch`;
-- `ai/future-tasks.md` — для будущих задач, которые явно сохранены пользователем или подтверждены как future task candidates;
-- `ai/project-context.md` — после подтверждения, если изменились стек, команды, структура, модель данных, инварианты или хрупкие зоны;
-- `ai/decisions.md` — когда появилось устойчивое решение, которое будущие агенты не должны сломать;
-- `ai/changelog.md` — через подтверждённый `task-finish` или approved `architecture-update`.
+- `ai/current-task.md` — through `task-intake`, the current task, `task-switch`, or `task-finish`;
+- `ai/paused-tasks.md` — through `task-switch`;
+- `ai/future-tasks.md` — for future tasks explicitly saved by the user or confirmed as future task candidates;
+- `ai/project-context.md` — after confirmation, when the stack, commands, structure, data model, invariants, or fragile zones change;
+- `ai/decisions.md` — when a durable decision appears that future agents must not break;
+- `ai/changelog.md` — through a confirmed `task-finish` or an approved `architecture-update`.
 
-## 7. Правило безопасного обновления
+## 7. Safe update rule
 
-Для уже существующего проекта:
+For an existing project:
 
-1. Запусти updater в `--dry-run`.
-2. Сравни protected architecture files и controlled memory files.
-3. Убедись, что проектные добавления не будут потеряны.
-4. Применяй обновление только если diff понятен.
-5. Перед merge или релизом запусти `release-check`.
-6. После обновления запусти `environment-check` и проверь финальное меню доступных commands и skills.
+1. Run the updater in `--dry-run`.
+2. Compare the protected architecture files and controlled memory files.
+3. Make sure project-specific additions will not be lost.
+4. Apply the update only if the diff is clear.
+5. Before a merge or release, run `release-check`.
+6. After the update, run `environment-check` and review the final menu of available commands and skills.
 
-Меню после `environment-check` справочное. Оно не означает, что агент должен автоматически запускать `task-switch`, `task-finish`, `architecture-update` или другие workflow.
+The menu after `environment-check` is informational. It does not mean the agent should automatically run `task-switch`, `task-finish`, `architecture-update`, or other workflows.
 
-## 8. Когда полезен code-review-graph
+## 8. When code-review-graph is useful
 
-Предложи `code-review-graph`, если:
+Suggest `code-review-graph` when:
 
-- непонятно, какие файлы связаны между собой;
-- diff затрагивает несколько модулей;
-- есть риск сломать соседние экраны или зависимости;
-- нужно быстро понять радиус изменений;
-- обновление затрагивает новые сервисы, резолверы, adapters или architecture-sensitive logic.
+- it is unclear which files are related to each other;
+- the diff touches several modules;
+- there is a risk of breaking neighboring screens or dependencies;
+- you need to quickly understand the blast radius of a change;
+- the update touches new services, resolvers, adapters, or architecture-sensitive logic.
 
-Если `code-review-graph` недоступен, это предупреждение, а не блокер по умолчанию.
+If `code-review-graph` is unavailable, that is a warning, not a blocker by default.

@@ -1,170 +1,170 @@
-# Стартовые промты
+# Start prompts
 
-Используй эти промты в трёх частых сценариях:
+Use these prompts in three common scenarios:
 
-1. первая установка архитектуры в проект;
-2. переход в новый диалог или другой ИИ-агент внутри уже подключённого проекта;
-3. продолжение после compressed context, compacted context или restored summary.
+1. first installation of the architecture into a project;
+2. moving to a new dialog or another AI agent inside an already connected project;
+3. continuing after compressed context, compacted context, or a restored summary.
 
-## Ключевые правила для всех промтов
+## Key rules for all prompts
 
-### Protected architecture files и controlled memory files
+### Protected architecture files and controlled memory files
 
-Полные списки защищённых файлов и controlled memory — в [file-roles.md](file-roles.md).
+The full lists of protected files and controlled memory are in [file-roles.md](file-roles.md).
 
-Их можно менять только через подходящий workflow:
+They may be changed only through the appropriate workflow:
 
-- `implementation` — обновить текущую задачу, Stage, handoff или явно подтверждённую future task;
-- `task-intake` — записать первую задачу в `ai/current-task.md` или определить, нужен ли `task-switch`;
-- `task-switch` — поставить задачу на паузу, заменить текущую после подтверждения или продвинуть future task;
-- `task-finish` — записать итог, важные решения, подтверждённые future tasks, очистить текущую задачу после подтверждения и сохранить результат;
-- `architecture-update` — обновить память, если это часть подтверждённого изменения архитектуры.
+- `implementation` — update the current task, Stage, handoff, or an explicitly confirmed future task;
+- `task-intake` — record the first task in `ai/current-task.md` or decide whether `task-switch` is needed;
+- `task-switch` — pause a task, replace the current one after confirmation, or promote a future task;
+- `task-finish` — record the result, important decisions, confirmed future tasks, clear the current task after confirmation, and save the result;
+- `architecture-update` — update memory when it is part of a confirmed architecture change.
 
 ### Skills
 
-Если задача попадает под trigger skill, открой актуальный `ai/skills/*/SKILL.md`. Не применяй skill по памяти.
+If a task matches a skill's trigger, open the current `ai/skills/*/SKILL.md`. Do not apply a skill from memory.
 
-Для UI-задач открой `ui-review` и `write-tests`.
+For UI tasks, open `ui-review` and `write-tests`.
 
-Для багов, крашей, flaky behavior, debug requests, performance-задач и сложной работы используй Superpowers, если он доступен. Если Superpowers не установлен, скажи об этом и спроси, установить/настроить его или продолжить вручную.
+For bugs, crashes, flaky behavior, debug requests, performance tasks, and complex work, use Superpowers when it is available. If Superpowers is not installed, say so and ask whether to install/configure it or continue manually.
 
-Для идей на потом используй `ai/future-tasks.md`; отдельного skill нет.
+For ideas for later, use `ai/future-tasks.md`; there is no separate skill.
 
-Для pre-merge или сложного review открой `release-check` и проверь, нужен ли `code-review-graph`.
+For pre-merge or complex review, open `release-check` and check whether `code-review-graph` is needed.
 
 ### Context compaction
 
-Compressed context, compacted context, restored summary и conversation summary continuation считаются новой сессией. Перед продолжением нужен `environment-check`, если пользователь явно не сказал его пропустить.
+Compressed context, compacted context, restored summary, and conversation summary continuation count as a new session. Before continuing, `environment-check` is required unless the user explicitly says to skip it.
 
-После `environment-check` агент должен показать меню доступных следующих commands и skills. Это меню справочное: оно не запускает workflow автоматически.
+After `environment-check`, the agent must show a menu of available next commands and skills. The menu is informational: it does not launch workflows automatically.
 
-## 1. Первая установка архитектуры в проект
+## 1. First installation of the architecture into a project
 
-Для простой установки или обновления без описания задачи используй [универсальный стартовый промт](../prompt/README.md) — его удобно отправлять ссылкой.
+For a simple installation or update without a task description, use the [universal start prompt](../README.md#установка-в-проект-универсальный-стартовый-промт) — it is convenient to share as a link.
 
-Промт ниже — расширенный вариант: установка сразу вместе с постановкой первой задачи.
+The prompt below is the extended variant: installation together with setting the first task.
 
-Используй, когда архитектура ещё не подключена к проекту.
+Use it when the architecture is not yet connected to the project.
 
 ```text
-Ты работаешь в проекте как AI coding agent.
+You are working in the project as an AI coding agent.
 
-Мне нужно впервые установить AI-архитектуру разработки из репозитория:
+I need to install the AI development architecture for the first time from the repository:
 https://github.com/zykovsrg/ai-dev-architecture-template
 
-Описание задачи:
+Task description:
 
-Цель:
-<вставь сюда цель проекта или задачи>
+Goal:
+<insert the project or task goal here>
 
-Что нужно сделать:
-<вставь сюда описание идеи, задачи или промт, который подготовил другой ИИ>
+What needs to be done:
+<insert the description of the idea, task, or a prompt prepared by another AI here>
 
-Ограничения:
-<вставь сюда ограничения: что нельзя ломать, менять или перезаписывать>
+Constraints:
+<insert the constraints here: what must not be broken, changed, or overwritten>
 
-Как понять, что готово:
-<вставь сюда критерии готовности>
+How to know it is done:
+<insert the completion criteria here>
 
-Задача:
-1. Проверь, есть ли в проекте файлы AGENTS.md, CLAUDE.md и папка ai/.
-2. Не перезаписывай существующие файлы без моего подтверждения.
-3. Если архитектура ещё не установлена, предложи безопасную установку из шаблона.
-4. Если после установки не хватает обязательных файлов, покажи список и предложи восстановить их из шаблона.
-5. После установки выполни environment-check.
-6. Перед первой рабочей задачей используй task-intake и запиши задачу в ai/current-task.md.
-7. Ничего не устанавливай дополнительно без моего подтверждения.
-8. Перед использованием внешнего skill, init workflow или setup-команды сначала прочитай AGENTS.md или CLAUDE.md.
-9. Соблюдай разделение protected architecture files и controlled memory files.
-10. Если нужен workflow из skill — открой актуальный ai/skills/*/SKILL.md, не работай по памяти.
+Task:
+1. Check whether the project has AGENTS.md, CLAUDE.md, and the ai/ folder.
+2. Do not overwrite existing files without my confirmation.
+3. If the architecture is not installed yet, propose a safe installation from the template.
+4. If required files are missing after installation, show the list and offer to restore them from the template.
+5. After installation, run environment-check.
+6. Before the first working task, use task-intake and record the task in ai/current-task.md.
+7. Do not install anything extra without my confirmation.
+8. Before using an external skill, init workflow, or setup command, first read AGENTS.md or CLAUDE.md.
+9. Respect the separation of protected architecture files and controlled memory files.
+10. If a workflow from a skill is needed — open the current ai/skills/*/SKILL.md, do not work from memory.
 
-После проверки скажи:
-- что установлено корректно;
-- чего не хватает;
-- что нужно заполнить вручную;
-- готова ли архитектура к первой задаче;
-- какие следующие commands и skills доступны.
+After the check, say:
+- what is installed correctly;
+- what is missing;
+- what needs to be filled in manually;
+- whether the architecture is ready for the first task;
+- which next commands and skills are available.
 
-Список следующих commands и skills — это меню, а не команда запускать всё подряд.
+The list of next commands and skills is a menu, not an instruction to run everything.
 
-После установки:
-- для нового проекта сначала заполни ai/project-context.md и ai/current-task.md;
-- ai/current-task.md должен иметь Status и Stage;
-- ai/decisions.md, ai/changelog.md, ai/paused-tasks.md и ai/future-tasks.md можно оставить пустыми шаблонами;
-- ai/external-tools.md меняй только если меняется список expected external tools или controlled methodologies.
+After installation:
+- for a new project, first fill in ai/project-context.md and ai/current-task.md;
+- ai/current-task.md must have Status and Stage;
+- ai/decisions.md, ai/changelog.md, ai/paused-tasks.md, and ai/future-tasks.md may stay as empty templates;
+- change ai/external-tools.md only when the list of expected external tools or controlled methodologies changes.
 
-Важные правила:
-- Общайся со мной на русском.
-- Я не разработчик, объясняй технические термины простыми словами.
-- Не меняй код приложения при установке архитектуры.
-- Не делай больших изменений без плана и подтверждения.
-- Баги и сложные задачи прогоняй через Superpowers, если он доступен.
-- Protected architecture files меняй только через architecture-update после моего явного подтверждения.
-- Controlled memory files меняй только через подходящий workflow.
+Important rules:
+- Communicate with me in Russian.
+- I am not a developer; explain technical terms in simple words.
+- Do not change application code while installing the architecture.
+- Do not make large changes without a plan and confirmation.
+- Run bugs and complex tasks through Superpowers when it is available.
+- Change protected architecture files only through architecture-update after my explicit confirmation.
+- Change controlled memory files only through the appropriate workflow.
 ```
 
-## 2. Переход в новый диалог или другой ИИ-агент внутри проекта
+## 2. Moving to a new dialog or another AI agent inside the project
 
-Используй, когда архитектура уже установлена, но ты открываешь новый чат или переходишь к другому ИИ-агенту.
+Use it when the architecture is already installed, but you are opening a new chat or moving to another AI agent.
 
 ```text
-Ты работаешь в проекте с установленной AI-архитектурой разработки:
+You are working in a project with the AI development architecture installed:
 https://github.com/zykovsrg/ai-dev-architecture-template
 
-Папка проекта:
-<вставь путь к проекту>
+Project folder:
+<insert the project path>
 
-Описание задачи:
+Task description:
 
-Цель:
-<вставь сюда цель проекта или задачи>
+Goal:
+<insert the project or task goal here>
 
-Что нужно сделать:
-<вставь сюда описание идеи, задачи или промт, который подготовил другой ИИ>
+What needs to be done:
+<insert the description of the idea, task, or a prompt prepared by another AI here>
 
-Ограничения:
-<вставь сюда ограничения: что нельзя ломать, менять или перезаписывать>
+Constraints:
+<insert the constraints here: what must not be broken, changed, or overwritten>
 
-Как понять, что готово:
-<вставь сюда критерии готовности>
+How to know it is done:
+<insert the completion criteria here>
 
-Сначала сделай environment-check. Ничего не редактируй.
+First run environment-check. Do not edit anything.
 
-После environment-check покажи доступные следующие commands и skills. Не запускай перечисленные workflow автоматически.
+After environment-check, show the available next commands and skills. Do not launch the listed workflows automatically.
 
-Затем используй task-intake перед рабочей задачей.
+Then use task-intake before the working task.
 
-После этого прочитай только:
-- AGENTS.md или CLAUDE.md;
+After that, read only:
+- AGENTS.md or CLAUDE.md;
 - ai/current-task.md.
 
-Не читай всю папку ai автоматически.
+Do not read the whole ai folder automatically.
 
-Если нужно для понимания задачи, дополнительно открой только релевантные файлы:
+If needed to understand the task, additionally open only the relevant files:
 - ai/project-context.md;
 - ai/decisions.md;
 - ai/changelog.md;
-- ai/future-tasks.md, если нужно сохранить, найти или продвинуть future task;
-- нужный ai/skills/*/SKILL.md.
+- ai/future-tasks.md, if a future task must be saved, found, or promoted;
+- the needed ai/skills/*/SKILL.md.
 
-Если текущая задача ведётся через Superpowers или другой plan-driven workflow, дополнительно открой только релевантные файлы:
-- docs/superpowers/specs/<нужный spec>.md;
-- docs/superpowers/plans/<нужный plan>.md.
+If the current task runs through Superpowers or another plan-driven workflow, additionally open only the relevant files:
+- docs/superpowers/specs/<the needed spec>.md;
+- docs/superpowers/plans/<the needed plan>.md.
 
-Файл docs/superpowers/plans/<нужный plan>.md — источник правды по прогрессу. Не полагайся только на TodoWrite, TaskCreate, TaskUpdate, summary или историю чата. После выполнения пункта плана обновляй чекбокс в .md-плане; при частичном выполнении добавляй Note.
+The file docs/superpowers/plans/<the needed plan>.md is the source of truth for progress. Do not rely only on TodoWrite, TaskCreate, TaskUpdate, a summary, or the chat history. After completing a plan item, update the checkbox in the .md plan; on partial completion, add a Note.
 
-Если ai/current-task.md содержит активную незавершённую задачу:
-1. Кратко перескажи текущую задачу.
-2. Назови Mode.
-3. Назови Status и Stage.
-4. Назови relevant files.
-5. Назови Done criteria.
-6. Скажи, что нужно сделать следующим безопасным шагом.
-7. Скажи, нужен ли task-switch.
-8. Скажи, нужен ли Superpowers. Для багов и сложных задач Superpowers ожидается, если доступен.
+If ai/current-task.md contains an active unfinished task:
+1. Briefly restate the current task.
+2. Name the Mode.
+3. Name the Status and Stage.
+4. Name the relevant files.
+5. Name the Done criteria.
+6. Say what the next safe step is.
+7. Say whether task-switch is needed.
+8. Say whether Superpowers is needed. For bugs and complex tasks, Superpowers is expected when available.
 
-Если ai/current-task.md имеет Status: empty или содержит пустой шаблон:
-1. Попроси меня поставить задачу в формате:
+If ai/current-task.md has Status: empty or contains an empty template:
+1. Ask me to set the task in the format:
    - Mode
    - Status
    - Stage
@@ -172,44 +172,44 @@ https://github.com/zykovsrg/ai-dev-architecture-template
    - Relevant files
    - Done criteria
 
-Важные правила:
-- Общайся со мной на русском.
-- Я не разработчик, объясняй технические термины простыми словами.
-- Не редактируй файлы без моего подтверждения, если задача не требует реализации.
-- Перед рабочей задачей используй task-intake.
-- Не перезаписывай ai/current-task.md, если там есть незавершённая задача.
-- Protected architecture files меняй только через architecture-update после моего явного подтверждения.
-- Controlled memory files меняй только через подходящий workflow.
-- Если я прошу другую задачу при незавершённой текущей, используй task-switch.
-- Если задача завершена, используй task-finish.
-- Если я прошу сохранить идею на потом, используй ai/future-tasks.md.
-- Superpowers используй для багов и сложных задач, если он доступен; для остальных задач — если я явно попрошу или если в ai/current-task.md написано: Use Superpowers: yes.
+Important rules:
+- Communicate with me in Russian.
+- I am not a developer; explain technical terms in simple words.
+- Do not edit files without my confirmation unless the task requires implementation.
+- Before a working task, use task-intake.
+- Do not overwrite ai/current-task.md if it contains an unfinished task.
+- Change protected architecture files only through architecture-update after my explicit confirmation.
+- Change controlled memory files only through the appropriate workflow.
+- If I ask for a different task while the current one is unfinished, use task-switch.
+- If the task is complete, use task-finish.
+- If I ask to save an idea for later, use ai/future-tasks.md.
+- Use Superpowers for bugs and complex tasks when it is available; for other tasks — when I explicitly ask or when ai/current-task.md says: Use Superpowers: yes.
 ```
 
-## 3. Продолжение после compressed context или restored summary
+## 3. Continuing after compressed context or a restored summary
 
-Используй, когда предыдущий диалог был сжат, восстановлен из summary или перенесён в новый контекст.
+Use it when the previous dialog was compressed, restored from a summary, or carried over into a new context.
 
 ```text
-Ты продолжаешь работу в проекте с установленной AI-архитектурой разработки:
+You are continuing work in a project with the AI development architecture installed:
 https://github.com/zykovsrg/ai-dev-architecture-template
 
-Это продолжение после compressed context / restored summary. Считай это новой сессией.
+This is a continuation after compressed context / restored summary. Treat it as a new session.
 
-Сначала сделай environment-check. Ничего не редактируй.
+First run environment-check. Do not edit anything.
 
-После environment-check:
-1. Покажи доступные следующие commands и skills. Не запускай перечисленные workflow автоматически.
-2. Прочитай AGENTS.md или CLAUDE.md.
-3. Прочитай ai/current-task.md.
-4. Используй task-intake перед продолжением рабочей задачи.
-5. Если задача plan-driven, прочитай только релевантный docs/superpowers/plans/<plan>.md и при необходимости spec.
-6. Не полагайся только на summary. Проверь факты через файлы.
-7. Назови текущие Mode, Status, Stage, Goal, relevant files и Done criteria.
-8. Проверь, не расходится ли summary с файлами.
-9. Если есть расхождение, считай файлы источником правды и сообщи мне.
-10. Если нужен skill, открой актуальный ai/skills/*/SKILL.md.
-11. Если задача выглядит завершённой, предложи task-finish, но не закрывай её без подтверждения и сохранения результата.
+After environment-check:
+1. Show the available next commands and skills. Do not launch the listed workflows automatically.
+2. Read AGENTS.md or CLAUDE.md.
+3. Read ai/current-task.md.
+4. Use task-intake before continuing the working task.
+5. If the task is plan-driven, read only the relevant docs/superpowers/plans/<plan>.md and, if needed, the spec.
+6. Do not rely only on the summary. Verify the facts through the files.
+7. Name the current Mode, Status, Stage, Goal, relevant files, and Done criteria.
+8. Check whether the summary diverges from the files.
+9. If there is a divergence, treat the files as the source of truth and tell me.
+10. If a skill is needed, open the current ai/skills/*/SKILL.md.
+11. If the task looks complete, propose task-finish, but do not close it without confirmation and saving the result.
 
-В review mode не сообщай о проблеме как о факте, пока не проверил её через read, grep, diff, logs или tests. Если не проверено — называй это гипотезой.
+In review mode, do not report a problem as a fact until you have verified it through read, grep, diff, logs, or tests. If unverified — call it a hypothesis.
 ```

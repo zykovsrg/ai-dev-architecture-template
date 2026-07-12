@@ -1,46 +1,46 @@
-# Инструкция по установке
+# Installation guide
 
-Самый простой способ — [универсальный стартовый промт](../prompt/README.md): скопируйте его в AI-агента, открытого в папке проекта, и он выполнит установку сам. Инструкция ниже — для ручной установки.
+The easiest way is the [universal start prompt](../README.md#установка-в-проект-универсальный-стартовый-промт): copy it into an AI agent opened in the project folder, and it will perform the installation itself. The instructions below are for manual installation.
 
-## 1. Склонировать репозиторий шаблона
+## 1. Clone the template repository
 
 ```bash
 cd ~/Documents
 git clone git@github.com:zykovsrg/ai-dev-architecture-template.git
 ```
 
-## 2. Перейти в проект
+## 2. Go to your project
 
 ```bash
 cd /path/to/project
 ```
 
-Пример:
+Example:
 
 ```bash
 cd /Users/zykovsrg/Desktop/goal-planner-macos
 ```
 
-## 3. Безопасно скопировать шаблон
+## 3. Safely copy the template
 
 ```bash
 rsync -av --ignore-existing ~/Documents/ai-dev-architecture-template/template/ ./
 ```
 
-Эта команда:
+This command:
 
-- копирует новые файлы в проект;
-- не перезаписывает существующие файлы;
-- снижает риск потерять проектные данные.
+- copies new files into the project;
+- does not overwrite existing files;
+- reduces the risk of losing project data.
 
-## 4. Проверить установленные файлы
+## 4. Verify the installed files
 
 ```bash
 ls AGENTS.md CLAUDE.md
 find ai -maxdepth 4 -type f | sort
 ```
 
-Ожидаемые файлы:
+Expected files:
 
 ```text
 AGENTS.md
@@ -66,35 +66,35 @@ ai/skills/ui-review/SKILL.md
 ai/skills/write-tests/SKILL.md
 ```
 
-## 5. Заполнить проектные файлы
+## 5. Fill in the project files
 
-После установки обязательно заполни:
+After installation, be sure to fill in:
 
 - `ai/project-context.md`
 - `ai/current-task.md`
 
-Можно оставить пустыми шаблонами до появления реальных решений, изменений, пауз или будущих задач:
+These can stay as empty templates until real decisions, changes, pauses, or future tasks appear:
 
 - `ai/decisions.md`
 - `ai/changelog.md`
 - `ai/paused-tasks.md`
 - `ai/future-tasks.md`
 
-`ai/external-tools.md` обычно не нужно менять после установки. Обновляй его только если меняется список ожидаемых внешних skills, tools или controlled methodologies.
+`ai/external-tools.md` usually does not need changes after installation. Update it only when the list of expected external skills, tools, or controlled methodologies changes.
 
-## 6. Запустить environment-check
+## 6. Run environment-check
 
-После установки попроси агента запустить `environment-check`.
+After installation, ask the agent to run `environment-check`.
 
-Проверка должна сказать:
+The check should report:
 
-- какие обязательные файлы и skills на месте;
-- чего не хватает;
-- какие optional skills или external tools не подтверждены;
-- готова ли архитектура к первой задаче;
-- какие следующие commands и skills доступны.
+- which required files and skills are in place;
+- what is missing;
+- which optional skills or external tools are not confirmed;
+- whether the architecture is ready for the first task;
+- which next commands and skills are available.
 
-Финальный список commands и skills — это меню, а не команда запускать всё подряд.
+The final list of commands and skills is a menu, not an instruction to run everything.
 
-Стартовый экран — в `docs/start-here.md`.
-Готовые промты есть в `docs/prompts.md` и `docs/start-prompts.md`.
+The start screen is in `start-screen/start-screen.md`.
+Ready-made prompts are in `docs/prompts.md` and `docs/start-prompts.md`.

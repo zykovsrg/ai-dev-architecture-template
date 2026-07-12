@@ -1,48 +1,48 @@
-# Архитектура AI-разработки
+# AI Development Architecture
 
 Version: 6.11
 
-Этот файл — справочник по workflow и иерархии правил. Его не нужно загружать для каждой задачи. Читай его только если задача касается workflow, конфликтов правил, architecture-update или если правило неясно.
+This file is the reference for workflows and the rule hierarchy. It does not need to be loaded for every task. Read it only when a task concerns workflows, rule conflicts, architecture-update, or when a rule is unclear.
 
-## Главная идея
+## Main idea
 
-Контекст должен жить в репозитории, а не только в чате.
+Context must live in the repository, not only in the chat.
 
-- Чат — временная рабочая память.
-- `AGENTS.md` и `CLAUDE.md` — короткие входные файлы для AI-агентов.
-- `ai/current-task.md` хранит текущую задачу.
-- `ai/paused-tasks.md` хранит незавершённые задачи, поставленные на паузу через `task-switch`.
-- `ai/future-tasks.md` хранит идеи и будущие задачи, которые не входят в текущий scope.
-- `ai/project-context.md` хранит проектный контекст.
-- `ai/decisions.md` хранит устойчивые решения и инварианты.
-- `ai/changelog.md` хранит последние заметные изменения.
-- `ai/skills/*/SKILL.md` хранит переиспользуемые процедуры.
-- Git хранит полную историю изменений.
+- The chat is temporary working memory.
+- `AGENTS.md` and `CLAUDE.md` are short entry files for AI agents.
+- `ai/current-task.md` holds the current task.
+- `ai/paused-tasks.md` holds unfinished tasks paused through `task-switch`.
+- `ai/future-tasks.md` holds ideas and future tasks outside the current scope.
+- `ai/project-context.md` holds the project context.
+- `ai/decisions.md` holds durable decisions and invariants.
+- `ai/changelog.md` holds recent notable changes.
+- `ai/skills/*/SKILL.md` holds reusable procedures.
+- Git holds the full change history.
 
-Главное правило для идей на потом:
+The main rule for ideas for later:
 
 ```text
 Future tasks are captured, not executed.
 ```
 
-Если во время работы появляется полезная идея вне текущей задачи, агент должен защитить текущий scope: предложить записать идею в `ai/future-tasks.md`, но не реализовывать её без явного promotion.
+If a useful idea outside the current task appears during work, the agent must protect the current scope: propose recording the idea in `ai/future-tasks.md`, but not implement it without explicit promotion.
 
-Главное правило для новой работы:
+The main rule for new work:
 
 ```text
 Every real task goes through task-intake first.
 ```
 
-Если `ai/current-task.md` пустой, новая задача должна быть записана туда до начала работы. Если там уже есть незавершённая задача, агент должен решить, это продолжение или переключение через `task-switch`.
+If `ai/current-task.md` is empty, the new task must be recorded there before work starts. If it already holds an unfinished task, the agent must decide whether this is a continuation or a switch through `task-switch`.
 
-## Режимы работы
+## Work modes
 
 Before starting task work, the agent must explicitly state the mode as `Mode: ...`.
 
-- `implementation` — менять код, проектные файлы, тесты или task memory.
-- `review` — читать файлы, проверять состояние проекта или diff, пересказывать контекст, сообщать о проблемах или предлагать следующий шаг; не редактировать файлы.
-- `task-finish` — проверять завершение задачи и чистить контекст только после подтверждения.
-- `architecture-update` — предлагать изменения архитектуры разработки; менять файлы только после подтверждения.
+- `implementation` — change code, project files, tests, or task memory.
+- `review` — read files, inspect project state or the diff, restate context, report problems, or suggest the next step; do not edit files.
+- `task-finish` — verify task completion and clean up the context only after confirmation.
+- `architecture-update` — propose changes to the development architecture; change files only after confirmation.
 
 If the mode is unclear, the agent must ask or state the assumption before acting.
 

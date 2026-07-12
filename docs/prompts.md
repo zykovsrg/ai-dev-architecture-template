@@ -1,6 +1,6 @@
-# Промты
+# Prompts
 
-## Проверить синхронизацию шаблона
+## Check template synchronization
 
 ```text
 Mode: review
@@ -40,7 +40,7 @@ Return:
 Explain in Russian with simple words.
 ```
 
-## Собрать `project-context.md`
+## Build `project-context.md`
 
 ```text
 Mode: review
@@ -76,7 +76,7 @@ Include:
 Write in Russian or English. Use simple wording. Briefly explain technical terms.
 ```
 
-## Собрать `decisions.md`
+## Build `decisions.md`
 
 ```text
 Mode: review
@@ -121,7 +121,7 @@ Impact:
 Do not include minor bugfixes, colors, spacing, or ordinary changelog entries.
 ```
 
-## Собрать `changelog.md`
+## Build `changelog.md`
 
 ```text
 Mode: review
@@ -155,7 +155,7 @@ Use format:
 - Manual checks:
 ```
 
-## Проверить установку в проекте
+## Check the installation in a project
 
 ```text
 Mode: review
@@ -208,7 +208,7 @@ Important:
 Explain in Russian with simple words.
 ```
 
-## Безопасно обновить существующий проект
+## Safely update an existing project
 
 ```text
 Mode: review
