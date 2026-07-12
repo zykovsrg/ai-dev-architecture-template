@@ -1,6 +1,6 @@
 # AI Development Architecture
 
-Version: 6.12
+Version: 6.13
 
 This file is the reference for workflows and the rule hierarchy. It does not need to be loaded for every task. Read it only when a task concerns workflows, rule conflicts, architecture-update, or when a rule is unclear.
 
@@ -522,8 +522,8 @@ Read `ai/architecture.md` only if the task concerns workflow, development archit
 
 For plan-driven or Superpowers tasks, read only relevant files:
 
-- `docs/superpowers/specs/<spec>.md`
-- `docs/superpowers/plans/<plan>.md`
+- `ai/superpowers/specs/<spec>.md`
+- `ai/superpowers/plans/<plan>.md`
 - when needed — this architecture section about plan-driven work.
 
 Do not read `ai/archive/` without a concrete reason.
@@ -627,10 +627,10 @@ Ordinary tasks do not have to use these rules.
 
 ### Source of truth for progress
 
-For plan-driven work, `docs/superpowers/plans/<plan>.md` is the source of truth for execution progress.
+For plan-driven work, `ai/superpowers/plans/<plan>.md` is the source of truth for execution progress.
 
 - Do not use internal TodoWrite, harness task lists, TaskCreate, TaskUpdate, or chat history as the only progress source.
-- After completing each plan task, update the checkbox in `docs/superpowers/plans/<plan>.md`.
+- After completing each plan task, update the checkbox in `ai/superpowers/plans/<plan>.md`.
 - If a plan task is partially done, leave the checkbox empty and add a short `Note:` under the task.
 - If a task is cancelled or moved, mark it with a short `Note:`.
 
@@ -666,7 +666,7 @@ Do not duplicate the same decision in plan notes, `ai/decisions.md`, and `ai/cha
 
 Choice rule:
 
-- `docs/superpowers/plans/<plan>.md` — local reasons inside one plan.
+- `ai/superpowers/plans/<plan>.md` — local reasons inside one plan.
 - `ai/decisions.md` — decisions future agents must remember outside the current plan.
 - `ai/changelog.md` — notable final changes, not every micro-step.
 - `ai/future-tasks.md` — future work that should not expand the current plan unless promoted.

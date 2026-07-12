@@ -148,10 +148,10 @@ If needed to understand the task, additionally open only the relevant files:
 - the needed ai/skills/*/SKILL.md.
 
 If the current task runs through Superpowers or another plan-driven workflow, additionally open only the relevant files:
-- docs/superpowers/specs/<the needed spec>.md;
-- docs/superpowers/plans/<the needed plan>.md.
+- ai/superpowers/specs/<the needed spec>.md;
+- ai/superpowers/plans/<the needed plan>.md.
 
-The file docs/superpowers/plans/<the needed plan>.md is the source of truth for progress. Do not rely only on TodoWrite, TaskCreate, TaskUpdate, a summary, or the chat history. After completing a plan item, update the checkbox in the .md plan; on partial completion, add a Note.
+The file ai/superpowers/plans/<the needed plan>.md is the source of truth for progress. Do not rely only on TodoWrite, TaskCreate, TaskUpdate, a summary, or the chat history. After completing a plan item, update the checkbox in the .md plan; on partial completion, add a Note.
 
 If ai/current-task.md contains an active unfinished task:
 1. Briefly restate the current task.
@@ -203,7 +203,7 @@ After environment-check:
 2. Read AGENTS.md or CLAUDE.md.
 3. Read ai/current-task.md.
 4. Use task-intake before continuing the working task.
-5. If the task is plan-driven, read only the relevant docs/superpowers/plans/<plan>.md and, if needed, the spec.
+5. If the task is plan-driven, read only the relevant ai/superpowers/plans/<plan>.md and, if needed, the spec.
 6. Do not rely only on the summary. Verify the facts through the files.
 7. Name the current Mode, Status, Stage, Goal, relevant files, and Done criteria.
 8. Check whether the summary diverges from the files.

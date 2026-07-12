@@ -1,5 +1,11 @@
 # Changelog
 
+## v6.13 — 2026-07-12
+
+- Moved the plan-driven work convention out of documentation: Superpowers plans and specs now live in `ai/superpowers/plans|specs` (working memory, next to changelog and decisions) instead of `docs/superpowers/*`. Updated `AGENTS.md`, `CLAUDE.md`, `ai/architecture.md`, and `docs/start-prompts.md`. `docs/` now contains only how-to documentation.
+- Moved this repository's historical plans/specs to `archive/superpowers/` (design history, not documentation).
+- Bumped `ai/architecture.md` to `6.13`.
+
 ## v6.12 — 2026-07-12
 
 - Elevated Superpowers from "controlled methodology, not default" to a critical plugin: installation is strongly recommended for every project, and when it is missing for a bug/complex task the agent recommends installing it as the preferred option (manual fallback only if the user declines). Updated `ai/architecture.md`, `ai/external-tools.md`, `environment-check` and `task-intake` skills, and `docs/concepts.md`. Gating rules unchanged: Superpowers still does not run trivial tasks and never overrides the architecture.

@@ -77,7 +77,7 @@ Common triggers:
 - bugs, regressions, crashes, performance, or complex work: Superpowers when available
 - architecture change: `ai/skills/architecture-update/SKILL.md`
 
-Extra context only when relevant: project behavior/storage/UI → `ai/project-context.md`; durable invariants → `ai/decisions.md`; workflow ambiguity → `ai/architecture.md`; plan-driven work → relevant `docs/superpowers/*`.
+Extra context only when relevant: project behavior/storage/UI → `ai/project-context.md`; durable invariants → `ai/decisions.md`; workflow ambiguity → `ai/architecture.md`; plan-driven work → relevant `ai/superpowers/*`.
 
 ## Precedence
 
