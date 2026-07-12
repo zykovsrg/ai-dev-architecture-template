@@ -205,7 +205,7 @@ If expected external tools are present or not confirmed, mention them separately
 Внешние tools и methodologies
 ```
 
-For Superpowers, always say that it is controlled and is the expected path for bugs and complex tasks when available.
+For Superpowers, always say that it is a critical plugin (installation strongly recommended), controlled, and the expected path for bugs and complex tasks when available.
 
 ## Rules
 
@@ -217,4 +217,4 @@ For Superpowers, always say that it is controlled and is the expected path for b
 - Do not edit controlled memory files during environment-check.
 - Do not promote, pause, finish, drop, or start tasks during environment-check.
 - Do not activate Superpowers during environment check. Only report whether it is present, missing, or not confirmed.
-- Superpowers is a controlled methodology, not the default workflow.
+- Superpowers is a critical plugin but remains a controlled methodology: recommend installing it when missing, and do not run it as the default workflow for every task.

@@ -135,7 +135,7 @@ complex tasks, use Superpowers when it is available.
 If Superpowers is missing or not confirmed:
 
 1. Tell the user that this task should normally use Superpowers.
-2. Ask whether to install/configure Superpowers or continue with a manual fallback.
+2. Recommend installing/configuring Superpowers as the preferred option; continue with a manual fallback only if the user declines.
 3. Do not pretend the local architecture still has a dedicated bugfix workflow.
 
 ## Future ideas

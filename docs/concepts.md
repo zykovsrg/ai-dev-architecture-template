@@ -155,9 +155,9 @@ Why:
 
 ## Superpowers as a controlled methodology
 
-Superpowers is useful for bugs and large tasks where you first need to clarify the idea, agree on a design, make a plan, use TDD, or split the work between subagents.
+Superpowers is a critical plugin for this architecture: it should be installed in every project. It is used for bugs and large tasks where you first need to clarify the idea, agree on a design, make a plan, use TDD, or split the work between subagents.
 
-But Superpowers must not become the default process.
+Still, Superpowers does not run every small task; it stays a controlled methodology.
 
 It is expected for:
 - bugs, regressions, crashes, and performance problems;

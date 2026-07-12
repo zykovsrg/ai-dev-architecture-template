@@ -91,7 +91,7 @@ These tools may be installed and checked, but they must not become the default w
 Type: full external development methodology
 
 Status:
-Expected to be installed when available. Required for bugs and complex tasks when available.
+Critical plugin: installation is strongly recommended for every project. Required for bugs and complex tasks when available.
 
 Purpose:
 Spec-first planning, TDD-first development, subagent-driven development, stronger verification, and branch-finishing workflows.
@@ -138,7 +138,7 @@ How to check:
 - if unsure, report `not confirmed`
 
 Missing means:
-Simple work can continue. For bugs and complex tasks, stop and ask whether to install/configure Superpowers or continue with a manual fallback.
+Simple work can continue. For bugs and complex tasks, stop, recommend installing Superpowers as the preferred option, and continue with a manual fallback only if the user declines.
 
 ## Reporting format
 

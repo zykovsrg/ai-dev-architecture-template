@@ -149,7 +149,7 @@ https://github.com/zykovsrg/ai-dev-architecture-template
 
 ## Подробнее об архитектуре
 
-Впервые здесь — откройте [start-screen/start-screen.md](start-screen/start-screen.md). Там пошаговые сценарии: новый проект, обновление старой версии, первая задача, работа с Superpowers, закрытие задачи, работа без GitHub.
+Впервые здесь — откройте [getting-started/getting-started.md](getting-started/getting-started.md). Там пошаговые сценарии: новый проект, обновление старой версии, первая задача, работа с Superpowers, закрытие задачи, работа без GitHub.
 
 Непонятные термины объясняются в [docs/concepts.md](docs/concepts.md).
 
@@ -157,7 +157,7 @@ https://github.com/zykovsrg/ai-dev-architecture-template
 
 ```text
 template/   — то, что копируется в ваш проект (AGENTS.md, CLAUDE.md, ai/)
-start-screen/ — стартовый экран: пошаговые сценарии работы
+getting-started/ — путеводитель для людей: пошаговые сценарии работы
 docs/       — документация: установка, обновление, понятия, сценарии
 scripts/    — install.sh, update-installed-architecture.sh, check-consistency.sh
 ```

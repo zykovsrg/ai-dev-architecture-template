@@ -1,6 +1,6 @@
 # AI Development Architecture
 
-Version: 6.11
+Version: 6.12
 
 This file is the reference for workflows and the rule hierarchy. It does not need to be loaded for every task. Read it only when a task concerns workflows, rule conflicts, architecture-update, or when a rule is unclear.
 
@@ -405,7 +405,7 @@ This architecture no longer includes a local `bugfix-workflow` skill.
 
 For bugs, crashes, regressions, flaky behavior, debug requests, performance investigations, large/vague tasks, major refactors, data model changes, migrations, TDD-heavy tasks, or unclear blast radius, use Superpowers when available.
 
-If Superpowers is missing or not confirmed, the agent must say that the task normally requires Superpowers and ask whether to install/configure it or continue with a manual fallback.
+If Superpowers is missing or not confirmed, the agent must say that the task normally requires Superpowers and recommend installing it as the preferred option; continue with a manual fallback only if the user declines.
 
 Do not pretend there is still a local bugfix workflow. Do not create `CONTEXT.md`, `docs/adr/`, or another parallel documentation system unless the project explicitly requires it.
 
@@ -809,7 +809,7 @@ Monthly:
 
 ## Superpowers gated use
 
-Superpowers may be installed and checked, but it is a controlled external methodology.
+Superpowers is a critical plugin for this architecture: install it whenever possible. It remains a controlled external methodology — it strengthens the process but never overrides the architecture's rules.
 
 Superpowers may be proposed for:
 
@@ -830,7 +830,7 @@ Superpowers should be used for bugs and complex tasks when available. For other 
 - the user explicitly confirms the agent's proposal to use it;
 - `ai/current-task.md` says `Use Superpowers: yes`.
 
-For a bug or complex task, state that Superpowers is the expected path and use it when it is available. If it is unavailable, ask whether to install/configure it or continue manually.
+For a bug or complex task, state that Superpowers is the expected path and use it when it is available. If it is unavailable, recommend installing it as the preferred option, and continue manually only if the user declines.
 
 Do not use Superpowers for:
 

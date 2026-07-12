@@ -1,5 +1,12 @@
 # Changelog
 
+## v6.12 — 2026-07-12
+
+- Elevated Superpowers from "controlled methodology, not default" to a critical plugin: installation is strongly recommended for every project, and when it is missing for a bug/complex task the agent recommends installing it as the preferred option (manual fallback only if the user declines). Updated `ai/architecture.md`, `ai/external-tools.md`, `environment-check` and `task-intake` skills, and `docs/concepts.md`. Gating rules unchanged: Superpowers still does not run trivial tasks and never overrides the architecture.
+- Renamed the human-facing `start-screen/` folder to `getting-started/` (file `getting-started.md`) to stop the name collision with the `start-screen` agent skill. Updated all links.
+- Fixed section numbering gap in `docs/update.md` (…5, 7, 8 → …5, 6, 7).
+- Bumped `ai/architecture.md` to `6.12`.
+
 ## v6.9 — 2026-06-21
 
 - Added `task-intake` as the first workflow for real user tasks: empty `ai/current-task.md` is now populated before work starts, and unfinished-task conflicts route through `task-switch`.

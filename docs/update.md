@@ -133,7 +133,7 @@ They may be updated only as project memory:
 - `ai/decisions.md` — when a durable decision appears that future agents must not break;
 - `ai/changelog.md` — through a confirmed `task-finish` or an approved `architecture-update`.
 
-## 7. Safe update rule
+## 6. Safe update rule
 
 For an existing project:
 
@@ -146,7 +146,7 @@ For an existing project:
 
 The menu after `environment-check` is informational. It does not mean the agent should automatically run `task-switch`, `task-finish`, `architecture-update`, or other workflows.
 
-## 8. When code-review-graph is useful
+## 7. When code-review-graph is useful
 
 Suggest `code-review-graph` when:
 
