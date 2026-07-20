@@ -228,7 +228,7 @@ If a task matches a skill's trigger, the agent must open the current skill file.
 
 ### `environment-check`
 
-Checks the architecture installation, base skills, expected external tools, and controlled methodologies.
+Checks the architecture installation, base and optional project skills, the local architecture version against the repository, expected external tools, and controlled methodologies.
 
 It is not a work mode and not a deep audit.
 

@@ -1,6 +1,6 @@
 # AI Development Architecture
 
-Version: 6.13
+Version: 6.14
 
 This file is the reference for workflows and the rule hierarchy. It does not need to be loaded for every task. Read it only when a task concerns workflows, rule conflicts, architecture-update, or when a rule is unclear.
 
@@ -457,6 +457,10 @@ If the implementation contradicts an active decision, stop and propose `architec
 Optional project skills may be installed only in projects where they are useful. They are not required base skills and must not make `environment-check` fail when absent.
 
 - `frontend-design` — optional project skill for UI composition, visual hierarchy, frontend component design, and UX improvements. Use only for UI/frontend/design tasks when `ai/skills/frontend-design/SKILL.md` is installed. Source URL lives in `ai/external-tools.md`.
+- `impeccable` — optional project skill for systematic UI creation, critique, polish, accessibility, and design anti-pattern checks.
+- `animate` — focused router to Impeccable's canonical animation workflow for purposeful motion and micro-interactions.
+- `theme-factory` — optional project skill for applying or generating consistent visual themes.
+- `design-motion-principles` — optional project skill for context-aware motion creation and animation audits.
 
 External skills and tools do not replace base skills.
 
@@ -464,6 +468,7 @@ Expected external skills/tools:
 
 - `code-review-graph` — main tool for code review and blast-radius analysis when available. Source URL lives in `ai/external-tools.md`.
 - `agent-skills-for-context-engineering` — additional context-engineering skills.
+- `playwright-mcp` — external browser automation MCP for live UI verification and screenshot feedback loops when supported by the harness.
 
 Controlled external methodologies:
 

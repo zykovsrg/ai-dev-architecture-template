@@ -57,6 +57,10 @@ ai/skills/task-intake/SKILL.md
 ai/skills/start-screen/SKILL.md
 ai/skills/architecture-update/SKILL.md
 ai/skills/environment-check/SKILL.md
+ai/skills/impeccable/SKILL.md
+ai/skills/theme-factory/SKILL.md
+ai/skills/animate/SKILL.md
+ai/skills/design-motion-principles/SKILL.md
 ai/skills/copy-review/SKILL.md
 ai/skills/release-check/SKILL.md
 ai/skills/security-review/SKILL.md

@@ -113,7 +113,8 @@ The agent checks:
 
 - whether all base architecture files are present;
 - whether all base skills are present;
-- whether the expected external skills and tools are available: code-review-graph, agent-skills-for-context-engineering, and Superpowers;
+- whether the expected external skills and tools are available: code-review-graph, agent-skills-for-context-engineering, Playwright MCP, and Superpowers;
+- whether the local architecture version matches the latest version in the repository; when a newer version exists, the agent offers an update preview but never applies it automatically;
 - whether controlled methodologies, such as Superpowers, are present.
 
 It is not an application dependency check. For example, it does not check whether Python packages or npm dependencies are installed.

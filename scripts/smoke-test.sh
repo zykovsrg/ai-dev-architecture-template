@@ -48,7 +48,14 @@ assert_contains "$PROJECT/AGENTS.md" "custom agent entry"
 assert_file "$PROJECT/ai/current-task.md"
 assert_file "$PROJECT/ai/skills/task-intake/SKILL.md"
 assert_file "$PROJECT/ai/skills/start-screen/SKILL.md"
+assert_file "$PROJECT/ai/skills/impeccable/SKILL.md"
+assert_file "$PROJECT/ai/skills/theme-factory/SKILL.md"
+assert_file "$PROJECT/ai/skills/animate/SKILL.md"
+assert_file "$PROJECT/ai/skills/design-motion-principles/SKILL.md"
 assert_not_exists "$PROJECT/ai/skills/bugfix-workflow/SKILL.md"
+
+assert_contains "$PROJECT/ai/skills/environment-check/SKILL.md" "Architecture version check"
+assert_contains "$PROJECT/ai/external-tools.md" "microsoft/playwright-mcp"
 
 printf '# Current Task\n\nStatus: active\n\nStage: implementation\n\n## Goal\n\nKeep this project memory.\n' > "$PROJECT/ai/current-task.md"
 git -C "$PROJECT" add .

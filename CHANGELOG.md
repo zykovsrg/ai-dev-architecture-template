@@ -1,5 +1,13 @@
 # Changelog
 
+## v6.14 — 2026-07-20
+
+- Added the optional project skills `impeccable`, `theme-factory`, `animate`, and `design-motion-principles` to the template and architecture repository. `animate` is a lightweight router to Impeccable's canonical animation workflow.
+- Registered Microsoft's Playwright MCP as the expected external browser-verification tool and documented availability checks without automatic installation.
+- Extended `environment-check` with a read-only local-versus-repository architecture version comparison. A newer repository version produces an update proposal; unavailable network access remains a non-blocking `not confirmed` result.
+- Added smoke coverage for the new skill files, Playwright MCP registration, and version-check rule.
+- Bumped `ai/architecture.md` to `6.14`.
+
 ## v6.13 — 2026-07-12
 
 - Moved the plan-driven work convention out of documentation: Superpowers plans and specs now live in `ai/superpowers/plans|specs` (working memory, next to changelog and decisions) instead of `docs/superpowers/*`. Updated `AGENTS.md`, `CLAUDE.md`, `ai/architecture.md`, and `docs/start-prompts.md`. `docs/` now contains only how-to documentation.

@@ -74,6 +74,7 @@ Common triggers:
 - tests: `ai/skills/write-tests/SKILL.md`
 - UI behavior/layout/interaction: `ai/skills/ui-review/SKILL.md` and usually `write-tests`
 - decorative UI only: `ui-review`; use `write-tests` only if behavior or accessibility may change
+- UI polish/theme/motion: use installed `impeccable`, `theme-factory`, `animate`, or `design-motion-principles` as relevant; use `playwright-mcp` for live browser verification when available
 - bugs, regressions, crashes, performance, or complex work: Superpowers when available
 - architecture change: `ai/skills/architecture-update/SKILL.md`
 
