@@ -14,6 +14,7 @@ validate_allowed_roots() {
   local root
   while IFS= read -r root; do
     root="${root#- }"
+    [ "$root" != "/" ] || die "allowed root must not be /"
     [ -d "$root" ] || die "allowed root does not exist: $root"
   done < <(grep -E '^- /' "$ROOTS_FILE" || true)
 }

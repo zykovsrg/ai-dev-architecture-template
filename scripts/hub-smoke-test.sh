@@ -41,6 +41,14 @@ if bash "$ROOT/scripts/check-hub-registry.sh" "$MISSING_ROOT" > "$TMP_DIR/missin
 fi
 assert_contains "$TMP_DIR/missing-root.out" 'allowed root does not exist'
 
+ROOT_FILESYSTEM="$TMP_DIR/root-filesystem-hub"
+cp -R "$VALID" "$ROOT_FILESYSTEM"
+printf '%s\n' '# Allowed Roots' '' '- /' > "$ROOT_FILESYSTEM/ai/allowed-roots.md"
+if bash "$ROOT/scripts/check-hub-registry.sh" "$ROOT_FILESYSTEM" > "$TMP_DIR/root-filesystem.out" 2>&1; then
+  fail 'validator accepted filesystem root as an allowed root'
+fi
+assert_contains "$TMP_DIR/root-filesystem.out" 'ERROR: allowed root must not be /'
+
 LEXICAL_ESCAPE="$TMP_DIR/lexical-escape-hub"
 cp -R "$VALID" "$LEXICAL_ESCAPE"
 sed "s#Path: $TMP_DIR/projects/analytics-seo#Path: $TMP_DIR/projects/../outside/missing#" \
