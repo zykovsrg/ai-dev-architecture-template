@@ -159,3 +159,32 @@ GREEN: parse every Markdown list entry beginning with `- `, require a nonempty a
 - `bash scripts/hub-smoke-test.sh` — exit `0`.
 - `bash -n scripts/check-hub-registry.sh scripts/hub-smoke-test.sh` — exit `0`.
 - `git diff --check` — exit `0`.
+
+## Task 1: project creation contract
+
+Implemented the creation-contract tests and updated both required hub-skill lists.
+
+### Owned changes
+
+- `scripts/hub-smoke-test.sh`: added `project_create_contract_valid`, all required creation safety assertions, and negative fixtures for removing unsafe-name rejection and the no-Git guarantee; added `project-create` to the smoke-test required list.
+- `scripts/check-consistency.sh`: added `project-create` to `HUB_REQUIRED_SKILLS`.
+
+No workflow, skill implementation, documentation, or controlled task-memory files were changed.
+
+### Checks
+
+- `bash -n scripts/hub-smoke-test.sh scripts/check-consistency.sh` — passed.
+- `git diff --check` — passed.
+- `bash scripts/hub-smoke-test.sh` — expected RED, exit code 1.
+
+The smoke test failed only at:
+
+```text
+FAIL: missing file: .../hub-template/ai/skills/project-create/SKILL.md
+```
+
+The required skill is the missing implementation under test; the negative fixtures will execute after it is added.
+
+### Commit
+
+`41b67e4 test: define hub project creation contract`

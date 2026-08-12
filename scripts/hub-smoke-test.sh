@@ -153,6 +153,31 @@ registration_confirmed_checks_valid() {
   [[ "$section" == *'.git'* ]] &&
     [[ "$section" == *'project context'* ]]
 }
+project_create_contract_valid() {
+  local file="$1" text
+  text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
+
+  [[ "$text" == *'Mode: routing'* ]] &&
+    [[ "$text" == *'confirmed allowed root'* ]] &&
+    [[ "$text" == *'new direct-child path'* ]] &&
+    [[ "$text" == *'must not read project memory, source code, or application code before confirmation'* ]] &&
+    [[ "$text" == *'one explicit confirmation'* ]] &&
+    [[ "$text" == *'collision'* ]] &&
+    [[ "$text" == *'project-register'* ]] &&
+    [[ "$text" == *'scripts/check-hub-registry.sh'* ]] &&
+    [[ "$text" == *'ai/allowed-roots.md'* ]] &&
+    [[ "$text" == *'ai/active-project.md'* ]] &&
+    [[ "$text" == *'ai/project-registry.md'* ]] &&
+    [[ "$text" == *'ai/project-cards/'* ]] &&
+    [[ "$text" == *'ai/cross-project-signals.md'* ]] &&
+    [[ "$text" == *'ai/archive/'* ]] &&
+    [[ "$text" == *'active-project.md only after successful validation'* ]] &&
+    [[ "$text" == *'hub-owned `environment-check`'* ]] &&
+    [[ "$text" == *'hub-owned `task-intake`'* ]] &&
+    [[ "$text" == *'unsafe project names'* ]] &&
+    [[ "$text" == *'Git repositories must not be created or modified'* ]] &&
+    [[ "$text" == *'must not add application code, dependencies, services, AGENTS.md, CLAUDE.md, or shared skills'* ]]
+}
 assert_rejected() {
   if "$@"; then
     fail "boundary validator accepted an intentionally unsafe fixture"
@@ -193,13 +218,26 @@ assert_contains <(normalize_entry "$THIRD_ACTIVATION") \
 cmp -s <(normalize_entry "$HUB_AGENTS") <(normalize_entry "$HUB_CLAUDE") \
   || fail 'hub entry files differ beyond title and activation paragraph'
 
-for skill in project-router project-switch project-register registry-check environment-check task-intake task-switch task-finish; do
+for skill in project-router project-switch project-register project-create registry-check environment-check task-intake task-switch task-finish; do
   file="$ROOT/hub-template/ai/skills/$skill/SKILL.md"
   assert_file "$file"
   assert_contains "$file" 'name:'
   assert_contains "$file" 'description:'
   assert_contains "$file" 'explicit confirmation'
 done
+
+PROJECT_CREATE_SKILL="$ROOT/hub-template/ai/skills/project-create/SKILL.md"
+project_create_contract_valid "$PROJECT_CREATE_SKILL" \
+  || fail 'project-create must define the confirmation-gated creation contract'
+
+PROJECT_CREATE_WITHOUT_UNSAFE_NAMES="$TMP_DIR/project-create-without-unsafe-name-guard.md"
+sed '/unsafe project names/d' "$PROJECT_CREATE_SKILL" > "$PROJECT_CREATE_WITHOUT_UNSAFE_NAMES"
+assert_rejected project_create_contract_valid "$PROJECT_CREATE_WITHOUT_UNSAFE_NAMES"
+
+PROJECT_CREATE_WITHOUT_GIT_GUARANTEE="$TMP_DIR/project-create-without-git-guarantee.md"
+sed '/Git repositories must not be created or modified/d' "$PROJECT_CREATE_SKILL" \
+  > "$PROJECT_CREATE_WITHOUT_GIT_GUARANTEE"
+assert_rejected project_create_contract_valid "$PROJECT_CREATE_WITHOUT_GIT_GUARANTEE"
 
 for workflow in environment-check task-intake task-switch task-finish; do
   hub_shared_workflow_valid "$ROOT/hub-template/ai/skills/$workflow/SKILL.md" "$workflow" \
