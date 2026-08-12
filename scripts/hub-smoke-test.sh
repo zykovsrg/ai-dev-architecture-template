@@ -8,6 +8,21 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 fail() { echo "FAIL: $*" >&2; exit 1; }
 assert_contains() { grep -Fq "$2" "$1" || fail "expected '$2' in $1"; }
 assert_file() { [ -f "$1" ] || fail "missing file: $1"; }
+info_update_confidence_schema_valid() {
+  grep -Fq 'For every item, name its source and confidence (`verified`, `stated`,' "$1" &&
+    grep -Fq '`inferred`, or `uncertain`)' "$1" &&
+    ! grep -Fq 'or `unknown`' "$1"
+}
+info_update_affected_projects_order_valid() {
+  local summary affected proposal
+  summary="$(grep -n '^1\. Краткое резюме встречи$' "$1" | cut -d: -f1)"
+  affected="$(grep -n '^2\. Affected projects$' "$1" | cut -d: -f1)"
+  proposal="$(grep -n '^3\. Предложения по проектам\.$' "$1" | cut -d: -f1)"
+
+  [ -n "$summary" ] && [ -n "$affected" ] && [ -n "$proposal" ] &&
+    [ "$summary" -lt "$affected" ] && [ "$affected" -lt "$proposal" ] &&
+    sed -n "$((affected + 1)),$((proposal - 1))p" "$1" | grep -Fq '<project-id> — <exact-registered-path>'
+}
 section_text() {
   local file="$1"
   local start="$2"
@@ -139,6 +154,10 @@ for heading in 'Project identity and path' 'Facts' 'Decisions' 'Task changes' \
 done
 grep -Fq 'only after each related project group' "$INFO" \
   || fail 'cross-project signal placement rule missing'
+info_update_confidence_schema_valid "$INFO" \
+  || fail 'info-update confidence values must use uncertain, not unknown'
+info_update_affected_projects_order_valid "$INFO" \
+  || fail 'info-update must list affected projects between summary and proposals'
 grep -Fq 'at least three stable independent areas' "$LOCAL" \
   || fail 'local-router threshold missing'
 grep -Fq 'no separate current task' "$LOCAL" \

@@ -33,9 +33,11 @@ This skill MUST NOT invoke or perform `project-switch`. If the meeting requires 
 
 Read only the supplied temporary text and the smallest already-confirmed
 project memories allowed by each project's own instructions. Do not write while
-preparing the proposal. First present one meeting summary, then present the
-following per-project sections for every affected project. Do not merge items
-from different projects into a shared facts, decisions, task, or approval list.
+preparing the proposal. First present one meeting summary, then a distinct
+`Affected projects` section listing every affected project ID and exact path,
+then present the following per-project sections for every affected project. Do
+not merge items from different projects into a shared facts, decisions, task,
+or approval list.
 
 ## Per-project proposal sections
 
@@ -67,7 +69,7 @@ Include only an in-scope refinement; otherwise say that a separate confirmed
 ### Per-project approval
 
 For every item, name its source and confidence (`verified`, `stated`,
-`inferred`, or `unknown`). Keep facts and decisions separate from hypotheses
+`inferred`, or `uncertain`). Keep facts and decisions separate from hypotheses
 and uncertainties. A hypothesis is optional, explicitly labelled, and never a
 permission to write or route. The approval in one project group permits neither
 a read nor a write in another group.
@@ -104,7 +106,10 @@ changed file and any item intentionally left as uncertain.
 1. Краткое резюме встречи
 <санитизированное резюме; исходная расшифровка не сохраняется>.
 
-2. Предложения по проектам.
+2. Affected projects
+- <project-id> — <exact-registered-path>.
+
+3. Предложения по проектам.
 
 ### <project-id>
 
