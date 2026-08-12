@@ -11,9 +11,8 @@ current chat. Keep `Mode: routing` until the user gives explicit confirmation.
 ## Read allowlist and phases
 
 1. Read the compact hub index only: `ai/allowed-roots.md`,
-   `ai/project-registry.md`, `ai/active-project.md`, and
-   `ai/cross-project-signals.md`. Do not list allowed roots or inspect project
-   directories.
+   `ai/project-registry.md`, and `ai/active-project.md`. Do not read signal
+   entries, list allowed roots, or inspect project directories at this stage.
 2. Match the request against registered IDs, names, types, statuses, and tags.
    Select a maximum of three candidates. An unregistered path is never a
    candidate.
@@ -21,10 +20,11 @@ current chat. Keep `Mode: routing` until the user gives explicit confirmation.
    `ai/project-cards/<registered-id>.md`. Do not read project memory, source
    code, configuration, or arbitrary hub files. Compare only each card's
    purpose, tasks, boundaries, and relationships.
-4. Read only related active signals: use the active-project record and active
-   cross-project signals only when they name one of the candidates. Ignore
-   unrelated, inactive, or unscoped signals. Do not read project memory, source
-   code, configuration, or project files during routing.
+4. Only after candidate selection, read only related active signals from
+   `ai/cross-project-signals.md`: use entries that name one of the candidates
+   and are active/relevant to those candidates. Ignore unrelated, inactive, or
+   unscoped signals. Do not read project memory, source code, configuration, or
+   project files during routing.
 5. Classify routing confidence as `high, medium, or low` and preserve evidence
    confidence from the hub architecture (`verified`, `stated`, `inferred`, or
    `unknown`). High means a direct registered ID/name match; medium means a

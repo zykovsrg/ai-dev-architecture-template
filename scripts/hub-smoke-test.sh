@@ -24,9 +24,24 @@ router_read_boundary_valid() {
   section="$(section_text "$1" '## Read allowlist and phases' '## Required response shape' | tr '\n' ' ' | tr -s ' ')"
 
   [[ "$section" == *'ai/cross-project-signals.md'* ]] &&
-    [[ "$section" == *'only when they name one of the candidates'* ]] &&
+    [[ "$section" == *'name one of the candidates'* ]] &&
+    [[ "$section" == *'active/relevant'* ]] &&
     [[ "$section" == *'Do not read project memory, source code'* ]] &&
     [[ "$section" != *'Do not read cross-project signals'* ]]
+}
+router_staged_signal_reads_valid() {
+  local section step_one step_two step_four
+  section="$(section_text "$1" '## Read allowlist and phases' '## Required response shape')"
+  step_one="$(printf '%s\n' "$section" | awk '/^1\. /{in_step=1} in_step && /^2\. /{exit} in_step{print}')"
+  step_two="$(printf '%s\n' "$section" | awk '/^2\. /{in_step=1} in_step && /^3\. /{exit} in_step{print}')"
+  step_four="$(printf '%s\n' "$section" | awk '/^4\. /{in_step=1} in_step && /^5\. /{exit} in_step{print}')"
+
+  [[ "$step_one" == *'compact hub index only'* ]] &&
+    [[ "$step_one" == *'active-project.md'* ]] &&
+    [[ "$step_one" != *'cross-project-signals.md'* ]] &&
+    [[ "$step_two" == *'maximum of three candidates'* ]] &&
+    [[ "$step_four" == *'only related active signals'* ]] &&
+    [[ "$step_four" == *'name one of the candidates'* ]]
 }
 router_multiple_candidates_template_valid() {
   local section
@@ -105,6 +120,8 @@ assert_contains "$ROUTER_SKILL" 'read only candidate cards'
 assert_contains "$ROUTER_SKILL" 'wait for explicit confirmation'
 router_read_boundary_valid "$ROUTER_SKILL" \
   || fail 'router must allow only relevant hub cross-project signals and forbid project memory/code before confirmation'
+router_staged_signal_reads_valid "$ROUTER_SKILL" \
+  || fail 'router must stage cross-project signal reads after candidate selection'
 router_multiple_candidates_template_valid "$ROUTER_SKILL" \
   || fail 'router multi-candidate template must include confidence for all three candidate slots'
 

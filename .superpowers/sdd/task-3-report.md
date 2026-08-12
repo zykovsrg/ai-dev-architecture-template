@@ -129,3 +129,22 @@ context are deferred until explicit confirmation of the individual child.
 - `hub-template/ai/skills/project-register/SKILL.md`
 - `scripts/hub-smoke-test.sh`
 - `.superpowers/sdd/task-3-report.md`
+
+### Narrow staged-loading follow-up
+
+Added a regression assertion that rejects signal reads in the initial-read
+step, requires candidate selection to remain capped at three, and requires
+active/relevant signal reads only after candidate selection. RED was observed:
+
+```text
+FAIL: router must stage cross-project signal reads after candidate selection
+```
+
+After the minimal router-text fix, GREEN verification passed:
+
+```text
+bash scripts/hub-smoke-test.sh
+bash scripts/smoke-test.sh
+bash -n scripts/hub-smoke-test.sh scripts/check-hub-registry.sh scripts/smoke-test.sh scripts/check-consistency.sh
+git diff --check
+```
