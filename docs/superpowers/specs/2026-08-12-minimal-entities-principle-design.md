@@ -102,3 +102,46 @@ short one is sufficient.
 During implementation, review existing entry-point rules for overlap and
 replace redundant wording where possible. The result should remain compact and
 must not create a separate communication skill.
+
+## Entry-point Simplification
+
+Refactor `AGENTS.md` and `CLAUDE.md` as compact routing files rather than full
+catalogs. Preserve mandatory safeguards and remove repeated explanations.
+
+Keep in the entry files:
+
+- concise core principles;
+- protected-file and controlled-memory boundaries;
+- session and task lifecycle;
+- a compact but complete mandatory routing map;
+- rule precedence;
+- concise before/after editing requirements.
+
+Move procedural detail and optional tool names to the relevant skills. In
+particular, the entry files should not enumerate individual UI-polish tools.
+Remove duplicate explanations of Superpowers, task completion, and adjacent UI
+test cases. Do not remove a rule merely to meet a line-count target; brevity is
+subordinate to safety and unambiguous routing.
+
+The target is approximately 55–70 lines, but semantic completeness is the
+acceptance criterion.
+
+## Skill Routing
+
+The generic instruction to open relevant rules is insufficient by itself. The
+entry files must say that routing is based on the user's request and each
+skill's `name` and `description`, then provide the mandatory routes:
+
+- session start or restored context → `environment-check`;
+- new work → `task-intake`; changed unfinished work → `task-switch`;
+- bug, regression, crash, performance issue, or complex task → Superpowers;
+- tests → `write-tests`;
+- UI change → `ui-review`;
+- security-sensitive change → `security-review`;
+- wording or copy review → `copy-review`;
+- release or merge → `release-check`;
+- architecture change → `architecture-update`;
+- completion → `task-finish`.
+
+Optional implementation tools remain discoverable through the selected skill
+and should not occupy the always-loaded context.
