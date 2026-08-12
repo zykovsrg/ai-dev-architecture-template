@@ -6,17 +6,20 @@ This guide is for projects where the architecture is already installed.
 
 This document describes standalone project updates. A personal hub is a
 separate optional installation, not an automatic replacement for a project's
-own architecture files. Preview the available hub installation command without
-writing anything:
+own architecture files. If the user approves a hub, install it only at a path
+named `_ai-hub`:
 
 ```bash
-bash /path/to/ai-dev-architecture-template/scripts/update-installed-architecture.sh --project /path/to/project --source /path/to/ai-dev-architecture-template --offer-hub
+bash /path/to/ai-dev-architecture-template/scripts/install.sh --mode hub /path/to/_ai-hub
 ```
 
-If the user approves a separate hub, install it in `_ai-hub` and register each
-project only after confirmation. Update the hub itself with
-`scripts/update-installed-hub.sh`; its dry-run preserves hub-managed project
-memory and does not convert projects automatically.
+The installer creates `_ai-hub/projects/` as the sole permanent project
+location and does not inspect, register, or move any project. Existing project
+folders may be considered later through `project-migrate`, which needs a
+separately confirmed temporary source, a displayed preview, and explicit move
+approval. Update the hub itself with `scripts/update-installed-hub.sh`; its
+dry-run preserves hub-managed project memory and does not convert or move
+projects automatically.
 
 The goal of the update: quickly pull the current rules and base skills from `zykovsrg/ai-dev-architecture-template` without wiping the working memory of the specific project.
 

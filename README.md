@@ -21,7 +21,10 @@
 зарегистрированных проектов. Это единая точка входа: работа в hub всегда
 начинается в отдельной папке `_ai-hub`, а выбор проекта всегда ждёт явного
 подтверждения. До подтверждения hub не читает память или код выбранного
-проекта.
+проекта. Все проекты hub лежат в `_ai-hub/projects/<project-id>` и остаются
+самостоятельными Git-репозиториями. Каталог `projects/` игнорируется Git
+самого hub, поэтому история и удалённый репозиторий проекта не смешиваются с
+историей hub.
 Проекты, созданные через hub, по умолчанию содержат только свою память в папке `ai/`.
 
 При первой интерактивной установке скрипт спрашивает, нужен ли optional hub.
@@ -34,20 +37,18 @@
 bash /path/to/ai-dev-architecture-template/scripts/install.sh --mode standalone /path/to/project
 ```
 
-Установка hub всегда указывает каталог `_ai-hub` и разрешённый корень с
-проектами:
+Установка hub всегда указывает только каталог `_ai-hub`. Скрипт сам создаёт
+единственный корень для проектов — `_ai-hub/projects/`:
 
 ```bash
-bash /path/to/ai-dev-architecture-template/scripts/install.sh --mode hub --root /path/to/projects /path/to/_ai-hub
+bash /path/to/ai-dev-architecture-template/scripts/install.sh --mode hub /path/to/_ai-hub
 ```
 
-Для уже существующего проекта переход в hub — отдельная миграция с
-предварительным просмотром, а не автоматическое действие. Сначала покажите
-предложение без изменений:
-
-```bash
-bash /path/to/ai-dev-architecture-template/scripts/update-installed-architecture.sh --project /path/to/project --source /path/to/ai-dev-architecture-template --offer-hub
-```
+Для уже существующих папок переход в hub — отдельный workflow
+`project-migrate`, а не действие установки. Он сначала показывает список
+папок и точные перемещения, затем ждёт отдельного подтверждения на каждое
+перемещение или явно названную группу. Без подтверждения ничего не копируется,
+не перемещается и не регистрируется.
 
 Безопасный предварительный просмотр обновления обычной архитектуры:
 
@@ -120,9 +121,10 @@ https://github.com/zykovsrg/ai-dev-architecture-template
    git clone https://github.com/zykovsrg/ai-dev-architecture-template.git /tmp/ai-dev-arch-template
 2. Спроси, нужен ли optional Personal hub. Если пользователь не выбрал hub, установи standalone mode:
    bash /tmp/ai-dev-arch-template/scripts/install.sh --mode standalone .
-3. Если пользователь выбрал hub, отдельно согласуй allowed root и каталог hub. Установи его только так:
-   bash /tmp/ai-dev-arch-template/scripts/install.sh --mode hub --root /path/to/projects /path/to/_ai-hub
-4. Не регистрируй проекты и не читай их содержимое до отдельного подтверждения.
+3. Если пользователь выбрал hub, согласуй только каталог с именем `_ai-hub`. Установи его только так:
+   bash /tmp/ai-dev-arch-template/scripts/install.sh --mode hub /path/to/_ai-hub
+   Скрипт сам создаёт `_ai-hub/projects/` как единственное место для проектов.
+4. Не регистрируй, не перемещай и не читай проекты до отдельного подтверждения. Для уже существующих папок используй отдельный workflow `project-migrate` с предварительным просмотром.
 5. Покажи список добавленных файлов. Если каких-то обязательных файлов не хватает, назови их и предложи восстановить из шаблона.
 6. Иди в Шаг 4.
 

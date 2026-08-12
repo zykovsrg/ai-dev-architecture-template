@@ -47,11 +47,17 @@ Standalone mode is the normal architecture for one project. Its rules and
 memory live in that project and it does not depend on a hub.
 
 A personal hub is optional and has its own `_ai-hub` directory. It is a local
-router for explicitly registered projects, not a shared project workspace. A
-new hub chat shows the registered project and exact path, then waits for
+router for explicitly registered projects, not a shared project workspace. Its
+only permanent project location is `_ai-hub/projects/<project-id>`. The hub
+repository ignores `/projects/`, so every project can remain an independent Git
+repository with its own history and remote.
+
+A new hub chat shows the registered project and exact path, then waits for
 confirmation before reading that project's code or memory. Installing or
-updating a hub does not automatically convert projects, clean up files, or
-send reminders.
+updating a hub does not automatically convert projects, clean up files, move
+folders, or send reminders. Existing folders are moved only through
+`project-migrate`: the user separately confirms a temporary source, reviews an
+exact preview, and separately confirms each move or the displayed batch.
 
 ## Minimalism
 

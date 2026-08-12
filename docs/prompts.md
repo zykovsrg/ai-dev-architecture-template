@@ -8,15 +8,17 @@ Mode: review
 I want to install the optional personal AI hub from this repository:
 https://github.com/zykovsrg/ai-dev-architecture-template
 
-Use the exact command after confirming the allowed project root and hub path:
-  bash /path/to/ai-dev-architecture-template/scripts/install.sh --mode hub --root /path/to/projects /path/to/_ai-hub
+Use the exact command after confirming the hub path, whose final folder name is
+`_ai-hub`:
+  bash /path/to/ai-dev-architecture-template/scripts/install.sh --mode hub /path/to/_ai-hub
 
 Requirements:
 - create or update only the hub directory `_ai-hub`;
+- create `_ai-hub/projects/` as the sole permanent project location;
 - do not scan project contents;
 - do not register any project automatically;
-- show unregistered candidates only from direct child names;
-- tell me that project registration needs a separate confirmation;
+- do not move existing project folders automatically;
+- tell me that registration and migration each need separate confirmation;
 - do not create cleanup jobs or reminders.
 ```
 
@@ -28,9 +30,9 @@ Mode: routing
 
 Use the current hub `project-register` workflow.
 
-List only direct child directory names under the already registered allowed
-roots. Do not recurse, read project code, project memory, `.env` files, or
-backups. Propose each candidate separately and wait for my explicit
+List only direct child directory names under `_ai-hub/projects/`. Do not
+recurse, read project code, project memory, `.env` files, or backups. Propose
+each candidate separately and wait for my explicit
 confirmation before reading project context or adding a registry entry.
 ```
 
@@ -42,17 +44,36 @@ Mode: routing
 
 Use the current hub `project-create` workflow to create a new project.
 
-Ask me to confirm an allowed root, then collect the new project's name and
-type. Create it only after one complete preview and my exact confirmation of
-the displayed project ID and path.
+Collect the new project's name and type. The only target root is
+`_ai-hub/projects/`. Create it only after one complete preview and my exact
+confirmation of the displayed project ID and path.
 
 Requirements:
-- create exactly one new direct child of the confirmed allowed root;
+- create exactly one new direct child of `_ai-hub/projects/`;
 - create only the six `ai/` memory files, the project card, registry entry,
   and active-project selection;
 - do not read a project directory before confirmation;
 - do not create Git, code, dependencies, services, `AGENTS.md`, `CLAUDE.md`,
   shared skills, or a duplicate registry entry.
+```
+
+## Preview migration of existing projects into a personal hub
+
+```text
+Project: none
+Mode: routing
+
+Use the current hub `project-migrate` workflow. I want to consider moving
+existing project folders into `_ai-hub/projects/`.
+
+First ask me to name and separately confirm one temporary source directory.
+Before a candidate preflight, inventory only its direct-child names. Do not
+read project content, copy, move, register, archive, or change allowed roots.
+
+Then show every proposed source-to-destination path, Git status, and collision
+state. Move only the exact project or listed batch that I explicitly confirm.
+Keep each project's existing `.git/` unchanged; stop if one move fails. After a
+successful move, ask separately whether to register it.
 ```
 
 ## Run a hub registry check
@@ -67,18 +88,19 @@ missing registry metadata, and do not write, register, archive, migrate, or
 schedule anything automatically.
 ```
 
-## Preview standalone-to-hub conversion
+## Preview standalone-to-hub migration
 
 ```text
 Mode: review
 
-Preview, but do not perform, a standalone-to-personal-hub conversion for this
-project. Run:
-  bash /path/to/ai-dev-architecture-template/scripts/update-installed-architecture.sh --project /path/to/project --source /path/to/ai-dev-architecture-template --offer-hub
+Preview, but do not perform, a move of existing project folders into a personal
+hub. Explain that hub installation is separate and uses only this command:
+  bash /path/to/ai-dev-architecture-template/scripts/install.sh --mode hub /path/to/_ai-hub
 
-Explain that hub installation is separate, starts in `_ai-hub`, requires an
-allowed root, and never removes project entry files automatically. Do not edit
-or register anything unless I give a separate confirmation.
+Explain that the hub derives `_ai-hub/projects/` as the only permanent project
+location. Use `project-migrate` only after a separately confirmed temporary
+source, and do not edit, move, copy, or register anything unless I give the
+required separate confirmations.
 ```
 
 ## Use `info-update` for meeting information

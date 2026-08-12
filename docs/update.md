@@ -40,20 +40,21 @@ curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-templa
 
 The detailed guide is in `docs/update-installed-projects.md`.
 
-## Optional personal hub updates and conversion preview
+## Optional personal hub updates and migration
 
-An existing standalone project is not converted automatically. To preview the
-separate standalone-to-hub path without writing project files, run:
-
-```bash
-bash /path/to/ai-dev-architecture-template/scripts/update-installed-architecture.sh --project /path/to/project --source /path/to/ai-dev-architecture-template --offer-hub
-```
-
-Install the hub only after that review, always in `_ai-hub`:
+An existing standalone project is not converted automatically. Install the
+separate hub only at a path named `_ai-hub`:
 
 ```bash
-bash /path/to/ai-dev-architecture-template/scripts/install.sh --mode hub --root /path/to/projects /path/to/_ai-hub
+bash /path/to/ai-dev-architecture-template/scripts/install.sh --mode hub /path/to/_ai-hub
 ```
+
+The installer creates `_ai-hub/projects/` and does not inspect, register, or
+move a project. To relocate existing folders later, use the installed hub's
+`project-migrate` workflow: it requires a separately confirmed temporary
+source, shows the exact source-to-destination mapping and Git status, and then
+requires explicit move approval. It never copies folders or moves them during
+installation or update.
 
 For an installed hub, use its dedicated updater. Check first, then run a
 dry-run; neither command changes files:
