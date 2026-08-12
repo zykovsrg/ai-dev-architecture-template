@@ -49,6 +49,23 @@ if bash "$ROOT/scripts/check-hub-registry.sh" "$ROOT_FILESYSTEM" > "$TMP_DIR/roo
 fi
 assert_contains "$TMP_DIR/root-filesystem.out" 'ERROR: allowed root must not be /'
 
+ROOT_DOUBLE_SLASH="$TMP_DIR/root-double-slash-hub"
+cp -R "$VALID" "$ROOT_DOUBLE_SLASH"
+printf '%s\n' '# Allowed Roots' '' '- //' > "$ROOT_DOUBLE_SLASH/ai/allowed-roots.md"
+if bash "$ROOT/scripts/check-hub-registry.sh" "$ROOT_DOUBLE_SLASH" > "$TMP_DIR/root-double-slash.out" 2>&1; then
+  fail 'validator accepted // as an allowed root'
+fi
+assert_contains "$TMP_DIR/root-double-slash.out" 'allowed root must not be /'
+
+ROOT_SYMLINK_FILESYSTEM="$TMP_DIR/root-symlink-filesystem-hub"
+ln -s / "$TMP_DIR/filesystem-root-link"
+cp -R "$VALID" "$ROOT_SYMLINK_FILESYSTEM"
+printf '%s\n' '# Allowed Roots' '' "- $TMP_DIR/filesystem-root-link" > "$ROOT_SYMLINK_FILESYSTEM/ai/allowed-roots.md"
+if bash "$ROOT/scripts/check-hub-registry.sh" "$ROOT_SYMLINK_FILESYSTEM" > "$TMP_DIR/root-symlink-filesystem.out" 2>&1; then
+  fail 'validator accepted a symlink resolving to filesystem root'
+fi
+assert_contains "$TMP_DIR/root-symlink-filesystem.out" 'allowed root must not be /'
+
 LEXICAL_ESCAPE="$TMP_DIR/lexical-escape-hub"
 cp -R "$VALID" "$LEXICAL_ESCAPE"
 sed "s#Path: $TMP_DIR/projects/analytics-seo#Path: $TMP_DIR/projects/../outside/missing#" \

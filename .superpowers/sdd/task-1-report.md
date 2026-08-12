@@ -139,3 +139,9 @@ Result: exit `0`.
 
 - Added Bash 3.2-compatible rejection of `/` in allowed-root validation.
 - Added a regression case asserting failure with an `ERROR:` message.
+
+## Root slash bypass fix
+
+RED: added smoke regressions for `//` and an allowed-root symlink resolving to `/`; `bash scripts/hub-smoke-test.sh` failed before the fix.
+
+GREEN: canonicalize each allowed root with `pwd -P`, normalize `//` to `/`, and reject the canonical filesystem root. `bash scripts/hub-smoke-test.sh`, `bash -n scripts/check-hub-registry.sh scripts/hub-smoke-test.sh`, and `git diff --check` all passed.

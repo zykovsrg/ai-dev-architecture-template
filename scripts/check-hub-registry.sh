@@ -11,11 +11,13 @@ die() { echo "ERROR: $*" >&2; exit 1; }
 [ -f "$REGISTRY_FILE" ] || die "missing $REGISTRY_FILE"
 
 validate_allowed_roots() {
-  local root
+  local root canonical_root
   while IFS= read -r root; do
     root="${root#- }"
-    [ "$root" != "/" ] || die "allowed root must not be /"
     [ -d "$root" ] || die "allowed root does not exist: $root"
+    canonical_root="$(cd "$root" && pwd -P)"
+    [ "$canonical_root" = "//" ] && canonical_root="/"
+    [ "$canonical_root" != "/" ] || die "allowed root must not be /"
   done < <(grep -E '^- /' "$ROOTS_FILE" || true)
 }
 
