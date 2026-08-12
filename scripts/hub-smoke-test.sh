@@ -123,6 +123,22 @@ grep -Fq 'Confirm each affected project separately' "$INFO" \
   || fail 'per-project approval missing'
 grep -Fq 'must not replace the current task' "$INFO" \
   || fail 'current-task protection missing'
+grep -Fq 'MUST NOT invoke or perform `task-finish`' "$INFO" \
+  || fail 'info-update task-finish ban missing'
+grep -Fq 'MUST NOT invoke or perform `project-switch`' "$INFO" \
+  || fail 'info-update project-switch ban missing'
+grep -Fq 'separate confirmed `project-switch` workflow' "$INFO" \
+  || fail 'info-update separate project-switch workflow missing'
+grep -Fq '## Per-project proposal sections' "$INFO" \
+  || fail 'per-project proposal structure missing'
+for heading in 'Project identity and path' 'Facts' 'Decisions' 'Task changes' \
+  'Future tasks' 'Signals' 'Hypotheses' 'Uncertainties' 'Proposed file edits' \
+  'Per-project approval'; do
+  grep -Fq "### $heading" "$INFO" \
+    || fail "per-project proposal heading missing: $heading"
+done
+grep -Fq 'only after each related project group' "$INFO" \
+  || fail 'cross-project signal placement rule missing'
 grep -Fq 'at least three stable independent areas' "$LOCAL" \
   || fail 'local-router threshold missing'
 grep -Fq 'no separate current task' "$LOCAL" \

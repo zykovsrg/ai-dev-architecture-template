@@ -23,32 +23,56 @@ registered ID and exact path, then obtain the separate project confirmation.
 
 This skill must not replace the current task. It may propose a refinement to an
 already confirmed project's current task only when that refinement fits the
-existing Done criteria. A different task requires that project's `task-switch`;
-a completed task requires its `task-finish` process. Never overwrite, pause,
-finish, or copy a current task from this skill.
+existing Done criteria. A different task requires that project's separate
+confirmed `task-switch` workflow. A completed task requires its separate
+confirmed `task-finish` workflow. This skill MUST NOT invoke or perform `task-finish`; it stops and requires that separate confirmed workflow. Never overwrite, pause, finish, or copy a current task from this skill.
+
+This skill MUST NOT invoke or perform `project-switch`. If the meeting requires another project, it stops and requires a separate confirmed `project-switch` workflow before any read or proposal for that project. Project confirmations inside this skill remain separate confirmation gates; they do not authorize a project switch.
 
 ## Review-only procedure
 
 Read only the supplied temporary text and the smallest already-confirmed
 project memories allowed by each project's own instructions. Do not write while
-preparing the proposal. Present the following sections in this exact order:
+preparing the proposal. First present one meeting summary, then present the
+following per-project sections for every affected project. Do not merge items
+from different projects into a shared facts, decisions, task, or approval list.
 
-1. Meeting summary.
-2. Affected projects.
-3. Facts.
-4. Decisions.
-5. Current-task refinements.
-6. Future tasks.
-7. Signals.
-8. Hypotheses.
-9. Uncertain interpretations.
-10. Per-file proposed edits.
-11. Per-project confirmation.
+## Per-project proposal sections
 
-For every item, name its source, confidence (`verified`, `stated`, `inferred`,
-or `unknown`), and target project. Keep facts and decisions separate from
-hypotheses and uncertain interpretations. A hypothesis is optional, explicitly
-labelled, and never a permission to write or route.
+For each project, use this exact order:
+
+### Project identity and path
+
+State the registered project ID and exact registered path.
+
+### Facts
+
+### Decisions
+
+### Task changes
+
+Include only an in-scope refinement; otherwise say that a separate confirmed
+`task-switch` or `task-finish` workflow is required and stop that item.
+
+### Future tasks
+
+### Signals
+
+### Hypotheses
+
+### Uncertainties
+
+### Proposed file edits
+
+### Per-project approval
+
+For every item, name its source and confidence (`verified`, `stated`,
+`inferred`, or `unknown`). Keep facts and decisions separate from hypotheses
+and uncertainties. A hypothesis is optional, explicitly labelled, and never a
+permission to write or route. The approval in one project group permits neither
+a read nor a write in another group.
+
+A cross-project signal may appear in a separate hub section only after each related project group. It must name the related project IDs, retain its source and confidence, and still requires its own explicit hub approval.
 
 ## Proposed writes and approvals
 
@@ -80,33 +104,42 @@ changed file and any item intentionally left as uncertain.
 1. Краткое резюме встречи
 <санитизированное резюме; исходная расшифровка не сохраняется>.
 
-2. Затронутые проекты
-- <project-id> — <exact-registered-path> — уверенность: <...>.
+2. Предложения по проектам.
 
-3. Факты
-- [<project-id>] <факт> — источник: <...> — уверенность: <...>.
+### <project-id>
 
-4. Решения
-- [<project-id>] <решение> — источник: <...> — уверенность: <...>.
+#### Проект: идентификатор и путь
+<project-id> — <exact-registered-path>.
 
-5. Уточнения текущей задачи
-- [<project-id>] <только в рамках существующих Done criteria|нет>.
+#### Факты
+- <факт|нет> — источник: <...> — уверенность: <...>.
 
-6. Будущие задачи
-- [<project-id>] <предложение|нет>.
+#### Решения
+- <решение|нет> — источник: <...> — уверенность: <...>.
 
-7. Сигналы
-- <санитизированный сигнал|нет>.
+#### Изменения текущей задачи
+- <уточнение в рамках существующих Done criteria|нет; для иной задачи нужна
+  отдельная подтверждённая процедура task-switch, которую info-update не запускает>.
 
-8. Гипотезы
-- <явно помеченная гипотеза|нет>.
+#### Будущие задачи
+- <предложение|нет> — источник: <...> — уверенность: <...>.
 
-9. Неоднозначные интерпретации
-- <что требует уточнения|нет>.
+#### Сигналы
+- <сигнал, относящийся только к этому проекту|нет> — источник: <...> — уверенность: <...>.
 
-10. Предлагаемые изменения по файлам
-- <project-id>: <file> — <точное изменение>.
+#### Гипотезы
+- <явно помеченная гипотеза|нет> — источник: <...> — уверенность: <...>.
 
-11. Подтверждение по проектам
+#### Неопределённости
+- <что требует уточнения|нет> — источник: <...> — уверенность: <...>.
+
+#### Предлагаемые изменения файлов
+- <file> — <точный diff или блок замены>.
+
+#### Подтверждение по проекту
 Подтвердите отдельно: «Обновить <project-id> по пути <path>: <files>».
+
+3. Межпроектные сигналы hub (только после каждой связанной группы проектов).
+- <санитизированный сигнал|нет> — связанные проекты: <...> — источник: <...> — уверенность: <...>.
+Подтвердите отдельно: «Записать hub-сигнал: <signal-id|summary>».
 ```
