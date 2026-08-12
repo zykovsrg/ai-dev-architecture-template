@@ -7,6 +7,29 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
 assert_contains() { grep -Fq "$2" "$1" || fail "expected '$2' in $1"; }
+assert_file() { [ -f "$1" ] || fail "missing file: $1"; }
+normalize_entry() {
+  sed \
+    -e '1{/^# Personal AI Hub — Codex$/d;}' \
+    -e '1{/^# Personal AI Hub — Claude Code$/d;}' \
+    -e '/^<!-- Tool-specific activation: /d' \
+    "$1"
+}
+
+HUB_AGENTS="$ROOT/hub-template/AGENTS.md"
+HUB_CLAUDE="$ROOT/hub-template/CLAUDE.md"
+assert_file "$HUB_AGENTS"
+assert_file "$HUB_CLAUDE"
+[ "$(wc -l < "$HUB_AGENTS")" -le 120 ] || fail 'hub AGENTS.md too long'
+[ "$(wc -c < "$HUB_AGENTS")" -le 6000 ] || fail 'hub AGENTS.md too large'
+[ "$(wc -l < "$HUB_CLAUDE")" -le 120 ] || fail 'hub CLAUDE.md too long'
+[ "$(wc -c < "$HUB_CLAUDE")" -le 6000 ] || fail 'hub CLAUDE.md too large'
+grep -Fq 'explicit confirmation' "$HUB_AGENTS" || fail 'missing confirmation gate'
+grep -Fq 'allowed roots' "$HUB_AGENTS" || fail 'missing allowed-root gate'
+grep -Fq 'explicit confirmation' "$HUB_CLAUDE" || fail 'missing confirmation gate'
+grep -Fq 'allowed roots' "$HUB_CLAUDE" || fail 'missing allowed-root gate'
+cmp -s <(normalize_entry "$HUB_AGENTS") <(normalize_entry "$HUB_CLAUDE") \
+  || fail 'hub entry files differ beyond title and activation paragraph'
 
 VALID="$TMP_DIR/valid-hub"
 mkdir -p "$VALID/ai/project-cards" "$TMP_DIR/projects/analytics-seo"
