@@ -4,6 +4,74 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_TEMPLATE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)/template"
 
+usage() {
+  echo "Usage: $0 [--mode standalone|hub] [--root DIR ...] [TARGET_DIR]" >&2
+  exit 1
+}
+
+MODE=""
+ROOT_ARGS=()
+TARGET_DIR=""
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --mode)
+      [ "$#" -ge 2 ] || usage
+      MODE="$2"
+      shift 2
+      ;;
+    --root)
+      [ "$#" -ge 2 ] || usage
+      ROOT_ARGS+=("--root" "$2")
+      shift 2
+      ;;
+    --)
+      shift
+      [ "$#" -le 1 ] || usage
+      TARGET_DIR="${1:-.}"
+      break
+      ;;
+    -*)
+      usage
+      ;;
+    *)
+      [ -z "$TARGET_DIR" ] || usage
+      TARGET_DIR="$1"
+      shift
+      ;;
+  esac
+done
+
+TARGET_DIR="${TARGET_DIR:-.}"
+
+if [ -z "$MODE" ]; then
+  if [ -t 0 ] && [ -t 1 ]; then
+    read -r -p "Установить дополнительный personal AI hub? [д/Н] " install_hub
+    case "$install_hub" in
+      д|Д|да|Да|ДА|y|Y|yes|Yes|YES) MODE="hub" ;;
+      *) MODE="standalone" ;;
+    esac
+  else
+    MODE="standalone"
+  fi
+fi
+
+case "$MODE" in
+  hub)
+    exec "$SCRIPT_DIR/install-hub.sh" "${ROOT_ARGS[@]}" "$TARGET_DIR"
+    ;;
+  standalone)
+    [ "${#ROOT_ARGS[@]}" -eq 0 ] || {
+      echo "--root is available only in hub mode." >&2
+      exit 1
+    }
+    ;;
+  *)
+    echo "Unknown installation mode: $MODE" >&2
+    usage
+    ;;
+esac
+
 if [ -n "${AI_DEV_ARCH_TEMPLATE:-}" ]; then
   TEMPLATE_DIR="$AI_DEV_ARCH_TEMPLATE"
 elif [ -d "$REPO_TEMPLATE_DIR" ]; then
@@ -11,7 +79,6 @@ elif [ -d "$REPO_TEMPLATE_DIR" ]; then
 else
   TEMPLATE_DIR="$HOME/Documents/ai-dev-architecture-template/template"
 fi
-TARGET_DIR="${1:-.}"
 
 if [ ! -d "$TEMPLATE_DIR" ]; then
   echo "Template directory not found: $TEMPLATE_DIR"

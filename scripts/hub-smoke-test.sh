@@ -334,3 +334,35 @@ sed -e 's/Status: active/Status: missing/' \
   "$VALID/ai/project-registry.md" > "$MISSING_PROJECT/ai/project-registry.md"
 bash "$ROOT/scripts/check-hub-registry.sh" "$MISSING_PROJECT" > "$TMP_DIR/missing-project.out"
 assert_contains "$TMP_DIR/missing-project.out" 'Registry check passed'
+
+HUB_INSTALL="$TMP_DIR/installed-hub"
+PROJECT_ROOT="$TMP_DIR/managed-projects"
+mkdir -p "$PROJECT_ROOT/example-project" "$PROJECT_ROOT/example-backup"
+PROJECT_ROOT_CANONICAL="$(cd "$PROJECT_ROOT" && pwd -P)"
+bash "$ROOT/scripts/install.sh" --mode hub --root "$PROJECT_ROOT" "$HUB_INSTALL" > "$TMP_DIR/install.out"
+assert_file "$HUB_INSTALL/AGENTS.md"
+assert_file "$HUB_INSTALL/CLAUDE.md"
+assert_file "$HUB_INSTALL/ai/project-registry.md"
+assert_contains "$HUB_INSTALL/ai/allowed-roots.md" "$PROJECT_ROOT_CANONICAL"
+assert_contains "$TMP_DIR/install.out" 'Registration requires confirmation'
+grep -Fq 'example-project' "$HUB_INSTALL/ai/project-registry.md" && fail 'installer auto-registered a project'
+
+CANONICAL_ROOT="$TMP_DIR/canonical-managed-projects"
+ln -s "$PROJECT_ROOT" "$CANONICAL_ROOT"
+bash "$ROOT/scripts/install.sh" --mode hub --root "$CANONICAL_ROOT" "$TMP_DIR/canonical-hub" >/dev/null
+assert_contains "$TMP_DIR/canonical-hub/ai/allowed-roots.md" "$PROJECT_ROOT_CANONICAL"
+
+if bash "$ROOT/scripts/install.sh" --mode standalone --root "$PROJECT_ROOT" "$TMP_DIR/standalone-with-root" >/dev/null 2>&1; then
+  fail 'standalone installer accepted --root'
+fi
+
+if bash "$ROOT/scripts/install.sh" --mode hub --root / "$TMP_DIR/root-hub" >/dev/null 2>&1; then
+  fail 'hub installer accepted filesystem root'
+fi
+
+HOME_ROOT="$(cd "$HOME" && pwd -P)"
+if bash "$ROOT/scripts/install.sh" --mode hub --root "$HOME_ROOT" "$TMP_DIR/home-hub" >/dev/null 2>&1; then
+  fail 'hub installer accepted the actual home directory'
+fi
+
+echo "Hub smoke tests passed."

@@ -79,3 +79,5 @@ if bash "$ROOT/scripts/update-installed-architecture.sh" --project "$BAD_PROJECT
 fi
 
 echo "Smoke tests passed."
+
+bash "$ROOT/scripts/hub-smoke-test.sh"
