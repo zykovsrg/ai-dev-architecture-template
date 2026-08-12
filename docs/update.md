@@ -63,6 +63,12 @@ bash /path/to/ai-dev-architecture-template/scripts/update-installed-hub.sh --hub
 bash /path/to/ai-dev-architecture-template/scripts/update-installed-hub.sh --hub /path/to/_ai-hub --source /path/to/ai-dev-architecture-template --dry-run
 ```
 
+After reviewing that dry-run and explicitly approving the update, apply it:
+
+```bash
+bash /path/to/ai-dev-architecture-template/scripts/update-installed-hub.sh --hub /path/to/_ai-hub --source /path/to/ai-dev-architecture-template --apply
+```
+
 The hub updater preserves hub-managed project memory. It does not register
 projects, migrate a standalone project, clean up files, or create reminders.
 

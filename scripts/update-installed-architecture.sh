@@ -130,13 +130,6 @@ if [ "$CHECK" = "true" ]; then
   DO_COMMIT="false"
 fi
 
-if [ "$OFFER_HUB" = "true" ]; then
-  echo "Optional personal AI hub installation:"
-  echo "  bash scripts/install.sh --mode hub --root /path/to/projects /path/to/_ai-hub"
-  echo "Existing-project conversion is a separate previewed migration; it never removes project entry files automatically."
-  exit 0
-fi
-
 PROJECT_DIR="$(cd "$PROJECT_DIR" && pwd)"
 cd "$PROJECT_DIR"
 
@@ -150,6 +143,32 @@ for required_arch_file in "AGENTS.md" "ai/architecture.md" "ai/current-task.md";
     die "This does not look like a project with the AI development architecture installed. Missing required file: $required_arch_file. Use scripts/install.sh first."
   fi
 done
+
+if [ "$OFFER_HUB" = "true" ]; then
+  echo "Standalone-to-hub migration preview (read-only)."
+  echo "Project: $PROJECT_DIR"
+  echo "No files will be changed, registered, removed, archived, or migrated."
+  echo ""
+  echo "Standalone entry/rule files requiring separate review before hub management:"
+  for rel in AGENTS.md CLAUDE.md ai/architecture.md ai/external-tools.md; do
+    [ -e "$rel" ] && echo "- $rel"
+  done
+  if [ -d ai/skills ]; then
+    while IFS= read -r legacy_skill; do
+      echo "- ${legacy_skill#./}"
+    done < <(find ai/skills -type f -name SKILL.md | sort)
+  fi
+  echo ""
+  echo "Project memory that hub migration preserves in place:"
+  for rel in ai/current-task.md ai/paused-tasks.md ai/future-tasks.md ai/project-context.md ai/decisions.md ai/changelog.md; do
+    [ -e "$rel" ] && echo "- $rel"
+  done
+  echo ""
+  echo "Optional personal AI hub installation:"
+  echo "  bash scripts/install.sh --mode hub --root /path/to/projects /path/to/_ai-hub"
+  echo "A separate approved migration must show exact file actions before any legacy entry or base workflow file is removed or archived."
+  exit 0
+fi
 
 if [ "$MODE" = "apply" ] && [ "$ALLOW_DIRTY" != "true" ] && [ -n "$(git status --porcelain)" ]; then
   die "Working tree is not clean. Commit or stash project changes first, or rerun with --allow-dirty."

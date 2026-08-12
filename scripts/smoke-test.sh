@@ -84,10 +84,13 @@ cp "$PROJECT/AGENTS.md" "$TMP_DIR/standalone-agents.before"
 cp "$PROJECT/CLAUDE.md" "$TMP_DIR/standalone-claude.before"
 bash "$ROOT/scripts/update-installed-architecture.sh" --project "$PROJECT" --source "$ROOT" --offer-hub > "$TMP_DIR/offer-hub.out"
 assert_contains "$TMP_DIR/offer-hub.out" 'bash scripts/install.sh --mode hub'
-assert_contains "$TMP_DIR/offer-hub.out" 'separate previewed migration'
-assert_contains "$TMP_DIR/offer-hub.out" 'never removes project entry files automatically'
+assert_contains "$TMP_DIR/offer-hub.out" 'Standalone-to-hub migration preview (read-only).'
+assert_contains "$TMP_DIR/offer-hub.out" 'ai/current-task.md'
+assert_contains "$TMP_DIR/offer-hub.out" 'ai/skills/task-intake/SKILL.md'
+assert_contains "$TMP_DIR/offer-hub.out" 'No files will be changed, registered, removed, archived, or migrated.'
 cmp -s "$TMP_DIR/standalone-agents.before" "$PROJECT/AGENTS.md" || fail '--offer-hub changed AGENTS.md'
 cmp -s "$TMP_DIR/standalone-claude.before" "$PROJECT/CLAUDE.md" || fail '--offer-hub changed CLAUDE.md'
+assert_contains "$PROJECT/ai/current-task.md" 'Keep this project memory.'
 
 bash "$ROOT/scripts/update-installed-architecture.sh" --project "$PROJECT" --source "$ROOT" --check >/dev/null
 
