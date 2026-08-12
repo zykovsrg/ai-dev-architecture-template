@@ -12,7 +12,8 @@ normalize_entry() {
   sed \
     -e '1{/^# Personal AI Hub — Codex$/d;}' \
     -e '1{/^# Personal AI Hub — Claude Code$/d;}' \
-    -e '/^<!-- Tool-specific activation: /d' \
+    -e '/^<!-- Tool-specific activation: Codex reads AGENTS\.md as its project entry file\. -->$/d' \
+    -e '/^<!-- Tool-specific activation: Claude Code reads CLAUDE\.md as its project entry file\. -->$/d' \
     "$1"
 }
 
@@ -28,6 +29,13 @@ grep -Fq 'explicit confirmation' "$HUB_AGENTS" || fail 'missing confirmation gat
 grep -Fq 'allowed roots' "$HUB_AGENTS" || fail 'missing allowed-root gate'
 grep -Fq 'explicit confirmation' "$HUB_CLAUDE" || fail 'missing confirmation gate'
 grep -Fq 'allowed roots' "$HUB_CLAUDE" || fail 'missing allowed-root gate'
+
+THIRD_ACTIVATION="$TMP_DIR/entry-with-third-activation.md"
+cp "$HUB_AGENTS" "$THIRD_ACTIVATION"
+printf '%s\n' '<!-- Tool-specific activation: A third tool reads this entry differently. -->' >> "$THIRD_ACTIVATION"
+assert_contains <(normalize_entry "$THIRD_ACTIVATION") \
+  '<!-- Tool-specific activation: A third tool reads this entry differently. -->'
+
 cmp -s <(normalize_entry "$HUB_AGENTS") <(normalize_entry "$HUB_CLAUDE") \
   || fail 'hub entry files differ beyond title and activation paragraph'
 
