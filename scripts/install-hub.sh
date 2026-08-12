@@ -105,6 +105,9 @@ done
 mkdir -p "$(dirname "$HUB_DIR")"
 mkdir -p "$HUB_DIR"
 rsync -av --ignore-existing "$HUB_TEMPLATE_DIR/" "$HUB_DIR/"
+mkdir -p "$HUB_DIR/scripts"
+[ -e "$HUB_DIR/scripts/check-hub-registry.sh" ] \
+  || cp "$SCRIPT_DIR/check-hub-registry.sh" "$HUB_DIR/scripts/check-hub-registry.sh"
 
 ROOTS_FILE="$HUB_DIR/ai/allowed-roots.md"
 sed '/^- \/absolute\/path\/to\/projects$/d' "$ROOTS_FILE" > "$ROOTS_FILE.tmp"
@@ -120,6 +123,7 @@ fi
 for root in "${CANONICAL_ROOTS[@]}"; do
   for candidate in "$root"/*; do
     [ -d "$candidate" ] || continue
+    [ -L "$candidate" ] && continue
     canonical_candidate="$(cd "$candidate" && pwd -P)"
     [ "$canonical_candidate" = "$CANONICAL_HUB_DIR" ] && continue
     echo "Unregistered candidate: ${candidate##*/}"

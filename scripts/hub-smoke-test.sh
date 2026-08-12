@@ -378,7 +378,7 @@ for card_escape_case in lexical symlink canonical; do
     > "$TMP_DIR/card-$card_escape_case.out" 2> "$TMP_DIR/card-$card_escape_case.trace"; then
     fail "validator accepted a $card_escape_case card escape"
   fi
-  assert_contains "$TMP_DIR/card-$card_escape_case.trace" 'card path must stay beneath ai/project-cards'
+  assert_contains "$TMP_DIR/card-$card_escape_case.trace" 'Card must be ai/project-cards/analytics-seo.md'
   assert_not_contains "$TMP_DIR/card-$card_escape_case.out" "$SENTINEL"
   assert_not_contains "$TMP_DIR/card-$card_escape_case.trace" "$SENTINEL"
   assert_not_contains "$TMP_DIR/card-$card_escape_case.trace" "grep -Fqx 'Project ID: analytics-seo'"
@@ -612,11 +612,14 @@ echo 'Sentinel evidence: installer output and xtrace contain neither the marker 
 assert_file "$HUB_INSTALL/AGENTS.md"
 assert_file "$HUB_INSTALL/CLAUDE.md"
 assert_file "$HUB_INSTALL/ai/project-registry.md"
+assert_file "$HUB_INSTALL/scripts/check-hub-registry.sh"
 assert_contains "$HUB_INSTALL/ai/allowed-roots.md" "$PROJECT_ROOT_CANONICAL"
 assert_contains "$TMP_DIR/install.out" 'Registration requires confirmation'
 grep -Fq 'example-project' "$HUB_INSTALL/ai/project-registry.md" && fail 'installer auto-registered a project'
 bash "$ROOT/scripts/check-hub-registry.sh" "$HUB_INSTALL" > "$TMP_DIR/installed-hub-registry.out"
 assert_contains "$TMP_DIR/installed-hub-registry.out" 'Registry check passed'
+bash "$HUB_INSTALL/scripts/check-hub-registry.sh" "$HUB_INSTALL" > "$TMP_DIR/installed-hub-local-registry.out"
+assert_contains "$TMP_DIR/installed-hub-local-registry.out" 'Registry check passed'
 cp "$HUB_INSTALL/ai/project-registry.md" "$TMP_DIR/install-registry.before"
 cp "$HUB_INSTALL/ai/allowed-roots.md" "$TMP_DIR/install-roots.before"
 bash "$ROOT/scripts/install.sh" --mode hub --root "$PROJECT_ROOT" "$HUB_INSTALL" > "$TMP_DIR/install-update.out"

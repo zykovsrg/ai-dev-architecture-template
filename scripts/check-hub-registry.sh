@@ -125,6 +125,8 @@ validate_entry_schema() {
   [ -n "$entry_path" ] || die "missing Path for $current_id"
   [ -n "$entry_tags" ] || die "missing Tags for $current_id"
   [ -n "$entry_card" ] || die "missing Card for $current_id"
+  [ "$entry_card" = "ai/project-cards/$current_id.md" ] \
+    || die "Card must be ai/project-cards/$current_id.md for $current_id"
   canonical_card="$(validate_card_path "$entry_card")"
   for card_field in 'Project ID:' 'Name:' 'Type:' 'Status:' 'Last updated:' 'Purpose:' 'Typical tasks:' 'Memory entry point:'; do
     card_count="$(grep -Ec "^$card_field .+" "$canonical_card" || true)"

@@ -151,21 +151,22 @@ if [ "$OFFER_HUB" = "true" ]; then
   echo ""
   echo "Standalone entry/rule files requiring separate review before hub management:"
   for rel in AGENTS.md CLAUDE.md ai/architecture.md ai/external-tools.md; do
-    [ -e "$rel" ] && echo "- $rel"
+    [ -e "$rel" ] && echo "- $rel -> keep now; archive or remove only in a separately approved migration"
   done
   if [ -d ai/skills ]; then
     while IFS= read -r legacy_skill; do
-      echo "- ${legacy_skill#./}"
+      echo "- ${legacy_skill#./} -> keep now; archive or remove only in a separately approved migration"
     done < <(find ai/skills -type f -name SKILL.md | sort)
   fi
   echo ""
   echo "Project memory that hub migration preserves in place:"
   for rel in ai/current-task.md ai/paused-tasks.md ai/future-tasks.md ai/project-context.md ai/decisions.md ai/changelog.md; do
-    [ -e "$rel" ] && echo "- $rel"
+    [ -e "$rel" ] && echo "- $rel -> preserve in place"
   done
   echo ""
   echo "Optional personal AI hub installation:"
   echo "  bash scripts/install.sh --mode hub --root /path/to/projects /path/to/_ai-hub"
+  echo "Future hub structure: _ai-hub/{AGENTS.md,CLAUDE.md,ai/,scripts/check-hub-registry.sh}."
   echo "A separate approved migration must show exact file actions before any legacy entry or base workflow file is removed or archived."
   exit 0
 fi

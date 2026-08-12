@@ -88,6 +88,8 @@ assert_contains "$TMP_DIR/offer-hub.out" 'Standalone-to-hub migration preview (r
 assert_contains "$TMP_DIR/offer-hub.out" 'ai/current-task.md'
 assert_contains "$TMP_DIR/offer-hub.out" 'ai/skills/task-intake/SKILL.md'
 assert_contains "$TMP_DIR/offer-hub.out" 'No files will be changed, registered, removed, archived, or migrated.'
+assert_contains "$TMP_DIR/offer-hub.out" '-> keep now; archive or remove only in a separately approved migration'
+assert_contains "$TMP_DIR/offer-hub.out" 'Future hub structure: _ai-hub/'
 cmp -s "$TMP_DIR/standalone-agents.before" "$PROJECT/AGENTS.md" || fail '--offer-hub changed AGENTS.md'
 cmp -s "$TMP_DIR/standalone-claude.before" "$PROJECT/CLAUDE.md" || fail '--offer-hub changed CLAUDE.md'
 assert_contains "$PROJECT/ai/current-task.md" 'Keep this project memory.'
