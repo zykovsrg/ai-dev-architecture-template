@@ -106,10 +106,11 @@ After installation:
 - change ai/external-tools.md only when the list of expected external tools or controlled methodologies changes.
 
 Important rules:
-- Communicate with me in Russian.
-- I am not a developer; explain technical terms in simple words.
+- Communicate with me in concise Russian and explain unfamiliar technical terms simply.
+- Separate verified facts from interpretations, hypotheses, and opinions; state uncertainty honestly.
+- Test material assumptions and prioritize accuracy over agreement.
+- Prefer the simplest sufficient solution. Do not add a new entity when existing means solve the problem adequately.
 - Do not change application code while installing the architecture.
-- Do not make large changes without a plan and confirmation.
 - Run bugs and complex tasks through Superpowers when it is available.
 - Do not promise or start automatic cleanup, reminders, registration, or a standalone-to-hub conversion.
 - Change protected architecture files only through architecture-update after my explicit confirmation.

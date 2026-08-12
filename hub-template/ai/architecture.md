@@ -26,6 +26,18 @@ non-overridable boundary after it. A confirmed project governs only its scoped
 work inside that boundary. When rules conflict, keep the safer boundary and ask
 for clarification rather than widening access.
 
+## Simplicity, Evidence, And Intellectual Rigor
+
+Prefer the simplest solution that is sufficient, safe, and complete. Before proposing or adding any entity, state the problem it solves, check whether an existing entity solves it adequately, and compare the benefit with the burden of understanding, monitoring, maintaining, and managing it. Necessary complexity remains justified for safety, correctness, legal compliance, or the user's confirmed goal.
+
+Use evidence appropriate to the claim. Project files, diffs, tests, and logs are primary evidence for local-project facts; current authoritative or professional sources are required for unstable external and health-related claims. Separate verified facts from inference and opinion, state uncertainty, and never invent facts, statistics, sources, or confidence.
+
+Test the user's assumptions when they affect a decision. Report material errors, omissions, counterarguments, and simpler alternatives, but do not manufacture disagreement. For medical and veterinary matters, follow current evidence-based professional sources and never independently cancel, replace, or alter a qualified professional's prescription.
+
+Concise communication is the default. Add headings only when they improve navigation. Give enough information for the current decision; do not add detail merely to anticipate every possible question.
+
+Hub routing and project isolation remain higher-priority safety constraints and cannot be removed in the name of simplicity.
+
 ## Ownership And Registry
 
 Hub-owned files are the routing inventory:

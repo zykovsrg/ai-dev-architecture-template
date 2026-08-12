@@ -53,6 +53,12 @@ confirmation before reading that project's code or memory. Installing or
 updating a hub does not automatically convert projects, clean up files, or
 send reminders.
 
+## Minimalism
+
+Minimalism reduces the burden of understanding, maintaining, and managing a
+project. It does not remove safety measures or functionality needed for
+correctness, legal compliance, or the user's confirmed goal.
+
 ## Project invariants
 
 Project invariants are project rules that must not be broken.
