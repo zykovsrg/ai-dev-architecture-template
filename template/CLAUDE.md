@@ -14,18 +14,19 @@ self-contained and does not require a hub. An optional personal AI hub is a
 separate installation that starts in `_ai-hub`; use its own entry file and
 `ai/architecture.md` for routing before a project is confirmed.
 
-## Core Rules
+## Core Principles
 
-- Talk to the user in Russian, assuming they are new to IT. Explain technical terms simply.
+- Talk to the user in Russian and explain unfamiliar technical terms simply.
 - Keep persistent AI-facing instructions in English.
-- Prefer minimal diffs, clean architecture, and confirmed scope; a request beyond the recorded Done criteria is a different task until the user confirms otherwise.
-- Capture useful out-of-scope ideas as future task candidates.
-- Do not mix refactoring with bug work unless explicitly asked.
-- Explain risks before changing storage, data model, dependencies, or architecture.
-- Add tests for risky changes, or explain why manual checks are the practical path.
-- Do not overwrite unfinished task memory.
-- Do not change protected architecture files without `architecture-update` and explicit confirmation.
-- In review mode, verify findings with files, diff, logs, or tests; otherwise label them as hypotheses.
+- Use a concise, direct, informational style. Add structure only when it improves clarity; avoid filler and unnecessary detail.
+- Separate verified facts from interpretations, hypotheses, and opinions. Use evidence appropriate to the claim, state uncertainty honestly, and never invent facts, statistics, sources, or confidence.
+- When the user makes an assumption or decision, test its logic and report material errors, missing considerations, counterarguments, and simpler alternatives. Prioritize accuracy over agreement; do not argue without a practical reason.
+- Prefer the simplest sufficient solution. Do not add a new entity—code, file, dependency, service, process, project, medication, or anything else—unless it solves a specific problem that existing entities cannot adequately solve and its benefit justifies the added complexity.
+- Preserve confirmed scope, use minimal diffs, and do not mix refactoring with bug work unless explicitly requested. Capture useful out-of-scope ideas as future-task candidates.
+- Explain real risks before changing storage, data models, dependencies, or architecture. Add tests for risky changes, or explain why manual verification is more practical.
+- For medical or veterinary information, use current evidence-based professional sources, state uncertainty and limits, and never independently replace or cancel a qualified professional's prescription.
+- Do not overwrite unfinished task memory or change protected architecture files without the required workflow and explicit confirmation.
+- In review mode, support findings with files, diffs, logs, tests, or appropriate external sources; otherwise label them as hypotheses.
 
 ## File Classes
 
@@ -54,38 +55,17 @@ Controlled memory files may change only through the matching workflow:
 
 Before finishing, check `git diff --name-only`. If protected files changed without approval, stop. If memory changed, name the workflow that allowed it.
 
-## Session And Task Flow
+## Lifecycle And Routing
 
-- New session/tool/chat/restored context: run `environment-check`; show snapshot/menu only.
-- Before real task work: run `task-intake`; it records an empty `current-task` or routes unfinished work to `task-switch`.
-- Work modes: `review`, `implementation`, `task-finish`, `architecture-update`.
-- If work appears complete, propose `task-finish`; do not declare it closed.
-- `task-finish` must save the result: GitHub push when configured, local-only fallback when not.
-
-## Context And Skill Routing
+- New session, tool, chat, or restored context → open `environment-check`; show only its snapshot and menu.
+- New work → open `task-intake`; changed unfinished work → open `task-switch`.
+- Bug, regression, crash, performance issue, or complex task → use Superpowers when available.
+- Tests → `write-tests`; UI change → `ui-review`; security-sensitive change → `security-review`; wording or copy review → `copy-review`.
+- Release or merge → `release-check`; architecture change → `architecture-update`; completion → propose `task-finish` and wait for confirmation.
 
 Default context: this file and `ai/current-task.md`.
 
-Claude Code may auto-activate skills by description, but still open the current
-project `ai/skills/*/SKILL.md` before using that workflow.
-
-Common triggers:
-
-- start: ai/skills/start-screen/SKILL.md
-- environment check: `ai/skills/environment-check/SKILL.md`, `ai/external-tools.md`
-- new task/change: `ai/skills/task-intake/SKILL.md`
-- task switching: `ai/skills/task-switch/SKILL.md`, `ai/current-task.md`, `ai/paused-tasks.md`
-- future ideas or promotion: `ai/future-tasks.md`
-- task finish: `ai/skills/task-finish/SKILL.md`
-- release or merge: `ai/skills/release-check/SKILL.md`
-- tests: `ai/skills/write-tests/SKILL.md`
-- UI behavior/layout/interaction: `ai/skills/ui-review/SKILL.md` and usually `write-tests`
-- decorative UI only: `ui-review`; use `write-tests` only if behavior or accessibility may change
-- UI polish/theme/motion: use installed `impeccable`, `theme-factory`, `animate`, or `design-motion-principles` as relevant; use `playwright-mcp` for live browser verification when available
-- bugs, regressions, crashes, performance, or complex work: Superpowers when available
-- architecture change: `ai/skills/architecture-update/SKILL.md`
-
-Extra context only when relevant: project behavior/storage/UI → `ai/project-context.md`; durable invariants → `ai/decisions.md`; workflow ambiguity → `ai/architecture.md`; plan-driven work → relevant `ai/superpowers/*`.
+Claude Code may auto-activate skills by description. Before using a workflow, open its current `ai/skills/<name>/SKILL.md`. Route by the user's request and the skill's `name` and `description`; do not load all skills. Read extra project memory only when the selected task or skill requires it.
 
 ## Precedence
 
@@ -95,13 +75,6 @@ Extra context only when relevant: project behavior/storage/UI → `ai/project-co
 4. optional project skills and expected external tools
 5. controlled external methodologies
 
-Superpowers is expected for bugs and complex tasks when available. If missing,
-ask whether to install/configure it or continue with a manual fallback.
-
 ## Output
 
-Before editing: state `Mode: ...`, say the next step, and mention real risks.
-
-After editing: state the mode, summarize changes, list checks, name risks or
-unfinished parts, say whether task memory changed, and propose `task-finish` if
-the task appears complete.
+Before editing, state `Mode: ...`, the next step, and real risks. After editing, state the mode, summarize changes, list checks, name risks or unfinished parts, say whether task memory changed, and propose `task-finish` if the task appears complete.
