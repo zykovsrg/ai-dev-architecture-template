@@ -12,7 +12,7 @@ Do not load them by default; open them only when the task needs those details.
 These files describe standalone mode for one project. Standalone mode is
 self-contained and does not require a hub. An optional personal AI hub is a
 separate installation that starts in `_ai-hub`; use its own entry file and
-`hub-template/ai/architecture.md` for routing before a project is confirmed.
+`ai/architecture.md` for routing before a project is confirmed.
 
 ## Core Rules
 
