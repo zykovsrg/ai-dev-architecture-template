@@ -145,3 +145,17 @@ Result: exit `0`.
 RED: added smoke regressions for `//` and an allowed-root symlink resolving to `/`; `bash scripts/hub-smoke-test.sh` failed before the fix.
 
 GREEN: canonicalize each allowed root with `pwd -P`, normalize `//` to `/`, and reject the canonical filesystem root. `bash scripts/hub-smoke-test.sh`, `bash -n scripts/check-hub-registry.sh scripts/hub-smoke-test.sh`, and `git diff --check` all passed.
+
+## P1 follow-up: reject invalid allowed-root list entries
+
+### TDD RED/GREEN
+
+RED: added smoke regressions for a relative root (`- relative/projects`) and an empty root (`- `); `bash scripts/hub-smoke-test.sh` failed because the parser ignored the relative entry.
+
+GREEN: parse every Markdown list entry beginning with `- `, require a nonempty absolute path, verify it is an existing directory, canonicalize with `pwd -P`, and reject canonical `/`. All requested checks passed.
+
+### Verification
+
+- `bash scripts/hub-smoke-test.sh` — exit `0`.
+- `bash -n scripts/check-hub-registry.sh scripts/hub-smoke-test.sh` — exit `0`.
+- `git diff --check` — exit `0`.

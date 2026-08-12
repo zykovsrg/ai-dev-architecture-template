@@ -14,11 +14,13 @@ validate_allowed_roots() {
   local root canonical_root
   while IFS= read -r root; do
     root="${root#- }"
+    [ -n "$root" ] || die "allowed root must be a nonempty absolute path"
+    case "$root" in /*) ;; *) die "allowed root must be a nonempty absolute path" ;; esac
     [ -d "$root" ] || die "allowed root does not exist: $root"
     canonical_root="$(cd "$root" && pwd -P)"
     [ "$canonical_root" = "//" ] && canonical_root="/"
     [ "$canonical_root" != "/" ] || die "allowed root must not be /"
-  done < <(grep -E '^- /' "$ROOTS_FILE" || true)
+  done < <(grep -E '^- ' "$ROOTS_FILE" || true)
 }
 
 root_contains() {
@@ -28,7 +30,7 @@ root_contains() {
     [ -d "$root" ] || die "allowed root does not exist: $root"
     canonical_root="$(cd "$root" && pwd -P)"
     case "$candidate/" in "$canonical_root/"*) return 0 ;; esac
-  done < <(grep -E '^- /' "$ROOTS_FILE" || true)
+  done < <(grep -E '^- ' "$ROOTS_FILE" || true)
   return 1
 }
 

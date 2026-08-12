@@ -41,6 +41,22 @@ if bash "$ROOT/scripts/check-hub-registry.sh" "$MISSING_ROOT" > "$TMP_DIR/missin
 fi
 assert_contains "$TMP_DIR/missing-root.out" 'allowed root does not exist'
 
+RELATIVE_ROOT="$TMP_DIR/relative-root-hub"
+cp -R "$VALID" "$RELATIVE_ROOT"
+printf '%s\n' '# Allowed Roots' '' '- relative/projects' > "$RELATIVE_ROOT/ai/allowed-roots.md"
+if bash "$ROOT/scripts/check-hub-registry.sh" "$RELATIVE_ROOT" > "$TMP_DIR/relative-root.out" 2>&1; then
+  fail 'validator accepted a relative allowed root'
+fi
+assert_contains "$TMP_DIR/relative-root.out" 'allowed root must be a nonempty absolute path'
+
+EMPTY_ROOT="$TMP_DIR/empty-root-hub"
+cp -R "$VALID" "$EMPTY_ROOT"
+printf '%s\n' '# Allowed Roots' '' '- ' > "$EMPTY_ROOT/ai/allowed-roots.md"
+if bash "$ROOT/scripts/check-hub-registry.sh" "$EMPTY_ROOT" > "$TMP_DIR/empty-root.out" 2>&1; then
+  fail 'validator accepted an empty allowed root'
+fi
+assert_contains "$TMP_DIR/empty-root.out" 'allowed root must be a nonempty absolute path'
+
 ROOT_FILESYSTEM="$TMP_DIR/root-filesystem-hub"
 cp -R "$VALID" "$ROOT_FILESYSTEM"
 printf '%s\n' '# Allowed Roots' '' '- /' > "$ROOT_FILESYSTEM/ai/allowed-roots.md"
