@@ -94,6 +94,23 @@ It must not create Git, code, dependencies, services, duplicate registry
 entries, or any other project files. Use `project-register` for an existing
 folder; it does not replace the new-project creation flow.
 
+## Existing Project Migration
+
+Use `project-migrate` only when the user asks to move legacy project folders
+into `<hub>/projects`. It requires a separately confirmed temporary source that
+is never made an allowed root and expires when the workflow ends. Before any
+candidate preflight, inventory direct-child names only, exclude the target hub,
+and reject backups, archives, symlinks, and unknown folders without reading
+their contents.
+
+After a separately confirmed candidate or displayed batch preflight, show each
+exact source-to-destination mapping, narrow Git status, and collision result.
+Moving requires another explicit confirmation. Move the whole folder without
+copying, preserve its existing Git metadata, and stop the batch on the first
+failure or integrity concern. Registration is a later `project-register`
+procedure with its own card and registry confirmation and validator result;
+neither source confirmation nor move confirmation authorizes it.
+
 ## Confirmation And Confidence
 
 Use these confidence labels in router summaries and cross-project signals:

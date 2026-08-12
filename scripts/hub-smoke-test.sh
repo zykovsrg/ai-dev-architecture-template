@@ -180,6 +180,30 @@ project_create_contract_valid() {
     [[ "$text" == *'Git repositories must not be created or modified'* ]] &&
     [[ "$text" == *'must not add application code, dependencies, services, AGENTS.md, CLAUDE.md, or shared skills'* ]]
 }
+project_migrate_contract_valid() {
+  local file="$1" text
+  text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
+
+  [[ "$text" == *'separately confirmed temporary migration source'* ]] &&
+    [[ "$text" == *'never write'*'ai/allowed-roots.md'* ]] &&
+    [[ "$text" == *'expires when this workflow ends'* ]] &&
+    [[ "$text" == *'Reject `/`, the canonical home directory, the hub directory, and `<canonical-hub>/projects`'* ]] &&
+    [[ "$text" == *'direct-child directory names only'* ]] &&
+    [[ "$text" == *'exclude the target `_ai-hub`'* ]] &&
+    [[ "$text" == *'Do not recurse or read candidate content'* ]] &&
+    [[ "$text" == *'preflight confirmation'* ]] &&
+    [[ "$text" == *'source-to-destination mapping'* ]] &&
+    [[ "$text" == *'Git metadata'* ]] &&
+    [[ "$text" == *'collision'* ]] &&
+    [[ "$text" == *'explicit move confirmation'* ]] &&
+    [[ "$text" == *'Move, never copy'* ]] &&
+    [[ "$text" == *'preserve the existing `.git/` directory'* ]] &&
+    [[ "$text" == *'Stop on the first failure'* ]] &&
+    [[ "$text" == *'do not continue automatically'* ]] &&
+    [[ "$text" == *'separate card and registry confirmation'* ]] &&
+    [[ "$text" == *'scripts/check-hub-registry.sh'* ]] &&
+    [[ "$text" == *'Never move backups, archives, symlinks, unknown folders, or unsafe candidates'* ]]
+}
 assert_rejected() {
   if "$@"; then
     fail "boundary validator accepted an intentionally unsafe fixture"
@@ -306,6 +330,29 @@ PROJECT_CREATE_WITHOUT_GIT_GUARANTEE="$TMP_DIR/project-create-without-git-guaran
 sed '/Git repositories must not be created or modified/d' "$PROJECT_CREATE_SKILL" \
   > "$PROJECT_CREATE_WITHOUT_GIT_GUARANTEE"
 assert_rejected project_create_contract_valid "$PROJECT_CREATE_WITHOUT_GIT_GUARANTEE"
+
+PROJECT_MIGRATE_SKILL="$ROOT/hub-template/ai/skills/project-migrate/SKILL.md"
+project_migrate_contract_valid "$PROJECT_MIGRATE_SKILL" \
+  || fail 'project-migrate must define the preview-first safe move contract'
+
+PROJECT_MIGRATE_WITH_PERMANENT_SOURCE="$TMP_DIR/project-migrate-with-permanent-source.md"
+sed '/never write.*ai\/allowed-roots\.md/d' "$PROJECT_MIGRATE_SKILL" \
+  > "$PROJECT_MIGRATE_WITH_PERMANENT_SOURCE"
+assert_rejected project_migrate_contract_valid "$PROJECT_MIGRATE_WITH_PERMANENT_SOURCE"
+
+PROJECT_MIGRATE_WITH_COPY="$TMP_DIR/project-migrate-with-copy.md"
+sed '/Move, never copy/d' "$PROJECT_MIGRATE_SKILL" > "$PROJECT_MIGRATE_WITH_COPY"
+assert_rejected project_migrate_contract_valid "$PROJECT_MIGRATE_WITH_COPY"
+
+PROJECT_MIGRATE_WITH_AUTOMATIC_CONTINUE="$TMP_DIR/project-migrate-with-automatic-continue.md"
+sed '/continue automatically/d' "$PROJECT_MIGRATE_SKILL" \
+  > "$PROJECT_MIGRATE_WITH_AUTOMATIC_CONTINUE"
+assert_rejected project_migrate_contract_valid "$PROJECT_MIGRATE_WITH_AUTOMATIC_CONTINUE"
+
+PROJECT_MIGRATE_WITHOUT_UNSAFE_CANDIDATES="$TMP_DIR/project-migrate-without-unsafe-candidates.md"
+sed '/Never move backups,/d' \
+  "$PROJECT_MIGRATE_SKILL" > "$PROJECT_MIGRATE_WITHOUT_UNSAFE_CANDIDATES"
+assert_rejected project_migrate_contract_valid "$PROJECT_MIGRATE_WITHOUT_UNSAFE_CANDIDATES"
 
 for workflow in environment-check task-intake task-switch task-finish; do
   hub_shared_workflow_valid "$ROOT/hub-template/ai/skills/$workflow/SKILL.md" "$workflow" \
