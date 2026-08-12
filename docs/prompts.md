@@ -1,5 +1,81 @@
 # Prompts
 
+## Install an optional personal hub
+
+```text
+Mode: review
+
+I want to install the optional personal AI hub from this repository:
+https://github.com/zykovsrg/ai-dev-architecture-template
+
+Use the exact command after confirming the allowed project root and hub path:
+  bash /path/to/ai-dev-architecture-template/scripts/install.sh --mode hub --root /path/to/projects /path/to/_ai-hub
+
+Requirements:
+- create or update only the hub directory `_ai-hub`;
+- do not scan project contents;
+- do not register any project automatically;
+- show unregistered candidates only from direct child names;
+- tell me that project registration needs a separate confirmation;
+- do not create cleanup jobs or reminders.
+```
+
+## Register projects in a personal hub
+
+```text
+Project: none
+Mode: routing
+
+Use the current hub `project-register` workflow.
+
+List only direct child directory names under the already registered allowed
+roots. Do not recurse, read project code, project memory, `.env` files, or
+backups. Propose each candidate separately and wait for my explicit
+confirmation before reading project context or adding a registry entry.
+```
+
+## Run a hub registry check
+
+```text
+Project: none
+Mode: review
+
+Use the current `registry-check` workflow for this personal hub. Run
+`scripts/check-hub-registry.sh` against the hub, report pass/fail and stale or
+missing registry metadata, and do not write, register, archive, migrate, or
+schedule anything automatically.
+```
+
+## Preview standalone-to-hub conversion
+
+```text
+Mode: review
+
+Preview, but do not perform, a standalone-to-personal-hub conversion for this
+project. Run:
+  bash /path/to/ai-dev-architecture-template/scripts/update-installed-architecture.sh --project /path/to/project --source /path/to/ai-dev-architecture-template --offer-hub
+
+Explain that hub installation is separate, starts in `_ai-hub`, requires an
+allowed root, and never removes project entry files automatically. Do not edit
+or register anything unless I give a separate confirmation.
+```
+
+## Use `info-update` for meeting information
+
+```text
+Project: <confirmed-project-id>
+Mode: review
+
+Use the hub `info-update` workflow for the meeting text below. Keep the source
+text temporary by default. Produce review-only proposals in the workflow's
+required order, identify every affected project, and request a separate
+confirmation for each project and each hub signal before writing. Do not run
+task-switch or task-finish, and do not save the raw transcript by default.
+
+Meeting text:
+<paste synthetic or approved meeting text here>
+```
+
 ## Check template synchronization
 
 ```text

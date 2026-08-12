@@ -129,6 +129,22 @@ Compare major and minor version numbers numerically. This check is read-only:
 
 Run this check once as part of `environment-check`, not before every task.
 
+## Optional personal hub presence and version
+
+Standalone mode does not require a hub. Do not scan sibling folders, parent
+folders, allowed roots, or project directories to discover one.
+
+If the current opened directory is a hub, or the user supplies one exact hub
+path, check only that directory for `AGENTS.md`, `ai/architecture.md`, and
+`ai/project-registry.md`. Read its `Version:` line when present. Report the
+hub as `present`, `missing at the supplied/current path`, or `not checked — no
+hub path was supplied`. A missing hub is not a blocker for standalone mode.
+
+When a checked hub version is older than the repository hub template, offer a
+preview with the documented `update-installed-hub.sh --check` or `--dry-run`
+command. Never install, migrate, register projects, or update the hub during
+this check.
+
 ## Current and future task snapshot
 
 Read:

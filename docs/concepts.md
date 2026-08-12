@@ -41,6 +41,18 @@ Work modes tell the agent what exactly it should be doing.
 - `task-finish` — check whether the task can be closed and clean up the context after confirmation.
 - `architecture-update` — update the AI development rules, not the application code.
 
+## Standalone mode and personal hub
+
+Standalone mode is the normal architecture for one project. Its rules and
+memory live in that project and it does not depend on a hub.
+
+A personal hub is optional and has its own `_ai-hub` directory. It is a local
+router for explicitly registered projects, not a shared project workspace. A
+new hub chat shows the registered project and exact path, then waits for
+confirmation before reading that project's code or memory. Installing or
+updating a hub does not automatically convert projects, clean up files, or
+send reminders.
+
 ## Project invariants
 
 Project invariants are project rules that must not be broken.

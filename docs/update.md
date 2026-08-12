@@ -40,6 +40,32 @@ curl -fsSL https://raw.githubusercontent.com/zykovsrg/ai-dev-architecture-templa
 
 The detailed guide is in `docs/update-installed-projects.md`.
 
+## Optional personal hub updates and conversion preview
+
+An existing standalone project is not converted automatically. To preview the
+separate standalone-to-hub path without writing project files, run:
+
+```bash
+bash /path/to/ai-dev-architecture-template/scripts/update-installed-architecture.sh --project /path/to/project --source /path/to/ai-dev-architecture-template --offer-hub
+```
+
+Install the hub only after that review, always in `_ai-hub`:
+
+```bash
+bash /path/to/ai-dev-architecture-template/scripts/install.sh --mode hub --root /path/to/projects /path/to/_ai-hub
+```
+
+For an installed hub, use its dedicated updater. Check first, then run a
+dry-run; neither command changes files:
+
+```bash
+bash /path/to/ai-dev-architecture-template/scripts/update-installed-hub.sh --hub /path/to/_ai-hub --source /path/to/ai-dev-architecture-template --check
+bash /path/to/ai-dev-architecture-template/scripts/update-installed-hub.sh --hub /path/to/_ai-hub --source /path/to/ai-dev-architecture-template --dry-run
+```
+
+The hub updater preserves hub-managed project memory. It does not register
+projects, migrate a standalone project, clean up files, or create reminders.
+
 ## What the updater does
 
 The updater updates the protected architecture files:

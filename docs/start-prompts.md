@@ -6,6 +6,11 @@ Use these prompts in three common scenarios:
 2. moving to a new dialog or another AI agent inside an already connected project;
 3. continuing after compressed context, compacted context, or a restored summary.
 
+The normal mode is standalone for one project. The optional personal hub is a
+separate `_ai-hub` directory: it routes only registered projects and always
+waits for confirmation before reading a project's code or memory. It does not
+replace an existing standalone installation automatically.
+
 ## Key rules for all prompts
 
 ### Protected architecture files and controlled memory files
@@ -68,15 +73,22 @@ How to know it is done:
 
 Task:
 1. Check whether the project has AGENTS.md, CLAUDE.md, and the ai/ folder.
-2. Do not overwrite existing files without my confirmation.
-3. If the architecture is not installed yet, propose a safe installation from the template.
-4. If required files are missing after installation, show the list and offer to restore them from the template.
-5. After installation, run environment-check.
-6. Before the first working task, use task-intake and record the task in ai/current-task.md.
-7. Do not install anything extra without my confirmation.
-8. Before using an external skill, init workflow, or setup command, first read AGENTS.md or CLAUDE.md.
-9. Respect the separation of protected architecture files and controlled memory files.
-10. If a workflow from a skill is needed — open the current ai/skills/*/SKILL.md, do not work from memory.
+2. Ask whether I want standalone mode or the optional personal hub. Do not
+   assume hub mode.
+3. Do not overwrite existing files without my confirmation.
+4. If I choose standalone mode, use:
+   `bash /path/to/ai-dev-architecture-template/scripts/install.sh --mode standalone /path/to/project`
+5. If I choose hub mode, separately confirm the allowed root and use:
+   `bash /path/to/ai-dev-architecture-template/scripts/install.sh --mode hub --root /path/to/projects /path/to/_ai-hub`
+6. Do not register or read projects during hub installation. Registration
+   needs another explicit confirmation.
+7. If required files are missing after installation, show the list and offer to restore them from the template.
+8. After installation, run environment-check.
+9. Before the first working task, use task-intake and record the task in ai/current-task.md.
+10. Do not install anything extra without my confirmation.
+11. Before using an external skill, init workflow, or setup command, first read AGENTS.md or CLAUDE.md.
+12. Respect the separation of protected architecture files and controlled memory files.
+13. If a workflow from a skill is needed — open the current ai/skills/*/SKILL.md, do not work from memory.
 
 After the check, say:
 - what is installed correctly;
@@ -99,6 +111,7 @@ Important rules:
 - Do not change application code while installing the architecture.
 - Do not make large changes without a plan and confirmation.
 - Run bugs and complex tasks through Superpowers when it is available.
+- Do not promise or start automatic cleanup, reminders, registration, or a standalone-to-hub conversion.
 - Change protected architecture files only through architecture-update after my explicit confirmation.
 - Change controlled memory files only through the appropriate workflow.
 ```

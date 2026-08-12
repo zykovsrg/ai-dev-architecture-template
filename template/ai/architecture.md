@@ -1,8 +1,20 @@
 # AI Development Architecture
 
-Version: 6.14
+Version: 7.0
 
 This file is the reference for workflows and the rule hierarchy. It does not need to be loaded for every task. Read it only when a task concerns workflows, rule conflicts, architecture-update, or when a rule is unclear.
+
+## Standalone and optional hub routing
+
+This file describes standalone mode for one project. It remains complete on
+its own: do not require a personal hub, inspect sibling folders, or copy hub
+memory into the project.
+
+The optional personal AI hub is installed separately and always starts in its
+own `_ai-hub` directory. When an agent is opened in that directory, its hub
+entry file and `ai/architecture.md` control project routing until the user
+confirms one registered project. See `docs/install.md` for installation and
+`docs/update.md` for previewed conversion and update paths.
 
 ## Main idea
 

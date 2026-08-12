@@ -14,6 +14,14 @@ Optional project skills are installed only in projects where they are useful.
 
 Missing optional project skills are warnings, not blockers.
 
+## Optional personal AI hub
+
+The personal AI hub is bundled with this repository as `hub-template/`; it is
+not an external dependency and is optional for standalone projects. It is
+installed separately in `_ai-hub`. A standalone environment check may inspect
+only the current opened directory or an exact hub path supplied by the user;
+it must not scan sibling folders to discover hubs.
+
 ### frontend-design
 
 Type: optional project skill

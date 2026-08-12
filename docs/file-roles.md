@@ -43,6 +43,26 @@ Files:
 - `ai/changelog.md`
 <!-- /canon:controlled-memory -->
 
+## Hub-managed project memory
+
+The optional personal hub has a separate memory boundary. These files belong
+to the hub, not to any registered project's `ai/` directory:
+
+- `ai/allowed-roots.md`
+- `ai/active-project.md`
+- `ai/project-registry.md`
+- `ai/project-cards/*`
+- `ai/cross-project-signals.md`
+- `ai/archive/*`
+
+Hub protected files are its `AGENTS.md`, `CLAUDE.md`, `ai/architecture.md`,
+and `ai/skills/*/SKILL.md`. The hub updater can replace protected hub files,
+but preserves hub-managed project memory and creates only missing memory
+templates. A project card is metadata, not permission to read a project.
+
+Standalone protected files and controlled memory remain scoped to one project.
+Do not copy either class into a hub or use the hub to overwrite project memory.
+
 ## 3. Edit permissions matrix
 
 | File | When it may be changed |

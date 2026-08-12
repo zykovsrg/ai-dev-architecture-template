@@ -62,6 +62,18 @@ Examples of stale or durable content that may need an update:
 10. Sync the architecture repository documentation if available. If repo access is not available, return the exact text that must be added or replaced.
 11. If `scripts/check-consistency.sh` exists (you are working in the architecture template repository itself) and you edited any canonical list (a `<!-- canon:... -->` block), run `bash scripts/check-consistency.sh` and confirm it passes before finishing. If it fails, fix the named holder so all copies match. In an installed project this script is absent — skip this step.
 
+## Standalone and hub boundary
+
+The root/template architecture files describe standalone mode. The optional
+personal hub has separate tracked files under `hub-template/`. Do not create,
+copy, or infer hub registry or project memory in a standalone project's
+`ai/` directory. A hub update must preserve its own registry and cards.
+
+When both tracked root and `template/` standalone copies exist, keep them
+identical after an approved architecture update. If a linked worktree omits
+the root copies, update only the tracked canonical template copies and report
+that boundary. Do not fill the gap with personal project memory.
+
 ## Rules
 
 - Do not add temporary preferences to permanent rules.

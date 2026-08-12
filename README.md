@@ -12,6 +12,58 @@
    - тратить меньше токенов;
    - не копить технический долг.
 
+## Режимы установки: один проект или Personal hub
+
+**Обычная архитектура для одного проекта** — основной и самодостаточный
+режим. Она хранит правила и память только в папке этого проекта.
+
+**Personal hub** — дополнительный локальный каталог для нескольких
+зарегистрированных проектов. Это единая точка входа: работа в hub всегда
+начинается в отдельной папке `_ai-hub`, а выбор проекта всегда ждёт явного
+подтверждения. До подтверждения hub не читает память или код выбранного
+проекта.
+
+При первой интерактивной установке скрипт спрашивает, нужен ли optional hub.
+Без ответа или в неинтерактивном запуске выбирается обычный режим. Hub не
+обязателен и не меняет работу уже установленной обычной архитектуры.
+
+Установка обычного режима:
+
+```bash
+bash /path/to/ai-dev-architecture-template/scripts/install.sh --mode standalone /path/to/project
+```
+
+Установка hub всегда указывает каталог `_ai-hub` и разрешённый корень с
+проектами:
+
+```bash
+bash /path/to/ai-dev-architecture-template/scripts/install.sh --mode hub --root /path/to/projects /path/to/_ai-hub
+```
+
+Для уже существующего проекта переход в hub — отдельная миграция с
+предварительным просмотром, а не автоматическое действие. Сначала покажите
+предложение без изменений:
+
+```bash
+bash /path/to/ai-dev-architecture-template/scripts/update-installed-architecture.sh --project /path/to/project --source /path/to/ai-dev-architecture-template --offer-hub
+```
+
+Безопасный предварительный просмотр обновления обычной архитектуры:
+
+```bash
+bash /path/to/ai-dev-architecture-template/scripts/update-installed-architecture.sh --project /path/to/project --source /path/to/ai-dev-architecture-template --dry-run
+```
+
+И отдельный предварительный просмотр обновления уже установленного hub:
+
+```bash
+bash /path/to/ai-dev-architecture-template/scripts/update-installed-hub.sh --hub /path/to/_ai-hub --source /path/to/ai-dev-architecture-template --dry-run
+```
+
+Эта архитектура не обещает автоматическую очистку, напоминания, регистрацию
+проектов или миграцию: такие действия требуют отдельного запроса и
+подтверждения.
+
 В этом репозитории — готовый шаблон, который ставится в папку проекта локально или в репозиторий, если вы работаете в облаке. Архитектура предназначена для работы через «Клод Код» или «Кодекс».
 
 ## Как работает архитектура
@@ -65,11 +117,13 @@ https://github.com/zykovsrg/ai-dev-architecture-template
 
 1. Склонируй шаблон во временную папку:
    git clone https://github.com/zykovsrg/ai-dev-architecture-template.git /tmp/ai-dev-arch-template
-2. Скопируй файлы шаблона в проект, не перезаписывая существующие:
-   rsync -av --ignore-existing /tmp/ai-dev-arch-template/template/ ./
-3. Покажи список добавленных файлов.
-4. Если каких-то обязательных файлов не хватает, назови их и предложи восстановить из шаблона.
-5. Иди в Шаг 4.
+2. Спроси, нужен ли optional Personal hub. Если пользователь не выбрал hub, установи standalone mode:
+   bash /tmp/ai-dev-arch-template/scripts/install.sh --mode standalone .
+3. Если пользователь выбрал hub, отдельно согласуй allowed root и каталог hub. Установи его только так:
+   bash /tmp/ai-dev-arch-template/scripts/install.sh --mode hub --root /path/to/projects /path/to/_ai-hub
+4. Не регистрируй проекты и не читай их содержимое до отдельного подтверждения.
+5. Покажи список добавленных файлов. Если каких-то обязательных файлов не хватает, назови их и предложи восстановить из шаблона.
+6. Иди в Шаг 4.
 
 Шаг 3. Обновление.
 
@@ -95,6 +149,7 @@ https://github.com/zykovsrg/ai-dev-architecture-template
 - Ничего не перезаписывай и не удаляй без моего подтверждения.
 - Не меняй код приложения.
 - Не устанавливай ничего дополнительно без моего подтверждения.
+- Не обещай и не запускай автоматическую очистку, напоминания, регистрацию проектов или миграцию в hub.
 - Protected architecture files меняй только через architecture-update после моего явного подтверждения.
 - Файлы памяти проекта меняй только через подходящий workflow.
 ```

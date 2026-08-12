@@ -21,7 +21,7 @@ assert_file() {
 assert_contains() {
   local file="$1"
   local pattern="$2"
-  grep -Fq "$pattern" "$file" || fail "expected '$pattern' in $file"
+  grep -Fq -- "$pattern" "$file" || fail "expected '$pattern' in $file"
 }
 
 assert_not_exists() {
@@ -46,6 +46,13 @@ assert_contains "$TMP_DIR/consistency.out" 'OK [hub update classes]'
 assert_contains "$TMP_DIR/consistency.out" 'OK [standalone memory updater boundaries]'
 assert_contains "$ROOT/scripts/check-consistency.sh" 'extract_block "$standalone_base/AGENTS.md" canon:controlled-memory'
 assert_contains "$ROOT/scripts/check-consistency.sh" 'hub architecture absent'
+assert_contains "$ROOT/README.md" 'Personal hub'
+assert_contains "$ROOT/README.md" 'Обычная архитектура для одного проекта'
+assert_contains "$ROOT/README.md" 'единая точка входа'
+assert_contains "$ROOT/docs/install.md" '--mode hub'
+assert_contains "$ROOT/docs/update.md" 'update-installed-hub.sh'
+assert_contains "$ROOT/docs/file-roles.md" 'Hub-managed project memory'
+assert_contains "$ROOT/getting-started/getting-started.md" 'personal hub'
 
 PROJECT="$TMP_DIR/project"
 init_git_project "$PROJECT"
