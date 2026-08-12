@@ -113,6 +113,27 @@ for skill in project-router project-switch project-register registry-check; do
   assert_contains "$file" 'explicit confirmation'
 done
 
+INFO="$ROOT/hub-template/ai/skills/info-update/SKILL.md"
+LOCAL="$ROOT/hub-template/ai/skills/local-router-install/SKILL.md"
+assert_file "$INFO"
+assert_file "$LOCAL"
+grep -Fq 'Do not save the source transcript by default' "$INFO" \
+  || fail 'transcript retention gate missing'
+grep -Fq 'Confirm each affected project separately' "$INFO" \
+  || fail 'per-project approval missing'
+grep -Fq 'must not replace the current task' "$INFO" \
+  || fail 'current-task protection missing'
+grep -Fq 'at least three stable independent areas' "$LOCAL" \
+  || fail 'local-router threshold missing'
+grep -Fq 'no separate current task' "$LOCAL" \
+  || fail 'local-router task boundary missing'
+
+SIGNALS="$ROOT/hub-template/ai/cross-project-signals.md"
+grep -Eq 'expected_effect|review_after|expires_at' "$SIGNALS" \
+  && fail 'fragile signal field present'
+grep -Fq 'Hypotheses (optional)' "$SIGNALS" \
+  || fail 'hypothesis separation missing'
+
 ROUTER_SKILL="$ROOT/hub-template/ai/skills/project-router/SKILL.md"
 assert_contains "$ROUTER_SKILL" 'maximum of three candidates'
 assert_contains "$ROUTER_SKILL" 'high, medium, or low'

@@ -108,6 +108,13 @@ Never turn an inference into durable memory without identifying it as an
 inference. When an update needs access beyond the confirmed project, stop and
 ask for a separate confirmation.
 
+For temporary meeting text, use the `info-update` workflow. It produces a
+review-only proposal before any write, does not save the source transcript by
+default, and confirms each affected project separately. It may refine an
+existing task only under that project's current-task rules; a new task or task
+replacement must use that project's task-switch process, while closure uses
+task-finish.
+
 ## Cross-Project Signals
 
 Signals are small, non-secret observations that may help future routing. Record
@@ -123,6 +130,19 @@ correct a signal only with explicit approval and preserve its source reference.
 Synthetic example: `SIG-004` may say that `metrics-site` and `content-lab`
 both use weekly reports, with confidence `stated`. It must not include report
 contents, customer data, tokens, or local configuration.
+
+## Project-local Router
+
+A confirmed project may install a local router only after at least three
+stable independent areas have been identified and that project's
+architecture-update process has been explicitly approved. The installation
+creates only `ai/local-router/index.md` and individual
+`ai/local-router/areas/<id>.md` files. It is local navigation metadata, not a
+new project registry, Git repository, task store, or global card.
+
+Each area remains inside the confirmed project and has no separate current
+task. The project's existing task memory and task workflows remain canonical;
+the local router cannot bypass them or authorize a broader read.
 
 ## Installation And Updates
 
