@@ -24,6 +24,12 @@ assert_contains() {
   grep -Fq -- "$pattern" "$file" || fail "expected '$pattern' in $file"
 }
 
+assert_not_contains() {
+  local file="$1"
+  local needle="$2"
+  grep -Fq -- "$needle" "$file" && fail "$file unexpectedly contains: $needle"
+}
+
 assert_not_exists() {
   [ ! -e "$1" ] || fail "expected path to be absent: $1"
 }
@@ -53,6 +59,21 @@ assert_contains "$ROOT/docs/install.md" '--mode hub'
 assert_contains "$ROOT/docs/update.md" 'update-installed-hub.sh'
 assert_contains "$ROOT/docs/file-roles.md" 'Hub-managed project memory'
 assert_contains "$ROOT/getting-started/getting-started.md" 'personal hub'
+
+for entry in "$ROOT/AGENTS.md" "$ROOT/CLAUDE.md"; do
+  assert_contains "$entry" 'simplest sufficient solution'
+  assert_contains "$entry" 'Separate verified facts from interpretations, hypotheses, and opinions.'
+  assert_contains "$entry" 'security-sensitive change'
+  assert_contains "$entry" 'wording or copy review'
+done
+
+for entry in "$ROOT/hub-template/AGENTS.md" "$ROOT/hub-template/CLAUDE.md"; do
+  assert_contains "$entry" 'simplest sufficient solution'
+  assert_contains "$entry" 'Separate verified facts from interpretations, hypotheses, and opinions.'
+done
+
+assert_not_contains "$ROOT/AGENTS.md" 'theme-factory'
+assert_not_contains "$ROOT/CLAUDE.md" 'theme-factory'
 
 PROJECT="$TMP_DIR/project"
 init_git_project "$PROJECT"
