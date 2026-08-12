@@ -198,7 +198,7 @@ portable_hub_install_contract() {
   local portable_hub="$TMP_DIR/portable-install/_ai-hub"
   local install_out="$TMP_DIR/portable-install.out"
   local status_out="$TMP_DIR/portable-install-status.out"
-  local external_root="$TMP_DIR/external-projects"
+  local custom_root="$TMP_DIR/custom-root"
   local wrong_name="$TMP_DIR/not-a-hub"
   local non_hub_target="$TMP_DIR/non-hub-target/_ai-hub"
 
@@ -217,8 +217,8 @@ portable_hub_install_contract() {
   git -C "$portable_hub" status --short > "$status_out"
   assert_not_contains "$status_out" 'projects/fixture'
 
-  mkdir -p "$external_root"
-  if bash "$ROOT/scripts/install.sh" --mode hub --root "$external_root" \
+  mkdir -p "$custom_root"
+  if bash "$ROOT/scripts/install.sh" --mode hub --root "$custom_root" \
     "$TMP_DIR/rejected-root/_ai-hub" > "$TMP_DIR/rejected-root.out" 2>&1; then
     fail 'portable hub installer accepted a custom --root'
   fi
@@ -397,20 +397,20 @@ assert_contains "$CHECK_SKILL" 'scripts/check-hub-registry.sh'
 assert_contains "$CHECK_SKILL" 'cannot invoke it automatically'
 
 VALID="$TMP_DIR/valid-hub"
-mkdir -p "$VALID/ai/project-cards" "$TMP_DIR/projects/analytics-seo"
+mkdir -p "$VALID/ai/project-cards" "$VALID/projects/analytics-seo"
 SENTINEL='MUST_NOT_BE_READ'
-printf '%s\n' "$SENTINEL" > "$TMP_DIR/projects/analytics-seo/.env"
-printf '%s\n' "$SENTINEL" > "$TMP_DIR/projects/analytics-seo/credentials.txt"
-mkdir -p "$TMP_DIR/projects/unregistered-project" "$TMP_DIR/projects/analytics-seo-backup"
-printf '%s\n' "$SENTINEL" > "$TMP_DIR/projects/unregistered-project/private.txt"
-printf '%s\n' "$SENTINEL" > "$TMP_DIR/projects/analytics-seo-backup/private.txt"
-printf '%s\n' '# Allowed Roots' '' "- $TMP_DIR/projects" > "$VALID/ai/allowed-roots.md"
+printf '%s\n' "$SENTINEL" > "$VALID/projects/analytics-seo/.env"
+printf '%s\n' "$SENTINEL" > "$VALID/projects/analytics-seo/credentials.txt"
+mkdir -p "$VALID/projects/unregistered-project" "$VALID/projects/analytics-seo-backup"
+printf '%s\n' "$SENTINEL" > "$VALID/projects/unregistered-project/private.txt"
+printf '%s\n' "$SENTINEL" > "$VALID/projects/analytics-seo-backup/private.txt"
+printf '%s\n' '# Allowed Roots' '' "- $VALID/projects" > "$VALID/ai/allowed-roots.md"
 printf '%s\n' '# Project Registry' '' \
   '## analytics-seo' \
   'Name: SEO Analytics' \
   'Type: work' \
   'Status: active' \
-  "Path: $TMP_DIR/projects/analytics-seo" \
+  "Path: $VALID/projects/analytics-seo" \
   'Tags: seo, analytics, traffic, leads' \
   'Card: ai/project-cards/analytics-seo.md' > "$VALID/ai/project-registry.md"
 printf '%s\n' '# Project Card' '' \
@@ -421,7 +421,7 @@ printf '%s\n' '# Project Card' '' \
   'Last updated: 2026-08-12' \
   'Purpose: Analyze SEO reporting.' \
   'Typical tasks: Review analytics and reporting.' \
-  "Memory entry point: $TMP_DIR/projects/analytics-seo/ai/current-task.md" > "$VALID/ai/project-cards/analytics-seo.md"
+  "Memory entry point: $VALID/projects/analytics-seo/ai/current-task.md" > "$VALID/ai/project-cards/analytics-seo.md"
 
 bash -x "$ROOT/scripts/check-hub-registry.sh" "$VALID" > "$TMP_DIR/valid.out" 2> "$TMP_DIR/valid.trace"
 assert_contains "$TMP_DIR/valid.out" 'Registry check passed'
@@ -471,7 +471,7 @@ for scale_case in 5:2400 20:9600 50:24000 100:48000; do
   scale_count="${scale_case%%:*}"
   scale_budget="${scale_case#*:}"
   scale_hub="$TMP_DIR/scale-$scale_count-hub"
-  scale_root="$TMP_DIR/scale-$scale_count-projects"
+  scale_root="$scale_hub/projects"
   mkdir -p "$scale_hub/ai/project-cards" "$scale_root"
   printf '%s\n' '# Allowed Roots' '' "- $scale_root" > "$scale_hub/ai/allowed-roots.md"
   generate_registry "$scale_hub" "$scale_root" "$scale_count"
@@ -639,53 +639,22 @@ sed -e 's/^Status: active$/Status: missing/' \
 bash "$ROOT/scripts/check-hub-registry.sh" "$MISSING_PROJECT" > "$TMP_DIR/missing-project.out"
 assert_contains "$TMP_DIR/missing-project.out" 'Registry check passed'
 
-ROOTLESS_HUB="$TMP_DIR/rootless-hub/_ai-hub"
-if bash "$ROOT/scripts/install.sh" --mode hub "$ROOTLESS_HUB" > "$TMP_DIR/rootless-hub.out" 2>&1; then
-  fail 'hub installer accepted no --root in non-interactive mode'
-fi
-assert_contains "$TMP_DIR/rootless-hub.out" 'Hub mode requires at least one --root DIR.'
-assert_not_exists "$ROOTLESS_HUB/AGENTS.md"
-
-DIRECT_ROOTLESS_HUB="$TMP_DIR/direct-rootless-hub/_ai-hub"
-if bash "$ROOT/scripts/install-hub.sh" "$DIRECT_ROOTLESS_HUB" > "$TMP_DIR/direct-rootless-hub.out" 2>&1; then
-  fail 'direct hub installer accepted no --root'
-fi
-assert_contains "$TMP_DIR/direct-rootless-hub.out" 'Hub mode requires at least one --root DIR.'
-
-assert_contains "$ROOT/scripts/install.sh" 'Укажите хотя бы один разрешённый корень'
-assert_contains "$ROOT/scripts/install-hub.sh" 'canonical_candidate'
-
 HUB_INSTALL="$TMP_DIR/installed-hub/_ai-hub"
-PROJECT_ROOT="$TMP_DIR/managed-projects"
-mkdir -p "$PROJECT_ROOT/example-project" "$PROJECT_ROOT/example-backup"
-printf '%s\n' "$SENTINEL" > "$PROJECT_ROOT/example-project/.env"
-printf '%s\n' "$SENTINEL" > "$PROJECT_ROOT/example-project/credentials.txt"
-mkdir -p "$PROJECT_ROOT/unregistered-folder" "$PROJECT_ROOT/example-backup/private"
-printf '%s\n' "$SENTINEL" > "$PROJECT_ROOT/unregistered-folder/private.txt"
-printf '%s\n' "$SENTINEL" > "$PROJECT_ROOT/example-backup/private/private.txt"
-PROJECT_ROOT_CANONICAL="$(cd "$PROJECT_ROOT" && pwd -P)"
-
-if bash "$ROOT/scripts/install.sh" --mode hub --root "$PROJECT_ROOT" "$TMP_DIR/not-a-hub" > "$TMP_DIR/not-a-hub.out" 2>&1; then
+if bash "$ROOT/scripts/install.sh" --mode hub "$TMP_DIR/not-a-hub" > "$TMP_DIR/not-a-hub.out" 2>&1; then
   fail 'hub installer accepted a target not named _ai-hub'
 fi
 assert_contains "$TMP_DIR/not-a-hub.out" 'Hub directory must be named _ai-hub.'
 
-if bash "$ROOT/scripts/install.sh" --mode hub --root "$PROJECT_ROOT" "$PROJECT_ROOT/_ai-hub" > "$TMP_DIR/inside-root.out" 2>&1; then
-  fail 'hub installer accepted a target inside an allowed root'
-fi
-assert_contains "$TMP_DIR/inside-root.out" 'Hub directory must stay outside every allowed root.'
-assert_not_exists "$PROJECT_ROOT/_ai-hub"
-
 NON_HUB_TARGET="$TMP_DIR/non-hub-target/_ai-hub"
 mkdir -p "$NON_HUB_TARGET"
 printf '%s\n' 'do not overwrite' > "$NON_HUB_TARGET/existing.txt"
-if bash "$ROOT/scripts/install.sh" --mode hub --root "$PROJECT_ROOT" "$NON_HUB_TARGET" > "$TMP_DIR/non-hub-target.out" 2>&1; then
+if bash "$ROOT/scripts/install.sh" --mode hub "$NON_HUB_TARGET" > "$TMP_DIR/non-hub-target.out" 2>&1; then
   fail 'hub installer accepted a nonempty target that is not an installed hub'
 fi
 assert_contains "$TMP_DIR/non-hub-target.out" 'Target is not an installed personal AI hub'
 assert_contains "$NON_HUB_TARGET/existing.txt" 'do not overwrite'
 
-bash -x "$ROOT/scripts/install.sh" --mode hub --root "$PROJECT_ROOT" "$HUB_INSTALL" > "$TMP_DIR/install.out" 2> "$TMP_DIR/install.trace"
+bash -x "$ROOT/scripts/install.sh" --mode hub "$HUB_INSTALL" > "$TMP_DIR/install.out" 2> "$TMP_DIR/install.trace"
 assert_not_contains "$TMP_DIR/install.out" "$SENTINEL"
 assert_not_contains "$TMP_DIR/install.trace" "$SENTINEL"
 assert_forbidden_reads_absent "$TMP_DIR/install.trace" \
@@ -695,6 +664,15 @@ assert_file "$HUB_INSTALL/AGENTS.md"
 assert_file "$HUB_INSTALL/CLAUDE.md"
 assert_file "$HUB_INSTALL/ai/project-registry.md"
 assert_file "$HUB_INSTALL/scripts/check-hub-registry.sh"
+assert_file "$HUB_INSTALL/projects/.gitkeep"
+PROJECT_ROOT="$HUB_INSTALL/projects"
+mkdir -p "$PROJECT_ROOT/example-project" "$PROJECT_ROOT/example-backup"
+printf '%s\n' "$SENTINEL" > "$PROJECT_ROOT/example-project/.env"
+printf '%s\n' "$SENTINEL" > "$PROJECT_ROOT/example-project/credentials.txt"
+mkdir -p "$PROJECT_ROOT/unregistered-folder" "$PROJECT_ROOT/example-backup/private"
+printf '%s\n' "$SENTINEL" > "$PROJECT_ROOT/unregistered-folder/private.txt"
+printf '%s\n' "$SENTINEL" > "$PROJECT_ROOT/example-backup/private/private.txt"
+PROJECT_ROOT_CANONICAL="$(cd "$PROJECT_ROOT" && pwd -P)"
 assert_contains "$HUB_INSTALL/ai/allowed-roots.md" "$PROJECT_ROOT_CANONICAL"
 assert_contains "$TMP_DIR/install.out" 'Registration requires confirmation'
 grep -Fq 'example-project' "$HUB_INSTALL/ai/project-registry.md" && fail 'installer auto-registered a project'
@@ -704,7 +682,7 @@ bash "$HUB_INSTALL/scripts/check-hub-registry.sh" "$HUB_INSTALL" > "$TMP_DIR/ins
 assert_contains "$TMP_DIR/installed-hub-local-registry.out" 'Registry check passed'
 cp "$HUB_INSTALL/ai/project-registry.md" "$TMP_DIR/install-registry.before"
 cp "$HUB_INSTALL/ai/allowed-roots.md" "$TMP_DIR/install-roots.before"
-bash "$ROOT/scripts/install.sh" --mode hub --root "$PROJECT_ROOT" "$HUB_INSTALL" > "$TMP_DIR/install-update.out"
+bash "$ROOT/scripts/install.sh" --mode hub "$HUB_INSTALL" > "$TMP_DIR/install-update.out"
 cmp -s "$TMP_DIR/install-registry.before" "$HUB_INSTALL/ai/project-registry.md" || fail 'hub reinstall overwrote registry'
 cmp -s "$TMP_DIR/install-roots.before" "$HUB_INSTALL/ai/allowed-roots.md" || fail 'hub reinstall overwrote allowed roots'
 git -C "$HUB_INSTALL" config user.email "smoke@example.invalid"
@@ -787,7 +765,7 @@ assert_file "$HUB_INSTALL/ai/archive/.gitkeep"
 assert_file "$HUB_INSTALL/ai/project-cards/.gitkeep"
 
 HUB_COMMIT="$TMP_DIR/commit-hub/_ai-hub"
-bash "$ROOT/scripts/install.sh" --mode hub --root "$PROJECT_ROOT" "$HUB_COMMIT" >/dev/null
+bash "$ROOT/scripts/install.sh" --mode hub "$HUB_COMMIT" >/dev/null
 git -C "$HUB_COMMIT" config user.email "smoke@example.invalid"
 git -C "$HUB_COMMIT" config user.name "Smoke Test"
 git -C "$HUB_COMMIT" add .
@@ -806,22 +784,5 @@ assert_not_contains <(git -C "$HUB_COMMIT" show --format= --name-only HEAD) 'ai/
 [ "$(git -C "$HUB_COMMIT" log -1 --pretty=%s)" = 'chore: update personal AI hub' ] || fail 'unexpected hub update commit message'
 git -C "$HUB_COMMIT" diff --quiet -- ai/project-registry.md && fail 'hub commit unexpectedly cleaned custom registry change'
 git -C "$HUB_COMMIT" diff --cached --quiet || fail 'hub updater left staged changes after commit'
-
-CANONICAL_ROOT="$TMP_DIR/canonical-managed-projects"
-ln -s "$PROJECT_ROOT" "$CANONICAL_ROOT"
-bash "$ROOT/scripts/install.sh" --mode hub --root "$CANONICAL_ROOT" "$TMP_DIR/canonical-hub/_ai-hub" >/dev/null
-assert_contains "$TMP_DIR/canonical-hub/_ai-hub/ai/allowed-roots.md" "$PROJECT_ROOT_CANONICAL"
-
-if bash "$ROOT/scripts/install.sh" --mode standalone --root "$PROJECT_ROOT" "$TMP_DIR/standalone-with-root" >/dev/null 2>&1; then
-  fail 'standalone installer accepted --root'
-fi
-
-if bash "$ROOT/scripts/install.sh" --mode hub --root / "$TMP_DIR/root-hub/_ai-hub" >/dev/null 2>&1; then
-  fail 'hub installer accepted filesystem root'
-fi
-
-if bash "$ROOT/scripts/install.sh" --mode hub --root "$HOME_ROOT" "$TMP_DIR/home-hub/_ai-hub" >/dev/null 2>&1; then
-  fail 'hub installer accepted the actual home directory'
-fi
 
 echo "Hub smoke tests passed."
