@@ -125,6 +125,7 @@ changed file and any item intentionally left as uncertain.
 #### Изменения текущей задачи
 - <уточнение в рамках существующих Done criteria|нет; для иной задачи нужна
   отдельная подтверждённая процедура task-switch, которую info-update не запускает>.
+Source: <...> — confidence: <verified|stated|inferred|uncertain>.
 
 #### Будущие задачи
 - <предложение|нет> — источник: <...> — уверенность: <...>.

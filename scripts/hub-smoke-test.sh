@@ -23,6 +23,17 @@ info_update_affected_projects_order_valid() {
     [ "$summary" -lt "$affected" ] && [ "$affected" -lt "$proposal" ] &&
     sed -n "$((affected + 1)),$((proposal - 1))p" "$1" | grep -Fq '<project-id> — <exact-registered-path>'
 }
+info_update_current_task_source_confidence_valid() {
+  awk '
+    /^#### Изменения текущей задачи$/ { in_section = 1; next }
+    in_section && /^#### / { exit 1 }
+    in_section && /^Source: <\.\.\.> — confidence: <verified\|stated\|inferred\|uncertain>\.$/ {
+      found = 1
+      exit 0
+    }
+    END { if (!found) exit 1 }
+  ' "$1"
+}
 section_text() {
   local file="$1"
   local start="$2"
@@ -158,6 +169,8 @@ info_update_confidence_schema_valid "$INFO" \
   || fail 'info-update confidence values must use uncertain, not unknown'
 info_update_affected_projects_order_valid "$INFO" \
   || fail 'info-update must list affected projects between summary and proposals'
+info_update_current_task_source_confidence_valid "$INFO" \
+  || fail 'current-task change slot must include source and confidence immediately below'
 grep -Fq 'at least three stable independent areas' "$LOCAL" \
   || fail 'local-router threshold missing'
 grep -Fq 'no separate current task' "$LOCAL" \
