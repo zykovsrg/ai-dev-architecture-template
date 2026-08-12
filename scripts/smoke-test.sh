@@ -45,6 +45,7 @@ assert_contains "$TMP_DIR/consistency.out" 'OK [hub skill references] — 6 decl
 assert_contains "$TMP_DIR/consistency.out" 'OK [hub update classes]'
 assert_contains "$TMP_DIR/consistency.out" 'OK [standalone memory updater boundaries]'
 assert_contains "$ROOT/scripts/check-consistency.sh" 'extract_block "$standalone_base/AGENTS.md" canon:controlled-memory'
+assert_contains "$ROOT/scripts/check-consistency.sh" 'hub architecture absent'
 
 PROJECT="$TMP_DIR/project"
 init_git_project "$PROJECT"

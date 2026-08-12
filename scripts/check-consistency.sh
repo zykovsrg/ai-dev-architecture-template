@@ -124,8 +124,16 @@ fi
 
 hub_skill_ok=1
 hub_skill_count=0
+checked_hub_skills=""
 HUB_REQUIRED_SKILLS="project-router project-switch project-register registry-check info-update local-router-install"
-for skill in $HUB_REQUIRED_SKILLS; do
+if [ ! -f hub-template/ai/architecture.md ]; then
+  echo "MISSING [hub skill references] — hub architecture absent"
+  fail=1
+  hub_skill_ok=0
+fi
+for skill in $HUB_REQUIRED_SKILLS $(sed -n -E 's/.*`([a-z][a-z0-9-]*)` workflow.*/\1/p' hub-template/ai/architecture.md | sort -u); do
+  case " $checked_hub_skills " in *" $skill "*) continue ;; esac
+  checked_hub_skills="$checked_hub_skills $skill"
   hub_skill_count=$((hub_skill_count + 1))
   if [ ! -f "hub-template/ai/skills/$skill/SKILL.md" ]; then
     echo "MISSING [hub skill references] — $skill"
