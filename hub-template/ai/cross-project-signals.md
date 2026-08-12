@@ -8,6 +8,7 @@ Record only these fields for each signal:
 - Related projects:
 - Kind:
 - Summary:
+- Confidence: (verified|stated|inferred|uncertain)
 - Status:
 - Source reference: (optional)
 

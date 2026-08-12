@@ -145,6 +145,8 @@ grep -Fq 'no separate current task' "$LOCAL" \
   || fail 'local-router task boundary missing'
 
 SIGNALS="$ROOT/hub-template/ai/cross-project-signals.md"
+grep -Fq 'Confidence:' "$SIGNALS" \
+  || fail 'signal confidence field missing'
 grep -Eq 'expected_effect|review_after|expires_at' "$SIGNALS" \
   && fail 'fragile signal field present'
 grep -Fq 'Hypotheses (optional)' "$SIGNALS" \
