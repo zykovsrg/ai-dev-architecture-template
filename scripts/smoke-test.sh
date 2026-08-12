@@ -64,6 +64,15 @@ git -C "$PROJECT" commit -m "test: install architecture" >/dev/null
 bash "$ROOT/scripts/update-installed-architecture.sh" --project "$PROJECT" --source "$ROOT" --apply >/dev/null
 assert_contains "$PROJECT/ai/current-task.md" "Keep this project memory."
 
+cp "$PROJECT/AGENTS.md" "$TMP_DIR/standalone-agents.before"
+cp "$PROJECT/CLAUDE.md" "$TMP_DIR/standalone-claude.before"
+bash "$ROOT/scripts/update-installed-architecture.sh" --project "$PROJECT" --source "$ROOT" --offer-hub > "$TMP_DIR/offer-hub.out"
+assert_contains "$TMP_DIR/offer-hub.out" 'bash scripts/install.sh --mode hub'
+assert_contains "$TMP_DIR/offer-hub.out" 'separate previewed migration'
+assert_contains "$TMP_DIR/offer-hub.out" 'never removes project entry files automatically'
+cmp -s "$TMP_DIR/standalone-agents.before" "$PROJECT/AGENTS.md" || fail '--offer-hub changed AGENTS.md'
+cmp -s "$TMP_DIR/standalone-claude.before" "$PROJECT/CLAUDE.md" || fail '--offer-hub changed CLAUDE.md'
+
 bash "$ROOT/scripts/update-installed-architecture.sh" --project "$PROJECT" --source "$ROOT" --check >/dev/null
 
 perl -0pi -e 's/Version: [0-9]+\.[0-9]+/Version: 0.1/' "$PROJECT/ai/architecture.md"

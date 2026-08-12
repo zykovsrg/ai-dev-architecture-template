@@ -7,7 +7,9 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
 assert_contains() { grep -Fq "$2" "$1" || fail "expected '$2' in $1"; }
+assert_not_contains() { ! grep -Fq "$2" "$1" || fail "did not expect '$2' in $1"; }
 assert_file() { [ -f "$1" ] || fail "missing file: $1"; }
+assert_not_exists() { [ ! -e "$1" ] || fail "expected path to be absent: $1"; }
 info_update_confidence_schema_valid() {
   grep -Fq 'For every item, name its source and confidence (`verified`, `stated`,' "$1" &&
     grep -Fq '`inferred`, or `uncertain`)' "$1" &&
@@ -348,6 +350,70 @@ assert_contains "$TMP_DIR/install.out" 'Registration requires confirmation'
 grep -Fq 'example-project' "$HUB_INSTALL/ai/project-registry.md" && fail 'installer auto-registered a project'
 bash "$ROOT/scripts/check-hub-registry.sh" "$HUB_INSTALL" > "$TMP_DIR/installed-hub-registry.out"
 assert_contains "$TMP_DIR/installed-hub-registry.out" 'Registry check passed'
+git -C "$HUB_INSTALL" config user.email "smoke@example.invalid"
+git -C "$HUB_INSTALL" config user.name "Smoke Test"
+git -C "$HUB_INSTALL" add .
+git -C "$HUB_INSTALL" commit -m "test: install hub" >/dev/null
+
+printf '%s\n' '# Allowed Roots' '' '- /custom/projects' > "$HUB_INSTALL/ai/allowed-roots.md"
+printf '%s\n' '# Project Registry' '' 'custom registry' > "$HUB_INSTALL/ai/project-registry.md"
+printf '%s\n' 'Project ID: custom' > "$HUB_INSTALL/ai/active-project.md"
+printf '%s\n' '# Custom Card' '' 'Project ID: custom' > "$HUB_INSTALL/ai/project-cards/custom.md"
+printf '%s\n' '# Cross-Project Signals' '' 'custom signal' > "$HUB_INSTALL/ai/cross-project-signals.md"
+printf '%s\n' '# Archived Memory' '' 'custom archive' > "$HUB_INSTALL/ai/archive/custom.md"
+cp "$HUB_INSTALL/ai/allowed-roots.md" "$TMP_DIR/allowed-roots.before"
+cp "$HUB_INSTALL/ai/project-registry.md" "$TMP_DIR/registry.before"
+cp "$HUB_INSTALL/ai/active-project.md" "$TMP_DIR/active.before"
+cp "$HUB_INSTALL/ai/project-cards/custom.md" "$TMP_DIR/card.before"
+cp "$HUB_INSTALL/ai/cross-project-signals.md" "$TMP_DIR/signals.before"
+cp "$HUB_INSTALL/ai/archive/custom.md" "$TMP_DIR/archive.before"
+rm "$HUB_INSTALL/ai/archive/.gitkeep"
+rm "$HUB_INSTALL/ai/project-cards/.gitkeep"
+printf '%s\n' 'stale hub entry' > "$HUB_INSTALL/AGENTS.md"
+
+bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$ROOT" --dry-run > "$TMP_DIR/hub-dry-run.out"
+assert_contains "$TMP_DIR/hub-dry-run.out" '### AGENTS.md'
+assert_contains "$TMP_DIR/hub-dry-run.out" 'Would create missing hub memory file without overwriting hub memory: ai/archive/.gitkeep'
+assert_contains "$TMP_DIR/hub-dry-run.out" 'Would create missing hub memory file without overwriting hub memory: ai/project-cards/.gitkeep'
+assert_not_exists "$HUB_INSTALL/ai/archive/.gitkeep"
+assert_not_exists "$HUB_INSTALL/ai/project-cards/.gitkeep"
+
+if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$ROOT" --apply > "$TMP_DIR/hub-dirty.out" 2>&1; then
+  fail 'hub updater accepted a dirty tree without --allow-dirty'
+fi
+assert_contains "$TMP_DIR/hub-dirty.out" 'Working tree is not clean'
+
+bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$ROOT" --apply --allow-dirty > "$TMP_DIR/hub-update.out"
+cmp -s "$ROOT/hub-template/AGENTS.md" "$HUB_INSTALL/AGENTS.md" || fail 'hub update did not replace protected entry file'
+cmp -s "$TMP_DIR/allowed-roots.before" "$HUB_INSTALL/ai/allowed-roots.md" || fail 'hub update overwrote allowed roots'
+cmp -s "$TMP_DIR/registry.before" "$HUB_INSTALL/ai/project-registry.md" || fail 'hub update overwrote registry'
+cmp -s "$TMP_DIR/active.before" "$HUB_INSTALL/ai/active-project.md" || fail 'hub update overwrote active project'
+cmp -s "$TMP_DIR/card.before" "$HUB_INSTALL/ai/project-cards/custom.md" || fail 'hub update overwrote project card'
+cmp -s "$TMP_DIR/signals.before" "$HUB_INSTALL/ai/cross-project-signals.md" || fail 'hub update overwrote cross-project signals'
+cmp -s "$TMP_DIR/archive.before" "$HUB_INSTALL/ai/archive/custom.md" || fail 'hub update overwrote archive memory'
+assert_file "$HUB_INSTALL/ai/archive/.gitkeep"
+assert_file "$HUB_INSTALL/ai/project-cards/.gitkeep"
+
+HUB_COMMIT="$TMP_DIR/commit-hub"
+bash "$ROOT/scripts/install.sh" --mode hub --root "$PROJECT_ROOT" "$HUB_COMMIT" >/dev/null
+git -C "$HUB_COMMIT" config user.email "smoke@example.invalid"
+git -C "$HUB_COMMIT" config user.name "Smoke Test"
+git -C "$HUB_COMMIT" add .
+git -C "$HUB_COMMIT" commit -m "test: install hub" >/dev/null
+printf '%s\n' '# Project Registry' '' 'commit-safe registry' > "$HUB_COMMIT/ai/project-registry.md"
+cp "$HUB_COMMIT/ai/project-registry.md" "$TMP_DIR/commit-registry.before"
+COMMIT_SOURCE="$TMP_DIR/commit-source"
+cp -R "$ROOT/hub-template" "$COMMIT_SOURCE"
+printf '%s\n' '' '<!-- updater commit fixture -->' >> "$COMMIT_SOURCE/AGENTS.md"
+printf '%s\n' '# New Archive Template' > "$COMMIT_SOURCE/ai/archive/new-template.md"
+bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_COMMIT" --source "$COMMIT_SOURCE" --commit --allow-dirty > "$TMP_DIR/hub-commit.out"
+cmp -s "$TMP_DIR/commit-registry.before" "$HUB_COMMIT/ai/project-registry.md" || fail 'hub commit overwrote registry'
+assert_contains <(git -C "$HUB_COMMIT" show --format= --name-only HEAD) 'AGENTS.md'
+assert_contains <(git -C "$HUB_COMMIT" show --format= --name-only HEAD) 'ai/archive/new-template.md'
+assert_not_contains <(git -C "$HUB_COMMIT" show --format= --name-only HEAD) 'ai/project-registry.md'
+[ "$(git -C "$HUB_COMMIT" log -1 --pretty=%s)" = 'chore: update personal AI hub' ] || fail 'unexpected hub update commit message'
+git -C "$HUB_COMMIT" diff --quiet -- ai/project-registry.md && fail 'hub commit unexpectedly cleaned custom registry change'
+git -C "$HUB_COMMIT" diff --cached --quiet || fail 'hub updater left staged changes after commit'
 
 CANONICAL_ROOT="$TMP_DIR/canonical-managed-projects"
 ln -s "$PROJECT_ROOT" "$CANONICAL_ROOT"

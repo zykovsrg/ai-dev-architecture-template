@@ -7,6 +7,7 @@ MODE="dry-run"
 DO_COMMIT="false"
 ALLOW_DIRTY="false"
 CHECK="false"
+OFFER_HUB="false"
 PROJECT_DIR="$PWD"
 SOURCE_DIR=""
 COMMIT_MESSAGE="chore: update AI development architecture"
@@ -32,6 +33,7 @@ Options:
   --source DIR       Local template repository or template directory. Optional.
   --ref REF          GitHub ref to download when --source is omitted. Default: main.
   --allow-dirty      Allow apply when the project has uncommitted changes.
+  --offer-hub        Print an informational personal hub installation and migration preview.
   -h, --help         Show this help.
 
 Examples:
@@ -109,6 +111,9 @@ while [ "$#" -gt 0 ]; do
       CHECK="true"
       MODE="dry-run"
       ;;
+    --offer-hub)
+      OFFER_HUB="true"
+      ;;
     -h|--help)
       usage
       exit 0
@@ -119,6 +124,13 @@ while [ "$#" -gt 0 ]; do
   esac
   shift
 done
+
+if [ "$OFFER_HUB" = "true" ]; then
+  echo "Optional personal AI hub installation:"
+  echo "  bash scripts/install.sh --mode hub --root /path/to/projects /path/to/_ai-hub"
+  echo "Existing-project conversion is a separate previewed migration; it never removes project entry files automatically."
+  exit 0
+fi
 
 PROJECT_DIR="$(cd "$PROJECT_DIR" && pwd)"
 cd "$PROJECT_DIR"
