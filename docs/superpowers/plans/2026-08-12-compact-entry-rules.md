@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - Persistent AI-facing instructions remain in English.
-- `AGENTS.md` and `CLAUDE.md` remain equal in meaning except for tool-specific names.
+- `template/AGENTS.md` and `template/CLAUDE.md` remain equal in meaning except for tool-specific names.
 - No new skill, service, dependency, scoring system, or workflow is introduced.
 - Prefer the simplest sufficient solution; necessary safety, correctness, legal, medical, and veterinary constraints remain intact.
 - Facts must be separated from interpretations, hypotheses, and opinions.
@@ -28,15 +28,15 @@
 - Test: `scripts/smoke-test.sh`
 
 **Interfaces:**
-- Consumes: root and `hub-template/` entry files.
+- Consumes: `template/` and `hub-template/` entry files.
 - Produces: regression assertions used by Tasks 2 and 3.
 
 - [ ] **Step 1: Add assertions that initially fail**
 
-Add assertions for both root entry files:
+Add assertions for both standalone template entry files:
 
 ```bash
-for entry in "$ROOT/AGENTS.md" "$ROOT/CLAUDE.md"; do
+for entry in "$ROOT/template/AGENTS.md" "$ROOT/template/CLAUDE.md"; do
   assert_contains "$entry" 'simplest sufficient solution'
   assert_contains "$entry" 'Separate verified facts from interpretations, hypotheses, and opinions.'
   assert_contains "$entry" 'security-sensitive change'
@@ -53,7 +53,7 @@ for entry in "$ROOT/hub-template/AGENTS.md" "$ROOT/hub-template/CLAUDE.md"; do
 done
 ```
 
-Add a helper and assertions preventing the optional UI-tool catalog from returning to root entries:
+Add a helper and assertions preventing the optional UI-tool catalog from returning to standalone template entries:
 
 ```bash
 assert_not_contains() {
@@ -62,8 +62,8 @@ assert_not_contains() {
   grep -Fq "$needle" "$file" && fail "$file unexpectedly contains: $needle"
 }
 
-assert_not_contains "$ROOT/AGENTS.md" 'theme-factory'
-assert_not_contains "$ROOT/CLAUDE.md" 'theme-factory'
+assert_not_contains "$ROOT/template/AGENTS.md" 'theme-factory'
+assert_not_contains "$ROOT/template/CLAUDE.md" 'theme-factory'
 ```
 
 - [ ] **Step 2: Run the focused test and confirm failure**
@@ -82,15 +82,15 @@ git commit -m "test: define compact entry rule contract"
 ### Task 2: Refactor standalone entry rules and detailed architecture
 
 **Files:**
-- Modify: `AGENTS.md`
-- Modify: `CLAUDE.md`
-- Modify: `ai/architecture.md`
+- Modify: `template/AGENTS.md`
+- Modify: `template/CLAUDE.md`
+- Modify: `template/ai/architecture.md`
 - Test: `scripts/check-consistency.sh`
 - Test: `scripts/smoke-test.sh`
 
 **Interfaces:**
 - Consumes: the existing canonical file-list markers and lifecycle workflows.
-- Produces: concise standalone entry files and detailed interpretation in `ai/architecture.md`.
+- Produces: concise standalone entry files and detailed interpretation in `template/ai/architecture.md`.
 
 - [ ] **Step 1: Consolidate the standalone core principles**
 
@@ -130,7 +130,7 @@ Before using a workflow, open its current `ai/skills/<name>/SKILL.md`. Route by 
 
 Preserve the precedence order. Collapse the output section into one concise paragraph. Remove the standalone list of UI-polish tool names and the duplicate Superpowers paragraph.
 
-- [ ] **Step 3: Add detailed interpretation to `ai/architecture.md`**
+- [ ] **Step 3: Add detailed interpretation to `template/ai/architecture.md`**
 
 Add one section near the existing communication and clean-architecture rules:
 
@@ -167,7 +167,7 @@ Expected: canonical lists and entry parity pass; smoke tests still fail only if 
 - [ ] **Step 5: Commit the standalone implementation**
 
 ```bash
-git add AGENTS.md CLAUDE.md ai/architecture.md
+git add template/AGENTS.md template/CLAUDE.md template/ai/architecture.md
 git commit -m "feat: simplify standalone entry rules"
 ```
 
