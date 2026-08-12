@@ -39,6 +39,35 @@ assert_contains <(normalize_entry "$THIRD_ACTIVATION") \
 cmp -s <(normalize_entry "$HUB_AGENTS") <(normalize_entry "$HUB_CLAUDE") \
   || fail 'hub entry files differ beyond title and activation paragraph'
 
+for skill in project-router project-switch project-register registry-check; do
+  file="$ROOT/hub-template/ai/skills/$skill/SKILL.md"
+  assert_file "$file"
+  assert_contains "$file" 'name:'
+  assert_contains "$file" 'description:'
+  assert_contains "$file" 'explicit confirmation'
+done
+
+ROUTER_SKILL="$ROOT/hub-template/ai/skills/project-router/SKILL.md"
+assert_contains "$ROUTER_SKILL" 'maximum of three candidates'
+assert_contains "$ROUTER_SKILL" 'high, medium, or low'
+assert_contains "$ROUTER_SKILL" 'read only candidate cards'
+assert_contains "$ROUTER_SKILL" 'wait for explicit confirmation'
+
+SWITCH_SKILL="$ROOT/hub-template/ai/skills/project-switch/SKILL.md"
+assert_contains "$SWITCH_SKILL" 'must not modify the current task'
+assert_contains "$SWITCH_SKILL" 'canonical path validation'
+assert_contains "$SWITCH_SKILL" 'task-intake'
+
+REGISTER_SKILL="$ROOT/hub-template/ai/skills/project-register/SKILL.md"
+assert_contains "$REGISTER_SKILL" 'direct child directory names only'
+assert_contains "$REGISTER_SKILL" 'Never auto-register backups'
+assert_contains "$REGISTER_SKILL" 'approval before reading project context'
+
+CHECK_SKILL="$ROOT/hub-template/ai/skills/registry-check/SKILL.md"
+assert_contains "$CHECK_SKILL" 'read-only until approval'
+assert_contains "$CHECK_SKILL" 'scripts/check-hub-registry.sh'
+assert_contains "$CHECK_SKILL" 'cannot invoke it automatically'
+
 VALID="$TMP_DIR/valid-hub"
 mkdir -p "$VALID/ai/project-cards" "$TMP_DIR/projects/analytics-seo"
 printf '%s\n' '# Allowed Roots' '' "- $TMP_DIR/projects" > "$VALID/ai/allowed-roots.md"
