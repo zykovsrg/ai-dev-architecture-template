@@ -8,6 +8,57 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 fail() { echo "FAIL: $*" >&2; exit 1; }
 assert_contains() { grep -Fq "$2" "$1" || fail "expected '$2' in $1"; }
 assert_file() { [ -f "$1" ] || fail "missing file: $1"; }
+section_text() {
+  local file="$1"
+  local start="$2"
+  local end="$3"
+
+  awk -v start="$start" -v end="$end" '
+    $0 == start { in_section = 1; next }
+    in_section && $0 == end { exit }
+    in_section { print }
+  ' "$file"
+}
+router_read_boundary_valid() {
+  local section
+  section="$(section_text "$1" '## Read allowlist and phases' '## Required response shape' | tr '\n' ' ' | tr -s ' ')"
+
+  [[ "$section" == *'ai/cross-project-signals.md'* ]] &&
+    [[ "$section" == *'only when they name one of the candidates'* ]] &&
+    [[ "$section" == *'Do not read project memory, source code'* ]] &&
+    [[ "$section" != *'Do not read cross-project signals'* ]]
+}
+router_multiple_candidates_template_valid() {
+  local section
+  section="$(section_text "$1" '### Two or three candidates' '### No candidate' | tr '\n' ' ' | tr -s ' ')"
+
+  [[ "$section" == *'1. <project-id-1> — <exact-path-1> — Уверенность маршрутизации: <высокая|средняя|низкая> — <краткая причина>.'* ]] &&
+    [[ "$section" == *'2. <project-id-2> — <exact-path-2> — Уверенность маршрутизации: <высокая|средняя|низкая> — <краткая причина>.'* ]] &&
+    [[ "$section" == *'3. <project-id-3> — <exact-path-3> — Уверенность маршрутизации: <высокая|средняя|низкая> — <краткая причина>.'* ]]
+}
+registration_primary_inventory_valid() {
+  local section
+  section="$(section_text "$1" '## Primary inventory (before individual project confirmation)' '## After individual project confirmation' | tr '\n' ' ' | tr -s ' ')"
+
+  [[ "$section" == *'direct child directory names only'* ]] &&
+    [[ "$section" == *'Do not recurse, list files inside candidates'* ]] &&
+    [[ "$section" != *'.git'* ]] &&
+    [[ "$section" != *'Git'* ]] &&
+    [[ "$section" != *'project memory'* ]] &&
+    [[ "$section" != *'project context'* ]]
+}
+registration_confirmed_checks_valid() {
+  local section
+  section="$(section_text "$1" '## After individual project confirmation' '## Approval gates' | tr '\n' ' ' | tr -s ' ')"
+
+  [[ "$section" == *'.git'* ]] &&
+    [[ "$section" == *'project context'* ]]
+}
+assert_rejected() {
+  if "$@"; then
+    fail "boundary validator accepted an intentionally unsafe fixture"
+  fi
+}
 normalize_entry() {
   sed \
     -e '1{/^# Personal AI Hub — Codex$/d;}' \
@@ -52,6 +103,18 @@ assert_contains "$ROUTER_SKILL" 'maximum of three candidates'
 assert_contains "$ROUTER_SKILL" 'high, medium, or low'
 assert_contains "$ROUTER_SKILL" 'read only candidate cards'
 assert_contains "$ROUTER_SKILL" 'wait for explicit confirmation'
+router_read_boundary_valid "$ROUTER_SKILL" \
+  || fail 'router must allow only relevant hub cross-project signals and forbid project memory/code before confirmation'
+router_multiple_candidates_template_valid "$ROUTER_SKILL" \
+  || fail 'router multi-candidate template must include confidence for all three candidate slots'
+
+ROUTER_WITHOUT_SIGNALS="$TMP_DIR/router-without-signals.md"
+sed '/ai\/cross-project-signals\.md/d' "$ROUTER_SKILL" > "$ROUTER_WITHOUT_SIGNALS"
+assert_rejected router_read_boundary_valid "$ROUTER_WITHOUT_SIGNALS"
+
+ROUTER_WITHOUT_THIRD_SLOT="$TMP_DIR/router-without-third-slot.md"
+sed '/3\. <project-id-3>/d' "$ROUTER_SKILL" > "$ROUTER_WITHOUT_THIRD_SLOT"
+assert_rejected router_multiple_candidates_template_valid "$ROUTER_WITHOUT_THIRD_SLOT"
 
 SWITCH_SKILL="$ROOT/hub-template/ai/skills/project-switch/SKILL.md"
 assert_contains "$SWITCH_SKILL" 'must not modify the current task'
@@ -62,6 +125,20 @@ REGISTER_SKILL="$ROOT/hub-template/ai/skills/project-register/SKILL.md"
 assert_contains "$REGISTER_SKILL" 'direct child directory names only'
 assert_contains "$REGISTER_SKILL" 'Never auto-register backups'
 assert_contains "$REGISTER_SKILL" 'approval before reading project context'
+registration_primary_inventory_valid "$REGISTER_SKILL" \
+  || fail 'registration inventory before individual confirmation must use direct child names only'
+registration_confirmed_checks_valid "$REGISTER_SKILL" \
+  || fail 'registration must defer Git and project-context checks until individual confirmation'
+
+REGISTER_WITH_EARLY_GIT="$TMP_DIR/register-with-early-git.md"
+awk '
+  /^## After individual project confirmation$/ && !injected {
+    print "Primary inventory must not inspect .git before confirmation."
+    injected = 1
+  }
+  { print }
+' "$REGISTER_SKILL" > "$REGISTER_WITH_EARLY_GIT"
+assert_rejected registration_primary_inventory_valid "$REGISTER_WITH_EARLY_GIT"
 
 CHECK_SKILL="$ROOT/hub-template/ai/skills/registry-check/SKILL.md"
 assert_contains "$CHECK_SKILL" 'read-only until approval'

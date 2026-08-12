@@ -11,8 +11,9 @@ current chat. Keep `Mode: routing` until the user gives explicit confirmation.
 ## Read allowlist and phases
 
 1. Read the compact hub index only: `ai/allowed-roots.md`,
-   `ai/project-registry.md`, and `ai/active-project.md`. Do not list allowed
-   roots or inspect project directories.
+   `ai/project-registry.md`, `ai/active-project.md`, and
+   `ai/cross-project-signals.md`. Do not list allowed roots or inspect project
+   directories.
 2. Match the request against registered IDs, names, types, statuses, and tags.
    Select a maximum of three candidates. An unregistered path is never a
    candidate.
@@ -20,9 +21,10 @@ current chat. Keep `Mode: routing` until the user gives explicit confirmation.
    `ai/project-cards/<registered-id>.md`. Do not read project memory, source
    code, configuration, or arbitrary hub files. Compare only each card's
    purpose, tasks, boundaries, and relationships.
-4. Read only related active signals from the compact index: use the active
-   project record only when it names one of the candidates. Do not read
-   cross-project signals, project task memory, or project files during routing.
+4. Read only related active signals: use the active-project record and active
+   cross-project signals only when they name one of the candidates. Ignore
+   unrelated, inactive, or unscoped signals. Do not read project memory, source
+   code, configuration, or project files during routing.
 5. Classify routing confidence as `high, medium, or low` and preserve evidence
    confidence from the hub architecture (`verified`, `stated`, `inferred`, or
    `unknown`). High means a direct registered ID/name match; medium means a
@@ -57,8 +59,9 @@ angle-bracket placeholders with registered hub metadata.
 ```text
 Режим: routing
 Нашёл несколько зарегистрированных вариантов:
-1. <project-id-1> — <exact-path-1> — <краткая причина>.
-2. <project-id-2> — <exact-path-2> — <краткая причина>.
+1. <project-id-1> — <exact-path-1> — Уверенность маршрутизации: <высокая|средняя|низкая> — <краткая причина>.
+2. <project-id-2> — <exact-path-2> — Уверенность маршрутизации: <высокая|средняя|низкая> — <краткая причина>.
+3. <project-id-3> — <exact-path-3> — Уверенность маршрутизации: <высокая|средняя|низкая> — <краткая причина>.
 
 Укажите номер или точное имя проекта и подтвердите путь. До подтверждения я ничего в проектах не открываю.
 ```
