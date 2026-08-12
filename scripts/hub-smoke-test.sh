@@ -194,6 +194,44 @@ normalize_entry() {
     "$1"
 }
 
+portable_hub_install_contract() {
+  local portable_hub="$TMP_DIR/portable-install/_ai-hub"
+  local install_out="$TMP_DIR/portable-install.out"
+  local status_out="$TMP_DIR/portable-install-status.out"
+  local external_root="$TMP_DIR/external-projects"
+  local wrong_name="$TMP_DIR/not-a-hub"
+  local non_hub_target="$TMP_DIR/non-hub-target"
+
+  if ! bash "$ROOT/scripts/install.sh" --mode hub "$portable_hub" > "$install_out" 2>&1; then
+    fail 'portable hub install without --root was rejected'
+  fi
+  assert_file "$portable_hub/projects/.gitkeep"
+  assert_contains "$portable_hub/.gitignore" '/projects/'
+  [ "$(grep -Fxc -- "- $portable_hub/projects" "$portable_hub/ai/allowed-roots.md")" -eq 1 ] \
+    || fail 'portable hub must record exactly its derived projects root'
+
+  mkdir -p "$portable_hub/projects/fixture/.git"
+  printf '%s\n' 'fixture repository metadata' > "$portable_hub/projects/fixture/.git/HEAD"
+  git -C "$portable_hub" status --short > "$status_out"
+  assert_not_contains "$status_out" 'projects/fixture'
+
+  mkdir -p "$external_root"
+  if bash "$ROOT/scripts/install.sh" --mode hub --root "$external_root" \
+    "$TMP_DIR/rejected-root/_ai-hub" > "$TMP_DIR/rejected-root.out" 2>&1; then
+    fail 'portable hub installer accepted a custom --root'
+  fi
+
+  if bash "$ROOT/scripts/install.sh" --mode hub "$wrong_name" > "$TMP_DIR/wrong-name.out" 2>&1; then
+    fail 'portable hub installer accepted a target with the wrong basename'
+  fi
+
+  mkdir -p "$non_hub_target"
+  printf '%s\n' 'do not overwrite' > "$non_hub_target/existing.txt"
+  if bash "$ROOT/scripts/install.sh" --mode hub "$non_hub_target" > "$TMP_DIR/non-hub.out" 2>&1; then
+    fail 'portable hub installer accepted a non-hub nonempty target'
+  fi
+}
+
 HUB_AGENTS="$ROOT/hub-template/AGENTS.md"
 HUB_CLAUDE="$ROOT/hub-template/CLAUDE.md"
 assert_file "$HUB_AGENTS"
@@ -211,6 +249,8 @@ hub_entry_staged_allowlist_valid "$HUB_AGENTS" \
 assert_contains "$HUB_AGENTS" 'ai/architecture.md'
 assert_not_contains "$HUB_AGENTS" 'hub-template/ai/architecture.md'
 
+portable_hub_install_contract
+
 THIRD_ACTIVATION="$TMP_DIR/entry-with-third-activation.md"
 cp "$HUB_AGENTS" "$THIRD_ACTIVATION"
 printf '%s\n' '<!-- Tool-specific activation: A third tool reads this entry differently. -->' >> "$THIRD_ACTIVATION"
@@ -220,7 +260,7 @@ assert_contains <(normalize_entry "$THIRD_ACTIVATION") \
 cmp -s <(normalize_entry "$HUB_AGENTS") <(normalize_entry "$HUB_CLAUDE") \
   || fail 'hub entry files differ beyond title and activation paragraph'
 
-for skill in project-router project-switch project-register project-create registry-check environment-check task-intake task-switch task-finish; do
+for skill in project-router project-switch project-register project-create project-migrate registry-check environment-check task-intake task-switch task-finish; do
   file="$ROOT/hub-template/ai/skills/$skill/SKILL.md"
   assert_file "$file"
   assert_contains "$file" 'name:'
