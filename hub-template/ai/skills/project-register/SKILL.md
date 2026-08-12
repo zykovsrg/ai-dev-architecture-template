@@ -48,6 +48,13 @@ card and registry entry before writing them. Run
 `scripts/check-hub-registry.sh` after an approved write; report its result
 without reading unrelated projects.
 
+The proposed card must contain exactly these required fields: `Project ID:`,
+`Name:`, `Type:`, `Status:`, `Last updated:`, `Purpose:`, `Typical tasks:`,
+and `Memory entry point:`. `Project ID`, `Name`, `Type`, and `Status` must
+match the registry entry. The memory entry point must be an absolute path
+beneath the confirmed project's `ai/` directory; the validator must not read the memory entry point. `Boundaries:` and `Related
+projects:` are optional, compact fields.
+
 ## Russian response template
 
 ```text

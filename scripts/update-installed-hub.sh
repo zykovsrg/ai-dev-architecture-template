@@ -165,6 +165,14 @@ resolve_source_template() {
   [ -f "$SOURCE_TEMPLATE/AGENTS.md" ] || die "Source hub template is missing AGENTS.md"
   [ -f "$SOURCE_TEMPLATE/CLAUDE.md" ] || die "Source hub template is missing CLAUDE.md"
   [ -f "$SOURCE_TEMPLATE/ai/architecture.md" ] || die "Source hub template is missing ai/architecture.md"
+  grep -Fqx '# Personal AI Hub — Codex' "$SOURCE_TEMPLATE/AGENTS.md" \
+    || die "Source template is not a personal AI hub"
+  grep -Fqx '# Personal AI Hub Architecture' "$SOURCE_TEMPLATE/ai/architecture.md" \
+    || die "Source template is not a personal AI hub"
+  for mandatory_skill in project-router project-switch project-register registry-check; do
+    [ -f "$SOURCE_TEMPLATE/ai/skills/$mandatory_skill/SKILL.md" ] \
+      || die "Source template missing mandatory hub skill: $mandatory_skill"
+  done
 }
 
 PROTECTED_FILES=(

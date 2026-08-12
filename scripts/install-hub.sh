@@ -38,6 +38,11 @@ done
 
 HUB_DIR="${HUB_DIR:-.}"
 
+[ "${#ROOTS[@]}" -gt 0 ] || {
+  echo "Hub mode requires at least one --root DIR." >&2
+  exit 1
+}
+
 [ -d "$HUB_TEMPLATE_DIR" ] || {
   echo "Hub template directory not found: $HUB_TEMPLATE_DIR" >&2
   exit 1
@@ -66,6 +71,31 @@ for root in "${ROOTS[@]}"; do
   CANONICAL_ROOTS+=("$canonical_root")
 done
 
+case "$(basename "$HUB_DIR")" in
+  _ai-hub) ;;
+  *) echo "Hub directory must be named _ai-hub." >&2; exit 1 ;;
+esac
+
+if [ -e "$HUB_DIR" ]; then
+  CANONICAL_HUB_DIR="$(cd "$HUB_DIR" && pwd -P)"
+  if [ -d "$HUB_DIR" ] && [ -n "$(find "$HUB_DIR" -mindepth 1 -maxdepth 1 -print -quit)" ] \
+    && { [ ! -f "$HUB_DIR/AGENTS.md" ] || [ ! -f "$HUB_DIR/ai/architecture.md" ] || [ ! -f "$HUB_DIR/ai/allowed-roots.md" ] || [ ! -f "$HUB_DIR/ai/project-registry.md" ]; }; then
+    echo "Target is not an installed personal AI hub; refusing to copy into a nonempty directory." >&2
+    exit 1
+  fi
+else
+  mkdir -p "$(dirname "$HUB_DIR")"
+  CANONICAL_HUB_DIR="$(cd "$(dirname "$HUB_DIR")" && pwd -P)/$(basename "$HUB_DIR")"
+fi
+
+for canonical_root in "${CANONICAL_ROOTS[@]}"; do
+  case "$CANONICAL_HUB_DIR/" in "$canonical_root/"*)
+    echo "Hub directory must stay outside every allowed root." >&2
+    exit 1
+    ;;
+  esac
+done
+
 mkdir -p "$HUB_DIR"
 rsync -av --ignore-existing "$HUB_TEMPLATE_DIR/" "$HUB_DIR/"
 
@@ -83,6 +113,8 @@ fi
 for root in "${CANONICAL_ROOTS[@]}"; do
   for candidate in "$root"/*; do
     [ -d "$candidate" ] || continue
+    canonical_candidate="$(cd "$candidate" && pwd -P)"
+    [ "$canonical_candidate" = "$CANONICAL_HUB_DIR" ] && continue
     echo "Unregistered candidate: ${candidate##*/}"
   done
 done

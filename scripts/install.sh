@@ -56,6 +56,14 @@ if [ -z "$MODE" ]; then
   fi
 fi
 
+if [ "$MODE" = "hub" ] && [ "${#ROOT_ARGS[@]}" -eq 0 ]; then
+  if [ -t 0 ] && [ -t 1 ]; then
+    echo "Укажите хотя бы один разрешённый корень через --root DIR и повторите команду." >&2
+  fi
+  echo "Hub mode requires at least one --root DIR." >&2
+  exit 1
+fi
+
 case "$MODE" in
   hub)
     exec "$SCRIPT_DIR/install-hub.sh" "${ROOT_ARGS[@]}" "$TARGET_DIR"
