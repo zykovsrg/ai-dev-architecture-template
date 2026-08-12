@@ -450,6 +450,14 @@ if bash "$ROOT/scripts/check-hub-registry.sh" "$UNSAFE_MEMORY_ENTRY" > "$TMP_DIR
 fi
 assert_contains "$TMP_DIR/unsafe-memory-entry.out" 'card Memory entry point must stay beneath the registered project ai directory'
 
+DUPLICATE_MEMORY_ENTRY="$TMP_DIR/duplicate-memory-entry-hub"
+cp -R "$VALID" "$DUPLICATE_MEMORY_ENTRY"
+printf '%s\n' "Memory entry point: $TMP_DIR/outside/ai/current-task.md" >> "$DUPLICATE_MEMORY_ENTRY/ai/project-cards/analytics-seo.md"
+if bash "$ROOT/scripts/check-hub-registry.sh" "$DUPLICATE_MEMORY_ENTRY" > "$TMP_DIR/duplicate-memory-entry.out" 2>&1; then
+  fail 'validator accepted a duplicate Memory entry point field'
+fi
+assert_contains "$TMP_DIR/duplicate-memory-entry.out" 'duplicate card Memory entry point:'
+
 INVALID="$TMP_DIR/invalid-hub"
 cp -R "$VALID" "$INVALID"
 sed "s#Path: $TMP_DIR/projects/analytics-seo#Path: $TMP_DIR/outside#" \
@@ -584,6 +592,7 @@ if bash "$ROOT/scripts/install.sh" --mode hub --root "$PROJECT_ROOT" "$PROJECT_R
   fail 'hub installer accepted a target inside an allowed root'
 fi
 assert_contains "$TMP_DIR/inside-root.out" 'Hub directory must stay outside every allowed root.'
+assert_not_exists "$PROJECT_ROOT/_ai-hub"
 
 NON_HUB_TARGET="$TMP_DIR/non-hub-target/_ai-hub"
 mkdir -p "$NON_HUB_TARGET"

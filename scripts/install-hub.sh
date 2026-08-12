@@ -84,8 +84,14 @@ if [ -e "$HUB_DIR" ]; then
     exit 1
   fi
 else
-  mkdir -p "$(dirname "$HUB_DIR")"
-  CANONICAL_HUB_DIR="$(cd "$(dirname "$HUB_DIR")" && pwd -P)/$(basename "$HUB_DIR")"
+  target_parent="$(dirname "$HUB_DIR")"
+  missing_suffix=""
+  while [ ! -d "$target_parent" ]; do
+    [ "$target_parent" != "/" ] || { echo "Cannot resolve hub directory parent." >&2; exit 1; }
+    missing_suffix="/$(basename "$target_parent")$missing_suffix"
+    target_parent="$(dirname "$target_parent")"
+  done
+  CANONICAL_HUB_DIR="$(cd "$target_parent" && pwd -P)$missing_suffix/$(basename "$HUB_DIR")"
 fi
 
 for canonical_root in "${CANONICAL_ROOTS[@]}"; do
@@ -96,6 +102,7 @@ for canonical_root in "${CANONICAL_ROOTS[@]}"; do
   esac
 done
 
+mkdir -p "$(dirname "$HUB_DIR")"
 mkdir -p "$HUB_DIR"
 rsync -av --ignore-existing "$HUB_TEMPLATE_DIR/" "$HUB_DIR/"
 

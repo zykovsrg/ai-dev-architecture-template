@@ -117,7 +117,7 @@ reset_entry() {
 }
 
 validate_entry_schema() {
-  local canonical_card card_memory canonical_memory
+  local canonical_card card_memory canonical_memory card_count
   [ -n "$current_id" ] || return 0
   [ -n "$entry_name" ] || die "missing Name for $current_id"
   [ -n "$entry_type" ] || die "missing Type for $current_id"
@@ -127,8 +127,9 @@ validate_entry_schema() {
   [ -n "$entry_card" ] || die "missing Card for $current_id"
   canonical_card="$(validate_card_path "$entry_card")"
   for card_field in 'Project ID:' 'Name:' 'Type:' 'Status:' 'Last updated:' 'Purpose:' 'Typical tasks:' 'Memory entry point:'; do
-    grep -Eq "^$card_field .+" "$canonical_card" \
-      || die "missing card $card_field for $current_id"
+    card_count="$(grep -Ec "^$card_field .+" "$canonical_card" || true)"
+    [ "$card_count" -ge 1 ] || die "missing card $card_field for $current_id"
+    [ "$card_count" -eq 1 ] || die "duplicate card $card_field for $current_id"
   done
   grep -Fqx "Project ID: $current_id" "$canonical_card" \
     || die "card Project ID mismatch for $current_id"
@@ -138,7 +139,7 @@ validate_entry_schema() {
     || die "card Type mismatch for $current_id"
   grep -Fqx "Status: $entry_status" "$canonical_card" \
     || die "card Status mismatch for $current_id"
-  card_memory="$(sed -n 's/^Memory entry point: //p' "$canonical_card" | head -n 1)"
+  card_memory="$(sed -n 's/^Memory entry point: //p' "$canonical_card")"
   canonical_memory="$(canonicalize_project_path "$card_memory")" \
     || die "card Memory entry point must stay beneath the registered project ai directory for $current_id"
   case "$canonical_memory" in "$canonical_path/ai/"*) ;; *)
