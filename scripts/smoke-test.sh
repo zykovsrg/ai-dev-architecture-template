@@ -60,7 +60,7 @@ assert_contains "$ROOT/docs/update.md" 'update-installed-hub.sh'
 assert_contains "$ROOT/docs/file-roles.md" 'Hub-managed project memory'
 assert_contains "$ROOT/getting-started/getting-started.md" 'personal hub'
 
-for entry in "$ROOT/AGENTS.md" "$ROOT/CLAUDE.md"; do
+for entry in "$ROOT/template/AGENTS.md" "$ROOT/template/CLAUDE.md"; do
   assert_contains "$entry" 'simplest sufficient solution'
   assert_contains "$entry" 'Separate verified facts from interpretations, hypotheses, and opinions.'
   assert_contains "$entry" 'security-sensitive change'
@@ -72,8 +72,8 @@ for entry in "$ROOT/hub-template/AGENTS.md" "$ROOT/hub-template/CLAUDE.md"; do
   assert_contains "$entry" 'Separate verified facts from interpretations, hypotheses, and opinions.'
 done
 
-assert_not_contains "$ROOT/AGENTS.md" 'theme-factory'
-assert_not_contains "$ROOT/CLAUDE.md" 'theme-factory'
+assert_not_contains "$ROOT/template/AGENTS.md" 'theme-factory'
+assert_not_contains "$ROOT/template/CLAUDE.md" 'theme-factory'
 
 PROJECT="$TMP_DIR/project"
 init_git_project "$PROJECT"
