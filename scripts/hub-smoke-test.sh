@@ -165,6 +165,8 @@ project_create_contract_valid() {
     [[ "$text" == *'collision'* ]] &&
     [[ "$text" == *'project-register'* ]] &&
     [[ "$text" == *'scripts/check-hub-registry.sh'* ]] &&
+    [[ "$text" == *'Built-in memory templates'* ]] &&
+    [[ "$text" != *'from `template/ai/`'* ]] &&
     [[ "$text" == *'ai/allowed-roots.md'* ]] &&
     [[ "$text" == *'ai/active-project.md'* ]] &&
     [[ "$text" == *'ai/project-registry.md'* ]] &&

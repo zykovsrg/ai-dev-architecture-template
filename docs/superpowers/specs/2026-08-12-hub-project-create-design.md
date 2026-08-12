@@ -49,8 +49,10 @@ workflow skills.
 
 ## Minimal Files
 
-The new project's `ai/` directory receives only the standard project-memory
-templates required by hub-owned workflows:
+The new project's `ai/` directory receives only the six minimal project-memory
+files required by hub-owned workflows. Their small initial contents are embedded
+in `project-create`; an installed hub must not depend on the source
+repository's standalone `template/` directory:
 
 - `current-task.md`
 - `paused-tasks.md`

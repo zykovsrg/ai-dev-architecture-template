@@ -106,11 +106,11 @@ The preview also explicitly excludes `ai/architecture.md`,
 1. Revalidate the confirmed root, canonical path, direct-child rule, ID, name,
    symlink safety, collision absence, and the matching confirmation. Stop with
    no writes if any value changed or is unsafe.
-2. Create `<canonical-path>/ai/`. Copy only these six standard memory templates
-   from `template/ai/` to the six paths shown in the preview: `current-task.md`,
-   `paused-tasks.md`, `future-tasks.md`, `project-context.md`, `decisions.md`,
-   and `changelog.md`. Do not copy `ai/architecture.md` or
-   `ai/external-tools.md`.
+2. Create `<canonical-path>/ai/`. Create only the six standard memory files
+   shown in the preview using the built-in memory templates below:
+   `current-task.md`, `paused-tasks.md`, `future-tasks.md`,
+   `project-context.md`, `decisions.md`, and `changelog.md`. Do not copy
+   `ai/architecture.md` or `ai/external-tools.md`.
 3. Write the approved existing-schema card at
    `ai/project-cards/<project-id>.md` and the approved registry entry exactly
    as previewed. The card must retain all required fields and its
@@ -134,3 +134,88 @@ application code, dependencies, services, AGENTS.md, CLAUDE.md, or shared
 skills. It must not write cross-project signals, archives, another project's
 memory, or any path outside the confirmed allowed root and hub metadata needed
 for this approved creation.
+
+## Built-in memory templates
+
+Use these contents exactly as the initial six project-memory files. They are
+embedded here because an installed hub contains `hub-template/`, not the source
+repository's standalone `template/` directory.
+
+### current-task.md
+
+```markdown
+# Current Task
+
+Status: empty
+Stage: intake
+
+## Goal
+
+No active task.
+
+## Relevant files
+
+None yet.
+
+## Done criteria
+
+Define during task intake.
+```
+
+### paused-tasks.md
+
+```markdown
+# Paused Tasks
+
+Use this file only for unfinished tasks intentionally paused through task-switch.
+
+## Paused tasks
+
+No paused tasks yet.
+```
+
+### future-tasks.md
+
+```markdown
+# Future Tasks
+
+Use this file for confirmed future ideas that are outside the current task.
+
+## Future tasks
+
+No future tasks yet.
+```
+
+### project-context.md
+
+```markdown
+# Project Context
+
+## What this project is
+
+TBD
+
+## Invariants
+
+TBD
+```
+
+### decisions.md
+
+```markdown
+# Decisions
+
+## Current decisions
+
+No project decisions yet.
+```
+
+### changelog.md
+
+```markdown
+# Changelog
+
+## Current changelog
+
+No notable changes yet.
+```

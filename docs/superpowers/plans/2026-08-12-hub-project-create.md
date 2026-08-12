@@ -50,7 +50,7 @@ Add negative fixtures that remove the unsafe-name rejection and the no-Git guara
   2. Derive a lowercase kebab-case ID from the confirmed project name. Validate the target as a new direct child within that root and reject unsafe names, symlinks, collisions, and existing paths without writes.
   3. Show one preview with name, ID, type, canonical path, exactly six `<path>/ai/` files, draft card, draft registry entry, and active-project selection. State exclusions explicitly.
   4. Wait for confirmation repeating the ID and exact path.
-  5. Revalidate, create `<path>/ai/`, and copy only the six standard memory templates from `template/ai/`; do not copy `ai/architecture.md` or `ai/external-tools.md`.
+  5. Revalidate, create `<path>/ai/`, and create only the six built-in minimal memory files; do not create `ai/architecture.md` or `ai/external-tools.md`.
   6. Write the approved existing-schema card and registry entry, with `Memory entry point: <path>/ai/current-task.md`; run `scripts/check-hub-registry.sh`.
   7. Only after successful validation, update `ai/active-project.md` with confirmed ID/path and invoke hub-owned `environment-check` and `task-intake`.
 
