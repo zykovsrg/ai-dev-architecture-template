@@ -658,6 +658,7 @@ cp "$HUB_INSTALL/ai/archive/custom.md" "$TMP_DIR/archive.before"
 rm "$HUB_INSTALL/ai/archive/.gitkeep"
 rm "$HUB_INSTALL/ai/project-cards/.gitkeep"
 printf '%s\n' 'stale hub entry' > "$HUB_INSTALL/AGENTS.md"
+printf '%s\n' 'stale validator' > "$HUB_INSTALL/scripts/check-hub-registry.sh"
 
 bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$ROOT" --dry-run > "$TMP_DIR/hub-dry-run.out"
 assert_contains "$TMP_DIR/hub-dry-run.out" '### AGENTS.md'
@@ -693,6 +694,7 @@ assert_contains "$TMP_DIR/hub-dirty.out" 'Working tree is not clean'
 
 bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$ROOT" --apply --allow-dirty > "$TMP_DIR/hub-update.out"
 cmp -s "$ROOT/hub-template/AGENTS.md" "$HUB_INSTALL/AGENTS.md" || fail 'hub update did not replace protected entry file'
+cmp -s "$ROOT/scripts/check-hub-registry.sh" "$HUB_INSTALL/scripts/check-hub-registry.sh" || fail 'hub update did not replace protected validator'
 cmp -s "$TMP_DIR/allowed-roots.before" "$HUB_INSTALL/ai/allowed-roots.md" || fail 'hub update overwrote allowed roots'
 cmp -s "$TMP_DIR/registry.before" "$HUB_INSTALL/ai/project-registry.md" || fail 'hub update overwrote registry'
 cmp -s "$TMP_DIR/active.before" "$HUB_INSTALL/ai/active-project.md" || fail 'hub update overwrote active project'

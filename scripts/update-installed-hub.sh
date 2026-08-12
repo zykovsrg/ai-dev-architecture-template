@@ -12,6 +12,7 @@ SOURCE_DIR=""
 COMMIT_MESSAGE="chore: update personal AI hub"
 TMP_DIR=""
 SOURCE_TEMPLATE=""
+SOURCE_VALIDATOR=""
 CREATED_MEMORY_FILES=()
 
 usage() {
@@ -145,8 +146,10 @@ resolve_source_template() {
     SOURCE_DIR="$(cd "$SOURCE_DIR" && pwd)"
     if [ -d "$SOURCE_DIR/hub-template/ai" ]; then
       SOURCE_TEMPLATE="$SOURCE_DIR/hub-template"
+      SOURCE_VALIDATOR="$SOURCE_DIR/scripts/check-hub-registry.sh"
     elif [ -d "$SOURCE_DIR/ai" ] && [ -f "$SOURCE_DIR/AGENTS.md" ]; then
       SOURCE_TEMPLATE="$SOURCE_DIR"
+      SOURCE_VALIDATOR="$(cd "$SOURCE_DIR/.." && pwd)/scripts/check-hub-registry.sh"
     else
       die "--source must point to the template repository or to its hub-template/ directory"
     fi
@@ -160,6 +163,7 @@ resolve_source_template() {
     SOURCE_ROOT="$(find "$TMP_DIR" -mindepth 1 -maxdepth 1 -type d -name 'ai-dev-architecture-template-*' | head -n 1)"
     [ -n "$SOURCE_ROOT" ] || die "Could not find extracted template repository"
     SOURCE_TEMPLATE="$SOURCE_ROOT/hub-template"
+    SOURCE_VALIDATOR="$SOURCE_ROOT/scripts/check-hub-registry.sh"
   fi
 
   [ -f "$SOURCE_TEMPLATE/AGENTS.md" ] || die "Source hub template is missing AGENTS.md"
@@ -194,6 +198,8 @@ show_file_diff() {
   local rel="$1"
   local src="$SOURCE_TEMPLATE/$rel"
   local dst="$HUB_DIR/$rel"
+
+  [ "$rel" = "scripts/check-hub-registry.sh" ] && src="$SOURCE_VALIDATOR"
 
   [ -f "$src" ] || return 0
 
@@ -233,6 +239,8 @@ copy_file() {
   local src="$SOURCE_TEMPLATE/$rel"
   local dst="$HUB_DIR/$rel"
 
+  [ "$rel" = "scripts/check-hub-registry.sh" ] && src="$SOURCE_VALIDATOR"
+
   [ -f "$src" ] || return 0
   mkdir -p "$(dirname "$dst")"
   cp "$src" "$dst"
@@ -258,6 +266,10 @@ for_each_protected_file() {
   for rel in "${PROTECTED_FILES[@]}"; do
     "$callback" "$rel"
   done
+
+  if [ -f "$SOURCE_VALIDATOR" ]; then
+    "$callback" "scripts/check-hub-registry.sh"
+  fi
 
   if [ -d "$SOURCE_TEMPLATE/ai/skills" ]; then
     while IFS= read -r src_file; do
