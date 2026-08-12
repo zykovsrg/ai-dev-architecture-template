@@ -85,6 +85,26 @@ status_ok() {
   return 1
 }
 
+validate_card_path() {
+  local card_path="$1" card_target canonical_card card_root
+
+  case "$card_path" in
+    ai/project-cards/*) ;;
+    *) die "card path must stay beneath ai/project-cards: $card_path" ;;
+  esac
+
+  card_target="$HUB_DIR/$card_path"
+  canonical_card="$(canonicalize_project_path "$card_target")" \
+    || die "card path must stay beneath ai/project-cards: $card_path"
+  card_root="$HUB_DIR/ai/project-cards"
+  case "$canonical_card" in "$card_root/"*) ;; *)
+    die "card path must stay beneath ai/project-cards: $card_path"
+    ;;
+  esac
+  [ -f "$canonical_card" ] || die "missing card for $current_id"
+  printf '%s\n' "$canonical_card"
+}
+
 reset_entry() {
   entry_name=""
   entry_type=""
@@ -102,7 +122,8 @@ validate_entry_schema() {
   [ -n "$entry_path" ] || die "missing Path for $current_id"
   [ -n "$entry_tags" ] || die "missing Tags for $current_id"
   [ -n "$entry_card" ] || die "missing Card for $current_id"
-  grep -Fqx "Project ID: $current_id" "$HUB_DIR/$entry_card" \
+  canonical_card="$(validate_card_path "$entry_card")"
+  grep -Fqx "Project ID: $current_id" "$canonical_card" \
     || die "card Project ID mismatch for $current_id"
 }
 
@@ -137,7 +158,6 @@ while IFS= read -r line; do
     'Tags: '*) entry_tags="${line#Tags: }" ;;
     'Card: '*)
       entry_card="${line#Card: }"
-      [ -f "$HUB_DIR/$entry_card" ] || die "missing card for $current_id"
       ;;
   esac
 done < "$REGISTRY_FILE"

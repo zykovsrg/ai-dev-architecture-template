@@ -283,7 +283,42 @@ assert_not_contains "$TMP_DIR/valid.out" "$SENTINEL"
 assert_not_contains "$TMP_DIR/valid.trace" "$SENTINEL"
 assert_forbidden_reads_absent "$TMP_DIR/valid.trace" \
   '/.env' '/credentials.txt' '/unregistered-project/private.txt' '/analytics-seo-backup/private.txt'
-echo 'Forbidden-read evidence: validator trace stayed within registry metadata and project directory paths.'
+echo 'Sentinel evidence: validator output and xtrace contain neither the marker nor the named forbidden file paths.'
+
+SENTINEL_CARD="$TMP_DIR/card-sentinel.md"
+printf '%s\n' '# External Card' '' 'Project ID: analytics-seo' "$SENTINEL" > "$SENTINEL_CARD"
+
+for card_escape_case in lexical symlink canonical; do
+  escaped_hub="$TMP_DIR/card-$card_escape_case-hub"
+  cp -R "$VALID" "$escaped_hub"
+  case "$card_escape_case" in
+    lexical)
+      escaped_card='ai/project-cards/../../../card-sentinel.md'
+      ;;
+    symlink)
+      ln -s "$SENTINEL_CARD" "$escaped_hub/ai/project-cards/escaped-card.md"
+      escaped_card='ai/project-cards/escaped-card.md'
+      ;;
+    canonical)
+      mkdir -p "$TMP_DIR/external-cards"
+      cp "$SENTINEL_CARD" "$TMP_DIR/external-cards/analytics-seo.md"
+      ln -s "$TMP_DIR/external-cards" "$escaped_hub/ai/project-cards/external"
+      escaped_card='ai/project-cards/external/analytics-seo.md'
+      ;;
+  esac
+  sed "s#Card: ai/project-cards/analytics-seo.md#Card: $escaped_card#" \
+    "$VALID/ai/project-registry.md" > "$escaped_hub/ai/project-registry.md"
+
+  if bash -x "$ROOT/scripts/check-hub-registry.sh" "$escaped_hub" \
+    > "$TMP_DIR/card-$card_escape_case.out" 2> "$TMP_DIR/card-$card_escape_case.trace"; then
+    fail "validator accepted a $card_escape_case card escape"
+  fi
+  assert_contains "$TMP_DIR/card-$card_escape_case.trace" 'card path must stay beneath ai/project-cards'
+  assert_not_contains "$TMP_DIR/card-$card_escape_case.out" "$SENTINEL"
+  assert_not_contains "$TMP_DIR/card-$card_escape_case.trace" "$SENTINEL"
+  assert_not_contains "$TMP_DIR/card-$card_escape_case.trace" "grep -Fqx 'Project ID: analytics-seo'"
+done
+echo 'Malicious traversal evidence: lexical and symlink card escapes were rejected before the card-content check; sentinel markers were absent from output and xtrace.'
 
 for scale_case in 5:2400 20:9600 50:24000 100:48000; do
   scale_count="${scale_case%%:*}"
@@ -420,7 +455,7 @@ assert_not_contains "$TMP_DIR/install.out" "$SENTINEL"
 assert_not_contains "$TMP_DIR/install.trace" "$SENTINEL"
 assert_forbidden_reads_absent "$TMP_DIR/install.trace" \
   '/.env' '/credentials.txt' '/unregistered-folder/private.txt' '/example-backup/private/private.txt'
-echo 'Forbidden-read evidence: installer trace listed direct child candidates without entering them.'
+echo 'Sentinel evidence: installer output and xtrace contain neither the marker nor the named forbidden file paths.'
 assert_file "$HUB_INSTALL/AGENTS.md"
 assert_file "$HUB_INSTALL/CLAUDE.md"
 assert_file "$HUB_INSTALL/ai/project-registry.md"

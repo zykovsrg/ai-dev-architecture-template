@@ -124,23 +124,17 @@ fi
 
 hub_skill_ok=1
 hub_skill_count=0
-if [ ! -f hub-template/ai/architecture.md ]; then
-  echo "MISSING [hub skill references] — hub architecture absent"
-  fail=1
-  hub_skill_ok=0
-else
-  while IFS= read -r skill; do
-    [ -n "$skill" ] || continue
-    hub_skill_count=$((hub_skill_count + 1))
-    if [ ! -f "hub-template/ai/skills/$skill/SKILL.md" ]; then
-      echo "MISSING [hub skill references] — $skill"
-      fail=1
-      hub_skill_ok=0
-    fi
-  done < <(sed -n -E 's/.*use (the )?`([a-z][a-z0-9-]*)` workflow.*/\2/p' hub-template/ai/architecture.md)
-fi
+HUB_REQUIRED_SKILLS="project-router project-switch project-register registry-check info-update local-router-install"
+for skill in $HUB_REQUIRED_SKILLS; do
+  hub_skill_count=$((hub_skill_count + 1))
+  if [ ! -f "hub-template/ai/skills/$skill/SKILL.md" ]; then
+    echo "MISSING [hub skill references] — $skill"
+    fail=1
+    hub_skill_ok=0
+  fi
+done
 [ "$hub_skill_ok" -eq 0 ] \
-  || echo "OK [hub skill references] — $hub_skill_count architecture references exist"
+  || echo "OK [hub skill references] — $hub_skill_count declared skills exist"
 
 hub_protected="$(extract_array scripts/update-installed-hub.sh PROTECTED_FILES)"
 if [ -d hub-template/ai/skills ]; then
@@ -173,7 +167,7 @@ EOF
   || echo "OK [hub update classes] — protected files exclude hub memory"
 
 standalone_architecture="$(extract_array scripts/update-installed-architecture.sh ARCHITECTURE_FILES)"
-standalone_memory="$(extract_block template/AGENTS.md canon:controlled-memory)"
+standalone_memory="$(extract_block "$standalone_base/AGENTS.md" canon:controlled-memory)"
 standalone_boundaries_ok=1
 while IFS= read -r memory_file; do
   [ -n "$memory_file" ] || continue
