@@ -49,14 +49,20 @@ projects directory. A project outside it is not eligible for registration.
 Migration is a separate, confirmation-gated workflow. It is not part of hub
 installation or project creation.
 
-1. Run a read-only inventory of existing direct-child project folders.
-2. Show a proposed mapping from each confirmed existing path to one new
+1. Require a separately confirmed temporary migration source: any existing
+   directory that contains legacy projects as direct children. It is not an
+   allowed root, is never written to `ai/allowed-roots.md`, and expires when
+   the migration workflow ends.
+2. Run a read-only inventory of direct-child folder names in that source only;
+   exclude the target `_ai-hub` directory when it is a child of the source.
+   Do not recurse or read project content before individual move approval.
+3. Show a proposed mapping from each confirmed existing path to one new
    `<hub>/projects/<project-id>` path, including Git-repository status and
    collision risks.
-3. Require explicit approval for each move or an explicitly displayed batch.
-4. Move, do not copy, each approved project; preserve its `.git/` directory
+4. Require explicit approval for each move or an explicitly displayed batch.
+5. Move, do not copy, each approved project; preserve its `.git/` directory
    and contents.
-5. Register only after the move completes and validate the registry.
+6. Register only after the move completes and validate the registry.
 
 The workflow must not move archives, backups, symlinks, unknown folders, or
 nonempty destination paths. It must stop on a failed move, collision, or Git
@@ -74,6 +80,8 @@ integrity concern, without continuing with other projects automatically.
   the hub must not silently guess paths after a move.
 - Existing external roots and legacy registration remain unsupported rather
   than adding a compatibility layer that would weaken the one-folder model.
+- The temporary migration source works for any user path. It is a one-time
+  user-confirmed read/move scope, never a configured permanent root.
 
 ## Verification
 
