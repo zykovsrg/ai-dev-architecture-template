@@ -10,6 +10,28 @@ assert_contains() { grep -Fq "$2" "$1" || fail "expected '$2' in $1"; }
 assert_not_contains() { ! grep -Fq "$2" "$1" || fail "did not expect '$2' in $1"; }
 assert_file() { [ -f "$1" ] || fail "missing file: $1"; }
 assert_not_exists() { [ ! -e "$1" ] || fail "expected path to be absent: $1"; }
+assert_forbidden_reads_absent() {
+  local trace="$1" forbidden_path
+  shift
+  for forbidden_path in "$@"; do
+    ! grep -Fq -- "$forbidden_path" "$trace" \
+      || fail "trace entered forbidden project content: $forbidden_path"
+  done
+}
+generate_registry() {
+  local hub="$1" root="$2" count="$3" i id
+  printf '%s\n' '# Project Registry' > "$hub/ai/project-registry.md"
+  i=1
+  while [ "$i" -le "$count" ]; do
+    id="fixture-project-$i"
+    mkdir -p "$root/$id"
+    printf '\n## %s\nName: Fixture %s\nType: work\nStatus: active\nPath: %s/%s\nTags: fixture, area-%s\nCard: ai/project-cards/%s.md\n' \
+      "$id" "$i" "$root" "$id" "$i" "$id" >> "$hub/ai/project-registry.md"
+    printf '# Fixture %s\n\nProject ID: %s\n\n## Purpose\nSynthetic test project.\n' \
+      "$i" "$id" > "$hub/ai/project-cards/$id.md"
+    i=$((i + 1))
+  done
+}
 info_update_confidence_schema_valid() {
   grep -Fq 'For every item, name its source and confidence (`verified`, `stated`,' "$1" &&
     grep -Fq '`inferred`, or `uncertain`)' "$1" &&
@@ -237,6 +259,12 @@ assert_contains "$CHECK_SKILL" 'cannot invoke it automatically'
 
 VALID="$TMP_DIR/valid-hub"
 mkdir -p "$VALID/ai/project-cards" "$TMP_DIR/projects/analytics-seo"
+SENTINEL='MUST_NOT_BE_READ'
+printf '%s\n' "$SENTINEL" > "$TMP_DIR/projects/analytics-seo/.env"
+printf '%s\n' "$SENTINEL" > "$TMP_DIR/projects/analytics-seo/credentials.txt"
+mkdir -p "$TMP_DIR/projects/unregistered-project" "$TMP_DIR/projects/analytics-seo-backup"
+printf '%s\n' "$SENTINEL" > "$TMP_DIR/projects/unregistered-project/private.txt"
+printf '%s\n' "$SENTINEL" > "$TMP_DIR/projects/analytics-seo-backup/private.txt"
 printf '%s\n' '# Allowed Roots' '' "- $TMP_DIR/projects" > "$VALID/ai/allowed-roots.md"
 printf '%s\n' '# Project Registry' '' \
   '## analytics-seo' \
@@ -248,8 +276,49 @@ printf '%s\n' '# Project Registry' '' \
   'Card: ai/project-cards/analytics-seo.md' > "$VALID/ai/project-registry.md"
 printf '%s\n' '# SEO Analytics' '' 'Project ID: analytics-seo' > "$VALID/ai/project-cards/analytics-seo.md"
 
-bash "$ROOT/scripts/check-hub-registry.sh" "$VALID" > "$TMP_DIR/valid.out"
+bash -x "$ROOT/scripts/check-hub-registry.sh" "$VALID" > "$TMP_DIR/valid.out" 2> "$TMP_DIR/valid.trace"
 assert_contains "$TMP_DIR/valid.out" 'Registry check passed'
+assert_contains "$TMP_DIR/valid.out" '1 projects'
+assert_not_contains "$TMP_DIR/valid.out" "$SENTINEL"
+assert_not_contains "$TMP_DIR/valid.trace" "$SENTINEL"
+assert_forbidden_reads_absent "$TMP_DIR/valid.trace" \
+  '/.env' '/credentials.txt' '/unregistered-project/private.txt' '/analytics-seo-backup/private.txt'
+echo 'Forbidden-read evidence: validator trace stayed within registry metadata and project directory paths.'
+
+for scale_case in 5:2400 20:9600 50:24000 100:48000; do
+  scale_count="${scale_case%%:*}"
+  scale_budget="${scale_case#*:}"
+  scale_hub="$TMP_DIR/scale-$scale_count-hub"
+  scale_root="$TMP_DIR/scale-$scale_count-projects"
+  mkdir -p "$scale_hub/ai/project-cards" "$scale_root"
+  printf '%s\n' '# Allowed Roots' '' "- $scale_root" > "$scale_hub/ai/allowed-roots.md"
+  generate_registry "$scale_hub" "$scale_root" "$scale_count"
+
+  bash "$ROOT/scripts/check-hub-registry.sh" "$scale_hub" > "$TMP_DIR/scale-$scale_count.out"
+  assert_contains "$TMP_DIR/scale-$scale_count.out" "$scale_count projects"
+  measured_bytes="$(wc -c < "$scale_hub/ai/project-registry.md" | tr -d '[:space:]')"
+  [ "$measured_bytes" -le "$scale_budget" ] \
+    || fail "registry with $scale_count projects uses $measured_bytes bytes; budget is $scale_budget"
+  echo "Scale fixture: $scale_count projects, $measured_bytes/$scale_budget bytes"
+done
+
+for required_field in Name Type Status Path Tags Card; do
+  missing_field="$TMP_DIR/missing-$required_field-hub"
+  cp -R "$VALID" "$missing_field"
+  sed "/^$required_field: /d" "$VALID/ai/project-registry.md" > "$missing_field/ai/project-registry.md"
+  if bash "$ROOT/scripts/check-hub-registry.sh" "$missing_field" > "$TMP_DIR/missing-$required_field.out" 2>&1; then
+    fail "validator accepted an entry without $required_field"
+  fi
+  assert_contains "$TMP_DIR/missing-$required_field.out" "missing $required_field"
+done
+
+CARD_MISMATCH="$TMP_DIR/card-mismatch-hub"
+cp -R "$VALID" "$CARD_MISMATCH"
+printf '%s\n' '# Wrong Card' '' 'Project ID: another-project' > "$CARD_MISMATCH/ai/project-cards/analytics-seo.md"
+if bash "$ROOT/scripts/check-hub-registry.sh" "$CARD_MISMATCH" > "$TMP_DIR/card-mismatch.out" 2>&1; then
+  fail 'validator accepted a card with a different Project ID'
+fi
+assert_contains "$TMP_DIR/card-mismatch.out" 'card Project ID mismatch'
 
 INVALID="$TMP_DIR/invalid-hub"
 cp -R "$VALID" "$INVALID"
@@ -340,8 +409,18 @@ assert_contains "$TMP_DIR/missing-project.out" 'Registry check passed'
 HUB_INSTALL="$TMP_DIR/installed-hub"
 PROJECT_ROOT="$TMP_DIR/managed-projects"
 mkdir -p "$PROJECT_ROOT/example-project" "$PROJECT_ROOT/example-backup"
+printf '%s\n' "$SENTINEL" > "$PROJECT_ROOT/example-project/.env"
+printf '%s\n' "$SENTINEL" > "$PROJECT_ROOT/example-project/credentials.txt"
+mkdir -p "$PROJECT_ROOT/unregistered-folder" "$PROJECT_ROOT/example-backup/private"
+printf '%s\n' "$SENTINEL" > "$PROJECT_ROOT/unregistered-folder/private.txt"
+printf '%s\n' "$SENTINEL" > "$PROJECT_ROOT/example-backup/private/private.txt"
 PROJECT_ROOT_CANONICAL="$(cd "$PROJECT_ROOT" && pwd -P)"
-bash "$ROOT/scripts/install.sh" --mode hub --root "$PROJECT_ROOT" "$HUB_INSTALL" > "$TMP_DIR/install.out"
+bash -x "$ROOT/scripts/install.sh" --mode hub --root "$PROJECT_ROOT" "$HUB_INSTALL" > "$TMP_DIR/install.out" 2> "$TMP_DIR/install.trace"
+assert_not_contains "$TMP_DIR/install.out" "$SENTINEL"
+assert_not_contains "$TMP_DIR/install.trace" "$SENTINEL"
+assert_forbidden_reads_absent "$TMP_DIR/install.trace" \
+  '/.env' '/credentials.txt' '/unregistered-folder/private.txt' '/example-backup/private/private.txt'
+echo 'Forbidden-read evidence: installer trace listed direct child candidates without entering them.'
 assert_file "$HUB_INSTALL/AGENTS.md"
 assert_file "$HUB_INSTALL/CLAUDE.md"
 assert_file "$HUB_INSTALL/ai/project-registry.md"

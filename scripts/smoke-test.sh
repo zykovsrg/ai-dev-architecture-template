@@ -21,7 +21,7 @@ assert_file() {
 assert_contains() {
   local file="$1"
   local pattern="$2"
-  grep -q "$pattern" "$file" || fail "expected '$pattern' in $file"
+  grep -Fq "$pattern" "$file" || fail "expected '$pattern' in $file"
 }
 
 assert_not_exists() {
@@ -37,6 +37,13 @@ init_git_project() {
 }
 
 echo "Smoke test workspace: $TMP_DIR"
+
+bash "$ROOT/scripts/check-consistency.sh" > "$TMP_DIR/consistency.out"
+assert_contains "$TMP_DIR/consistency.out" 'OK [standalone canonical blocks]'
+assert_contains "$TMP_DIR/consistency.out" 'OK [hub entry parity]'
+assert_contains "$TMP_DIR/consistency.out" 'OK [hub skill references]'
+assert_contains "$TMP_DIR/consistency.out" 'OK [hub update classes]'
+assert_contains "$TMP_DIR/consistency.out" 'OK [standalone memory updater boundaries]'
 
 PROJECT="$TMP_DIR/project"
 init_git_project "$PROJECT"

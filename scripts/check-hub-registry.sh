@@ -85,26 +85,62 @@ status_ok() {
   return 1
 }
 
+reset_entry() {
+  entry_name=""
+  entry_type=""
+  entry_status=""
+  entry_path=""
+  entry_tags=""
+  entry_card=""
+}
+
+validate_entry_schema() {
+  [ -n "$current_id" ] || return 0
+  [ -n "$entry_name" ] || die "missing Name for $current_id"
+  [ -n "$entry_type" ] || die "missing Type for $current_id"
+  [ -n "$entry_status" ] || die "missing Status for $current_id"
+  [ -n "$entry_path" ] || die "missing Path for $current_id"
+  [ -n "$entry_tags" ] || die "missing Tags for $current_id"
+  [ -n "$entry_card" ] || die "missing Card for $current_id"
+  grep -Fqx "Project ID: $current_id" "$HUB_DIR/$entry_card" \
+    || die "card Project ID mismatch for $current_id"
+}
+
 validate_allowed_roots
 
 ids=""
 current_id=""
+project_count=0
+reset_entry
 while IFS= read -r line; do
   case "$line" in
     '## '*)
+      validate_entry_schema
       current_id="${line#\#\# }"
       printf '%s\n' "$ids" | grep -Fxq "$current_id" && die "duplicate project ID: $current_id"
       ids="${ids}${current_id}
 "
+      project_count=$((project_count + 1))
+      reset_entry
       ;;
-    'Status: '*) status_ok "${line#Status: }" || die "invalid status for $current_id" ;;
+    'Name: '*) entry_name="${line#Name: }" ;;
+    'Type: '*) entry_type="${line#Type: }" ;;
+    'Status: '*)
+      entry_status="${line#Status: }"
+      status_ok "$entry_status" || die "invalid status for $current_id"
+      ;;
     'Path: '*)
-      path="${line#Path: }"
-      canonical_path="$(canonicalize_project_path "$path")" || die "cannot resolve project path: $path"
-      root_contains "$canonical_path" || die "project path outside allowed roots: $path"
+      entry_path="${line#Path: }"
+      canonical_path="$(canonicalize_project_path "$entry_path")" || die "cannot resolve project path: $entry_path"
+      root_contains "$canonical_path" || die "project path outside allowed roots: $entry_path"
       ;;
-    'Card: '*) [ -f "$HUB_DIR/${line#Card: }" ] || die "missing card for $current_id" ;;
+    'Tags: '*) entry_tags="${line#Tags: }" ;;
+    'Card: '*)
+      entry_card="${line#Card: }"
+      [ -f "$HUB_DIR/$entry_card" ] || die "missing card for $current_id"
+      ;;
   esac
 done < "$REGISTRY_FILE"
+validate_entry_schema
 
-echo "Registry check passed"
+echo "Registry check passed: $project_count projects"

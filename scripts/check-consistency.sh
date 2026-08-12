@@ -4,7 +4,7 @@
 # macOS bash 3.2 compatible: no mapfile, no associative arrays.
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT="$(cd "${1:-$(dirname "$0")/..}" && pwd)"
 cd "$ROOT"
 
 MARKERS="canon:protected-files canon:controlled-memory"
@@ -19,6 +19,24 @@ extract_block() {
   ' "$1" \
   | { grep -E '^[[:space:]]*[-*][[:space:]].*`' || true; } \
   | sed -E 's/^[^`]*`([^`]+)`.*/\1/'
+}
+
+normalize_hub_entry() {
+  sed -E \
+    -e 's/Personal AI Hub — (Codex|Claude Code)/Personal AI Hub — TOOL/g' \
+    -e 's/(Codex|Claude Code)/TOOL/g' \
+    -e 's/(AGENTS|CLAUDE)\.md/ENTRY.md/g' \
+    "$1"
+}
+
+extract_array() {
+  awk -v name="$2" '
+    $0 ~ "^" name "=\\(" { in_array=1; next }
+    in_array && /^\)/ { exit }
+    in_array && match($0, /"[^"]+"/) {
+      print substr($0, RSTART + 1, RLENGTH - 2)
+    }
+  ' "$1"
 }
 
 for marker in $MARKERS; do
@@ -64,6 +82,119 @@ EOF
     fi
   fi
 done
+
+if [ -f AGENTS.md ] && [ -f CLAUDE.md ] && [ -f ai/architecture.md ]; then
+  standalone_base="."
+  standalone_source="root local files"
+elif [ -f template/AGENTS.md ] && [ -f template/CLAUDE.md ] && [ -f template/ai/architecture.md ]; then
+  standalone_base="template"
+  standalone_source="template (root local files absent)"
+else
+  echo "MISSING [standalone canonical blocks] — no complete root or template holder set"
+  fail=1
+  standalone_base=""
+fi
+
+if [ -n "$standalone_base" ]; then
+  standalone_ok=1
+  for marker in $MARKERS; do
+    standalone_ref="$(extract_block "$standalone_base/AGENTS.md" "$marker")"
+    for holder in "$standalone_base/CLAUDE.md" "$standalone_base/ai/architecture.md"; do
+      if [ "$(extract_block "$holder" "$marker")" != "$standalone_ref" ]; then
+        echo "MISMATCH [standalone canonical blocks] — $holder differs for $marker"
+        fail=1
+        standalone_ok=0
+      fi
+    done
+  done
+  [ "$standalone_ok" -eq 0 ] \
+    || echo "OK [standalone canonical blocks] — source: $standalone_source"
+fi
+
+if [ ! -f hub-template/AGENTS.md ] || [ ! -f hub-template/CLAUDE.md ]; then
+  echo "MISSING [hub entry parity]"
+  fail=1
+elif cmp -s <(normalize_hub_entry hub-template/AGENTS.md) \
+  <(normalize_hub_entry hub-template/CLAUDE.md); then
+  echo "OK [hub entry parity] — equal after tool-name normalization"
+else
+  echo "MISMATCH [hub entry parity] — semantic content differs"
+  fail=1
+fi
+
+hub_skill_ok=1
+hub_skill_count=0
+if [ ! -f hub-template/ai/architecture.md ]; then
+  echo "MISSING [hub skill references] — hub architecture absent"
+  fail=1
+  hub_skill_ok=0
+else
+  while IFS= read -r skill; do
+    [ -n "$skill" ] || continue
+    hub_skill_count=$((hub_skill_count + 1))
+    if [ ! -f "hub-template/ai/skills/$skill/SKILL.md" ]; then
+      echo "MISSING [hub skill references] — $skill"
+      fail=1
+      hub_skill_ok=0
+    fi
+  done < <(sed -n -E 's/.*use (the )?`([a-z][a-z0-9-]*)` workflow.*/\2/p' hub-template/ai/architecture.md)
+fi
+[ "$hub_skill_ok" -eq 0 ] \
+  || echo "OK [hub skill references] — $hub_skill_count architecture references exist"
+
+hub_protected="$(extract_array scripts/update-installed-hub.sh PROTECTED_FILES)"
+if [ -d hub-template/ai/skills ]; then
+  while IFS= read -r protected_file; do
+    hub_protected="${hub_protected}${hub_protected:+$'\n'}${protected_file#hub-template/}"
+  done < <(find hub-template/ai/skills -type f | sort)
+fi
+
+hub_memory="$(extract_array scripts/update-installed-hub.sh MEMORY_FILES)"
+for memory_dir in ai/project-cards ai/archive; do
+  if [ -d "hub-template/$memory_dir" ]; then
+    while IFS= read -r memory_file; do
+      hub_memory="${hub_memory}${hub_memory:+$'\n'}${memory_file#hub-template/}"
+    done < <(find "hub-template/$memory_dir" -type f | sort)
+  fi
+done
+
+hub_classes_ok=1
+while IFS= read -r memory_file; do
+  [ -n "$memory_file" ] || continue
+  if printf '%s\n' "$hub_protected" | grep -Fxq "$memory_file"; then
+    echo "OVERLAP [hub update classes] — $memory_file is both protected and memory"
+    fail=1
+    hub_classes_ok=0
+  fi
+done <<EOF
+$hub_memory
+EOF
+[ "$hub_classes_ok" -eq 0 ] \
+  || echo "OK [hub update classes] — protected files exclude hub memory"
+
+standalone_architecture="$(extract_array scripts/update-installed-architecture.sh ARCHITECTURE_FILES)"
+standalone_memory="$(extract_block template/AGENTS.md canon:controlled-memory)"
+standalone_boundaries_ok=1
+while IFS= read -r memory_file; do
+  [ -n "$memory_file" ] || continue
+  if printf '%s\n' "$standalone_architecture" | grep -Fxq "$memory_file" \
+    || printf '%s\n' "$hub_protected" | grep -Fxq "$memory_file"; then
+    echo "OVERLAP [standalone memory updater boundaries] — $memory_file is updater-protected"
+    fail=1
+    standalone_boundaries_ok=0
+  fi
+done <<EOF
+$standalone_memory
+EOF
+for updater in scripts/update-installed-architecture.sh scripts/update-installed-hub.sh; do
+  if ! grep -Fq 'for_each_memory_file copy_missing_memory_file' "$updater"; then
+    echo "MISMATCH [standalone memory updater boundaries] — $updater lacks create-only memory handling"
+    fail=1
+    standalone_boundaries_ok=0
+  fi
+done
+[ "$standalone_boundaries_ok" -eq 0 ] \
+  || echo "OK [standalone memory updater boundaries] — neither updater overwrites controlled memory"
 
 if [ "$fail" -ne 0 ]; then
   echo ""
