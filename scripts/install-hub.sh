@@ -70,6 +70,8 @@ mkdir -p "$HUB_DIR"
 rsync -av --ignore-existing "$HUB_TEMPLATE_DIR/" "$HUB_DIR/"
 
 ROOTS_FILE="$HUB_DIR/ai/allowed-roots.md"
+sed '/^- \/absolute\/path\/to\/projects$/d' "$ROOTS_FILE" > "$ROOTS_FILE.tmp"
+mv "$ROOTS_FILE.tmp" "$ROOTS_FILE"
 for root in "${CANONICAL_ROOTS[@]}"; do
   grep -Fxq -- "- $root" "$ROOTS_FILE" || printf '%s\n' "- $root" >> "$ROOTS_FILE"
 done

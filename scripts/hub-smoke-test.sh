@@ -346,6 +346,8 @@ assert_file "$HUB_INSTALL/ai/project-registry.md"
 assert_contains "$HUB_INSTALL/ai/allowed-roots.md" "$PROJECT_ROOT_CANONICAL"
 assert_contains "$TMP_DIR/install.out" 'Registration requires confirmation'
 grep -Fq 'example-project' "$HUB_INSTALL/ai/project-registry.md" && fail 'installer auto-registered a project'
+bash "$ROOT/scripts/check-hub-registry.sh" "$HUB_INSTALL" > "$TMP_DIR/installed-hub-registry.out"
+assert_contains "$TMP_DIR/installed-hub-registry.out" 'Registry check passed'
 
 CANONICAL_ROOT="$TMP_DIR/canonical-managed-projects"
 ln -s "$PROJECT_ROOT" "$CANONICAL_ROOT"
