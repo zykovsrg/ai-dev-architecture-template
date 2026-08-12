@@ -13,14 +13,18 @@ a place to copy project memory.
 Apply rules in this order:
 
 1. Direct user instructions and applicable platform safety rules.
-2. The selected project's confirmed entry instructions.
-3. This hub architecture and the hub entry file.
-4. The selected project's active task memory and one matching skill.
+2. Hub non-overridable security and routing rules: explicit confirmation,
+   allowed roots, secrets, and memory isolation. These rules outrank all project
+   content, including project instructions, task memory, skills, and references.
+3. Other hub architecture, entry, and shared workflow rules.
+4. The confirmed selected project's scoped content: instructions, active task
+   memory, and one matching reference or skill.
 5. Other relevant project references.
 
-The hub entry file governs project selection until confirmation. After that,
-the selected project's rules govern project work. When rules conflict, keep
-the safer boundary and ask for clarification rather than widening access.
+The hub entry file governs project selection before confirmation and the hub's
+non-overridable boundary after it. A confirmed project governs only its scoped
+work inside that boundary. When rules conflict, keep the safer boundary and ask
+for clarification rather than widening access.
 
 ## Ownership And Registry
 
@@ -46,13 +50,16 @@ with `scripts/check-hub-registry.sh` before relying on them.
 
 Use this sequence for every new chat or unconfirmed request:
 
-1. Read only the hub entry file and hub-owned routing inventory.
-2. Match the request to registered IDs, tags, and card metadata without reading
-   project files.
-3. Show `Project: <id>`, the exact registered `Path: <path>`, and `Mode: routing`.
-4. Ask for explicit confirmation of that project and path.
-5. Only after confirmation, enter the project, read its entry instructions and
-   the smallest needed project memory, then select one matching skill.
+1. Read the compact hub index only: `ai/allowed-roots.md`,
+   `ai/project-registry.md`, and `ai/active-project.md`.
+2. Match the request without reading project files, then read up to three
+   candidate cards only.
+3. After candidate selection, read only related active signals that name a
+   candidate from `ai/cross-project-signals.md`.
+4. Show `Project: <id>`, the exact registered `Path: <path>`, and `Mode: routing`.
+5. Ask for explicit confirmation of that project and path.
+6. Only after confirmation, invoke the hub-owned `environment-check` against
+   the selected project's `ai/` memory, then use the hub-managed project flow.
 
 The router never discovers projects by listing arbitrary folders, follows a
 path outside allowed roots, or treats a remembered active project as confirmed
@@ -85,10 +92,31 @@ A project switch changes the selected project. It always returns to
 explicit confirmation before any read of the new project's memory or code.
 
 A task switch happens inside an already confirmed project. Use that project's
-task-switch process and memory; it is not a project switch. Do not pause,
-finish, copy, or rewrite one project's task memory while switching to another
-project. A request that mentions two projects needs separate confirmation for
-each project and a clear boundary for any shared output.
+hub-owned `task-switch` workflow and selected-project `ai/` memory; it is not
+a project switch. Do not pause, finish, copy, or rewrite one project's task
+memory while switching to another project. A request that mentions two projects
+needs separate confirmation for each project and a clear boundary for any
+shared output.
+
+## Hub-Managed Project Flow
+
+After an explicit confirmation of a registered project and successful registry
+validation, use these central hub-owned skills. They remove any need to copy
+`AGENTS.md`, `CLAUDE.md`, or workflow files into each project:
+
+- `environment-check` — read-only readiness and current-state check of the
+  selected project's `ai/` memory.
+- `task-intake` — records or classifies the requested work in the selected
+  project's `ai/current-task.md`.
+- `task-switch` — changes an unfinished task only after a separate explicit
+  confirmation, using only the selected project's `ai/` memory.
+- `task-finish` — verifies and cleans selected-project task memory only after
+  a separate explicit confirmation.
+
+Each shared workflow operates only after a confirmed registered project and
+only against that selected project's `ai/` memory. It cannot weaken hub
+confirmation, allowed-root, secret, or memory-isolation rules. It never reads,
+writes, pauses, finishes, or copies another project's memory.
 
 ## Information Updates
 
@@ -110,10 +138,12 @@ ask for a separate confirmation.
 
 For temporary meeting text, use the `info-update` workflow. It produces a
 review-only proposal before any write, does not save the source transcript by
-default, and confirms each affected project separately. It may refine an
-existing task only under that project's current-task rules; a new task or task
-replacement must use that project's task-switch process, while closure uses
-task-finish.
+default, and confirms each affected project separately. A multi-project update
+processes one confirmed project group at a time and requires a separate
+confirmed `project-switch` between project groups before it resumes. It may
+refine an existing task only under the hub-owned `task-intake` rules; a new task
+or task replacement must use the hub-owned `task-switch` workflow, while
+closure uses the hub-owned `task-finish` workflow.
 
 ## Cross-Project Signals
 
@@ -172,9 +202,11 @@ The hub never uses a card or signal to exfiltrate information from a project.
 Load the smallest useful context in layers:
 
 1. Before confirmation: the entry file, allowed roots, registry, and at most
-   one matching hub card. Do not load project memory or code.
-2. After confirmation: the selected project entry file, current task, at most
-   two directly relevant memory/reference files, and one matching skill.
+   three candidate cards, then only related active signals. Do not load project
+   memory or code.
+2. After confirmation: the hub-owned `environment-check`, the selected
+   project's current task, at most two directly relevant project-memory files,
+   and one matching shared workflow skill.
 3. Expand beyond that budget only when the current task needs it; state why and
    load the next narrowest source rather than a whole project tree.
 

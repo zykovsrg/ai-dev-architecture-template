@@ -101,6 +101,40 @@ router_multiple_candidates_template_valid() {
     [[ "$section" == *'2. <project-id-2> — <exact-path-2> — Уверенность маршрутизации: <высокая|средняя|низкая> — <краткая причина>.'* ]] &&
     [[ "$section" == *'3. <project-id-3> — <exact-path-3> — Уверенность маршрутизации: <высокая|средняя|низкая> — <краткая причина>.'* ]]
 }
+hub_entry_staged_allowlist_valid() {
+  local section
+  section="$(section_text "$1" '## Project Routing' '## Work Header And Procedures' | tr '\n' ' ' | tr -s ' ')"
+
+  [[ "$section" == *'ai/allowed-roots.md'*'ai/project-registry.md'*'ai/active-project.md'*'up to three candidate cards'*'related active signals'* ]]
+}
+hub_architecture_security_precedence_valid() {
+  local section
+  section="$(section_text "$1" '## Rule Precedence' '## Ownership And Registry' | tr '\n' ' ' | tr -s ' ')"
+
+  [[ "$section" == *'Hub non-overridable security and routing rules'* ]] &&
+    [[ "$section" == *'explicit confirmation'* ]] &&
+    [[ "$section" == *'allowed roots'* ]] &&
+    [[ "$section" == *'secrets'* ]] &&
+    [[ "$section" == *'memory isolation'* ]] &&
+    [[ "$section" == *'outrank all project content'* ]]
+}
+hub_shared_workflow_valid() {
+  local file="$1" workflow="$2" text
+  text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
+
+  [[ "$text" == *"name: $workflow"* ]] &&
+    [[ "$text" == *'confirmed registered project'* ]] &&
+    [[ "$text" == *'selected project `ai/` memory'* ]] &&
+    [[ "$text" == *'cannot override hub confirmation, allowed roots, secret, or memory-isolation rules'* ]]
+}
+info_update_project_group_sequence_valid() {
+  local text
+  text="$(tr '\n' ' ' < "$1" | tr -s ' ')"
+
+  [[ "$text" == *'separate confirmed `project-switch` between project groups'* ]] &&
+    [[ "$text" == *'resume `info-update` only after that switch'* ]] &&
+    [[ "$text" == *'must not invoke or perform `project-switch`'* ]]
+}
 registration_primary_inventory_valid() {
   local section
   section="$(section_text "$1" '## Primary inventory (before individual project confirmation)' '## After individual project confirmation' | tr '\n' ' ' | tr -s ' ')"
@@ -145,6 +179,10 @@ grep -Fq 'explicit confirmation' "$HUB_AGENTS" || fail 'missing confirmation gat
 grep -Fq 'allowed roots' "$HUB_AGENTS" || fail 'missing allowed-root gate'
 grep -Fq 'explicit confirmation' "$HUB_CLAUDE" || fail 'missing confirmation gate'
 grep -Fq 'allowed roots' "$HUB_CLAUDE" || fail 'missing allowed-root gate'
+hub_entry_staged_allowlist_valid "$HUB_AGENTS" \
+  || fail 'hub entry must match staged router reads: index, up to three cards, then related active signals'
+assert_contains "$HUB_AGENTS" 'ai/architecture.md'
+assert_not_contains "$HUB_AGENTS" 'hub-template/ai/architecture.md'
 
 THIRD_ACTIVATION="$TMP_DIR/entry-with-third-activation.md"
 cp "$HUB_AGENTS" "$THIRD_ACTIVATION"
@@ -155,13 +193,22 @@ assert_contains <(normalize_entry "$THIRD_ACTIVATION") \
 cmp -s <(normalize_entry "$HUB_AGENTS") <(normalize_entry "$HUB_CLAUDE") \
   || fail 'hub entry files differ beyond title and activation paragraph'
 
-for skill in project-router project-switch project-register registry-check; do
+for skill in project-router project-switch project-register registry-check environment-check task-intake task-switch task-finish; do
   file="$ROOT/hub-template/ai/skills/$skill/SKILL.md"
   assert_file "$file"
   assert_contains "$file" 'name:'
   assert_contains "$file" 'description:'
   assert_contains "$file" 'explicit confirmation'
 done
+
+for workflow in environment-check task-intake task-switch task-finish; do
+  hub_shared_workflow_valid "$ROOT/hub-template/ai/skills/$workflow/SKILL.md" "$workflow" \
+    || fail "shared hub workflow must preserve post-confirmation and memory-isolation gates: $workflow"
+done
+
+HUB_ARCHITECTURE="$ROOT/hub-template/ai/architecture.md"
+hub_architecture_security_precedence_valid "$HUB_ARCHITECTURE" \
+  || fail 'hub security and routing rules must outrank all project content'
 
 INFO="$ROOT/hub-template/ai/skills/info-update/SKILL.md"
 LOCAL="$ROOT/hub-template/ai/skills/local-router-install/SKILL.md"
@@ -177,8 +224,8 @@ grep -Fq 'MUST NOT invoke or perform `task-finish`' "$INFO" \
   || fail 'info-update task-finish ban missing'
 grep -Fq 'MUST NOT invoke or perform `project-switch`' "$INFO" \
   || fail 'info-update project-switch ban missing'
-grep -Fq 'separate confirmed `project-switch` workflow' "$INFO" \
-  || fail 'info-update separate project-switch workflow missing'
+info_update_project_group_sequence_valid "$INFO" \
+  || fail 'info-update must stop for a separate confirmed project-switch between project groups before resuming'
 grep -Fq '## Per-project proposal sections' "$INFO" \
   || fail 'per-project proposal structure missing'
 for heading in 'Project identity and path' 'Facts' 'Decisions' 'Task changes' \
@@ -187,7 +234,8 @@ for heading in 'Project identity and path' 'Facts' 'Decisions' 'Task changes' \
   grep -Fq "### $heading" "$INFO" \
     || fail "per-project proposal heading missing: $heading"
 done
-grep -Fq 'only after each related project group' "$INFO" \
+INFO_TEXT="$(tr '\n' ' ' < "$INFO" | tr -s ' ')"
+[[ "$INFO_TEXT" == *'only after every related project group'* ]] \
   || fail 'cross-project signal placement rule missing'
 info_update_confidence_schema_valid "$INFO" \
   || fail 'info-update confidence values must use uncertain, not unknown'
@@ -231,7 +279,12 @@ assert_rejected router_multiple_candidates_template_valid "$ROUTER_WITHOUT_THIRD
 SWITCH_SKILL="$ROOT/hub-template/ai/skills/project-switch/SKILL.md"
 assert_contains "$SWITCH_SKILL" 'must not modify the current task'
 assert_contains "$SWITCH_SKILL" 'canonical path validation'
-assert_contains "$SWITCH_SKILL" 'task-intake'
+SWITCH_TEXT="$(tr '\n' ' ' < "$SWITCH_SKILL" | tr -s ' ')"
+[[ "$SWITCH_TEXT" == *'hub-owned `environment-check`'* ]] \
+  || fail 'project-switch must invoke hub-owned environment-check'
+[[ "$SWITCH_TEXT" == *'hub-owned `task-intake`'* ]] \
+  || fail 'project-switch must invoke hub-owned task-intake'
+assert_not_contains "$SWITCH_SKILL" 'project entry instructions'
 
 REGISTER_SKILL="$ROOT/hub-template/ai/skills/project-register/SKILL.md"
 assert_contains "$REGISTER_SKILL" 'direct child directory names only'

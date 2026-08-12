@@ -18,7 +18,7 @@ code, task logs, or private customer details into hub or project memory.
 
 Confirm each affected project separately. A confirmation for one project never
 permits reading or writing another project, even when the same meeting mentions
-both. Before reading project memory, use the hub router to show that project's
+both. Before the first project group, use the hub router to show that project's
 registered ID and exact path, then obtain the separate project confirmation.
 
 This skill must not replace the current task. It may propose a refinement to an
@@ -27,21 +27,29 @@ existing Done criteria. A different task requires that project's separate
 confirmed `task-switch` workflow. A completed task requires its separate
 confirmed `task-finish` workflow. This skill MUST NOT invoke or perform `task-finish`; it stops and requires that separate confirmed workflow. Never overwrite, pause, finish, or copy a current task from this skill.
 
-This skill MUST NOT invoke or perform `project-switch`. If the meeting requires another project, it stops and requires a separate confirmed `project-switch` workflow before any read or proposal for that project. Project confirmations inside this skill remain separate confirmation gates; they do not authorize a project switch.
+This skill MUST NOT invoke or perform `project-switch`. It must not invoke or
+perform `project-switch` automatically. If the meeting requires another
+project, it stops after the current project group. A separate confirmed
+`project-switch` between project groups is required before any read or proposal
+for the next project; resume `info-update` only after that switch. Project
+confirmations inside this skill remain separate confirmation gates; they do not
+authorize a project switch.
 
 ## Review-only procedure
 
-Read only the supplied temporary text and the smallest already-confirmed
-project memories allowed by each project's own instructions. Do not write while
-preparing the proposal. First present one meeting summary, then a distinct
-`Affected projects` section listing every affected project ID and exact path,
-then present the following per-project sections for every affected project. Do
-not merge items from different projects into a shared facts, decisions, task,
-or approval list.
+Read only the supplied temporary text and the smallest selected-project `ai/`
+memory allowed by the hub-managed flow. Do not write while preparing the
+proposal. First present one meeting summary and a distinct `Affected projects`
+section listing every affected project ID and exact path. Then prepare the
+following sections for the currently confirmed project group only. Before a
+next group, stop for the separate confirmed `project-switch`; do not read or
+propose for that group until `info-update` resumes after the switch. Do not
+merge items from different projects into a shared facts, decisions, task, or
+approval list.
 
 ## Per-project proposal sections
 
-For each project, use this exact order:
+For the currently confirmed project group, use this exact order:
 
 ### Project identity and path
 
@@ -74,7 +82,10 @@ and uncertainties. A hypothesis is optional, explicitly labelled, and never a
 permission to write or route. The approval in one project group permits neither
 a read nor a write in another group.
 
-A cross-project signal may appear in a separate hub section only after each related project group. It must name the related project IDs, retain its source and confidence, and still requires its own explicit hub approval.
+A cross-project signal may appear in a separate hub section only after every
+related project group has completed its separate confirmation, proposal, and
+approval. It must name the related project IDs, retain its source and
+confidence, and still requires its own explicit hub approval.
 
 ## Proposed writes and approvals
 
@@ -148,4 +159,9 @@ Source: <...> — confidence: <verified|stated|inferred|uncertain>.
 3. Межпроектные сигналы hub (только после каждой связанной группы проектов).
 - <санитизированный сигнал|нет> — связанные проекты: <...> — источник: <...> — уверенность: <...>.
 Подтвердите отдельно: «Записать hub-сигнал: <signal-id|summary>».
+
+4. Следующая группа проекта
+Если есть следующий <project-id>, остановитесь. Нужен отдельный подтверждённый
+project-switch между группами проектов; после него возобновите info-update
+только для нового подтверждённого проекта.
 ```

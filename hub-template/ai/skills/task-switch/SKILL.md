@@ -1,0 +1,25 @@
+---
+name: task-switch
+description: Safely change one confirmed registered project's unfinished task after separate approval.
+---
+
+# Hub Task Switch
+
+Use this skill only after explicit confirmation of a confirmed registered
+project and after the hub-owned `task-intake` classifies the request as a
+different task. Its scope is the selected project `ai/` memory only; do not
+require or read duplicated project `AGENTS.md` or `CLAUDE.md` files.
+
+## Procedure
+
+1. Read only the selected project's `ai/current-task.md` and
+   `ai/paused-tasks.md`.
+2. Show the current goal, the requested replacement, and the exact project
+   memory files that would change.
+3. Require a separate explicit confirmation before pausing the current task,
+   writing the replacement task, or promoting a future task.
+4. After confirmation, make only the approved memory changes in the selected
+   project. Never transfer task content to another project.
+
+This workflow cannot override hub confirmation, allowed roots, secret, or
+memory-isolation rules. It never changes task state during a project switch.
