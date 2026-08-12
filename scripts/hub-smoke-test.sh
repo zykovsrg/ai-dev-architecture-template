@@ -542,7 +542,7 @@ assert_contains "$TMP_DIR/duplicate-memory-entry.out" 'duplicate card Memory ent
 
 INVALID="$TMP_DIR/invalid-hub"
 cp -R "$VALID" "$INVALID"
-sed "s#Path: $TMP_DIR/projects/analytics-seo#Path: $TMP_DIR/outside#" \
+sed "s#Path: $VALID/projects/analytics-seo#Path: $TMP_DIR/outside#" \
   "$VALID/ai/project-registry.md" > "$INVALID/ai/project-registry.md"
 if bash "$ROOT/scripts/check-hub-registry.sh" "$INVALID" > "$TMP_DIR/invalid.out" 2>&1; then
   fail 'validator accepted project outside allowed roots'
@@ -609,7 +609,7 @@ assert_contains "$TMP_DIR/home-allowed-root.out" 'allowed root must not be the h
 
 LEXICAL_ESCAPE="$TMP_DIR/lexical-escape-hub"
 cp -R "$VALID" "$LEXICAL_ESCAPE"
-sed "s#Path: $TMP_DIR/projects/analytics-seo#Path: $TMP_DIR/projects/../outside/missing#" \
+sed "s#Path: $VALID/projects/analytics-seo#Path: $TMP_DIR/projects/../outside/missing#" \
   "$VALID/ai/project-registry.md" > "$LEXICAL_ESCAPE/ai/project-registry.md"
 if bash "$ROOT/scripts/check-hub-registry.sh" "$LEXICAL_ESCAPE" > "$TMP_DIR/lexical-escape.out" 2>&1; then
   fail 'validator accepted a lexical path escape'
@@ -620,7 +620,7 @@ SYMLINK_ESCAPE="$TMP_DIR/symlink-escape-hub"
 mkdir -p "$TMP_DIR/outside"
 ln -s "$TMP_DIR/outside" "$TMP_DIR/projects/link-out"
 cp -R "$VALID" "$SYMLINK_ESCAPE"
-sed "s#Path: $TMP_DIR/projects/analytics-seo#Path: $TMP_DIR/projects/link-out/missing#" \
+sed "s#Path: $VALID/projects/analytics-seo#Path: $TMP_DIR/projects/link-out/missing#" \
   "$VALID/ai/project-registry.md" > "$SYMLINK_ESCAPE/ai/project-registry.md"
 if bash "$ROOT/scripts/check-hub-registry.sh" "$SYMLINK_ESCAPE" > "$TMP_DIR/symlink-escape.out" 2>&1; then
   fail 'validator accepted a symlink component escape'
@@ -630,10 +630,10 @@ assert_contains "$TMP_DIR/symlink-escape.out" 'outside allowed roots'
 MISSING_PROJECT="$TMP_DIR/missing-project-hub"
 cp -R "$VALID" "$MISSING_PROJECT"
 sed -e 's/Status: active/Status: missing/' \
-  -e "s#Path: $TMP_DIR/projects/analytics-seo#Path: $TMP_DIR/projects/genuinely-missing#" \
+  -e "s#Path: $VALID/projects/analytics-seo#Path: $TMP_DIR/projects/genuinely-missing#" \
   "$VALID/ai/project-registry.md" > "$MISSING_PROJECT/ai/project-registry.md"
 sed -e 's/^Status: active$/Status: missing/' \
-  -e "s#^Memory entry point: $TMP_DIR/projects/analytics-seo/#Memory entry point: $TMP_DIR/projects/genuinely-missing/#" \
+  -e "s#^Memory entry point: $VALID/projects/analytics-seo/#Memory entry point: $TMP_DIR/projects/genuinely-missing/#" \
   "$VALID/ai/project-cards/analytics-seo.md" \
   > "$MISSING_PROJECT/ai/project-cards/analytics-seo.md"
 bash "$ROOT/scripts/check-hub-registry.sh" "$MISSING_PROJECT" > "$TMP_DIR/missing-project.out"
