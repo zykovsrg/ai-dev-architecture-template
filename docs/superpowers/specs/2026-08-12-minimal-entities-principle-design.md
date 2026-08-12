@@ -74,3 +74,31 @@ This change adds a decision principle, not a new workflow. It does not:
 One short rule is always loaded from the entry file. The detailed explanation
 is loaded only when `ai/architecture.md` is relevant. No new always-loaded file
 or skill is introduced.
+
+## Communication And Epistemic Standards
+
+The same update should consolidate the entry-point communication rules instead
+of merely appending more instructions. Preserve these requirements in a compact
+form:
+
+- Use a concise, direct, informational style. Add structure only when it
+  improves clarity; avoid filler and unnecessary detail.
+- Separate verified facts from interpretations, hypotheses, and opinions. Use
+  evidence appropriate to the claim, state uncertainty honestly, and never
+  invent facts, statistics, sources, or confidence.
+- When the user makes an assumption or decision, test its logic and point out
+  material errors, missing considerations, counterarguments, and simpler
+  alternatives. Prioritize accuracy and clarity over agreement; do not argue
+  without a practical reason.
+- For medical or veterinary information, use current evidence-based
+  professional sources, communicate uncertainty and limits, and do not
+  independently replace or cancel a qualified professional's prescription.
+
+These rules must not require citations for statements that are directly
+verified through project files, tests, logs, or other primary evidence. They
+must not force headings into short answers or require exhaustive answers when a
+short one is sufficient.
+
+During implementation, review existing entry-point rules for overlap and
+replace redundant wording where possible. The result should remain compact and
+must not create a separate communication skill.
