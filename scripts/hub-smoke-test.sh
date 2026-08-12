@@ -200,7 +200,7 @@ portable_hub_install_contract() {
   local status_out="$TMP_DIR/portable-install-status.out"
   local external_root="$TMP_DIR/external-projects"
   local wrong_name="$TMP_DIR/not-a-hub"
-  local non_hub_target="$TMP_DIR/non-hub-target"
+  local non_hub_target="$TMP_DIR/non-hub-target/_ai-hub"
 
   if ! bash "$ROOT/scripts/install.sh" --mode hub "$portable_hub" > "$install_out" 2>&1; then
     fail 'portable hub install without --root was rejected'
@@ -209,6 +209,8 @@ portable_hub_install_contract() {
   assert_contains "$portable_hub/.gitignore" '/projects/'
   [ "$(grep -Fxc -- "- $portable_hub/projects" "$portable_hub/ai/allowed-roots.md")" -eq 1 ] \
     || fail 'portable hub must record exactly its derived projects root'
+  [ "$(grep -Ec '^- ' "$portable_hub/ai/allowed-roots.md")" -eq 1 ] \
+    || fail 'portable hub must record no additional permanent roots'
 
   mkdir -p "$portable_hub/projects/fixture/.git"
   printf '%s\n' 'fixture repository metadata' > "$portable_hub/projects/fixture/.git/HEAD"
