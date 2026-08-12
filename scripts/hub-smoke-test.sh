@@ -207,7 +207,8 @@ portable_hub_install_contract() {
   fi
   assert_file "$portable_hub/projects/.gitkeep"
   assert_contains "$portable_hub/.gitignore" '/projects/'
-  [ "$(grep -Fxc -- "- $portable_hub/projects" "$portable_hub/ai/allowed-roots.md")" -eq 1 ] \
+  portable_projects_root="$(cd "$portable_hub/projects" && pwd -P)"
+  [ "$(grep -Fxc -- "- $portable_projects_root" "$portable_hub/ai/allowed-roots.md")" -eq 1 ] \
     || fail 'portable hub must record exactly its derived projects root'
   [ "$(grep -Ec '^- ' "$portable_hub/ai/allowed-roots.md")" -eq 1 ] \
     || fail 'portable hub must record no additional permanent roots'
