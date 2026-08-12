@@ -125,6 +125,11 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 
+if [ "$CHECK" = "true" ]; then
+  MODE="dry-run"
+  DO_COMMIT="false"
+fi
+
 if [ "$OFFER_HUB" = "true" ]; then
   echo "Optional personal AI hub installation:"
   echo "  bash scripts/install.sh --mode hub --root /path/to/projects /path/to/_ai-hub"

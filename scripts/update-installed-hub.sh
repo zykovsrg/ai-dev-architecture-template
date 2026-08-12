@@ -117,6 +117,11 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 
+if [ "$CHECK" = "true" ]; then
+  MODE="dry-run"
+  DO_COMMIT="false"
+fi
+
 HUB_DIR="$(cd "$HUB_DIR" && pwd)"
 cd "$HUB_DIR"
 

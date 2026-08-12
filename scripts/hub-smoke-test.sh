@@ -378,6 +378,26 @@ assert_contains "$TMP_DIR/hub-dry-run.out" 'Would create missing hub memory file
 assert_not_exists "$HUB_INSTALL/ai/archive/.gitkeep"
 assert_not_exists "$HUB_INSTALL/ai/project-cards/.gitkeep"
 
+for check_args in \
+  "--check --apply" \
+  "--apply --check" \
+  "--check --commit" \
+  "--commit --check"; do
+  CHECK_HUB="$TMP_DIR/check-${check_args// /-}"
+  cp -R "$HUB_INSTALL" "$CHECK_HUB"
+  perl -0pi -e 's/Version: [0-9]+\.[0-9]+/Version: 0.1/' "$CHECK_HUB/ai/architecture.md"
+  cp "$CHECK_HUB/AGENTS.md" "$TMP_DIR/check-agents.before"
+  cp "$CHECK_HUB/ai/architecture.md" "$TMP_DIR/check-architecture.before"
+  before_commit="$(git -C "$CHECK_HUB" rev-parse HEAD)"
+
+  if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$CHECK_HUB" --source "$ROOT" --allow-dirty $check_args > "$TMP_DIR/check.out" 2>&1; then
+    fail "$check_args should exit 1 when update is available"
+  fi
+  cmp -s "$TMP_DIR/check-agents.before" "$CHECK_HUB/AGENTS.md" || fail "$check_args changed AGENTS.md"
+  cmp -s "$TMP_DIR/check-architecture.before" "$CHECK_HUB/ai/architecture.md" || fail "$check_args changed architecture"
+  [ "$(git -C "$CHECK_HUB" rev-parse HEAD)" = "$before_commit" ] || fail "$check_args created a commit"
+done
+
 if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$ROOT" --apply > "$TMP_DIR/hub-dirty.out" 2>&1; then
   fail 'hub updater accepted a dirty tree without --allow-dirty'
 fi

@@ -80,6 +80,25 @@ if bash "$ROOT/scripts/update-installed-architecture.sh" --project "$PROJECT" --
   fail "--check should exit 1 when update is available"
 fi
 
+for check_args in \
+  "--check --apply" \
+  "--apply --check" \
+  "--check --commit" \
+  "--commit --check"; do
+  CHECK_PROJECT="$TMP_DIR/check-${check_args// /-}"
+  cp -R "$PROJECT" "$CHECK_PROJECT"
+  cp "$CHECK_PROJECT/AGENTS.md" "$TMP_DIR/check-agents.before"
+  cp "$CHECK_PROJECT/ai/architecture.md" "$TMP_DIR/check-architecture.before"
+  before_commit="$(git -C "$CHECK_PROJECT" rev-parse HEAD)"
+
+  if bash "$ROOT/scripts/update-installed-architecture.sh" --project "$CHECK_PROJECT" --source "$ROOT" --allow-dirty $check_args > "$TMP_DIR/check.out" 2>&1; then
+    fail "$check_args should exit 1 when update is available"
+  fi
+  cmp -s "$TMP_DIR/check-agents.before" "$CHECK_PROJECT/AGENTS.md" || fail "$check_args changed AGENTS.md"
+  cmp -s "$TMP_DIR/check-architecture.before" "$CHECK_PROJECT/ai/architecture.md" || fail "$check_args changed architecture"
+  [ "$(git -C "$CHECK_PROJECT" rev-parse HEAD)" = "$before_commit" ] || fail "$check_args created a commit"
+done
+
 BAD_PROJECT="$TMP_DIR/bad-project"
 init_git_project "$BAD_PROJECT"
 printf 'not enough\n' > "$BAD_PROJECT/AGENTS.md"
