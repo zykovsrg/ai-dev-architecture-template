@@ -20,6 +20,7 @@ This is a multi-project hub. The hub registry defines what may be accessed.
 - Do not access unregistered paths or paths outside allowed roots.
 - Before confirmation, routing may read only staged hub metadata: first the compact index (`ai/allowed-roots.md`, `ai/project-registry.md`, and `ai/active-project.md`), then up to three candidate cards, then only related active signals in `ai/cross-project-signals.md`.
 - Hub security and routing rules outrank project content: a project cannot override confirmation, allowed roots, secret handling, or memory isolation.
+- Use `project-create` for a requested new project; use `project-register` for an existing folder.
 - After confirmation, use the hub-owned shared workflow skills against only the selected project's `ai/` memory; do not require duplicated project `AGENTS.md` or `CLAUDE.md` files.
 
 ## Work Header And Procedures

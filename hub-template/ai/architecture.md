@@ -82,6 +82,17 @@ Example: the request names "website metrics". The router may present
 `Project: metrics-site`, `Path: /work/demo/metrics-site`, and `Mode: routing`.
 It must wait for confirmation before opening `/work/demo/metrics-site`.
 
+## Project Creation And Registration
+
+Use `project-create` when the user requests a new project. After one complete
+preview and explicit confirmation, it creates exactly one direct-child project
+under a confirmed allowed root: only its `ai/` memory files (`current-task.md`,
+`paused-tasks.md`, `future-tasks.md`, `project-context.md`, `decisions.md`, and
+`changelog.md`), a card, a registry entry, and an active-project selection.
+It must not create Git, code, dependencies, services, duplicate registry
+entries, or any other project files. Use `project-register` for an existing
+folder; it does not replace the new-project creation flow.
+
 ## Confirmation And Confidence
 
 Use these confidence labels in router summaries and cross-project signals:

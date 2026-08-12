@@ -34,6 +34,27 @@ backups. Propose each candidate separately and wait for my explicit
 confirmation before reading project context or adding a registry entry.
 ```
 
+## Create a new project in a personal hub
+
+```text
+Project: none
+Mode: routing
+
+Use the current hub `project-create` workflow to create a new project.
+
+Ask me to confirm an allowed root, then collect the new project's name and
+type. Create it only after one complete preview and my exact confirmation of
+the displayed project ID and path.
+
+Requirements:
+- create exactly one new direct child of the confirmed allowed root;
+- create only the six `ai/` memory files, the project card, registry entry,
+  and active-project selection;
+- do not read a project directory before confirmation;
+- do not create Git, code, dependencies, services, `AGENTS.md`, `CLAUDE.md`,
+  shared skills, or a duplicate registry entry.
+```
+
 ## Run a hub registry check
 
 ```text
