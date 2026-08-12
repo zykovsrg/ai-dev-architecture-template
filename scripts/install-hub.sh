@@ -46,13 +46,17 @@ case "$(basename "$HUB_DIR")" in
   *) echo "Hub directory must be named _ai-hub." >&2; exit 1 ;;
 esac
 
-if [ -e "$HUB_DIR" ]; then
-  CANONICAL_HUB_DIR="$(cd "$HUB_DIR" && pwd -P)"
-  if [ -d "$HUB_DIR" ] && [ -n "$(find "$HUB_DIR" -mindepth 1 -maxdepth 1 -print -quit)" ] \
-    && { [ ! -f "$HUB_DIR/AGENTS.md" ] || [ ! -f "$HUB_DIR/ai/architecture.md" ] || [ ! -f "$HUB_DIR/ai/allowed-roots.md" ] || [ ! -f "$HUB_DIR/ai/project-registry.md" ]; }; then
-    echo "Target is not an installed personal AI hub; refusing to copy into a nonempty directory." >&2
+path_component="$HUB_DIR"
+while [ "$path_component" != "/" ] && [ "$path_component" != "." ]; do
+  if [ -L "$path_component" ]; then
+    echo "Hub directory path must not contain symlinks." >&2
     exit 1
   fi
+  path_component="$(dirname "$path_component")"
+done
+
+if [ -e "$HUB_DIR" ]; then
+  CANONICAL_HUB_DIR="$(cd "$HUB_DIR" && pwd -P)"
 else
   target_parent="$(dirname "$HUB_DIR")"
   missing_suffix=""
@@ -65,6 +69,19 @@ else
 fi
 
 PROJECTS_ROOT="$CANONICAL_HUB_DIR/projects"
+
+if [ -d "$HUB_DIR" ] && [ -n "$(find "$HUB_DIR" -mindepth 1 -maxdepth 1 -print -quit)" ]; then
+  if [ ! -d "$HUB_DIR/.git" ] \
+    || [ ! -f "$HUB_DIR/AGENTS.md" ] \
+    || [ ! -f "$HUB_DIR/ai/architecture.md" ] \
+    || [ ! -f "$HUB_DIR/ai/allowed-roots.md" ] \
+    || [ ! -f "$HUB_DIR/ai/project-registry.md" ] \
+    || [ "$(grep -Fxc -- "- $PROJECTS_ROOT" "$HUB_DIR/ai/allowed-roots.md" 2>/dev/null || true)" -ne 1 ] \
+    || [ "$(grep -Ec '^- ' "$HUB_DIR/ai/allowed-roots.md" 2>/dev/null || true)" -ne 1 ]; then
+    echo "Target is not an installed personal AI hub; refusing to copy into a nonempty directory." >&2
+    exit 1
+  fi
+fi
 
 mkdir -p "$(dirname "$HUB_DIR")"
 mkdir -p "$HUB_DIR"

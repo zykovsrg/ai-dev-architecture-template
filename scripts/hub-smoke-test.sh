@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/ai-hub-smoke.XXXXXX")"
+TMP_DIR="$(mktemp -d /private/tmp/ai-hub-smoke.XXXXXX)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
@@ -201,6 +201,9 @@ portable_hub_install_contract() {
   local custom_root="$TMP_DIR/custom-root"
   local wrong_name="$TMP_DIR/not-a-hub"
   local non_hub_target="$TMP_DIR/non-hub-target/_ai-hub"
+  local marker_target="$TMP_DIR/marker-target/_ai-hub"
+  local symlink_parent="$TMP_DIR/symlink-parent"
+  local symlink_destination="$TMP_DIR/symlink-destination"
 
   if ! bash "$ROOT/scripts/install.sh" --mode hub "$portable_hub" > "$install_out" 2>&1; then
     fail 'portable hub install without --root was rejected'
@@ -233,6 +236,25 @@ portable_hub_install_contract() {
   if bash "$ROOT/scripts/install.sh" --mode hub "$non_hub_target" > "$TMP_DIR/non-hub.out" 2>&1; then
     fail 'portable hub installer accepted a non-hub nonempty target'
   fi
+
+  mkdir -p "$marker_target/ai"
+  printf '%s\n' 'foreign instructions' > "$marker_target/AGENTS.md"
+  printf '%s\n' 'foreign architecture' > "$marker_target/ai/architecture.md"
+  printf '%s\n' 'foreign roots' > "$marker_target/ai/allowed-roots.md"
+  printf '%s\n' 'foreign registry' > "$marker_target/ai/project-registry.md"
+  if bash "$ROOT/scripts/install.sh" --mode hub "$marker_target" > "$TMP_DIR/marker-target.out" 2>&1; then
+    fail 'portable hub installer accepted a non-hub target with architecture-like files'
+  fi
+  assert_contains "$marker_target/AGENTS.md" 'foreign instructions'
+  assert_contains "$marker_target/ai/architecture.md" 'foreign architecture'
+  assert_not_exists "$marker_target/.git"
+
+  mkdir -p "$symlink_destination"
+  ln -s "$symlink_destination" "$symlink_parent"
+  if bash "$ROOT/scripts/install.sh" --mode hub "$symlink_parent/_ai-hub" > "$TMP_DIR/symlink-parent.out" 2>&1; then
+    fail 'portable hub installer accepted a destination path through a symlink'
+  fi
+  assert_not_exists "$symlink_destination/_ai-hub"
 }
 
 HUB_AGENTS="$ROOT/hub-template/AGENTS.md"
