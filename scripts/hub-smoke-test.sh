@@ -205,7 +205,7 @@ project_migrate_contract_valid() {
     [[ "$text" == *'Never move backups, archives, symlinks, unknown folders, or unsafe candidates'* ]]
 }
 legacy_cleanup_contract_valid() {
-  local file="$1" section candidates expected lower
+  local file="$1" section candidates protected_paths expected lower
   section="$(cleanup_section_text "$file")"
   candidates="$(printf '%s\n' "$section" | awk '
     /^Candidate allowlist:$/ { collect = 1; next }
@@ -213,10 +213,16 @@ legacy_cleanup_contract_valid() {
     collect && /^- `/ { print }
   ')"
   expected=$'- `AGENTS.md`\n- `CLAUDE.md`\n- `ai/architecture.md`\n- `ai/external-tools.md`'
+  protected_paths="$(printf '%s\n' "$section" | awk '
+    /^Preserve these project-memory paths unchanged:$/ { collect = 1; next }
+    collect && /^Do not delete / { exit }
+    collect && /^- `/ { print }
+  ')"
   lower="$(printf '%s' "$section" | tr '[:upper:]' '[:lower:]')"
 
   [[ -n "$section" ]] &&
     [[ "$candidates" == "$expected" ]] &&
+    [[ "$protected_paths" == $'- `ai/current-task.md`\n- `ai/paused-tasks.md`\n- `ai/future-tasks.md`\n- `ai/project-context.md`\n- `ai/decisions.md`\n- `ai/changelog.md`' ]] &&
     [[ "$section" == *'Cleanup confirmation is separate from move, preflight, and registration confirmation.'* ]] &&
     [[ "$section" == *'A previous move, preflight, or registration confirmation never authorizes cleanup.'* ]] &&
     [[ "$section" == *'Preserve `ai/skills/`, `.claude/`, and `.codex/` unchanged.'* ]] &&
@@ -236,7 +242,8 @@ legacy_cleanup_contract_valid() {
     [[ "$lower" != *'cleanup may proceed without explicit confirmation'* ]] &&
     [[ "$lower" != *'delete the entire project'* ]] &&
     [[ "$lower" != *'recursively delete'* ]] &&
-    [[ "$lower" != *'rm -rf'* ]]
+    [[ "$lower" != *'rm -rf'* ]] &&
+    [[ "$lower" != *'package.json'* ]]
 }
 cleanup_section_text() {
   awk '
@@ -254,6 +261,10 @@ legacy_cleanup_mutations_rejected() {
 
   fixture="$TMP_DIR/migrate-cleanup-directory-candidate.md"
   awk '{ print; if ($0 == "- `ai/external-tools.md`") print "- `ai/`" }' "$file" > "$fixture"
+  assert_rejected legacy_cleanup_contract_valid "$fixture"
+
+  fixture="$TMP_DIR/migrate-extra-cleanup-instruction.md"
+  awk '{ print; if ($0 == "Do not delete `ai/` as a directory. Do not delete `ai/skills/`, `.claude/`,") print "Remove package.json after cleanup." }' "$file" > "$fixture"
   assert_rejected legacy_cleanup_contract_valid "$fixture"
 
   fixture="$TMP_DIR/migrate-cleanup-without-confirmation.md"

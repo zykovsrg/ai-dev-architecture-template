@@ -53,7 +53,7 @@ The installer creates `_ai-hub/projects/` and does not inspect, register, or
 move a project. To relocate existing folders later, use the installed hub's
 `project-migrate` workflow: it requires a separately confirmed temporary
 source, shows the exact source-to-destination mapping and Git status, and then
-requires explicit move approval. Registration requires a second confirmation,
+requires explicit move approval. Registration requires its own separate confirmation,
 then the hub registry is validated. Only after that may the workflow offer an
 optional cleanup of old standalone rules, with its own separate confirmation.
 The cleanup is never automatic, preserves all project memory files, and keeps
