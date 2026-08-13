@@ -80,6 +80,74 @@ card and registry entry only after separate card and registry confirmation,
 then run `scripts/check-hub-registry.sh`. On validator failure, stop and report
 the unchanged project location; do not register another project automatically.
 
+## Optional legacy standalone cleanup
+
+Offer this final phase only when the current `project-migrate` run moved the
+project successfully, the project is a direct child of `<canonical-hub>/projects`,
+its separate `project-register` confirmation completed, and
+`scripts/check-hub-registry.sh` passed. The project remains usable through the
+hub when this phase is skipped.
+
+Cleanup confirmation is separate from move, preflight, and registration confirmation.
+A previous move, preflight, or registration confirmation never authorizes cleanup.
+
+Inventory only the existence and type of these exact candidate paths in the
+confirmed project. Never inspect their contents. Reject a candidate or any of
+its path components if it is a symlink.
+
+Candidate allowlist:
+
+- `AGENTS.md`
+- `CLAUDE.md`
+- `ai/architecture.md`
+- `ai/external-tools.md`
+- `ai/skills/`
+- `.claude/`
+- `.codex/`
+
+Preserve these project-memory paths unchanged:
+
+- `ai/current-task.md`
+- `ai/paused-tasks.md`
+- `ai/future-tasks.md`
+- `ai/project-context.md`
+- `ai/decisions.md`
+- `ai/changelog.md`
+
+Do not delete `ai/` as a directory. Do not delete project source, `.git`,
+dependencies, unrelated configuration, or any preserved memory path.
+
+Show only the existing candidates in this preview. Recommend deletion because
+retaining two rule systems can make their instructions diverge.
+
+```text
+Режим: routing
+Проект: <canonical-hub>/projects/<project-id>
+
+Старые standalone-правила, предложенные к удалению:
+- <exact existing candidate path>
+
+Будут сохранены без изменений: ai/current-task.md, ai/paused-tasks.md,
+ai/future-tasks.md, ai/project-context.md, ai/decisions.md, ai/changelog.md.
+_ai-hub уже является источником актуальных правил и skills для этого проекта.
+
+Рекомендация: удалить перечисленные старые правила, чтобы они не расходились с
+правилами хаба. Архив и резервная копия не создаются.
+
+Подтвердите удаление только перечисленных путей для <project-id>.
+```
+
+The cleanup confirmation must name the displayed project ID and the exact
+displayed candidate path list. If no candidates exist, report that no cleanup
+is needed. If the user declines or does not give that exact confirmation, leave
+every path unchanged.
+
+Immediately before removal, revalidate the canonical direct-child project
+location, the current registry validation result, the unchanged allowlisted
+candidate list, and the absence of symlinks. Stop without deletion on any
+mismatch. Remove only confirmed candidates that still exist. Do not archive, back up, copy, replace, or follow symlinks.
+Report every removed path and every preserved memory path.
+
 ## Russian preview template
 
 ```text

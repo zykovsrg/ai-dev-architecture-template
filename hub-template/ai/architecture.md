@@ -107,9 +107,12 @@ After a separately confirmed candidate or displayed batch preflight, show each
 exact source-to-destination mapping, narrow Git status, and collision result.
 Moving requires another explicit confirmation. Move the whole folder without
 copying, preserve its existing Git metadata, and stop the batch on the first
-failure or integrity concern. Registration is a later `project-register`
-procedure with its own card and registry confirmation and validator result;
-neither source confirmation nor move confirmation authorizes it.
+failure or integrity concern. The order is `project-migrate` move → separate
+`project-register` confirmation → `scripts/check-hub-registry.sh` validation
+→ optional legacy cleanup confirmation. Neither source confirmation nor move
+confirmation authorizes registration or cleanup. The optional cleanup may only
+delete its explicit legacy standalone-rule allowlist after its own confirmation;
+it preserves project memory and is not needed for hub-based work.
 
 ## Confirmation And Confidence
 
