@@ -8,7 +8,8 @@ The template has two modes:
 
 - **Standalone** is the normal, self-contained architecture for one project.
 - **Personal hub** is optional. It is a separate local router for registered
-  projects and always starts in a directory named `_ai-hub`.
+  projects and always starts in a directory named `_ai-hub`. Its projects live
+  only in `_ai-hub/projects/<project-id>`.
 
 During a first interactive installation, `scripts/install.sh` asks whether to
 install the optional hub. A non-interactive invocation defaults to standalone.
@@ -21,15 +22,21 @@ Install standalone mode explicitly:
 bash /path/to/ai-dev-architecture-template/scripts/install.sh --mode standalone /path/to/project
 ```
 
-Install a hub explicitly, with one or more allowed project roots:
+Install a hub explicitly. The installer creates its only project root,
+`_ai-hub/projects/`, itself:
 
 ```bash
-bash /path/to/ai-dev-architecture-template/scripts/install.sh --mode hub --root /path/to/projects /path/to/_ai-hub
+bash /path/to/ai-dev-architecture-template/scripts/install.sh --mode hub /path/to/_ai-hub
 ```
 
-Do not use hub installation to convert an existing standalone project. First
-run the separate preview described in [the update guide](update.md); no project
-entry file is removed by that preview.
+The hub repository ignores `/projects/`. Each project can therefore retain its
+own `.git/` directory, history, and remote repository without becoming part of
+the hub repository.
+
+Do not use hub installation to convert or move an existing standalone project.
+From the installed hub, use `project-migrate`: it inventories only direct-child
+names in a separately confirmed temporary source, shows an exact move preview,
+and waits for explicit move confirmation. It never runs during installation.
 
 ## 1. Clone the template repository
 

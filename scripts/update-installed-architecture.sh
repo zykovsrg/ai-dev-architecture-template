@@ -165,8 +165,9 @@ if [ "$OFFER_HUB" = "true" ]; then
   done
   echo ""
   echo "Optional personal AI hub installation:"
-  echo "  bash scripts/install.sh --mode hub --root /path/to/projects /path/to/_ai-hub"
-  echo "Future hub structure: _ai-hub/{AGENTS.md,CLAUDE.md,ai/,scripts/check-hub-registry.sh}."
+  echo "  bash scripts/install.sh --mode hub /path/to/_ai-hub"
+  echo "Future hub structure: <parent>/_ai-hub/projects/<project>."
+  echo "This preview does not move projects automatically; use project-migrate after separate confirmation."
   echo "A separate approved migration must show exact file actions before any legacy entry or base workflow file is removed or archived."
   exit 0
 fi

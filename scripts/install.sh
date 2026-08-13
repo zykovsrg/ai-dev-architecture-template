@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_TEMPLATE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)/template"
 
 usage() {
-  echo "Usage: $0 [--mode standalone|hub] [--root DIR ...] [TARGET_DIR]" >&2
+  echo "Usage: $0 [--mode standalone|hub] [TARGET_DIR]" >&2
   exit 1
 }
 
@@ -56,17 +56,13 @@ if [ -z "$MODE" ]; then
   fi
 fi
 
-if [ "$MODE" = "hub" ] && [ "${#ROOT_ARGS[@]}" -eq 0 ]; then
-  if [ -t 0 ] && [ -t 1 ]; then
-    echo "Укажите хотя бы один разрешённый корень через --root DIR и повторите команду." >&2
-  fi
-  echo "Hub mode requires at least one --root DIR." >&2
-  exit 1
-fi
-
 case "$MODE" in
   hub)
-    exec "$SCRIPT_DIR/install-hub.sh" "${ROOT_ARGS[@]}" "$TARGET_DIR"
+    [ "${#ROOT_ARGS[@]}" -eq 0 ] || {
+      echo "--root is not supported in portable hub mode: projects live in _ai-hub/projects/." >&2
+      exit 1
+    }
+    exec "$SCRIPT_DIR/install-hub.sh" "$TARGET_DIR"
     ;;
   standalone)
     [ "${#ROOT_ARGS[@]}" -eq 0 ] || {

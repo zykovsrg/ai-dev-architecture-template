@@ -5,38 +5,13 @@ HUB_DIR="${1:-.}"
 HUB_DIR="$(cd "$HUB_DIR" && pwd -P)"
 ROOTS_FILE="$HUB_DIR/ai/allowed-roots.md"
 REGISTRY_FILE="$HUB_DIR/ai/project-registry.md"
+PROJECTS_ROOT="$HUB_DIR/projects"
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 [ -f "$ROOTS_FILE" ] || die "missing $ROOTS_FILE"
 [ -f "$REGISTRY_FILE" ] || die "missing $REGISTRY_FILE"
 
-validate_allowed_roots() {
-  local root canonical_root home_root
-  home_root="$(cd "$HOME" && pwd -P)"
-  while IFS= read -r root; do
-    root="${root#- }"
-    [ -n "$root" ] || die "allowed root must be a nonempty absolute path"
-    case "$root" in /*) ;; *) die "allowed root must be a nonempty absolute path" ;; esac
-    [ -d "$root" ] || die "allowed root does not exist: $root"
-    canonical_root="$(cd "$root" && pwd -P)"
-    [ "$canonical_root" = "//" ] && canonical_root="/"
-    [ "$canonical_root" != "/" ] || die "allowed root must not be /"
-    [ "$canonical_root" != "$home_root" ] || die "allowed root must not be the home directory"
-  done < <(grep -E '^- ' "$ROOTS_FILE" || true)
-}
-
-root_contains() {
-  local candidate="$1" root canonical_root
-  while IFS= read -r root; do
-    root="${root#- }"
-    [ -d "$root" ] || die "allowed root does not exist: $root"
-    canonical_root="$(cd "$root" && pwd -P)"
-    case "$candidate/" in "$canonical_root/"*) return 0 ;; esac
-  done < <(grep -E '^- ' "$ROOTS_FILE" || true)
-  return 1
-}
-
-canonicalize_project_path() {
+canonicalize_path() {
   local path="$1" remaining component resolved child
   case "$path" in
     /*) remaining="${path#/}" ;;
@@ -68,7 +43,7 @@ canonicalize_project_path() {
         else
           child="$resolved/$component"
         fi
-        if [ -L "$child" ] && [ ! -d "$child" ]; then
+        if [ -L "$child" ]; then
           return 1
         elif [ -d "$child" ]; then
           resolved="$(cd "$child" && pwd -P)" || return 1
@@ -80,6 +55,31 @@ canonicalize_project_path() {
   done
 
   printf '%s\n' "$resolved"
+}
+
+validate_projects_root() {
+  local root_count recorded_root canonical_root
+  [ -d "$PROJECTS_ROOT" ] || die "missing canonical projects root: $PROJECTS_ROOT"
+  [ ! -L "$PROJECTS_ROOT" ] || die "canonical projects root must not be a symlink"
+  canonical_root="$(cd "$PROJECTS_ROOT" && pwd -P)"
+  [ "$canonical_root" = "$PROJECTS_ROOT" ] \
+    || die "canonical projects root must not resolve outside the hub"
+
+  root_count="$(grep -Ec '^- ' "$ROOTS_FILE" || true)"
+  [ "$root_count" -eq 1 ] \
+    || die "allowed-roots must contain exactly one canonical projects root"
+  recorded_root="$(sed -n 's/^- //p' "$ROOTS_FILE")"
+  [ "$recorded_root" = "$PROJECTS_ROOT" ] \
+    || die "allowed root must be exactly the canonical projects root: $PROJECTS_ROOT"
+}
+
+validate_project_path() {
+  local raw_path="$1" canonical_path
+  canonical_path="$(canonicalize_path "$raw_path")" \
+    || die "project path must be a direct child of the canonical projects root: $raw_path"
+  [ "$(dirname "$canonical_path")" = "$PROJECTS_ROOT" ] \
+    || die "project path must be a direct child of the canonical projects root: $raw_path"
+  printf '%s\n' "$canonical_path"
 }
 
 status_ok() {
@@ -96,7 +96,7 @@ validate_card_path() {
   esac
 
   card_target="$HUB_DIR/$card_path"
-  canonical_card="$(canonicalize_project_path "$card_target")" \
+  canonical_card="$(canonicalize_path "$card_target")" \
     || die "card path must stay beneath ai/project-cards: $card_path"
   card_root="$HUB_DIR/ai/project-cards"
   case "$canonical_card" in "$card_root/"*) ;; *)
@@ -114,6 +114,7 @@ reset_entry() {
   entry_path=""
   entry_tags=""
   entry_card=""
+  canonical_path=""
 }
 
 validate_entry_schema() {
@@ -127,6 +128,9 @@ validate_entry_schema() {
   [ -n "$entry_card" ] || die "missing Card for $current_id"
   [ "$entry_card" = "ai/project-cards/$current_id.md" ] \
     || die "Card must be ai/project-cards/$current_id.md for $current_id"
+
+  # Validate the project boundary before opening a card or parsing its memory path.
+  canonical_path="$(validate_project_path "$entry_path")"
   canonical_card="$(validate_card_path "$entry_card")"
   for card_field in 'Project ID:' 'Name:' 'Type:' 'Status:' 'Last updated:' 'Purpose:' 'Typical tasks:' 'Memory entry point:'; do
     card_count="$(grep -Ec "^$card_field .+" "$canonical_card" || true)"
@@ -142,7 +146,7 @@ validate_entry_schema() {
   grep -Fqx "Status: $entry_status" "$canonical_card" \
     || die "card Status mismatch for $current_id"
   card_memory="$(sed -n 's/^Memory entry point: //p' "$canonical_card")"
-  canonical_memory="$(canonicalize_project_path "$card_memory")" \
+  canonical_memory="$(canonicalize_path "$card_memory")" \
     || die "card Memory entry point must stay beneath the registered project ai directory for $current_id"
   case "$canonical_memory" in "$canonical_path/ai/"*) ;; *)
     die "card Memory entry point must stay beneath the registered project ai directory for $current_id"
@@ -150,7 +154,7 @@ validate_entry_schema() {
   esac
 }
 
-validate_allowed_roots
+validate_projects_root
 
 ids=""
 current_id=""
@@ -173,15 +177,9 @@ while IFS= read -r line; do
       entry_status="${line#Status: }"
       status_ok "$entry_status" || die "invalid status for $current_id"
       ;;
-    'Path: '*)
-      entry_path="${line#Path: }"
-      canonical_path="$(canonicalize_project_path "$entry_path")" || die "cannot resolve project path: $entry_path"
-      root_contains "$canonical_path" || die "project path outside allowed roots: $entry_path"
-      ;;
+    'Path: '*) entry_path="${line#Path: }" ;;
     'Tags: '*) entry_tags="${line#Tags: }" ;;
-    'Card: '*)
-      entry_card="${line#Card: }"
-      ;;
+    'Card: '*) entry_card="${line#Card: }" ;;
   esac
 done < "$REGISTRY_FILE"
 validate_entry_schema

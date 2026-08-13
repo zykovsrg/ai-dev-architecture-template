@@ -1,6 +1,6 @@
 ---
 name: project-register
-description: Propose a safe, approval-gated registration for one direct child of a confirmed allowed root.
+description: Propose a safe, approval-gated registration for one direct child of the hub's validated projects root.
 ---
 
 # Project Register
@@ -11,8 +11,11 @@ project context or changes hub metadata.
 
 ## Primary inventory (before individual project confirmation)
 
-1. Read `ai/allowed-roots.md` and show its registered roots. Ask the user to
-   confirm one root before inspecting it.
+1. Read `ai/allowed-roots.md` and canonicalize the hub directory. Require that
+   the file has exactly one entry, exactly `<canonical-hub>/projects`; reject
+   missing, duplicate, external, or noncanonical roots. Show this sole allowed
+   root and ask the user to confirm its narrow name-only inventory before
+   inspecting it. Do not offer a root choice.
 2. After that confirmation, inspect direct child directory names only. A
    requested candidate must be one direct child directory name only, not an
    absolute path, nested path, glob, `.`/`..`, or symlink target. Do not
@@ -32,8 +35,8 @@ or relationship from a directory name.
 ## After individual project confirmation
 
 After the user explicitly confirms one displayed direct child and exact path,
-validate that canonical path against allowed roots and that it remains a direct
-child of the confirmed root. Only then may the agent inspect narrow `.git`
+revalidate the sole allowed root and require that the canonical path remains a
+direct child of `<canonical-hub>/projects`. Only then may the agent inspect narrow `.git`
 metadata and the smallest project context needed to classify that confirmed
 candidate. This confirmation is not permission to read unrelated projects or
 to recurse through the confirmed project.

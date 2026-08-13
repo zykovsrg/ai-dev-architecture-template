@@ -7,9 +7,10 @@ Use these prompts in three common scenarios:
 3. continuing after compressed context, compacted context, or a restored summary.
 
 The normal mode is standalone for one project. The optional personal hub is a
-separate `_ai-hub` directory: it routes only registered projects and always
-waits for confirmation before reading a project's code or memory. It does not
-replace an existing standalone installation automatically.
+separate `_ai-hub` directory: it routes only registered projects from
+`_ai-hub/projects/` and always waits for confirmation before reading a project's
+code or memory. It does not replace or move an existing standalone installation
+automatically.
 
 ## Key rules for all prompts
 
@@ -78,10 +79,11 @@ Task:
 3. Do not overwrite existing files without my confirmation.
 4. If I choose standalone mode, use:
    `bash /path/to/ai-dev-architecture-template/scripts/install.sh --mode standalone /path/to/project`
-5. If I choose hub mode, separately confirm the allowed root and use:
-   `bash /path/to/ai-dev-architecture-template/scripts/install.sh --mode hub --root /path/to/projects /path/to/_ai-hub`
-6. Do not register or read projects during hub installation. Registration
-   needs another explicit confirmation.
+5. If I choose hub mode, confirm only a path whose final folder is `_ai-hub` and use:
+   `bash /path/to/ai-dev-architecture-template/scripts/install.sh --mode hub /path/to/_ai-hub`
+   The installer must create `_ai-hub/projects/` as the sole permanent project location.
+6. Do not register, move, or read projects during hub installation. Registration
+   and any later `project-migrate` move each need separate explicit confirmation.
 7. If required files are missing after installation, show the list and offer to restore them from the template.
 8. After installation, run environment-check.
 9. Before the first working task, use task-intake and record the task in ai/current-task.md.

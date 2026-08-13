@@ -1,6 +1,6 @@
 ---
 name: project-create
-description: Use when a user asks to create and register a new project directly beneath one confirmed allowed root.
+description: Use when a user asks to create and register a new project directly beneath the hub's validated projects root.
 ---
 
 # Project Create
@@ -15,14 +15,16 @@ invoke it for this creation workflow.
 1. Read only `ai/allowed-roots.md`, `ai/project-registry.md`, and
    `ai/active-project.md`. Do not read `ai/project-cards/`,
    `ai/cross-project-signals.md`, `ai/archive/`, or any project directory in
-   this phase. Show the registered roots and ask the user to confirm one root.
-2. After the root is confirmed, obtain the project name and type if they were
-   not already supplied. Derive the ID as lowercase kebab-case from the
+   this phase. Canonicalize the hub directory and require that
+   `ai/allowed-roots.md` has exactly one entry, exactly
+   `<canonical-hub>/projects`. This validated path is the confirmed allowed
+   root; do not offer a root choice or accept an external root.
+2. Obtain the project name and type if they were not already supplied. Derive the ID as lowercase kebab-case from the
    project name; ask for a safe name if no unambiguous ID can be derived.
 3. Validate without writing:
-   - Canonicalize the confirmed allowed root and require that it is still one
-     listed allowed root.
-   - Construct exactly one new direct-child path as `<canonical-root>/<id>`.
+   - Revalidate the canonical hub projects root and its sole allowed-root entry.
+   - Construct exactly one new direct-child path as
+     `<canonical-hub>/projects/<id>`.
      The ID must be nonempty lowercase kebab-case and contain no path
      separator, `.` or `..`, whitespace, control character, glob, shell
      expansion, or other unsafe project names.
@@ -103,7 +105,7 @@ The preview also explicitly excludes `ai/architecture.md`,
 
 ## Approved creation procedure
 
-1. Revalidate the confirmed root, canonical path, direct-child rule, ID, name,
+1. Revalidate the confirmed allowed root, canonical path, direct-child rule, ID, name,
    symlink safety, collision absence, and the matching confirmation. Stop with
    no writes if any value changed or is unsafe.
 2. Create `<canonical-path>/ai/`. Create only the six standard memory files

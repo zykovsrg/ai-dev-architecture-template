@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/ai-hub-smoke.XXXXXX")"
+TMP_DIR="$(mktemp -d /private/tmp/ai-hub-smoke.XXXXXX)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
@@ -180,6 +180,30 @@ project_create_contract_valid() {
     [[ "$text" == *'Git repositories must not be created or modified'* ]] &&
     [[ "$text" == *'must not add application code, dependencies, services, AGENTS.md, CLAUDE.md, or shared skills'* ]]
 }
+project_migrate_contract_valid() {
+  local file="$1" text
+  text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
+
+  [[ "$text" == *'separately confirmed temporary migration source'* ]] &&
+    [[ "$text" == *'never write'*'ai/allowed-roots.md'* ]] &&
+    [[ "$text" == *'expires when this workflow ends'* ]] &&
+    [[ "$text" == *'Reject `/`, the canonical home directory, the hub directory, and `<canonical-hub>/projects`'* ]] &&
+    [[ "$text" == *'direct-child directory names only'* ]] &&
+    [[ "$text" == *'exclude the target `_ai-hub`'* ]] &&
+    [[ "$text" == *'Do not recurse or read candidate content'* ]] &&
+    [[ "$text" == *'preflight confirmation'* ]] &&
+    [[ "$text" == *'source-to-destination mapping'* ]] &&
+    [[ "$text" == *'Git metadata'* ]] &&
+    [[ "$text" == *'collision'* ]] &&
+    [[ "$text" == *'explicit move confirmation'* ]] &&
+    [[ "$text" == *'Move, never copy'* ]] &&
+    [[ "$text" == *'preserve the existing `.git/` directory'* ]] &&
+    [[ "$text" == *'Stop on the first failure'* ]] &&
+    [[ "$text" == *'do not continue automatically'* ]] &&
+    [[ "$text" == *'separate card and registry confirmation'* ]] &&
+    [[ "$text" == *'scripts/check-hub-registry.sh'* ]] &&
+    [[ "$text" == *'Never move backups, archives, symlinks, unknown folders, or unsafe candidates'* ]]
+}
 assert_rejected() {
   if "$@"; then
     fail "boundary validator accepted an intentionally unsafe fixture"
@@ -198,25 +222,31 @@ portable_hub_install_contract() {
   local portable_hub="$TMP_DIR/portable-install/_ai-hub"
   local install_out="$TMP_DIR/portable-install.out"
   local status_out="$TMP_DIR/portable-install-status.out"
-  local external_root="$TMP_DIR/external-projects"
+  local custom_root="$TMP_DIR/custom-root"
   local wrong_name="$TMP_DIR/not-a-hub"
-  local non_hub_target="$TMP_DIR/non-hub-target"
+  local non_hub_target="$TMP_DIR/non-hub-target/_ai-hub"
+  local marker_target="$TMP_DIR/marker-target/_ai-hub"
+  local symlink_parent="$TMP_DIR/symlink-parent"
+  local symlink_destination="$TMP_DIR/symlink-destination"
 
   if ! bash "$ROOT/scripts/install.sh" --mode hub "$portable_hub" > "$install_out" 2>&1; then
     fail 'portable hub install without --root was rejected'
   fi
   assert_file "$portable_hub/projects/.gitkeep"
   assert_contains "$portable_hub/.gitignore" '/projects/'
-  [ "$(grep -Fxc -- "- $portable_hub/projects" "$portable_hub/ai/allowed-roots.md")" -eq 1 ] \
+  portable_projects_root="$(cd "$portable_hub/projects" && pwd -P)"
+  [ "$(grep -Fxc -- "- $portable_projects_root" "$portable_hub/ai/allowed-roots.md")" -eq 1 ] \
     || fail 'portable hub must record exactly its derived projects root'
+  [ "$(grep -Ec '^- ' "$portable_hub/ai/allowed-roots.md")" -eq 1 ] \
+    || fail 'portable hub must record no additional permanent roots'
 
   mkdir -p "$portable_hub/projects/fixture/.git"
   printf '%s\n' 'fixture repository metadata' > "$portable_hub/projects/fixture/.git/HEAD"
   git -C "$portable_hub" status --short > "$status_out"
   assert_not_contains "$status_out" 'projects/fixture'
 
-  mkdir -p "$external_root"
-  if bash "$ROOT/scripts/install.sh" --mode hub --root "$external_root" \
+  mkdir -p "$custom_root"
+  if bash "$ROOT/scripts/install.sh" --mode hub --root "$custom_root" \
     "$TMP_DIR/rejected-root/_ai-hub" > "$TMP_DIR/rejected-root.out" 2>&1; then
     fail 'portable hub installer accepted a custom --root'
   fi
@@ -230,6 +260,25 @@ portable_hub_install_contract() {
   if bash "$ROOT/scripts/install.sh" --mode hub "$non_hub_target" > "$TMP_DIR/non-hub.out" 2>&1; then
     fail 'portable hub installer accepted a non-hub nonempty target'
   fi
+
+  mkdir -p "$marker_target/ai"
+  printf '%s\n' 'foreign instructions' > "$marker_target/AGENTS.md"
+  printf '%s\n' 'foreign architecture' > "$marker_target/ai/architecture.md"
+  printf '%s\n' 'foreign roots' > "$marker_target/ai/allowed-roots.md"
+  printf '%s\n' 'foreign registry' > "$marker_target/ai/project-registry.md"
+  if bash "$ROOT/scripts/install.sh" --mode hub "$marker_target" > "$TMP_DIR/marker-target.out" 2>&1; then
+    fail 'portable hub installer accepted a non-hub target with architecture-like files'
+  fi
+  assert_contains "$marker_target/AGENTS.md" 'foreign instructions'
+  assert_contains "$marker_target/ai/architecture.md" 'foreign architecture'
+  assert_not_exists "$marker_target/.git"
+
+  mkdir -p "$symlink_destination"
+  ln -s "$symlink_destination" "$symlink_parent"
+  if bash "$ROOT/scripts/install.sh" --mode hub "$symlink_parent/_ai-hub" > "$TMP_DIR/symlink-parent.out" 2>&1; then
+    fail 'portable hub installer accepted a destination path through a symlink'
+  fi
+  assert_not_exists "$symlink_destination/_ai-hub"
 }
 
 HUB_AGENTS="$ROOT/hub-template/AGENTS.md"
@@ -241,9 +290,9 @@ assert_file "$HUB_CLAUDE"
 [ "$(wc -l < "$HUB_CLAUDE")" -le 120 ] || fail 'hub CLAUDE.md too long'
 [ "$(wc -c < "$HUB_CLAUDE")" -le 6000 ] || fail 'hub CLAUDE.md too large'
 grep -Fq 'explicit confirmation' "$HUB_AGENTS" || fail 'missing confirmation gate'
-grep -Fq 'allowed roots' "$HUB_AGENTS" || fail 'missing allowed-root gate'
+grep -Fq 'sole allowed root' "$HUB_AGENTS" || fail 'missing allowed-root gate'
 grep -Fq 'explicit confirmation' "$HUB_CLAUDE" || fail 'missing confirmation gate'
-grep -Fq 'allowed roots' "$HUB_CLAUDE" || fail 'missing allowed-root gate'
+grep -Fq 'sole allowed root' "$HUB_CLAUDE" || fail 'missing allowed-root gate'
 hub_entry_staged_allowlist_valid "$HUB_AGENTS" \
   || fail 'hub entry must match staged router reads: index, up to three cards, then related active signals'
 assert_contains "$HUB_AGENTS" 'ai/architecture.md'
@@ -271,6 +320,7 @@ done
 PROJECT_CREATE_SKILL="$ROOT/hub-template/ai/skills/project-create/SKILL.md"
 project_create_contract_valid "$PROJECT_CREATE_SKILL" \
   || fail 'project-create must define the confirmation-gated creation contract'
+assert_contains "$PROJECT_CREATE_SKILL" '<canonical-hub>/projects'
 
 PROJECT_CREATE_WITHOUT_UNSAFE_NAMES="$TMP_DIR/project-create-without-unsafe-name-guard.md"
 sed '/unsafe project names/d' "$PROJECT_CREATE_SKILL" > "$PROJECT_CREATE_WITHOUT_UNSAFE_NAMES"
@@ -280,6 +330,29 @@ PROJECT_CREATE_WITHOUT_GIT_GUARANTEE="$TMP_DIR/project-create-without-git-guaran
 sed '/Git repositories must not be created or modified/d' "$PROJECT_CREATE_SKILL" \
   > "$PROJECT_CREATE_WITHOUT_GIT_GUARANTEE"
 assert_rejected project_create_contract_valid "$PROJECT_CREATE_WITHOUT_GIT_GUARANTEE"
+
+PROJECT_MIGRATE_SKILL="$ROOT/hub-template/ai/skills/project-migrate/SKILL.md"
+project_migrate_contract_valid "$PROJECT_MIGRATE_SKILL" \
+  || fail 'project-migrate must define the preview-first safe move contract'
+
+PROJECT_MIGRATE_WITH_PERMANENT_SOURCE="$TMP_DIR/project-migrate-with-permanent-source.md"
+sed '/never write.*ai\/allowed-roots\.md/d' "$PROJECT_MIGRATE_SKILL" \
+  > "$PROJECT_MIGRATE_WITH_PERMANENT_SOURCE"
+assert_rejected project_migrate_contract_valid "$PROJECT_MIGRATE_WITH_PERMANENT_SOURCE"
+
+PROJECT_MIGRATE_WITH_COPY="$TMP_DIR/project-migrate-with-copy.md"
+sed '/Move, never copy/d' "$PROJECT_MIGRATE_SKILL" > "$PROJECT_MIGRATE_WITH_COPY"
+assert_rejected project_migrate_contract_valid "$PROJECT_MIGRATE_WITH_COPY"
+
+PROJECT_MIGRATE_WITH_AUTOMATIC_CONTINUE="$TMP_DIR/project-migrate-with-automatic-continue.md"
+sed '/continue automatically/d' "$PROJECT_MIGRATE_SKILL" \
+  > "$PROJECT_MIGRATE_WITH_AUTOMATIC_CONTINUE"
+assert_rejected project_migrate_contract_valid "$PROJECT_MIGRATE_WITH_AUTOMATIC_CONTINUE"
+
+PROJECT_MIGRATE_WITHOUT_UNSAFE_CANDIDATES="$TMP_DIR/project-migrate-without-unsafe-candidates.md"
+sed '/Never move backups,/d' \
+  "$PROJECT_MIGRATE_SKILL" > "$PROJECT_MIGRATE_WITHOUT_UNSAFE_CANDIDATES"
+assert_rejected project_migrate_contract_valid "$PROJECT_MIGRATE_WITHOUT_UNSAFE_CANDIDATES"
 
 for workflow in environment-check task-intake task-switch task-finish; do
   hub_shared_workflow_valid "$ROOT/hub-template/ai/skills/$workflow/SKILL.md" "$workflow" \
@@ -378,6 +451,7 @@ registration_primary_inventory_valid "$REGISTER_SKILL" \
   || fail 'registration inventory before individual confirmation must use direct child names only'
 registration_confirmed_checks_valid "$REGISTER_SKILL" \
   || fail 'registration must defer Git and project-context checks until individual confirmation'
+assert_contains "$REGISTER_SKILL" '<canonical-hub>/projects'
 
 REGISTER_WITH_EARLY_GIT="$TMP_DIR/register-with-early-git.md"
 awk '
@@ -395,20 +469,20 @@ assert_contains "$CHECK_SKILL" 'scripts/check-hub-registry.sh'
 assert_contains "$CHECK_SKILL" 'cannot invoke it automatically'
 
 VALID="$TMP_DIR/valid-hub"
-mkdir -p "$VALID/ai/project-cards" "$TMP_DIR/projects/analytics-seo"
+mkdir -p "$VALID/ai/project-cards" "$VALID/projects/analytics-seo"
 SENTINEL='MUST_NOT_BE_READ'
-printf '%s\n' "$SENTINEL" > "$TMP_DIR/projects/analytics-seo/.env"
-printf '%s\n' "$SENTINEL" > "$TMP_DIR/projects/analytics-seo/credentials.txt"
-mkdir -p "$TMP_DIR/projects/unregistered-project" "$TMP_DIR/projects/analytics-seo-backup"
-printf '%s\n' "$SENTINEL" > "$TMP_DIR/projects/unregistered-project/private.txt"
-printf '%s\n' "$SENTINEL" > "$TMP_DIR/projects/analytics-seo-backup/private.txt"
-printf '%s\n' '# Allowed Roots' '' "- $TMP_DIR/projects" > "$VALID/ai/allowed-roots.md"
+printf '%s\n' "$SENTINEL" > "$VALID/projects/analytics-seo/.env"
+printf '%s\n' "$SENTINEL" > "$VALID/projects/analytics-seo/credentials.txt"
+mkdir -p "$VALID/projects/unregistered-project" "$VALID/projects/analytics-seo-backup"
+printf '%s\n' "$SENTINEL" > "$VALID/projects/unregistered-project/private.txt"
+printf '%s\n' "$SENTINEL" > "$VALID/projects/analytics-seo-backup/private.txt"
+printf '%s\n' '# Allowed Roots' '' "- $VALID/projects" > "$VALID/ai/allowed-roots.md"
 printf '%s\n' '# Project Registry' '' \
   '## analytics-seo' \
   'Name: SEO Analytics' \
   'Type: work' \
   'Status: active' \
-  "Path: $TMP_DIR/projects/analytics-seo" \
+  "Path: $VALID/projects/analytics-seo" \
   'Tags: seo, analytics, traffic, leads' \
   'Card: ai/project-cards/analytics-seo.md' > "$VALID/ai/project-registry.md"
 printf '%s\n' '# Project Card' '' \
@@ -419,7 +493,16 @@ printf '%s\n' '# Project Card' '' \
   'Last updated: 2026-08-12' \
   'Purpose: Analyze SEO reporting.' \
   'Typical tasks: Review analytics and reporting.' \
-  "Memory entry point: $TMP_DIR/projects/analytics-seo/ai/current-task.md" > "$VALID/ai/project-cards/analytics-seo.md"
+  "Memory entry point: $VALID/projects/analytics-seo/ai/current-task.md" > "$VALID/ai/project-cards/analytics-seo.md"
+
+copy_valid_hub() {
+  local destination="$1"
+  cp -R "$VALID" "$destination"
+  perl -pi -e "s#\\Q$VALID\\E#$destination#g" \
+    "$destination/ai/allowed-roots.md" \
+    "$destination/ai/project-registry.md" \
+    "$destination/ai/project-cards/analytics-seo.md"
+}
 
 bash -x "$ROOT/scripts/check-hub-registry.sh" "$VALID" > "$TMP_DIR/valid.out" 2> "$TMP_DIR/valid.trace"
 assert_contains "$TMP_DIR/valid.out" 'Registry check passed'
@@ -430,12 +513,43 @@ assert_forbidden_reads_absent "$TMP_DIR/valid.trace" \
   '/.env' '/credentials.txt' '/unregistered-project/private.txt' '/analytics-seo-backup/private.txt'
 echo 'Sentinel evidence: validator output and xtrace contain neither the marker nor the named forbidden file paths.'
 
+EXTERNAL_ALLOWED_ROOT="$TMP_DIR/external-allowed-root-hub"
+mkdir -p "$TMP_DIR/external-projects"
+copy_valid_hub "$EXTERNAL_ALLOWED_ROOT"
+printf '%s\n' '# Allowed Roots' '' "- $TMP_DIR/external-projects" > "$EXTERNAL_ALLOWED_ROOT/ai/allowed-roots.md"
+if bash "$ROOT/scripts/check-hub-registry.sh" "$EXTERNAL_ALLOWED_ROOT" > "$TMP_DIR/external-root.out" 2>&1; then
+  fail 'validator accepted an external allowed root'
+fi
+assert_contains "$TMP_DIR/external-root.out" 'allowed root must be exactly the canonical projects root'
+
+DUPLICATE_ALLOWED_ROOT="$TMP_DIR/duplicate-allowed-root-hub"
+copy_valid_hub "$DUPLICATE_ALLOWED_ROOT"
+printf '%s\n' "- $DUPLICATE_ALLOWED_ROOT/projects" >> "$DUPLICATE_ALLOWED_ROOT/ai/allowed-roots.md"
+if bash "$ROOT/scripts/check-hub-registry.sh" "$DUPLICATE_ALLOWED_ROOT" > "$TMP_DIR/duplicate-root.out" 2>&1; then
+  fail 'validator accepted duplicate allowed roots'
+fi
+assert_contains "$TMP_DIR/duplicate-root.out" 'allowed-roots must contain exactly one canonical projects root'
+
+OUTSIDE_PROJECT="$TMP_DIR/outside-project-hub"
+copy_valid_hub "$OUTSIDE_PROJECT"
+printf '%s\n' "$SENTINEL" >> "$OUTSIDE_PROJECT/ai/project-cards/analytics-seo.md"
+sed "s#Path: $OUTSIDE_PROJECT/projects/analytics-seo#Path: $TMP_DIR/outside/analytics-seo#" \
+  "$OUTSIDE_PROJECT/ai/project-registry.md" > "$OUTSIDE_PROJECT/ai/project-registry.md.tmp"
+mv "$OUTSIDE_PROJECT/ai/project-registry.md.tmp" "$OUTSIDE_PROJECT/ai/project-registry.md"
+if bash -x "$ROOT/scripts/check-hub-registry.sh" "$OUTSIDE_PROJECT" \
+  > "$TMP_DIR/outside-project.out" 2> "$TMP_DIR/outside-project.trace"; then
+  fail 'validator accepted a project path outside the canonical projects root'
+fi
+assert_contains "$TMP_DIR/outside-project.trace" 'project path must be a direct child of the canonical projects root'
+assert_not_contains "$TMP_DIR/outside-project.out" "$SENTINEL"
+assert_not_contains "$TMP_DIR/outside-project.trace" "$SENTINEL"
+
 SENTINEL_CARD="$TMP_DIR/card-sentinel.md"
 printf '%s\n' '# External Card' '' 'Project ID: analytics-seo' "$SENTINEL" > "$SENTINEL_CARD"
 
 for card_escape_case in lexical symlink canonical; do
   escaped_hub="$TMP_DIR/card-$card_escape_case-hub"
-  cp -R "$VALID" "$escaped_hub"
+  copy_valid_hub "$escaped_hub"
   case "$card_escape_case" in
     lexical)
       escaped_card='ai/project-cards/../../../card-sentinel.md'
@@ -452,7 +566,8 @@ for card_escape_case in lexical symlink canonical; do
       ;;
   esac
   sed "s#Card: ai/project-cards/analytics-seo.md#Card: $escaped_card#" \
-    "$VALID/ai/project-registry.md" > "$escaped_hub/ai/project-registry.md"
+    "$escaped_hub/ai/project-registry.md" > "$escaped_hub/ai/project-registry.md.tmp"
+  mv "$escaped_hub/ai/project-registry.md.tmp" "$escaped_hub/ai/project-registry.md"
 
   if bash -x "$ROOT/scripts/check-hub-registry.sh" "$escaped_hub" \
     > "$TMP_DIR/card-$card_escape_case.out" 2> "$TMP_DIR/card-$card_escape_case.trace"; then
@@ -469,7 +584,7 @@ for scale_case in 5:2400 20:9600 50:24000 100:48000; do
   scale_count="${scale_case%%:*}"
   scale_budget="${scale_case#*:}"
   scale_hub="$TMP_DIR/scale-$scale_count-hub"
-  scale_root="$TMP_DIR/scale-$scale_count-projects"
+  scale_root="$scale_hub/projects"
   mkdir -p "$scale_hub/ai/project-cards" "$scale_root"
   printf '%s\n' '# Allowed Roots' '' "- $scale_root" > "$scale_hub/ai/allowed-roots.md"
   generate_registry "$scale_hub" "$scale_root" "$scale_count"
@@ -484,8 +599,9 @@ done
 
 for required_field in Name Type Status Path Tags Card; do
   missing_field="$TMP_DIR/missing-$required_field-hub"
-  cp -R "$VALID" "$missing_field"
-  sed "/^$required_field: /d" "$VALID/ai/project-registry.md" > "$missing_field/ai/project-registry.md"
+  copy_valid_hub "$missing_field"
+  sed "/^$required_field: /d" "$missing_field/ai/project-registry.md" > "$missing_field/ai/project-registry.md.tmp"
+  mv "$missing_field/ai/project-registry.md.tmp" "$missing_field/ai/project-registry.md"
   if bash "$ROOT/scripts/check-hub-registry.sh" "$missing_field" > "$TMP_DIR/missing-$required_field.out" 2>&1; then
     fail "validator accepted an entry without $required_field"
   fi
@@ -494,9 +610,10 @@ done
 
 for required_card_field in 'Project ID' Name Type Status 'Last updated' Purpose 'Typical tasks' 'Memory entry point'; do
   missing_card_field="$TMP_DIR/missing-card-${required_card_field// /-}-hub"
-  cp -R "$VALID" "$missing_card_field"
-  sed "/^$required_card_field: /d" "$VALID/ai/project-cards/analytics-seo.md" \
-    > "$missing_card_field/ai/project-cards/analytics-seo.md"
+  copy_valid_hub "$missing_card_field"
+  sed "/^$required_card_field: /d" "$missing_card_field/ai/project-cards/analytics-seo.md" \
+    > "$missing_card_field/ai/project-cards/analytics-seo.md.tmp"
+  mv "$missing_card_field/ai/project-cards/analytics-seo.md.tmp" "$missing_card_field/ai/project-cards/analytics-seo.md"
   if bash "$ROOT/scripts/check-hub-registry.sh" "$missing_card_field" > "$TMP_DIR/missing-card-${required_card_field// /-}.out" 2>&1; then
     fail "validator accepted a card without $required_card_field"
   fi
@@ -504,34 +621,37 @@ for required_card_field in 'Project ID' Name Type Status 'Last updated' Purpose 
 done
 
 CARD_MISMATCH="$TMP_DIR/card-mismatch-hub"
-cp -R "$VALID" "$CARD_MISMATCH"
+copy_valid_hub "$CARD_MISMATCH"
 sed 's/^Project ID: analytics-seo$/Project ID: another-project/' \
-  "$VALID/ai/project-cards/analytics-seo.md" > "$CARD_MISMATCH/ai/project-cards/analytics-seo.md"
+  "$CARD_MISMATCH/ai/project-cards/analytics-seo.md" > "$CARD_MISMATCH/ai/project-cards/analytics-seo.md.tmp"
+mv "$CARD_MISMATCH/ai/project-cards/analytics-seo.md.tmp" "$CARD_MISMATCH/ai/project-cards/analytics-seo.md"
 if bash "$ROOT/scripts/check-hub-registry.sh" "$CARD_MISMATCH" > "$TMP_DIR/card-mismatch.out" 2>&1; then
   fail 'validator accepted a card with a different Project ID'
 fi
 assert_contains "$TMP_DIR/card-mismatch.out" 'card Project ID mismatch'
 
 CARD_STATUS_MISMATCH="$TMP_DIR/card-status-mismatch-hub"
-cp -R "$VALID" "$CARD_STATUS_MISMATCH"
-sed 's/^Status: active$/Status: paused/' "$VALID/ai/project-cards/analytics-seo.md" \
-  > "$CARD_STATUS_MISMATCH/ai/project-cards/analytics-seo.md"
+copy_valid_hub "$CARD_STATUS_MISMATCH"
+sed 's/^Status: active$/Status: paused/' "$CARD_STATUS_MISMATCH/ai/project-cards/analytics-seo.md" \
+  > "$CARD_STATUS_MISMATCH/ai/project-cards/analytics-seo.md.tmp"
+mv "$CARD_STATUS_MISMATCH/ai/project-cards/analytics-seo.md.tmp" "$CARD_STATUS_MISMATCH/ai/project-cards/analytics-seo.md"
 if bash "$ROOT/scripts/check-hub-registry.sh" "$CARD_STATUS_MISMATCH" > "$TMP_DIR/card-status-mismatch.out" 2>&1; then
   fail 'validator accepted a card with a different Status'
 fi
 assert_contains "$TMP_DIR/card-status-mismatch.out" 'card Status mismatch'
 
 UNSAFE_MEMORY_ENTRY="$TMP_DIR/unsafe-memory-entry-hub"
-cp -R "$VALID" "$UNSAFE_MEMORY_ENTRY"
+copy_valid_hub "$UNSAFE_MEMORY_ENTRY"
 sed "s#^Memory entry point: .*#Memory entry point: $TMP_DIR/outside/ai/current-task.md#" \
-  "$VALID/ai/project-cards/analytics-seo.md" > "$UNSAFE_MEMORY_ENTRY/ai/project-cards/analytics-seo.md"
+  "$UNSAFE_MEMORY_ENTRY/ai/project-cards/analytics-seo.md" > "$UNSAFE_MEMORY_ENTRY/ai/project-cards/analytics-seo.md.tmp"
+mv "$UNSAFE_MEMORY_ENTRY/ai/project-cards/analytics-seo.md.tmp" "$UNSAFE_MEMORY_ENTRY/ai/project-cards/analytics-seo.md"
 if bash "$ROOT/scripts/check-hub-registry.sh" "$UNSAFE_MEMORY_ENTRY" > "$TMP_DIR/unsafe-memory-entry.out" 2>&1; then
   fail 'validator accepted a memory entry point outside the registered project ai directory'
 fi
 assert_contains "$TMP_DIR/unsafe-memory-entry.out" 'card Memory entry point must stay beneath the registered project ai directory'
 
 DUPLICATE_MEMORY_ENTRY="$TMP_DIR/duplicate-memory-entry-hub"
-cp -R "$VALID" "$DUPLICATE_MEMORY_ENTRY"
+copy_valid_hub "$DUPLICATE_MEMORY_ENTRY"
 printf '%s\n' "Memory entry point: $TMP_DIR/outside/ai/current-task.md" >> "$DUPLICATE_MEMORY_ENTRY/ai/project-cards/analytics-seo.md"
 if bash "$ROOT/scripts/check-hub-registry.sh" "$DUPLICATE_MEMORY_ENTRY" > "$TMP_DIR/duplicate-memory-entry.out" 2>&1; then
   fail 'validator accepted a duplicate Memory entry point field'
@@ -539,151 +659,125 @@ fi
 assert_contains "$TMP_DIR/duplicate-memory-entry.out" 'duplicate card Memory entry point:'
 
 INVALID="$TMP_DIR/invalid-hub"
-cp -R "$VALID" "$INVALID"
-sed "s#Path: $TMP_DIR/projects/analytics-seo#Path: $TMP_DIR/outside#" \
-  "$VALID/ai/project-registry.md" > "$INVALID/ai/project-registry.md"
+copy_valid_hub "$INVALID"
+sed "s#Path: $INVALID/projects/analytics-seo#Path: $TMP_DIR/outside#" \
+  "$INVALID/ai/project-registry.md" > "$INVALID/ai/project-registry.md.tmp"
+mv "$INVALID/ai/project-registry.md.tmp" "$INVALID/ai/project-registry.md"
 if bash "$ROOT/scripts/check-hub-registry.sh" "$INVALID" > "$TMP_DIR/invalid.out" 2>&1; then
   fail 'validator accepted project outside allowed roots'
 fi
-assert_contains "$TMP_DIR/invalid.out" 'outside allowed roots'
+assert_contains "$TMP_DIR/invalid.out" 'project path must be a direct child of the canonical projects root'
 
 MISSING_ROOT="$TMP_DIR/missing-root-hub"
-cp -R "$VALID" "$MISSING_ROOT"
+copy_valid_hub "$MISSING_ROOT"
 printf '%s\n' '# Allowed Roots' '' "- $TMP_DIR/does-not-exist" > "$MISSING_ROOT/ai/allowed-roots.md"
 if bash "$ROOT/scripts/check-hub-registry.sh" "$MISSING_ROOT" > "$TMP_DIR/missing-root.out" 2>&1; then
   fail 'validator accepted a nonexistent allowed root'
 fi
-assert_contains "$TMP_DIR/missing-root.out" 'allowed root does not exist'
+assert_contains "$TMP_DIR/missing-root.out" 'allowed root must be exactly the canonical projects root'
 
 RELATIVE_ROOT="$TMP_DIR/relative-root-hub"
-cp -R "$VALID" "$RELATIVE_ROOT"
+copy_valid_hub "$RELATIVE_ROOT"
 printf '%s\n' '# Allowed Roots' '' '- relative/projects' > "$RELATIVE_ROOT/ai/allowed-roots.md"
 if bash "$ROOT/scripts/check-hub-registry.sh" "$RELATIVE_ROOT" > "$TMP_DIR/relative-root.out" 2>&1; then
   fail 'validator accepted a relative allowed root'
 fi
-assert_contains "$TMP_DIR/relative-root.out" 'allowed root must be a nonempty absolute path'
+assert_contains "$TMP_DIR/relative-root.out" 'allowed root must be exactly the canonical projects root'
 
 EMPTY_ROOT="$TMP_DIR/empty-root-hub"
-cp -R "$VALID" "$EMPTY_ROOT"
+copy_valid_hub "$EMPTY_ROOT"
 printf '%s\n' '# Allowed Roots' '' '- ' > "$EMPTY_ROOT/ai/allowed-roots.md"
 if bash "$ROOT/scripts/check-hub-registry.sh" "$EMPTY_ROOT" > "$TMP_DIR/empty-root.out" 2>&1; then
   fail 'validator accepted an empty allowed root'
 fi
-assert_contains "$TMP_DIR/empty-root.out" 'allowed root must be a nonempty absolute path'
+assert_contains "$TMP_DIR/empty-root.out" 'allowed root must be exactly the canonical projects root'
 
 ROOT_FILESYSTEM="$TMP_DIR/root-filesystem-hub"
-cp -R "$VALID" "$ROOT_FILESYSTEM"
+copy_valid_hub "$ROOT_FILESYSTEM"
 printf '%s\n' '# Allowed Roots' '' '- /' > "$ROOT_FILESYSTEM/ai/allowed-roots.md"
 if bash "$ROOT/scripts/check-hub-registry.sh" "$ROOT_FILESYSTEM" > "$TMP_DIR/root-filesystem.out" 2>&1; then
   fail 'validator accepted filesystem root as an allowed root'
 fi
-assert_contains "$TMP_DIR/root-filesystem.out" 'ERROR: allowed root must not be /'
+assert_contains "$TMP_DIR/root-filesystem.out" 'allowed root must be exactly the canonical projects root'
 
 ROOT_DOUBLE_SLASH="$TMP_DIR/root-double-slash-hub"
-cp -R "$VALID" "$ROOT_DOUBLE_SLASH"
+copy_valid_hub "$ROOT_DOUBLE_SLASH"
 printf '%s\n' '# Allowed Roots' '' '- //' > "$ROOT_DOUBLE_SLASH/ai/allowed-roots.md"
 if bash "$ROOT/scripts/check-hub-registry.sh" "$ROOT_DOUBLE_SLASH" > "$TMP_DIR/root-double-slash.out" 2>&1; then
   fail 'validator accepted // as an allowed root'
 fi
-assert_contains "$TMP_DIR/root-double-slash.out" 'allowed root must not be /'
+assert_contains "$TMP_DIR/root-double-slash.out" 'allowed root must be exactly the canonical projects root'
 
 ROOT_SYMLINK_FILESYSTEM="$TMP_DIR/root-symlink-filesystem-hub"
 ln -s / "$TMP_DIR/filesystem-root-link"
-cp -R "$VALID" "$ROOT_SYMLINK_FILESYSTEM"
+copy_valid_hub "$ROOT_SYMLINK_FILESYSTEM"
 printf '%s\n' '# Allowed Roots' '' "- $TMP_DIR/filesystem-root-link" > "$ROOT_SYMLINK_FILESYSTEM/ai/allowed-roots.md"
 if bash "$ROOT/scripts/check-hub-registry.sh" "$ROOT_SYMLINK_FILESYSTEM" > "$TMP_DIR/root-symlink-filesystem.out" 2>&1; then
   fail 'validator accepted a symlink resolving to filesystem root'
 fi
-assert_contains "$TMP_DIR/root-symlink-filesystem.out" 'allowed root must not be /'
+assert_contains "$TMP_DIR/root-symlink-filesystem.out" 'allowed root must be exactly the canonical projects root'
 
 HOME_ROOT="$(cd "$HOME" && pwd -P)"
 HOME_ALLOWED_ROOT="$TMP_DIR/home-allowed-root-hub"
-cp -R "$VALID" "$HOME_ALLOWED_ROOT"
+copy_valid_hub "$HOME_ALLOWED_ROOT"
 printf '%s\n' '# Allowed Roots' '' "- $HOME_ROOT" > "$HOME_ALLOWED_ROOT/ai/allowed-roots.md"
 if bash "$ROOT/scripts/check-hub-registry.sh" "$HOME_ALLOWED_ROOT" > "$TMP_DIR/home-allowed-root.out" 2>&1; then
   fail 'validator accepted the home directory as an allowed root'
 fi
-assert_contains "$TMP_DIR/home-allowed-root.out" 'allowed root must not be the home directory'
+assert_contains "$TMP_DIR/home-allowed-root.out" 'allowed root must be exactly the canonical projects root'
 
 LEXICAL_ESCAPE="$TMP_DIR/lexical-escape-hub"
-cp -R "$VALID" "$LEXICAL_ESCAPE"
-sed "s#Path: $TMP_DIR/projects/analytics-seo#Path: $TMP_DIR/projects/../outside/missing#" \
-  "$VALID/ai/project-registry.md" > "$LEXICAL_ESCAPE/ai/project-registry.md"
+copy_valid_hub "$LEXICAL_ESCAPE"
+sed "s#Path: $LEXICAL_ESCAPE/projects/analytics-seo#Path: $TMP_DIR/projects/../outside/missing#" \
+  "$LEXICAL_ESCAPE/ai/project-registry.md" > "$LEXICAL_ESCAPE/ai/project-registry.md.tmp"
+mv "$LEXICAL_ESCAPE/ai/project-registry.md.tmp" "$LEXICAL_ESCAPE/ai/project-registry.md"
 if bash "$ROOT/scripts/check-hub-registry.sh" "$LEXICAL_ESCAPE" > "$TMP_DIR/lexical-escape.out" 2>&1; then
   fail 'validator accepted a lexical path escape'
 fi
-assert_contains "$TMP_DIR/lexical-escape.out" 'outside allowed roots'
+assert_contains "$TMP_DIR/lexical-escape.out" 'project path must be a direct child of the canonical projects root'
 
 SYMLINK_ESCAPE="$TMP_DIR/symlink-escape-hub"
 mkdir -p "$TMP_DIR/outside"
-ln -s "$TMP_DIR/outside" "$TMP_DIR/projects/link-out"
-cp -R "$VALID" "$SYMLINK_ESCAPE"
-sed "s#Path: $TMP_DIR/projects/analytics-seo#Path: $TMP_DIR/projects/link-out/missing#" \
-  "$VALID/ai/project-registry.md" > "$SYMLINK_ESCAPE/ai/project-registry.md"
+copy_valid_hub "$SYMLINK_ESCAPE"
+ln -s "$TMP_DIR/outside" "$SYMLINK_ESCAPE/projects/link-out"
+sed "s#Path: $SYMLINK_ESCAPE/projects/analytics-seo#Path: $SYMLINK_ESCAPE/projects/link-out/missing#" \
+  "$SYMLINK_ESCAPE/ai/project-registry.md" > "$SYMLINK_ESCAPE/ai/project-registry.md.tmp"
+mv "$SYMLINK_ESCAPE/ai/project-registry.md.tmp" "$SYMLINK_ESCAPE/ai/project-registry.md"
 if bash "$ROOT/scripts/check-hub-registry.sh" "$SYMLINK_ESCAPE" > "$TMP_DIR/symlink-escape.out" 2>&1; then
   fail 'validator accepted a symlink component escape'
 fi
-assert_contains "$TMP_DIR/symlink-escape.out" 'outside allowed roots'
+assert_contains "$TMP_DIR/symlink-escape.out" 'project path must be a direct child of the canonical projects root'
 
 MISSING_PROJECT="$TMP_DIR/missing-project-hub"
-cp -R "$VALID" "$MISSING_PROJECT"
+copy_valid_hub "$MISSING_PROJECT"
 sed -e 's/Status: active/Status: missing/' \
-  -e "s#Path: $TMP_DIR/projects/analytics-seo#Path: $TMP_DIR/projects/genuinely-missing#" \
-  "$VALID/ai/project-registry.md" > "$MISSING_PROJECT/ai/project-registry.md"
+  -e "s#Path: $MISSING_PROJECT/projects/analytics-seo#Path: $MISSING_PROJECT/projects/genuinely-missing#" \
+  "$MISSING_PROJECT/ai/project-registry.md" > "$MISSING_PROJECT/ai/project-registry.md.tmp"
+mv "$MISSING_PROJECT/ai/project-registry.md.tmp" "$MISSING_PROJECT/ai/project-registry.md"
 sed -e 's/^Status: active$/Status: missing/' \
-  -e "s#^Memory entry point: $TMP_DIR/projects/analytics-seo/#Memory entry point: $TMP_DIR/projects/genuinely-missing/#" \
-  "$VALID/ai/project-cards/analytics-seo.md" \
-  > "$MISSING_PROJECT/ai/project-cards/analytics-seo.md"
+  -e "s#^Memory entry point: $MISSING_PROJECT/projects/analytics-seo/#Memory entry point: $MISSING_PROJECT/projects/genuinely-missing/#" \
+  "$MISSING_PROJECT/ai/project-cards/analytics-seo.md" \
+  > "$MISSING_PROJECT/ai/project-cards/analytics-seo.md.tmp"
+mv "$MISSING_PROJECT/ai/project-cards/analytics-seo.md.tmp" "$MISSING_PROJECT/ai/project-cards/analytics-seo.md"
 bash "$ROOT/scripts/check-hub-registry.sh" "$MISSING_PROJECT" > "$TMP_DIR/missing-project.out"
 assert_contains "$TMP_DIR/missing-project.out" 'Registry check passed'
 
-ROOTLESS_HUB="$TMP_DIR/rootless-hub/_ai-hub"
-if bash "$ROOT/scripts/install.sh" --mode hub "$ROOTLESS_HUB" > "$TMP_DIR/rootless-hub.out" 2>&1; then
-  fail 'hub installer accepted no --root in non-interactive mode'
-fi
-assert_contains "$TMP_DIR/rootless-hub.out" 'Hub mode requires at least one --root DIR.'
-assert_not_exists "$ROOTLESS_HUB/AGENTS.md"
-
-DIRECT_ROOTLESS_HUB="$TMP_DIR/direct-rootless-hub/_ai-hub"
-if bash "$ROOT/scripts/install-hub.sh" "$DIRECT_ROOTLESS_HUB" > "$TMP_DIR/direct-rootless-hub.out" 2>&1; then
-  fail 'direct hub installer accepted no --root'
-fi
-assert_contains "$TMP_DIR/direct-rootless-hub.out" 'Hub mode requires at least one --root DIR.'
-
-assert_contains "$ROOT/scripts/install.sh" 'Укажите хотя бы один разрешённый корень'
-assert_contains "$ROOT/scripts/install-hub.sh" 'canonical_candidate'
-
 HUB_INSTALL="$TMP_DIR/installed-hub/_ai-hub"
-PROJECT_ROOT="$TMP_DIR/managed-projects"
-mkdir -p "$PROJECT_ROOT/example-project" "$PROJECT_ROOT/example-backup"
-printf '%s\n' "$SENTINEL" > "$PROJECT_ROOT/example-project/.env"
-printf '%s\n' "$SENTINEL" > "$PROJECT_ROOT/example-project/credentials.txt"
-mkdir -p "$PROJECT_ROOT/unregistered-folder" "$PROJECT_ROOT/example-backup/private"
-printf '%s\n' "$SENTINEL" > "$PROJECT_ROOT/unregistered-folder/private.txt"
-printf '%s\n' "$SENTINEL" > "$PROJECT_ROOT/example-backup/private/private.txt"
-PROJECT_ROOT_CANONICAL="$(cd "$PROJECT_ROOT" && pwd -P)"
-
-if bash "$ROOT/scripts/install.sh" --mode hub --root "$PROJECT_ROOT" "$TMP_DIR/not-a-hub" > "$TMP_DIR/not-a-hub.out" 2>&1; then
+if bash "$ROOT/scripts/install.sh" --mode hub "$TMP_DIR/not-a-hub" > "$TMP_DIR/not-a-hub.out" 2>&1; then
   fail 'hub installer accepted a target not named _ai-hub'
 fi
 assert_contains "$TMP_DIR/not-a-hub.out" 'Hub directory must be named _ai-hub.'
 
-if bash "$ROOT/scripts/install.sh" --mode hub --root "$PROJECT_ROOT" "$PROJECT_ROOT/_ai-hub" > "$TMP_DIR/inside-root.out" 2>&1; then
-  fail 'hub installer accepted a target inside an allowed root'
-fi
-assert_contains "$TMP_DIR/inside-root.out" 'Hub directory must stay outside every allowed root.'
-assert_not_exists "$PROJECT_ROOT/_ai-hub"
-
 NON_HUB_TARGET="$TMP_DIR/non-hub-target/_ai-hub"
 mkdir -p "$NON_HUB_TARGET"
 printf '%s\n' 'do not overwrite' > "$NON_HUB_TARGET/existing.txt"
-if bash "$ROOT/scripts/install.sh" --mode hub --root "$PROJECT_ROOT" "$NON_HUB_TARGET" > "$TMP_DIR/non-hub-target.out" 2>&1; then
+if bash "$ROOT/scripts/install.sh" --mode hub "$NON_HUB_TARGET" > "$TMP_DIR/non-hub-target.out" 2>&1; then
   fail 'hub installer accepted a nonempty target that is not an installed hub'
 fi
 assert_contains "$TMP_DIR/non-hub-target.out" 'Target is not an installed personal AI hub'
 assert_contains "$NON_HUB_TARGET/existing.txt" 'do not overwrite'
 
-bash -x "$ROOT/scripts/install.sh" --mode hub --root "$PROJECT_ROOT" "$HUB_INSTALL" > "$TMP_DIR/install.out" 2> "$TMP_DIR/install.trace"
+bash -x "$ROOT/scripts/install.sh" --mode hub "$HUB_INSTALL" > "$TMP_DIR/install.out" 2> "$TMP_DIR/install.trace"
 assert_not_contains "$TMP_DIR/install.out" "$SENTINEL"
 assert_not_contains "$TMP_DIR/install.trace" "$SENTINEL"
 assert_forbidden_reads_absent "$TMP_DIR/install.trace" \
@@ -693,6 +787,15 @@ assert_file "$HUB_INSTALL/AGENTS.md"
 assert_file "$HUB_INSTALL/CLAUDE.md"
 assert_file "$HUB_INSTALL/ai/project-registry.md"
 assert_file "$HUB_INSTALL/scripts/check-hub-registry.sh"
+assert_file "$HUB_INSTALL/projects/.gitkeep"
+PROJECT_ROOT="$HUB_INSTALL/projects"
+mkdir -p "$PROJECT_ROOT/example-project" "$PROJECT_ROOT/example-backup"
+printf '%s\n' "$SENTINEL" > "$PROJECT_ROOT/example-project/.env"
+printf '%s\n' "$SENTINEL" > "$PROJECT_ROOT/example-project/credentials.txt"
+mkdir -p "$PROJECT_ROOT/unregistered-folder" "$PROJECT_ROOT/example-backup/private"
+printf '%s\n' "$SENTINEL" > "$PROJECT_ROOT/unregistered-folder/private.txt"
+printf '%s\n' "$SENTINEL" > "$PROJECT_ROOT/example-backup/private/private.txt"
+PROJECT_ROOT_CANONICAL="$(cd "$PROJECT_ROOT" && pwd -P)"
 assert_contains "$HUB_INSTALL/ai/allowed-roots.md" "$PROJECT_ROOT_CANONICAL"
 assert_contains "$TMP_DIR/install.out" 'Registration requires confirmation'
 grep -Fq 'example-project' "$HUB_INSTALL/ai/project-registry.md" && fail 'installer auto-registered a project'
@@ -702,7 +805,7 @@ bash "$HUB_INSTALL/scripts/check-hub-registry.sh" "$HUB_INSTALL" > "$TMP_DIR/ins
 assert_contains "$TMP_DIR/installed-hub-local-registry.out" 'Registry check passed'
 cp "$HUB_INSTALL/ai/project-registry.md" "$TMP_DIR/install-registry.before"
 cp "$HUB_INSTALL/ai/allowed-roots.md" "$TMP_DIR/install-roots.before"
-bash "$ROOT/scripts/install.sh" --mode hub --root "$PROJECT_ROOT" "$HUB_INSTALL" > "$TMP_DIR/install-update.out"
+bash "$ROOT/scripts/install.sh" --mode hub "$HUB_INSTALL" > "$TMP_DIR/install-update.out"
 cmp -s "$TMP_DIR/install-registry.before" "$HUB_INSTALL/ai/project-registry.md" || fail 'hub reinstall overwrote registry'
 cmp -s "$TMP_DIR/install-roots.before" "$HUB_INSTALL/ai/allowed-roots.md" || fail 'hub reinstall overwrote allowed roots'
 git -C "$HUB_INSTALL" config user.email "smoke@example.invalid"
@@ -785,7 +888,7 @@ assert_file "$HUB_INSTALL/ai/archive/.gitkeep"
 assert_file "$HUB_INSTALL/ai/project-cards/.gitkeep"
 
 HUB_COMMIT="$TMP_DIR/commit-hub/_ai-hub"
-bash "$ROOT/scripts/install.sh" --mode hub --root "$PROJECT_ROOT" "$HUB_COMMIT" >/dev/null
+bash "$ROOT/scripts/install.sh" --mode hub "$HUB_COMMIT" >/dev/null
 git -C "$HUB_COMMIT" config user.email "smoke@example.invalid"
 git -C "$HUB_COMMIT" config user.name "Smoke Test"
 git -C "$HUB_COMMIT" add .
@@ -804,22 +907,5 @@ assert_not_contains <(git -C "$HUB_COMMIT" show --format= --name-only HEAD) 'ai/
 [ "$(git -C "$HUB_COMMIT" log -1 --pretty=%s)" = 'chore: update personal AI hub' ] || fail 'unexpected hub update commit message'
 git -C "$HUB_COMMIT" diff --quiet -- ai/project-registry.md && fail 'hub commit unexpectedly cleaned custom registry change'
 git -C "$HUB_COMMIT" diff --cached --quiet || fail 'hub updater left staged changes after commit'
-
-CANONICAL_ROOT="$TMP_DIR/canonical-managed-projects"
-ln -s "$PROJECT_ROOT" "$CANONICAL_ROOT"
-bash "$ROOT/scripts/install.sh" --mode hub --root "$CANONICAL_ROOT" "$TMP_DIR/canonical-hub/_ai-hub" >/dev/null
-assert_contains "$TMP_DIR/canonical-hub/_ai-hub/ai/allowed-roots.md" "$PROJECT_ROOT_CANONICAL"
-
-if bash "$ROOT/scripts/install.sh" --mode standalone --root "$PROJECT_ROOT" "$TMP_DIR/standalone-with-root" >/dev/null 2>&1; then
-  fail 'standalone installer accepted --root'
-fi
-
-if bash "$ROOT/scripts/install.sh" --mode hub --root / "$TMP_DIR/root-hub/_ai-hub" >/dev/null 2>&1; then
-  fail 'hub installer accepted filesystem root'
-fi
-
-if bash "$ROOT/scripts/install.sh" --mode hub --root "$HOME_ROOT" "$TMP_DIR/home-hub/_ai-hub" >/dev/null 2>&1; then
-  fail 'hub installer accepted the actual home directory'
-fi
 
 echo "Hub smoke tests passed."

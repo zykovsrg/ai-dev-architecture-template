@@ -27,7 +27,9 @@ assert_contains() {
 assert_not_contains() {
   local file="$1"
   local needle="$2"
-  grep -Fq -- "$needle" "$file" && fail "$file unexpectedly contains: $needle"
+  if grep -Fq -- "$needle" "$file"; then
+    fail "$file unexpectedly contains: $needle"
+  fi
 }
 
 assert_not_exists() {
@@ -104,13 +106,15 @@ assert_contains "$PROJECT/ai/current-task.md" "Keep this project memory."
 cp "$PROJECT/AGENTS.md" "$TMP_DIR/standalone-agents.before"
 cp "$PROJECT/CLAUDE.md" "$TMP_DIR/standalone-claude.before"
 bash "$ROOT/scripts/update-installed-architecture.sh" --project "$PROJECT" --source "$ROOT" --offer-hub > "$TMP_DIR/offer-hub.out"
-assert_contains "$TMP_DIR/offer-hub.out" 'bash scripts/install.sh --mode hub'
+assert_contains "$TMP_DIR/offer-hub.out" 'bash scripts/install.sh --mode hub /path/to/_ai-hub'
+assert_not_contains "$TMP_DIR/offer-hub.out" '--root'
 assert_contains "$TMP_DIR/offer-hub.out" 'Standalone-to-hub migration preview (read-only).'
 assert_contains "$TMP_DIR/offer-hub.out" 'ai/current-task.md'
 assert_contains "$TMP_DIR/offer-hub.out" 'ai/skills/task-intake/SKILL.md'
 assert_contains "$TMP_DIR/offer-hub.out" 'No files will be changed, registered, removed, archived, or migrated.'
 assert_contains "$TMP_DIR/offer-hub.out" '-> keep now; archive or remove only in a separately approved migration'
-assert_contains "$TMP_DIR/offer-hub.out" 'Future hub structure: _ai-hub/'
+assert_contains "$TMP_DIR/offer-hub.out" 'Future hub structure: <parent>/_ai-hub/projects/<project>'
+assert_contains "$TMP_DIR/offer-hub.out" 'does not move projects automatically'
 cmp -s "$TMP_DIR/standalone-agents.before" "$PROJECT/AGENTS.md" || fail '--offer-hub changed AGENTS.md'
 cmp -s "$TMP_DIR/standalone-claude.before" "$PROJECT/CLAUDE.md" || fail '--offer-hub changed CLAUDE.md'
 assert_contains "$PROJECT/ai/current-task.md" 'Keep this project memory.'

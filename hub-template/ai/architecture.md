@@ -42,7 +42,8 @@ Hub routing and project isolation remain higher-priority safety constraints and 
 
 Hub-owned files are the routing inventory:
 
-- `ai/allowed-roots.md` lists the only directory roots eligible for projects.
+- `ai/allowed-roots.md` records exactly one physical directory: the hub's
+  `<hub>/projects` directory. It is the only directory eligible for projects.
 - `ai/project-registry.md` maps each project ID to its name, status, path,
   tags, and card.
 - `ai/project-cards/<id>.md` holds compact hub metadata for that ID.
@@ -74,7 +75,7 @@ Use this sequence for every new chat or unconfirmed request:
    the selected project's `ai/` memory, then use the hub-managed project flow.
 
 The router never discovers projects by listing arbitrary folders, follows a
-path outside allowed roots, or treats a remembered active project as confirmed
+path outside `<hub>/projects`, or treats a remembered active project as confirmed
 in a new chat. If no single registered project matches, ask the user to choose
 from safe registry results; do not inspect likely directories to decide.
 
@@ -86,12 +87,29 @@ It must wait for confirmation before opening `/work/demo/metrics-site`.
 
 Use `project-create` when the user requests a new project. After one complete
 preview and explicit confirmation, it creates exactly one direct-child project
-under a confirmed allowed root: only its `ai/` memory files (`current-task.md`,
+under the validated `<hub>/projects` root: only its `ai/` memory files (`current-task.md`,
 `paused-tasks.md`, `future-tasks.md`, `project-context.md`, `decisions.md`, and
 `changelog.md`), a card, a registry entry, and an active-project selection.
 It must not create Git, code, dependencies, services, duplicate registry
 entries, or any other project files. Use `project-register` for an existing
 folder; it does not replace the new-project creation flow.
+
+## Existing Project Migration
+
+Use `project-migrate` only when the user asks to move legacy project folders
+into `<hub>/projects`. It requires a separately confirmed temporary source that
+is never made an allowed root and expires when the workflow ends. Before any
+candidate preflight, inventory direct-child names only, exclude the target hub,
+and reject backups, archives, symlinks, and unknown folders without reading
+their contents.
+
+After a separately confirmed candidate or displayed batch preflight, show each
+exact source-to-destination mapping, narrow Git status, and collision result.
+Moving requires another explicit confirmation. Move the whole folder without
+copying, preserve its existing Git metadata, and stop the batch on the first
+failure or integrity concern. Registration is a later `project-register`
+procedure with its own card and registry confirmation and validator result;
+neither source confirmation nor move confirmation authorizes it.
 
 ## Confirmation And Confidence
 
@@ -105,7 +123,7 @@ Use these confidence labels in router summaries and cross-project signals:
 
 Only `verified` selection plus explicit confirmation permits project access.
 `stated` and `inferred` information may guide a clarification question, but
-must not change a registry record, broaden allowed roots, or trigger a read.
+must not change a registry record, broaden the allowed-root boundary, or trigger a read.
 Label hypotheses as hypotheses and preserve their source when recording them.
 
 ## Project Switches And Task Switches
@@ -200,14 +218,17 @@ the local router cannot bypass them or authorize a broader read.
 ## Installation And Updates
 
 Installing the hub creates or updates hub-owned templates and scripts only in
-the chosen hub location. It must not scan, rewrite, install dependencies in,
-or otherwise modify registered projects without their separate confirmation.
+the chosen hub location. It creates the ignored `<hub>/projects` directory but
+must not scan, rewrite, install dependencies in, or otherwise modify projects
+there without their separate confirmation.
 
 An architecture update must be reviewed before applying: show the changed hub
 rules, affected files, and token impact; then obtain explicit approval. Preserve
 local registry data and cards during template updates. Do not silently replace
-local routing records, project instructions, or project memory. Validate any
-registry/allowed-root change before it becomes operational.
+local routing records, project instructions, or project memory. The allowed
+root remains exactly `<hub>/projects`; reject a missing, duplicate, external,
+or noncanonical entry before reading a card or project-memory path. Validate
+any registry change before it becomes operational.
 
 ## Secret And Privacy Boundary
 
