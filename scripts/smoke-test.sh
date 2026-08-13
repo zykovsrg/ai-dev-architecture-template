@@ -61,6 +61,14 @@ assert_contains "$ROOT/docs/install.md" '--mode hub'
 assert_contains "$ROOT/docs/update.md" 'update-installed-hub.sh'
 assert_contains "$ROOT/docs/file-roles.md" 'Hub-managed project memory'
 assert_contains "$ROOT/getting-started/getting-started.md" 'personal hub'
+assert_contains "$ROOT/scripts/hub-smoke-test.sh" 'legacy_cleanup_contract_valid'
+assert_contains "$ROOT/scripts/hub-smoke-test.sh" 'legacy_cleanup_order_valid'
+assert_contains "$ROOT/hub-template/ai/skills/project-migrate/SKILL.md" \
+  'Optional legacy standalone cleanup'
+assert_contains "$ROOT/hub-template/ai/skills/project-migrate/SKILL.md" \
+  'Do not delete `ai/` as a directory.'
+assert_contains "$ROOT/hub-template/ai/skills/project-migrate/SKILL.md" \
+  'Do not archive, back up, copy, replace, or follow symlinks.'
 
 for entry in "$ROOT/template/AGENTS.md" "$ROOT/template/CLAUDE.md"; do
   assert_contains "$entry" 'simplest sufficient solution'

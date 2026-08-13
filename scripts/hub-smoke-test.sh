@@ -204,6 +204,39 @@ project_migrate_contract_valid() {
     [[ "$text" == *'scripts/check-hub-registry.sh'* ]] &&
     [[ "$text" == *'Never move backups, archives, symlinks, unknown folders, or unsafe candidates'* ]]
 }
+legacy_cleanup_contract_valid() {
+  local file="$1" text
+  text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
+
+  [[ "$text" == *'Optional legacy standalone cleanup'* ]] &&
+    [[ "$text" == *'Cleanup confirmation is separate from move, preflight, and registration confirmation.'* ]] &&
+    [[ "$text" == *'A previous move, preflight, or registration confirmation never authorizes cleanup.'* ]] &&
+    [[ "$text" == *'- `AGENTS.md`'* ]] &&
+    [[ "$text" == *'- `CLAUDE.md`'* ]] &&
+    [[ "$text" == *'- `ai/architecture.md`'* ]] &&
+    [[ "$text" == *'- `ai/external-tools.md`'* ]] &&
+    [[ "$text" == *'- `ai/skills/`'* ]] &&
+    [[ "$text" == *'- `.claude/`'* ]] &&
+    [[ "$text" == *'- `.codex/`'* ]] &&
+    [[ "$text" == *'- `ai/current-task.md`'* ]] &&
+    [[ "$text" == *'- `ai/paused-tasks.md`'* ]] &&
+    [[ "$text" == *'- `ai/future-tasks.md`'* ]] &&
+    [[ "$text" == *'- `ai/project-context.md`'* ]] &&
+    [[ "$text" == *'- `ai/decisions.md`'* ]] &&
+    [[ "$text" == *'- `ai/changelog.md`'* ]] &&
+    [[ "$text" == *'Do not delete `ai/` as a directory.'* ]] &&
+    [[ "$text" == *'Do not archive, back up, copy, replace, or follow symlinks.'* ]] &&
+    [[ "$text" != *'automatic cleanup'* ]] &&
+    [[ "$text" != *'delete the entire project'* ]] &&
+    [[ "$text" != *'recursively delete'* ]] &&
+    [[ "$text" != *'rm -rf'* ]]
+}
+legacy_cleanup_order_valid() {
+  local file="$1" text
+  text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
+
+  [[ "$text" == *'project-migrate'*'project-register'*'scripts/check-hub-registry.sh'*'optional legacy cleanup'* ]]
+}
 assert_rejected() {
   if "$@"; then
     fail "boundary validator accepted an intentionally unsafe fixture"
@@ -353,6 +386,30 @@ PROJECT_MIGRATE_WITHOUT_UNSAFE_CANDIDATES="$TMP_DIR/project-migrate-without-unsa
 sed '/Never move backups,/d' \
   "$PROJECT_MIGRATE_SKILL" > "$PROJECT_MIGRATE_WITHOUT_UNSAFE_CANDIDATES"
 assert_rejected project_migrate_contract_valid "$PROJECT_MIGRATE_WITHOUT_UNSAFE_CANDIDATES"
+
+legacy_cleanup_contract_valid "$PROJECT_MIGRATE_SKILL" \
+  || fail 'project-migrate must define the optional legacy standalone cleanup contract'
+
+PROJECT_MIGRATE_WITHOUT_CLEANUP_GATE="$TMP_DIR/project-migrate-without-cleanup-gate.md"
+sed '/Cleanup confirmation is separate/d' "$PROJECT_MIGRATE_SKILL" \
+  > "$PROJECT_MIGRATE_WITHOUT_CLEANUP_GATE"
+assert_rejected legacy_cleanup_contract_valid "$PROJECT_MIGRATE_WITHOUT_CLEANUP_GATE"
+
+PROJECT_MIGRATE_WITHOUT_MEMORY_PATH="$TMP_DIR/project-migrate-without-memory-path.md"
+sed '/ai\/project-context\.md/d' "$PROJECT_MIGRATE_SKILL" \
+  > "$PROJECT_MIGRATE_WITHOUT_MEMORY_PATH"
+assert_rejected legacy_cleanup_contract_valid "$PROJECT_MIGRATE_WITHOUT_MEMORY_PATH"
+
+PROJECT_MIGRATE_WITH_AUTOMATIC_CLEANUP="$TMP_DIR/project-migrate-with-automatic-cleanup.md"
+cp "$PROJECT_MIGRATE_SKILL" "$PROJECT_MIGRATE_WITH_AUTOMATIC_CLEANUP"
+printf '%s\n' 'Cleanup is automatic: recursively delete the entire project with rm -rf.' \
+  >> "$PROJECT_MIGRATE_WITH_AUTOMATIC_CLEANUP"
+assert_rejected legacy_cleanup_contract_valid "$PROJECT_MIGRATE_WITH_AUTOMATIC_CLEANUP"
+
+for hub_entry in "$HUB_AGENTS" "$HUB_CLAUDE" "$ROOT/hub-template/ai/architecture.md"; do
+  legacy_cleanup_order_valid "$hub_entry" \
+    || fail "hub cleanup routing order missing or out of order: $hub_entry"
+done
 
 for workflow in environment-check task-intake task-switch task-finish; do
   hub_shared_workflow_valid "$ROOT/hub-template/ai/skills/$workflow/SKILL.md" "$workflow" \
