@@ -128,6 +128,10 @@ pre-knowledge project and never changes its records. `task-finish` may offer a
 focused knowledge review when relevant, but it never starts that review or
 edits knowledge without a request and confirmation.
 
+Existing-project knowledge enablement is available only through the hub's
+`knowledge-enable` workflow after the hub has confirmed the registered project.
+Legacy standalone knowledge migration is out of scope.
+
 ## 5. Fill in the project files
 
 After installation, be sure to fill in:

@@ -117,6 +117,10 @@ into a knowledge-enabled project merely because the newer template contains
 knowledge files. This boundary applies to `--check`, `--dry-run`, `--apply`,
 and `--commit`.
 
+Existing-project knowledge enablement is available only through the hub's
+`knowledge-enable` workflow after the hub has confirmed the registered project.
+Legacy standalone knowledge migration is out of scope.
+
 Create or edit a knowledge record only through `knowledge-capture` or
 `knowledge-review`, after the workflow has selected the exact path and the
 user has explicitly confirmed the write. Valid statuses are `draft`,

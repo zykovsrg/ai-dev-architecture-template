@@ -64,6 +64,10 @@ assert_contains "$ROOT/README.md" 'единая точка входа'
 assert_contains "$ROOT/docs/install.md" '--mode hub'
 assert_contains "$ROOT/docs/update.md" 'update-installed-hub.sh'
 assert_contains "$ROOT/docs/file-roles.md" 'Hub-managed project memory'
+for knowledge_doc in docs/file-roles.md docs/install.md docs/update.md docs/concepts.md; do
+  assert_contains "$ROOT/$knowledge_doc" "Existing-project knowledge enablement is available only through the hub's"
+  assert_contains "$ROOT/$knowledge_doc" 'Legacy standalone knowledge migration is out of scope.'
+done
 assert_contains "$ROOT/getting-started/getting-started.md" 'personal hub'
 assert_contains "$ROOT/scripts/hub-smoke-test.sh" 'legacy_cleanup_contract_valid'
 assert_contains "$ROOT/scripts/hub-smoke-test.sh" 'legacy_cleanup_order_valid'
@@ -150,6 +154,25 @@ assert_not_exists "$PRE_KNOWLEDGE_PROJECT/knowledge"
 cmp -s "$TMP_DIR/pre-knowledge-current-task.before" "$PRE_KNOWLEDGE_PROJECT/ai/current-task.md" \
   || fail 'updater changed pre-knowledge task memory'
 assert_contains "$TMP_DIR/pre-knowledge-update.out" 'Updating does not enable knowledge in existing projects.'
+
+EXISTING_KNOWLEDGE_PROJECT="$TMP_DIR/existing-knowledge-project"
+init_git_project "$EXISTING_KNOWLEDGE_PROJECT"
+mkdir -p "$EXISTING_KNOWLEDGE_PROJECT/ai" "$EXISTING_KNOWLEDGE_PROJECT/knowledge/research"
+for rel in AGENTS.md CLAUDE.md ai/architecture.md ai/external-tools.md; do
+  cp "$ROOT/template/$rel" "$EXISTING_KNOWLEDGE_PROJECT/$rel"
+done
+cp "$ROOT/template/ai/current-task.md" "$EXISTING_KNOWLEDGE_PROJECT/ai/current-task.md"
+printf '%s\n' '# Updater boundary record' '' 'This record must remain byte-for-byte unchanged.' \
+  > "$EXISTING_KNOWLEDGE_PROJECT/knowledge/research/updater-boundary.md"
+cp "$EXISTING_KNOWLEDGE_PROJECT/knowledge/research/updater-boundary.md" \
+  "$TMP_DIR/existing-knowledge-record.before"
+git -C "$EXISTING_KNOWLEDGE_PROJECT" add .
+git -C "$EXISTING_KNOWLEDGE_PROJECT" commit -m "test: existing knowledge record" >/dev/null
+
+bash "$ROOT/scripts/update-installed-architecture.sh" --project "$EXISTING_KNOWLEDGE_PROJECT" --source "$ROOT" --apply >/dev/null
+cmp -s "$TMP_DIR/existing-knowledge-record.before" \
+  "$EXISTING_KNOWLEDGE_PROJECT/knowledge/research/updater-boundary.md" \
+  || fail 'updater changed an existing knowledge record'
 
 cp "$PROJECT/AGENTS.md" "$TMP_DIR/standalone-agents.before"
 cp "$PROJECT/CLAUDE.md" "$TMP_DIR/standalone-claude.before"

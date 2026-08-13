@@ -56,6 +56,10 @@ protected-architecture and controlled-memory lists. Updating an older,
 pre-knowledge project never creates `knowledge/` and never changes an existing
 knowledge record.
 
+Existing-project knowledge enablement is available only through the hub's
+`knowledge-enable` workflow after the hub has confirmed the registered project.
+Legacy standalone knowledge migration is out of scope.
+
 Knowledge records are created or changed only through `knowledge-capture` or
 `knowledge-review`. Those workflows select an exact record path, validate the
 status vocabulary (`draft`, `verified`, `needs-review`, `stale`, or

@@ -67,3 +67,36 @@ the standalone updaters do not overwrite controlled memory.
 
 No open concerns. Legacy standalone migration remains outside this change:
 the normal updater neither migrates nor enables knowledge in existing projects.
+
+## Reviewer P2 follow-up
+
+Both P2 findings from `task-3-review.md` were addressed within Task 3 scope.
+
+### RED
+
+Before the documentation update, the new smoke contract failed:
+
+```text
+bash scripts/smoke-test.sh
+FAIL: expected 'Existing-project knowledge enablement is available only through the hub's' in .../docs/file-roles.md
+```
+
+This confirms the documentation previously lacked the required positive route,
+rather than merely using imprecise wording. The same test change adds a second
+fixture containing `knowledge/research/updater-boundary.md`; it saves a
+byte-for-byte copy, runs the normal updater, and fails if the record changes.
+
+### GREEN
+
+All owned knowledge sections now state that existing-project enablement is only
+through the hub's `knowledge-enable` workflow after confirmation of the
+registered project, and that legacy standalone knowledge migration is out of
+scope. The existing-record fixture passed after `--apply`, alongside the
+pre-knowledge absent-directory fixture.
+
+Fresh verification after the fix:
+
+- `bash scripts/smoke-test.sh` — passed.
+- `bash scripts/check-consistency.sh && bash scripts/smoke-test.sh` — passed.
+- `bash -n scripts/update-installed-architecture.sh scripts/smoke-test.sh` — passed.
+- `git diff --check` — passed.

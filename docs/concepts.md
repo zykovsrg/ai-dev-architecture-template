@@ -56,6 +56,10 @@ first proposes an exact category and path, while `knowledge-review` examines
 only an explicitly selected record or set. Neither may create or edit a record
 until the user explicitly confirms the exact write.
 
+Existing-project knowledge enablement is available only through the hub's
+`knowledge-enable` workflow after the hub has confirmed the registered project.
+Legacy standalone knowledge migration is out of scope.
+
 Every knowledge record has one of five statuses: `draft`, `verified`,
 `needs-review`, `stale`, or `superseded`. `task-finish` may offer a focused
 knowledge review if it is relevant to closing the task. An offer is optional
