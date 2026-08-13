@@ -7,6 +7,9 @@ equal in meaning except for tool-specific notes.
 Detailed rules live in `ai/architecture.md` and relevant `ai/skills/*/SKILL.md`.
 Do not load them by default; open them only when the task needs those details.
 
+`knowledge/` is optional local reference material, not default context. Open it
+only when a task, workflow, or explicit user request needs a selected record.
+
 ## Installation Mode
 
 These files describe standalone mode for one project. Standalone mode is

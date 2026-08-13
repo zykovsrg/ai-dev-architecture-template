@@ -18,6 +18,10 @@ assert_file() {
   [ -f "$1" ] || fail "missing file: $1"
 }
 
+assert_dir() {
+  [ -d "$1" ] || fail "missing directory: $1"
+}
+
 assert_contains() {
   local file="$1"
   local pattern="$2"
@@ -94,6 +98,14 @@ printf 'custom agent entry\n' > "$PROJECT/AGENTS.md"
 bash "$ROOT/scripts/install.sh" "$PROJECT" >/dev/null
 
 assert_contains "$PROJECT/AGENTS.md" "custom agent entry"
+assert_dir "$PROJECT/knowledge/research"
+assert_dir "$PROJECT/knowledge/decisions"
+assert_dir "$PROJECT/knowledge/risks"
+assert_dir "$PROJECT/knowledge/runbooks"
+assert_file "$PROJECT/knowledge/README.md"
+assert_file "$PROJECT/knowledge/record-template.md"
+assert_file "$PROJECT/ai/skills/knowledge-capture/SKILL.md"
+assert_file "$PROJECT/ai/skills/knowledge-review/SKILL.md"
 assert_file "$PROJECT/ai/current-task.md"
 assert_file "$PROJECT/ai/skills/task-intake/SKILL.md"
 assert_file "$PROJECT/ai/skills/start-screen/SKILL.md"

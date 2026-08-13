@@ -44,6 +44,8 @@ Answer:
 7. Which out-of-scope ideas, missing test seams, follow-up investigations, or non-blocking improvements should be proposed for `ai/future-tasks.md`?
 8. Can `ai/current-task.md` be cleaned after user confirmation?
 9. How should the result be saved: GitHub push, local commit, or local fallback archive/patch?
+10. Would a focused `knowledge-review` be useful? Offer it when relevant, but
+    never start it automatically.
 
 ## Changelog vs decisions vs future tasks
 
@@ -79,6 +81,8 @@ Do not add new scope to the completed task just because a future task was discov
 - If the task created a durable architecture, product, workflow, data model, storage, signing, sandboxing, sync, or undo rule, suggest adding it to `ai/decisions.md`.
 - If an issue was only mitigated and root cause is unproven, record that clearly in `ai/changelog.md`.
 - If an idea is useful but outside the current task, propose adding it to `ai/future-tasks.md` instead of implementing it during cleanup.
+- Offer `knowledge-review` only when selected knowledge records may need a
+  focused review. Do not start it without an explicit request or selected scope.
 - Do not claim the task is closed until the result is saved.
 - If `git remote -v` shows a `github.com` remote, commit and push are mandatory closure steps, not defaults. The task is not closed until the push succeeds or the user explicitly accepts local-only closure after a reported push failure.
 - If GitHub is not configured, use local-only saving and explain the limitation.

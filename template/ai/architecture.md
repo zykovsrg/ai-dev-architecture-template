@@ -29,7 +29,15 @@ Context must live in the repository, not only in the chat.
 - `ai/decisions.md` holds durable decisions and invariants.
 - `ai/changelog.md` holds recent notable changes.
 - `ai/skills/*/SKILL.md` holds reusable procedures.
+- `knowledge/` holds optional local records: research, decisions, risks, and
+  runbooks.
 - Git holds the full change history.
+
+`ai/project-context.md` remains the concise default orientation for the project.
+`knowledge/` complements it with selected, detailed records and is never loaded
+as default context or used as an automatic conversation archive. Use
+`knowledge-capture` and `knowledge-review` only on demand and only for explicit
+record paths or scopes.
 
 The main rule for ideas for later:
 
