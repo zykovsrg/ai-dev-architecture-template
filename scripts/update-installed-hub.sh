@@ -367,9 +367,11 @@ for_each_memory_file copy_missing_memory_file
 
 UPDATE_PATHS=()
 for_each_protected_file append_existing_path
-for rel in "${CREATED_MEMORY_FILES[@]}"; do
-  UPDATE_PATHS+=("$rel")
-done
+if [ "${#CREATED_MEMORY_FILES[@]}" -gt 0 ]; then
+  for rel in "${CREATED_MEMORY_FILES[@]}"; do
+    UPDATE_PATHS+=("$rel")
+  done
+fi
 
 echo ""
 echo "Applied personal AI hub update. Current updater-managed changes:"

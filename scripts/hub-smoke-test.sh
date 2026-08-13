@@ -999,6 +999,11 @@ cmp -s "$TMP_DIR/archive.before" "$HUB_INSTALL/ai/archive/custom.md" || fail 'hu
 assert_file "$HUB_INSTALL/ai/archive/.gitkeep"
 assert_file "$HUB_INSTALL/ai/project-cards/.gitkeep"
 
+# A second apply has no missing memory templates. It must still complete under
+# `set -u`; an empty updater array is not an error.
+bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$ROOT" --apply --allow-dirty > "$TMP_DIR/hub-repeat-update.out"
+assert_contains "$TMP_DIR/hub-repeat-update.out" 'Applied personal AI hub update.'
+
 HUB_COMMIT="$TMP_DIR/commit-hub/_ai-hub"
 bash "$ROOT/scripts/install.sh" --mode hub "$HUB_COMMIT" >/dev/null
 git -C "$HUB_COMMIT" config user.email "smoke@example.invalid"
