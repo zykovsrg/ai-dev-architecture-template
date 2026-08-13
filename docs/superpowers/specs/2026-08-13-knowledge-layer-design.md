@@ -18,7 +18,7 @@ knowledge/
 
 The folders are present by default but their content is never automatically loaded, indexed, generated, or inferred from a conversation.
 
-Existing projects remain unchanged until the user confirms a project-scoped `knowledge-enable` workflow. Hub routing and per-project confirmation remain mandatory for every such migration.
+Existing hub projects remain unchanged until the user confirms a project-scoped `knowledge-enable` workflow. Hub routing and per-project confirmation remain mandatory for every such migration. Legacy standalone-project migration is explicitly out of scope.
 
 ## Record Format
 
