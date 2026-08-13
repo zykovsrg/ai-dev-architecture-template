@@ -73,7 +73,19 @@ read project content, copy, move, register, archive, or change allowed roots.
 Then show every proposed source-to-destination path, Git status, and collision
 state. Move only the exact project or listed batch that I explicitly confirm.
 Keep each project's existing `.git/` unchanged; stop if one move fails. After a
-successful move, ask separately whether to register it.
+successful move, ask separately whether to register it. Validate the registry
+before offering cleanup. After successful registration show a separate list of
+old standalone files that can be removed; never remove anything without a new
+explicit confirmation and preserve all project memory files.
+
+After successful registration, use this exact request for the optional cleanup:
+
+После успешной регистрации покажи отдельный список старых standalone-файлов,
+которые можно удалить. Ничего не удаляй без нового явного подтверждения;
+сохрани все файлы памяти проекта.
+
+The move, registration, registry validation, and cleanup confirmations are
+independent. Declining cleanup leaves every old file unchanged.
 ```
 
 ## Run a hub registry check

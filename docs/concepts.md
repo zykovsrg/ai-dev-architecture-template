@@ -57,7 +57,11 @@ confirmation before reading that project's code or memory. Installing or
 updating a hub does not automatically convert projects, clean up files, move
 folders, or send reminders. Existing folders are moved only through
 `project-migrate`: the user separately confirms a temporary source, reviews an
-exact preview, and separately confirms each move or the displayed batch.
+exact preview, and separately confirms each move or the displayed batch. The
+workflow then uses independent gates: move → registration confirmation →
+registry validation → optional cleanup confirmation. Cleanup is never automatic
+and removes only confirmed old standalone rules; all project memory remains
+unchanged.
 
 ## Minimalism
 

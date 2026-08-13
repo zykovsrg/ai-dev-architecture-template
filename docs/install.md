@@ -36,7 +36,11 @@ the hub repository.
 Do not use hub installation to convert or move an existing standalone project.
 From the installed hub, use `project-migrate`: it inventories only direct-child
 names in a separately confirmed temporary source, shows an exact move preview,
-and waits for explicit move confirmation. It never runs during installation.
+and waits for explicit move confirmation. After a successful move, registration
+has its own confirmation and is followed by `scripts/check-hub-registry.sh`.
+Only after validation may the workflow offer a separately confirmed cleanup of
+old standalone rules. The cleanup is optional and never automatic; all project
+memory files are preserved. It never runs during installation.
 
 ## 1. Clone the template repository
 
