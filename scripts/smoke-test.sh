@@ -132,6 +132,25 @@ git -C "$PROJECT" commit -m "test: install architecture" >/dev/null
 bash "$ROOT/scripts/update-installed-architecture.sh" --project "$PROJECT" --source "$ROOT" --apply >/dev/null
 assert_contains "$PROJECT/ai/current-task.md" "Keep this project memory."
 
+PRE_KNOWLEDGE_PROJECT="$TMP_DIR/pre-knowledge-project"
+init_git_project "$PRE_KNOWLEDGE_PROJECT"
+mkdir -p "$PRE_KNOWLEDGE_PROJECT/ai"
+for rel in AGENTS.md CLAUDE.md ai/architecture.md ai/external-tools.md; do
+  cp "$ROOT/template/$rel" "$PRE_KNOWLEDGE_PROJECT/$rel"
+done
+printf '# Current Task\n\nStatus: active\n\nStage: implementation\n\n## Goal\n\nKeep pre-knowledge task memory.\n' \
+  > "$PRE_KNOWLEDGE_PROJECT/ai/current-task.md"
+cp "$PRE_KNOWLEDGE_PROJECT/ai/current-task.md" "$TMP_DIR/pre-knowledge-current-task.before"
+git -C "$PRE_KNOWLEDGE_PROJECT" add .
+git -C "$PRE_KNOWLEDGE_PROJECT" commit -m "test: pre-knowledge project" >/dev/null
+
+bash "$ROOT/scripts/update-installed-architecture.sh" --project "$PRE_KNOWLEDGE_PROJECT" --source "$ROOT" --apply \
+  > "$TMP_DIR/pre-knowledge-update.out"
+assert_not_exists "$PRE_KNOWLEDGE_PROJECT/knowledge"
+cmp -s "$TMP_DIR/pre-knowledge-current-task.before" "$PRE_KNOWLEDGE_PROJECT/ai/current-task.md" \
+  || fail 'updater changed pre-knowledge task memory'
+assert_contains "$TMP_DIR/pre-knowledge-update.out" 'Updating does not enable knowledge in existing projects.'
+
 cp "$PROJECT/AGENTS.md" "$TMP_DIR/standalone-agents.before"
 cp "$PROJECT/CLAUDE.md" "$TMP_DIR/standalone-claude.before"
 bash "$ROOT/scripts/update-installed-architecture.sh" --project "$PROJECT" --source "$ROOT" --offer-hub > "$TMP_DIR/offer-hub.out"

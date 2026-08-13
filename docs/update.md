@@ -104,6 +104,26 @@ The lists above describe the updater's behavior. The canonical full lists of pro
 
 If a controlled memory file is missing, the updater creates it from the template. If the file already exists, it stays as is.
 
+## Knowledge layer lifecycle
+
+`knowledge/` is an optional local reference layer, not controlled memory. It
+is separate from `ai/project-context.md`: project context stores the active
+project facts needed for normal work, while knowledge stores explicitly
+captured research, decisions, risks, and runbooks.
+
+The normal updater never creates `knowledge/` in an existing pre-knowledge
+project and never modifies existing records. It also does not turn a project
+into a knowledge-enabled project merely because the newer template contains
+knowledge files. This boundary applies to `--check`, `--dry-run`, `--apply`,
+and `--commit`.
+
+Create or edit a knowledge record only through `knowledge-capture` or
+`knowledge-review`, after the workflow has selected the exact path and the
+user has explicitly confirmed the write. Valid statuses are `draft`,
+`verified`, `needs-review`, `stale`, and `superseded`. At `task-finish`, an
+agent may offer a focused knowledge review when it is relevant; the offer does
+not authorize a review or an edit.
+
 ## 1. Update the template repository manually
 
 If you use a local clone of the template:

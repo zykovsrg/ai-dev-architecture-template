@@ -43,6 +43,27 @@ Files:
 - `ai/changelog.md`
 <!-- /canon:controlled-memory -->
 
+## Optional knowledge layer
+
+`knowledge/` is optional local reference material. It is not controlled task
+memory and is not a replacement for `ai/project-context.md`: project context
+contains the current stack, commands, invariants, and fragile zones that guide
+normal work; knowledge contains deliberately captured research, decisions,
+risks, and runbooks.
+
+The normal standalone updater deliberately keeps `knowledge/` outside both its
+protected-architecture and controlled-memory lists. Updating an older,
+pre-knowledge project never creates `knowledge/` and never changes an existing
+knowledge record.
+
+Knowledge records are created or changed only through `knowledge-capture` or
+`knowledge-review`. Those workflows select an exact record path, validate the
+status vocabulary (`draft`, `verified`, `needs-review`, `stale`, or
+`superseded`), show the proposed change, and wait for explicit confirmation.
+At task finish, the agent may offer a focused knowledge review when relevant;
+it must not start one or edit records without an explicit request and the
+required confirmation.
+
 ## Hub-managed project memory
 
 The optional personal hub has a separate memory boundary. These files belong
@@ -80,6 +101,7 @@ Do not copy either class into a hub or use the hub to overwrite project memory.
 | `ai/project-context.md` | after confirmation, when the stack, commands, structure, data model, invariants, or fragile zones change |
 | `ai/decisions.md` | `task-finish` or `architecture-update`, when an important durable decision appears |
 | `ai/changelog.md` | `task-finish` after confirmation; `architecture-update` when an approved architecture change requires it |
+| `knowledge/**` | only `knowledge-capture` or `knowledge-review`, after explicit confirmation of the exact record write or edit |
 
 ## 4. Template files
 

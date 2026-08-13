@@ -110,6 +110,24 @@ ai/skills/ui-review/SKILL.md
 ai/skills/write-tests/SKILL.md
 ```
 
+## Optional local knowledge
+
+A new standalone installation also includes the optional `knowledge/` layer:
+its README, record template, and `research`, `decisions`, `risks`, and
+`runbooks` categories. It is separate from `ai/project-context.md`: context
+holds the project facts needed for ordinary work, while knowledge stores
+explicitly captured reference records.
+
+Use `knowledge-capture` to propose a record and `knowledge-review` to assess a
+selected record or set. Both workflows require an exact path and explicit user
+confirmation before creating or changing content. Record statuses are limited
+to `draft`, `verified`, `needs-review`, `stale`, and `superseded`.
+
+The normal architecture updater never enables this layer for an existing
+pre-knowledge project and never changes its records. `task-finish` may offer a
+focused knowledge review when relevant, but it never starts that review or
+edits knowledge without a request and confirmation.
+
 ## 5. Fill in the project files
 
 After installation, be sure to fill in:

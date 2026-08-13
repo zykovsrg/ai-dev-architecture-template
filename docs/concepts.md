@@ -41,6 +41,26 @@ Work modes tell the agent what exactly it should be doing.
 - `task-finish` — check whether the task can be closed and clean up the context after confirmation.
 - `architecture-update` — update the AI development rules, not the application code.
 
+## Optional local knowledge
+
+`knowledge/` is an optional local reference layer. It is different from
+`ai/project-context.md`: context stores the current project facts that guide
+work, such as the stack, commands, invariants, and fragile zones. Knowledge
+stores explicitly captured research, decisions, risks, and runbooks that may
+be useful later.
+
+A normal architecture update does not enable knowledge in an existing project:
+it never creates `knowledge/` in a pre-knowledge project and never changes
+knowledge records. Capturing knowledge is intentional. `knowledge-capture`
+first proposes an exact category and path, while `knowledge-review` examines
+only an explicitly selected record or set. Neither may create or edit a record
+until the user explicitly confirms the exact write.
+
+Every knowledge record has one of five statuses: `draft`, `verified`,
+`needs-review`, `stale`, or `superseded`. `task-finish` may offer a focused
+knowledge review if it is relevant to closing the task. An offer is optional
+and does not itself authorize reading, reviewing, or changing knowledge.
+
 ## Standalone mode and personal hub
 
 Standalone mode is the normal architecture for one project. Its rules and

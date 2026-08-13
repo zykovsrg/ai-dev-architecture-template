@@ -203,6 +203,9 @@ resolve_source_template() {
   [ -f "$SOURCE_TEMPLATE/ai/architecture.md" ] || die "Source template is missing ai/architecture.md"
 }
 
+# `knowledge/` is deliberately absent from both update lists. It is an optional
+# local reference layer; a normal architecture update must never create or
+# change it in an existing project.
 ARCHITECTURE_FILES=(
   "AGENTS.md"
   "CLAUDE.md"
@@ -332,6 +335,7 @@ if [ "$CHECK" = "true" ]; then
 else
   echo "Mode: $MODE"
 fi
+echo "Knowledge lifecycle: Updating does not enable knowledge in existing projects."
 if [ "$DO_COMMIT" = "true" ]; then
   echo "Commit: enabled"
 fi
