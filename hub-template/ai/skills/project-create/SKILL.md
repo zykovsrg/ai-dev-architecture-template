@@ -125,8 +125,10 @@ The preview also explicitly excludes `ai/architecture.md`,
 3. Create only the absent knowledge scaffold at `<canonical-path>/knowledge/`:
    `README.md`, `record-template.md`, and the empty `research/`, `decisions/`,
    `risks/`, and `runbooks/` directories. Use the canonical contents below for
-   the two files. It must never overwrite records or any existing scaffold file; do not add knowledge-capture,
-   knowledge-review, project instructions, or any other project files.
+   the two files. It must never overwrite records or any existing scaffold
+   file. The created project uses the hub-owned `knowledge-capture` and
+   hub-owned `knowledge-review` workflows; do not copy generic workflow skills,
+   project instructions, or any other project files into it.
 4. Write the approved existing-schema card at
    `ai/project-cards/<project-id>.md` and the approved registry entry exactly
    as previewed. The card must retain all required fields and its
@@ -252,8 +254,20 @@ Store records in the category that matches their purpose:
 - `risks/` — known risks, assumptions, and mitigations.
 - `runbooks/` — repeatable operational procedures.
 
-Knowledge records must be secret-free. Never store credentials, passwords,
-tokens, private keys, or raw environment values.
+Create and update records only through the hub-owned `knowledge-capture` or
+`knowledge-review` workflow after its exact confirmation. Do not copy generic
+workflow skills into this project.
+
+Knowledge records must contain no secrets, personal data or client data. Never
+store credentials, passwords, tokens, private keys, raw environment values,
+personally identifying material, or client-confidential material. Omit or
+redact prohibited content without echoing the rejected value; refer to an
+approved secure location instead of recording it.
+
+The only allowed statuses are `draft`, `verified`, `needs-review`, `stale`, or
+`superseded`. Retain stale and superseded records at their original paths and
+link each one to its replacement under `Related records`; never silently delete
+it.
 ```
 
 ### knowledge/record-template.md

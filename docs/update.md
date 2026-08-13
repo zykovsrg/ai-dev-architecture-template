@@ -121,12 +121,22 @@ Existing-project knowledge enablement is available only through the hub's
 `knowledge-enable` workflow after the hub has confirmed the registered project.
 Legacy standalone knowledge migration is out of scope.
 
+Hub-created projects receive the quality cycle through central hub-owned
+`knowledge-capture` and `knowledge-review` workflows. The hub does not copy
+generic project skills or entry files into individual projects.
+
 Create or edit a knowledge record only through `knowledge-capture` or
 `knowledge-review`, after the workflow has selected the exact path and the
 user has explicitly confirmed the write. Valid statuses are `draft`,
 `verified`, `needs-review`, `stale`, and `superseded`. At `task-finish`, an
 agent may offer a focused knowledge review when it is relevant; the offer does
 not authorize a review or an edit.
+
+Capture and review canonicalize the project and selected paths, reject absolute
+paths, traversal, and symlink components, and prohibit secrets, personal data,
+and client data. Review validates exact types and statuses, record and source
+dates, contradictions, and type/category agreement. Stale and superseded
+records remain in place and link to replacements.
 
 ## 1. Update the template repository manually
 

@@ -61,9 +61,19 @@ Existing-project knowledge enablement is available only through the hub's
 Legacy standalone knowledge migration is out of scope.
 
 Knowledge records are created or changed only through `knowledge-capture` or
-`knowledge-review`. Those workflows select an exact record path, validate the
-status vocabulary (`draft`, `verified`, `needs-review`, `stale`, or
-`superseded`), show the proposed change, and wait for explicit confirmation.
+`knowledge-review`. In standalone projects these are project-local skills. In a
+hub-created project they are central hub-owned workflows, so the hub does not
+copy generic skills or entry files into each project. They canonicalize the
+confirmed project and selected path, reject absolute paths, traversal and
+symlink components, and require every record to remain inside the matching
+project-local category.
+
+The workflows prohibit secrets, personal data, and client data; rejected
+material is omitted or redacted without echoing it. Review validates required
+frontmatter, exact type and status vocabularies, record dates, source dates,
+contradictions, and type/category agreement. A stale or superseded record is
+retained and linked to its replacement. Proposed changes still wait for exact
+confirmation.
 At task finish, the agent may offer a focused knowledge review when relevant;
 it must not start one or edit records without an explicit request and the
 required confirmation.

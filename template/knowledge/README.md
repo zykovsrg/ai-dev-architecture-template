@@ -16,9 +16,10 @@ after the required confirmation.
 
 ## Safety and status
 
-Knowledge records must be secret-free. Never store credentials, passwords,
-tokens, private keys, or raw environment values. Redact sensitive material or
-refer to an approved secret-management location instead of recording a value.
+Knowledge records must be secret-free. They must contain no personal data or client data. Never store credentials, passwords, tokens, private keys, raw
+environment values, personally identifying material, or client-confidential
+material. Omit or redact prohibited content without echoing the rejected value;
+refer to an approved secure location instead of recording it.
 
 The only allowed statuses are `draft`, `verified`, `needs-review`, `stale`, or
 `superseded`:
@@ -28,3 +29,6 @@ The only allowed statuses are `draft`, `verified`, `needs-review`, `stale`, or
 - `needs-review` — ready for a focused check.
 - `stale` — may no longer be current.
 - `superseded` — replaced by a related record.
+
+Retain stale and superseded records at their original paths and link each one
+to its replacement under `Related records`; never silently delete it.

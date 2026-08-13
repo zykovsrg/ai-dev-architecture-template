@@ -122,6 +122,8 @@ Use `knowledge-capture` to propose a record and `knowledge-review` to assess a
 selected record or set. Both workflows require an exact path and explicit user
 confirmation before creating or changing content. Record statuses are limited
 to `draft`, `verified`, `needs-review`, `stale`, and `superseded`.
+They reject absolute paths, traversal, and symlink components, and prohibit
+secrets, personal data, and client data.
 
 The normal architecture updater never enables this layer for an existing
 pre-knowledge project and never changes its records. `task-finish` may offer a
@@ -131,6 +133,11 @@ edits knowledge without a request and confirmation.
 Existing-project knowledge enablement is available only through the hub's
 `knowledge-enable` workflow after the hub has confirmed the registered project.
 Legacy standalone knowledge migration is out of scope.
+
+Hub-created projects use the hub's central `knowledge-capture` and
+`knowledge-review` workflows. Generic project skills are not copied into each
+project. The hub `task-finish` workflow may offer the same focused review after
+its normal completion check, but never starts it automatically.
 
 ## 5. Fill in the project files
 

@@ -1,6 +1,6 @@
 # AI Development Architecture
 
-Version: 7.0
+Version: 7.1
 
 This file is the reference for workflows and the rule hierarchy. It does not need to be loaded for every task. Read it only when a task concerns workflows, rule conflicts, architecture-update, or when a rule is unclear.
 

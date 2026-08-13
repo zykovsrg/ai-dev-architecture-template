@@ -173,7 +173,7 @@ resolve_source_template() {
     || die "Source template is not a personal AI hub"
   grep -Fqx '# Personal AI Hub Architecture' "$SOURCE_TEMPLATE/ai/architecture.md" \
     || die "Source template is not a personal AI hub"
-  for mandatory_skill in project-router project-switch project-register registry-check; do
+  for mandatory_skill in project-router project-switch project-register registry-check knowledge-capture knowledge-review; do
     [ -f "$SOURCE_TEMPLATE/ai/skills/$mandatory_skill/SKILL.md" ] \
       || die "Source template missing mandatory hub skill: $mandatory_skill"
   done

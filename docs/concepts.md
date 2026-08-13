@@ -60,10 +60,20 @@ Existing-project knowledge enablement is available only through the hub's
 `knowledge-enable` workflow after the hub has confirmed the registered project.
 Legacy standalone knowledge migration is out of scope.
 
+Hub-created projects use central hub-owned `knowledge-capture` and
+`knowledge-review` workflows; the hub does not copy generic skills into each
+project. Both standalone and hub workflows reject absolute paths, traversal,
+and symlink components, and keep records inside the confirmed project's
+matching knowledge category. Records must contain no secrets, personal data,
+or client data.
+
 Every knowledge record has one of five statuses: `draft`, `verified`,
 `needs-review`, `stale`, or `superseded`. `task-finish` may offer a focused
 knowledge review if it is relevant to closing the task. An offer is optional
 and does not itself authorize reading, reviewing, or changing knowledge.
+Review also validates the exact four record types, record and source dates,
+type/category agreement, and contradictions. Stale and superseded records stay
+in place and link to their replacements.
 
 ## Standalone mode and personal hub
 

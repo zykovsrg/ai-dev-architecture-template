@@ -191,7 +191,10 @@ project_create_knowledge_scaffold_valid() {
     [[ "$text" == *'knowledge/risks/'* ]] &&
     [[ "$text" == *'knowledge/runbooks/'* ]] &&
     [[ "$text" == *'only the absent knowledge scaffold'* ]] &&
-    [[ "$text" == *'never overwrite records'* ]]
+    [[ "$text" == *'never overwrite records'* ]] &&
+    [[ "$text" == *'hub-owned `knowledge-capture`'* ]] &&
+    [[ "$text" == *'hub-owned `knowledge-review`'* ]] &&
+    [[ "$text" == *'do not copy generic workflow skills'* ]]
 }
 knowledge_enable_contract_valid() {
   local file="$1" text
@@ -212,7 +215,64 @@ knowledge_enable_contract_valid() {
     [[ "$text" == *'knowledge/runbooks/'* ]] &&
     [[ "$text" == *'only absent scaffold files'* ]] &&
     [[ "$text" == *'never overwrite records'* ]] &&
+    [[ "$text" == *'confirmed project path itself must be a real directory'* ]] &&
+    [[ "$text" == *'existing category path must be a real directory'* ]] &&
+    [[ "$text" == *'existing `README.md` or `record-template.md` must be a regular file'* ]] &&
+    [[ "$text" == *'Inspect path types with `lstat`'* ]] &&
     [[ "$text" == *'Legacy standalone migration is out of scope'* ]]
+}
+hub_knowledge_path_boundary_valid() {
+  local file="$1" text
+  text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
+
+  [[ "$text" == *'confirmed registered project'* ]] &&
+    [[ "$text" == *'canonical direct child of the sole allowed projects root'* ]] &&
+    [[ "$text" == *'Reject absolute paths and any path containing a `..` segment'* ]] &&
+    [[ "$text" == *'Inspect every existing path component with `lstat`'* ]] &&
+    [[ "$text" == *'reject any symlink component without following it'* ]] &&
+    [[ "$text" == *'canonical `knowledge/` tree'* ]]
+}
+hub_knowledge_capture_contract_valid() {
+  local file="$1" text
+  text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
+
+  hub_knowledge_path_boundary_valid "$file" &&
+    [[ "$text" == *'name: knowledge-capture'* ]] &&
+    [[ "$text" == *'selected project `ai/` memory'* ]] &&
+    [[ "$text" == *'explicit confirmation'* ]] &&
+    [[ "$text" == *'personal data or client data'* ]] &&
+    [[ "$text" == *'without echoing the rejected value'* ]] &&
+    [[ "$text" == *'The canonical target must remain beneath the directory mapped from the selected type'* ]] &&
+    [[ "$text" == *'Never delete a stale or superseded record'* ]] &&
+    [[ "$text" == *'link to its replacement'* ]]
+}
+hub_knowledge_review_contract_valid() {
+  local file="$1" text
+  text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
+
+  hub_knowledge_path_boundary_valid "$file" &&
+    [[ "$text" == *'name: knowledge-review'* ]] &&
+    [[ "$text" == *'selected project `ai/` memory'* ]] &&
+    [[ "$text" == *'explicit confirmation'* ]] &&
+    [[ "$text" == *'required frontmatter keys: `type`, `status`, `created`, `reviewed`, and `sources`'* ]] &&
+    [[ "$text" == *'exactly `research`, `decision`, `risk`, or `runbook`'* ]] &&
+    [[ "$text" == *'type must match its category directory'* ]] &&
+    [[ "$text" == *'exactly `draft`, `verified`, `needs-review`, `stale`, or `superseded`'* ]] &&
+    [[ "$text" == *'Validate `created` and `reviewed` as real `YYYY-MM-DD` dates'* ]] &&
+    [[ "$text" == *'publication or update date of each cited source separately'* ]] &&
+    [[ "$text" == *'personal data or client data'* ]] &&
+    [[ "$text" == *'without echoing the rejected value'* ]] &&
+    [[ "$text" == *'Never delete a stale or superseded record'* ]] &&
+    [[ "$text" == *'link to its replacement'* ]]
+}
+hub_task_finish_knowledge_offer_valid() {
+  local file="$1" text
+  text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
+
+  [[ "$text" == *'After the normal completion check'* ]] &&
+    [[ "$text" == *'may offer the hub-owned `knowledge-review`'* ]] &&
+    [[ "$text" == *'never start it automatically'* ]] &&
+    [[ "$text" == *'Declining the offer has no effect on task closure'* ]]
 }
 project_migrate_contract_valid() {
   local file="$1" text
@@ -426,7 +486,7 @@ assert_contains <(normalize_entry "$THIRD_ACTIVATION") \
 cmp -s <(normalize_entry "$HUB_AGENTS") <(normalize_entry "$HUB_CLAUDE") \
   || fail 'hub entry files differ beyond title and activation paragraph'
 
-for skill in project-router project-switch project-register project-create project-migrate registry-check environment-check task-intake task-switch task-finish knowledge-enable; do
+for skill in project-router project-switch project-register project-create project-migrate registry-check environment-check task-intake task-switch task-finish knowledge-enable knowledge-capture knowledge-review; do
   file="$ROOT/hub-template/ai/skills/$skill/SKILL.md"
   assert_file "$file"
   assert_contains "$file" 'name:'
@@ -467,6 +527,31 @@ KNOWLEDGE_ENABLE_WITHOUT_SYMLINK_GUARD="$TMP_DIR/knowledge-enable-without-symlin
 sed '/Never follow a symlink/d' "$KNOWLEDGE_ENABLE_SKILL" \
   > "$KNOWLEDGE_ENABLE_WITHOUT_SYMLINK_GUARD"
 assert_rejected knowledge_enable_contract_valid "$KNOWLEDGE_ENABLE_WITHOUT_SYMLINK_GUARD"
+
+KNOWLEDGE_ENABLE_WITHOUT_PATH_TYPES="$TMP_DIR/knowledge-enable-without-path-types.md"
+sed '/Inspect path types with `lstat`/d' "$KNOWLEDGE_ENABLE_SKILL" \
+  > "$KNOWLEDGE_ENABLE_WITHOUT_PATH_TYPES"
+assert_rejected knowledge_enable_contract_valid "$KNOWLEDGE_ENABLE_WITHOUT_PATH_TYPES"
+
+HUB_KNOWLEDGE_CAPTURE="$ROOT/hub-template/ai/skills/knowledge-capture/SKILL.md"
+HUB_KNOWLEDGE_REVIEW="$ROOT/hub-template/ai/skills/knowledge-review/SKILL.md"
+hub_knowledge_capture_contract_valid "$HUB_KNOWLEDGE_CAPTURE" \
+  || fail 'hub-owned knowledge-capture contract is incomplete'
+hub_knowledge_review_contract_valid "$HUB_KNOWLEDGE_REVIEW" \
+  || fail 'hub-owned knowledge-review contract is incomplete'
+
+HUB_CAPTURE_WITHOUT_TRAVERSAL="$TMP_DIR/hub-capture-without-traversal.md"
+sed '/Reject absolute paths and any path containing a `\.\.` segment/d' \
+  "$HUB_KNOWLEDGE_CAPTURE" > "$HUB_CAPTURE_WITHOUT_TRAVERSAL"
+assert_rejected hub_knowledge_capture_contract_valid "$HUB_CAPTURE_WITHOUT_TRAVERSAL"
+
+HUB_REVIEW_WITHOUT_SYMLINK="$TMP_DIR/hub-review-without-symlink.md"
+sed '/reject any symlink component without following it/d' \
+  "$HUB_KNOWLEDGE_REVIEW" > "$HUB_REVIEW_WITHOUT_SYMLINK"
+assert_rejected hub_knowledge_review_contract_valid "$HUB_REVIEW_WITHOUT_SYMLINK"
+
+hub_task_finish_knowledge_offer_valid "$ROOT/hub-template/ai/skills/task-finish/SKILL.md" \
+  || fail 'hub task-finish must offer but never start knowledge-review'
 
 PROJECT_MIGRATE_SKILL="$ROOT/hub-template/ai/skills/project-migrate/SKILL.md"
 project_migrate_contract_valid "$PROJECT_MIGRATE_SKILL" \
@@ -954,6 +1039,8 @@ assert_file "$HUB_INSTALL/CLAUDE.md"
 assert_file "$HUB_INSTALL/ai/project-registry.md"
 assert_file "$HUB_INSTALL/scripts/check-hub-registry.sh"
 assert_file "$HUB_INSTALL/projects/.gitkeep"
+assert_file "$HUB_INSTALL/ai/skills/knowledge-capture/SKILL.md"
+assert_file "$HUB_INSTALL/ai/skills/knowledge-review/SKILL.md"
 PROJECT_ROOT="$HUB_INSTALL/projects"
 mkdir -p "$PROJECT_ROOT/example-project" "$PROJECT_ROOT/example-backup"
 printf '%s\n' "$SENTINEL" > "$PROJECT_ROOT/example-project/.env"
@@ -991,6 +1078,14 @@ if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$
   fail 'hub updater accepted a source without a mandatory hub skill'
 fi
 assert_contains "$TMP_DIR/incomplete-hub-source.out" 'missing mandatory hub skill: project-router'
+
+INCOMPLETE_KNOWLEDGE_SOURCE="$TMP_DIR/incomplete-knowledge-source"
+cp -R "$ROOT/hub-template" "$INCOMPLETE_KNOWLEDGE_SOURCE"
+rm "$INCOMPLETE_KNOWLEDGE_SOURCE/ai/skills/knowledge-review/SKILL.md"
+if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$INCOMPLETE_KNOWLEDGE_SOURCE" --dry-run > "$TMP_DIR/incomplete-knowledge-source.out" 2>&1; then
+  fail 'hub updater accepted a source without the mandatory knowledge quality cycle'
+fi
+assert_contains "$TMP_DIR/incomplete-knowledge-source.out" 'missing mandatory hub skill: knowledge-review'
 
 printf '%s\n' '# Allowed Roots' '' '- /custom/projects' > "$HUB_INSTALL/ai/allowed-roots.md"
 printf '%s\n' '# Project Registry' '' 'custom registry' > "$HUB_INSTALL/ai/project-registry.md"

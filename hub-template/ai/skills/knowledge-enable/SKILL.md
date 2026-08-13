@@ -20,15 +20,21 @@ register, move, import, copy, or transform a project or its records.
 2. Revalidate the canonical hub, its sole `<canonical-hub>/projects` allowed
    root, the registry ID, and the exact registered path. The path must remain
    one direct child of that root.
-3. Inspect metadata only for these exact paths: `knowledge/README.md`,
+3. Inspect path types with `lstat` before classifying anything as present. The
+   confirmed project path itself must be a real directory, not a symlink. An
+   existing `knowledge/` or existing category path must be a real directory;
+   every existing category path must be a real directory, not another type.
+   An existing `README.md` or `record-template.md` must be a regular file, not
+   another type. Any type mismatch stops the workflow with no writes.
+4. Inspect metadata only for these exact paths: `knowledge/README.md`,
    `knowledge/record-template.md`, `knowledge/research/`,
    `knowledge/decisions/`, `knowledge/risks/`, and `knowledge/runbooks/`.
    Do not read unrelated project content, enumerate directories, or read an
    existing knowledge record.
-4. Never follow a symlink. Stop with no writes if the hub root, projects root,
+5. Never follow a symlink. Stop with no writes if the hub root, projects root,
    project path, `knowledge/`, or any exact scaffold path is a symlink or
    resolves through one.
-5. Do not write before confirmation. A prior router confirmation authorizes
+6. Do not write before confirmation. A prior router confirmation authorizes
    project access, not this scaffold change.
 
 ## Preview and confirmation
@@ -99,8 +105,20 @@ Store records in the category that matches their purpose:
 - `risks/` — known risks, assumptions, and mitigations.
 - `runbooks/` — repeatable operational procedures.
 
-Knowledge records must be secret-free. Never store credentials, passwords,
-tokens, private keys, or raw environment values.
+Create and update records only through the hub-owned `knowledge-capture` or
+`knowledge-review` workflow after its exact confirmation. Do not copy generic
+workflow skills into this project.
+
+Knowledge records must contain no secrets, personal data or client data. Never
+store credentials, passwords, tokens, private keys, raw environment values,
+personally identifying material, or client-confidential material. Omit or
+redact prohibited content without echoing the rejected value; refer to an
+approved secure location instead of recording it.
+
+The only allowed statuses are `draft`, `verified`, `needs-review`, `stale`, or
+`superseded`. Retain stale and superseded records at their original paths and
+link each one to its replacement under `Related records`; never silently delete
+it.
 ```
 
 ### knowledge/record-template.md

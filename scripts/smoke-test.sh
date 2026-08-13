@@ -40,6 +40,52 @@ assert_not_exists() {
   [ ! -e "$1" ] || fail "expected path to be absent: $1"
 }
 
+assert_rejected() {
+  if "$@"; then
+    fail "knowledge contract validator accepted an intentionally unsafe fixture"
+  fi
+}
+
+knowledge_path_boundary_valid() {
+  local file="$1" text
+  text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
+
+  [[ "$text" == *'canonical project root'* ]] &&
+    [[ "$text" == *'Reject absolute paths and any path containing a `..` segment'* ]] &&
+    [[ "$text" == *'Inspect every existing path component with `lstat`'* ]] &&
+    [[ "$text" == *'reject any symlink component without following it'* ]] &&
+    [[ "$text" == *'canonical `knowledge/` tree'* ]]
+}
+
+knowledge_capture_contract_valid() {
+  local file="$1" text
+  text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
+
+  knowledge_path_boundary_valid "$file" &&
+    [[ "$text" == *'The canonical target must remain beneath the directory mapped from the selected type'* ]] &&
+    [[ "$text" == *'personal data or client data'* ]] &&
+    [[ "$text" == *'without echoing the rejected value'* ]] &&
+    [[ "$text" == *'Never delete a stale or superseded record'* ]] &&
+    [[ "$text" == *'link to its replacement'* ]]
+}
+
+knowledge_review_contract_valid() {
+  local file="$1" text
+  text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
+
+  knowledge_path_boundary_valid "$file" &&
+    [[ "$text" == *'required frontmatter keys: `type`, `status`, `created`, `reviewed`, and `sources`'* ]] &&
+    [[ "$text" == *'exactly `research`, `decision`, `risk`, or `runbook`'* ]] &&
+    [[ "$text" == *'type must match its category directory'* ]] &&
+    [[ "$text" == *'exactly `draft`, `verified`, `needs-review`, `stale`, or `superseded`'* ]] &&
+    [[ "$text" == *'Validate `created` and `reviewed` as real `YYYY-MM-DD` dates'* ]] &&
+    [[ "$text" == *'publication or update date of each cited source separately'* ]] &&
+    [[ "$text" == *'personal data or client data'* ]] &&
+    [[ "$text" == *'without echoing the rejected value'* ]] &&
+    [[ "$text" == *'Never delete a stale or superseded record'* ]] &&
+    [[ "$text" == *'link to its replacement'* ]]
+}
+
 init_git_project() {
   local project="$1"
   mkdir -p "$project"
@@ -53,7 +99,7 @@ echo "Smoke test workspace: $TMP_DIR"
 bash "$ROOT/scripts/check-consistency.sh" > "$TMP_DIR/consistency.out"
 assert_contains "$TMP_DIR/consistency.out" 'OK [standalone canonical blocks]'
 assert_contains "$TMP_DIR/consistency.out" 'OK [hub entry parity]'
-assert_contains "$TMP_DIR/consistency.out" 'OK [hub skill references] — 13 declared skills exist'
+assert_contains "$TMP_DIR/consistency.out" 'OK [hub skill references] — 15 declared skills exist'
 assert_contains "$TMP_DIR/consistency.out" 'OK [hub update classes]'
 assert_contains "$TMP_DIR/consistency.out" 'OK [standalone memory updater boundaries]'
 assert_contains "$ROOT/scripts/check-consistency.sh" 'extract_block "$standalone_base/AGENTS.md" canon:controlled-memory'
@@ -117,6 +163,44 @@ assert_contains "$PROJECT/ai/skills/knowledge-capture/SKILL.md" 'tokens, private
 assert_contains "$PROJECT/ai/skills/knowledge-capture/SKILL.md" 'before requesting write confirmation; refer to an approved secret-management'
 assert_contains "$PROJECT/ai/skills/knowledge-capture/SKILL.md" 'Reject any status outside this vocabulary.'
 assert_contains "$PROJECT/ai/skills/knowledge-review/SKILL.md" 'Flag secret content and an invalid status.'
+knowledge_capture_contract_valid "$PROJECT/ai/skills/knowledge-capture/SKILL.md" \
+  || fail 'knowledge-capture must enforce containment, data safety, and retention'
+knowledge_review_contract_valid "$PROJECT/ai/skills/knowledge-review/SKILL.md" \
+  || fail 'knowledge-review must enforce containment and the complete record contract'
+assert_contains "$PROJECT/knowledge/README.md" 'personal data or client data'
+assert_contains "$PROJECT/knowledge/README.md" 'without echoing the rejected value'
+
+CAPTURE_WITHOUT_TRAVERSAL_GUARD="$TMP_DIR/capture-without-traversal-guard.md"
+sed '/Reject absolute paths and any path containing a `\.\.` segment/d' \
+  "$PROJECT/ai/skills/knowledge-capture/SKILL.md" > "$CAPTURE_WITHOUT_TRAVERSAL_GUARD"
+assert_rejected knowledge_capture_contract_valid "$CAPTURE_WITHOUT_TRAVERSAL_GUARD"
+
+CAPTURE_WITHOUT_SYMLINK_GUARD="$TMP_DIR/capture-without-symlink-guard.md"
+sed '/reject any symlink component without following it/d' \
+  "$PROJECT/ai/skills/knowledge-capture/SKILL.md" > "$CAPTURE_WITHOUT_SYMLINK_GUARD"
+assert_rejected knowledge_capture_contract_valid "$CAPTURE_WITHOUT_SYMLINK_GUARD"
+
+REVIEW_WITHOUT_TRAVERSAL_GUARD="$TMP_DIR/review-without-traversal-guard.md"
+sed '/Reject absolute paths and any path containing a `\.\.` segment/d' \
+  "$PROJECT/ai/skills/knowledge-review/SKILL.md" > "$REVIEW_WITHOUT_TRAVERSAL_GUARD"
+assert_rejected knowledge_review_contract_valid "$REVIEW_WITHOUT_TRAVERSAL_GUARD"
+
+REVIEW_WITHOUT_SYMLINK_GUARD="$TMP_DIR/review-without-symlink-guard.md"
+sed '/reject any symlink component without following it/d' \
+  "$PROJECT/ai/skills/knowledge-review/SKILL.md" > "$REVIEW_WITHOUT_SYMLINK_GUARD"
+assert_rejected knowledge_review_contract_valid "$REVIEW_WITHOUT_SYMLINK_GUARD"
+
+REVIEW_WITHOUT_SOURCE_DATES="$TMP_DIR/review-without-source-dates.md"
+sed '/publication or update date of each cited source separately/d' \
+  "$PROJECT/ai/skills/knowledge-review/SKILL.md" > "$REVIEW_WITHOUT_SOURCE_DATES"
+assert_rejected knowledge_review_contract_valid "$REVIEW_WITHOUT_SOURCE_DATES"
+
+cmp -s "$ROOT/template/knowledge/README.md" "$ROOT/knowledge/README.md" \
+  || fail 'root and template knowledge READMEs differ'
+cmp -s "$ROOT/template/ai/skills/knowledge-capture/SKILL.md" "$ROOT/ai/skills/knowledge-capture/SKILL.md" \
+  || fail 'root and template knowledge-capture skills differ'
+cmp -s "$ROOT/template/ai/skills/knowledge-review/SKILL.md" "$ROOT/ai/skills/knowledge-review/SKILL.md" \
+  || fail 'root and template knowledge-review skills differ'
 assert_file "$PROJECT/ai/current-task.md"
 assert_file "$PROJECT/ai/skills/task-intake/SKILL.md"
 assert_file "$PROJECT/ai/skills/start-screen/SKILL.md"
