@@ -21,20 +21,20 @@ The workflow may run only for a project that:
 
 ## Candidate Files
 
-The workflow may inspect and propose deletion only for these legacy
-standalone architecture paths inside that confirmed project:
+The workflow may inspect and propose deletion only for these exact legacy
+standalone architecture files inside that confirmed project:
 
 - `AGENTS.md`
 - `CLAUDE.md`
 - `ai/architecture.md`
 - `ai/external-tools.md`
-- `ai/skills/`
-- `.claude/`
-- `.codex/`
 
-It must never propose deletion of project source files, content, Git metadata,
-dependencies, configuration unrelated to the architecture, or the project
-memory files listed below.
+It must preserve `ai/skills/`, `.claude/`, and `.codex/` unchanged. They can
+contain user-created skills, permissions, hooks, or tool configuration and are
+not part of the standalone template's removable entry/rule set. It must never
+propose deletion of project source files, content, Git metadata, dependencies,
+configuration unrelated to the architecture, or the project-memory files
+listed below.
 
 ## Protected Project Memory
 
@@ -47,9 +47,9 @@ Cleanup must preserve these paths unchanged:
 - `ai/decisions.md`
 - `ai/changelog.md`
 
-No cleanup action may delete `ai/` as a directory. It may delete only the
-named legacy files and directories above, after their exact paths have been
-shown and confirmed.
+No cleanup action may delete `ai/` as a directory. It may delete only the four
+named legacy files above, after their exact paths have been shown and
+confirmed.
 
 ## Confirmation Flow
 
@@ -68,7 +68,8 @@ shown and confirmed.
    symlinks. If any item differs, stop without deleting anything.
 6. Delete only the confirmed existing candidates. Do not archive, back up,
    copy, replace, recursively clean unrelated paths, or create new Git
-   history. Report each removed path and each preserved memory file.
+   history. Report each removed path, the preserved memory files, and that
+   `ai/skills/`, `.claude/`, and `.codex/` were intentionally retained.
 
 If no candidate exists, report that no cleanup is needed. If the user declines
 or does not explicitly confirm, leave every file unchanged.
@@ -90,7 +91,11 @@ Smoke tests must assert that the workflow:
 - is present in the installed hub and referenced consistently;
 - does not make cleanup part of move or registration approval;
 - names only the allowed candidate paths;
+- rejects an added candidate path, broad directory deletion, or wording that
+  permits cleanup without the separate exact confirmation;
 - preserves every memory path;
+- preserves `ai/skills/`, `.claude/`, and `.codex/`;
 - requires an exact, separate confirmation;
-- refuses symlinks and path changes before deletion;
+- requires repeated project-path, registry, candidate-list, and symlink
+  validation before deletion;
 - does not propose archive or backup creation.

@@ -12,8 +12,9 @@
 
 - Cleanup is optional and follows successful move, separate registration confirmation, and `scripts/check-hub-registry.sh` validation.
 - Cleanup confirmation is separate from move, preflight, and registration confirmation.
-- The only removable paths are `AGENTS.md`, `CLAUDE.md`, `ai/architecture.md`, `ai/external-tools.md`, `ai/skills/`, `.claude/`, and `.codex/` in the confirmed direct-child project.
+- The only removable paths are the exact files `AGENTS.md`, `CLAUDE.md`, `ai/architecture.md`, and `ai/external-tools.md` in the confirmed direct-child project.
 - Preserve `ai/current-task.md`, `ai/paused-tasks.md`, `ai/future-tasks.md`, `ai/project-context.md`, `ai/decisions.md`, and `ai/changelog.md` unchanged.
+- Preserve `ai/skills/`, `.claude/`, and `.codex/` unchanged because they can contain user-created skills or tool configuration.
 - Do not delete `ai/` itself; never archive, back up, copy, follow a symlink, remove Git metadata, or remove unrelated project files.
 - Stop without deletion if a path, registry result, project relationship, candidate list, or symlink check changes before cleanup.
 
@@ -39,13 +40,13 @@ Add a `legacy_cleanup_contract_valid` helper to `scripts/hub-smoke-test.sh` that
 assert_contains "$MIGRATE" 'Optional legacy standalone cleanup'
 assert_contains "$MIGRATE" 'A previous move, preflight, or registration confirmation never authorizes cleanup.'
 assert_contains "$MIGRATE" '- `AGENTS.md`'
-assert_contains "$MIGRATE" '- `ai/skills/`'
+assert_contains "$MIGRATE" 'Preserve `ai/skills/`, `.claude/`, and `.codex/` unchanged.'
 assert_contains "$MIGRATE" '- `ai/current-task.md`'
 assert_contains "$MIGRATE" 'Do not delete `ai/` as a directory.'
 assert_contains "$MIGRATE" 'Do not archive, back up, copy, replace, or follow symlinks.'
 ```
 
-Add negative checks that reject wording which makes cleanup automatic or permits a broad recursive project deletion. Require the same ordered workflow reference in `hub-template/AGENTS.md`, `hub-template/CLAUDE.md`, and `hub-template/ai/architecture.md`.
+Parse only the `Optional legacy standalone cleanup` section. Require the exact four-candidate list and reject any added candidate, `ai/skills/` as a deletion candidate, `.claude/` as a deletion candidate, `.codex/` as a deletion candidate, wording that makes cleanup automatic, a cleanup without explicit confirmation, or a broad recursive project deletion. Require repeated path, registry, candidate-list, and symlink validation before deletion. Require the same ordered workflow reference in `hub-template/AGENTS.md`, `hub-template/CLAUDE.md`, and `hub-template/ai/architecture.md`.
 
 - [ ] **Step 2: Run the focused smoke test to verify RED**
 
@@ -91,12 +92,9 @@ AGENTS.md
 CLAUDE.md
 ai/architecture.md
 ai/external-tools.md
-ai/skills/
-.claude/
-.codex/
 ```
 
-Include the exact preserved-memory list from the global constraints. State that the agent inventories only existence/type, never contents, and rejects candidate paths or path components that are symlinks.
+Include the exact preserved-memory list from the global constraints and state that `ai/skills/`, `.claude/`, and `.codex/` are retained unchanged because they can contain user-created content. State that the agent inventories only existence/type of the four candidate files, never contents, and rejects candidate paths or path components that are symlinks.
 
 - [ ] **Step 2: Define the preview and confirmation gate**
 
@@ -123,7 +121,7 @@ Require this confirmation to name both the project ID and exact displayed path l
 
 - [ ] **Step 3: Define final revalidation and narrow removal rules**
 
-Before removing anything, require checks of canonical direct-child location, current registry validation, unchanged allowlisted candidate list, and no symlinks. State that the workflow stops with no deletion on any mismatch. Remove only confirmed existing candidates; do not delete `ai/`, project source, `.git`, dependencies, unrelated configuration, or preserved memory. Do not archive, back up, copy, replace, or follow symlinks. Report each removed path and preserved memory paths.
+Before removing anything, require checks of canonical direct-child location, current registry validation, unchanged allowlisted candidate list, and no symlinks. State that the workflow stops with no deletion on any mismatch. Remove only confirmed existing candidates; do not delete `ai/`, `ai/skills/`, `.claude/`, `.codex/`, project source, `.git`, dependencies, unrelated configuration, or preserved memory. Do not archive, back up, copy, replace, or follow symlinks. Report each removed path and preserved memory paths.
 
 - [ ] **Step 4: Update entry routing and architecture overview**
 
