@@ -28,13 +28,18 @@ records from conversation history alone.
    task-linked set.
 2. For each record, report:
    - freshness from `reviewed` (and `created` when no review date exists);
-   - `status`;
+   - `status`, validated against `draft`, `verified`, `needs-review`, `stale`,
+     or `superseded`;
    - contradictions with other selected records or clearly labelled unresolved
      claims.
-3. Separate verified evidence from interpretations, missing sources, and
+3. Flag secret content and an invalid status. Never expose a secret value in
+   the report; recommend redaction or a reference to an approved
+   secret-management location instead.
+4. Separate verified evidence from interpretations, missing sources, and
    uncertainty.
-4. Propose concrete edits with exact paths, but do not apply them.
-5. Wait for explicit confirmation that names the intended record or set, for
+5. Propose concrete edits with exact paths, but do not apply them.
+6. Wait for explicit confirmation that names the intended record or set, for
    example: `Update knowledge/risks/deployment.md as proposed.`
 
 After confirmation, make only the confirmed edits and report the changed paths.
+Redact or remove secret content only when that exact edit is confirmed.

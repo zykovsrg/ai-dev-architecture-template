@@ -106,6 +106,13 @@ assert_file "$PROJECT/knowledge/README.md"
 assert_file "$PROJECT/knowledge/record-template.md"
 assert_file "$PROJECT/ai/skills/knowledge-capture/SKILL.md"
 assert_file "$PROJECT/ai/skills/knowledge-review/SKILL.md"
+assert_contains "$PROJECT/knowledge/README.md" 'Knowledge records must be secret-free.'
+assert_contains "$PROJECT/knowledge/README.md" 'The only allowed statuses are `draft`, `verified`, `needs-review`, `stale`, or'
+assert_contains "$PROJECT/knowledge/README.md" '`superseded`:'
+assert_contains "$PROJECT/ai/skills/knowledge-capture/SKILL.md" 'tokens, private keys, or raw environment values. Reject or redact secret values'
+assert_contains "$PROJECT/ai/skills/knowledge-capture/SKILL.md" 'before requesting write confirmation; refer to an approved secret-management'
+assert_contains "$PROJECT/ai/skills/knowledge-capture/SKILL.md" 'Reject any status outside this vocabulary.'
+assert_contains "$PROJECT/ai/skills/knowledge-review/SKILL.md" 'Flag secret content and an invalid status.'
 assert_file "$PROJECT/ai/current-task.md"
 assert_file "$PROJECT/ai/skills/task-intake/SKILL.md"
 assert_file "$PROJECT/ai/skills/start-screen/SKILL.md"
