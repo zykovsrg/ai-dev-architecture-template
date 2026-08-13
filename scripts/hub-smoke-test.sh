@@ -180,6 +180,40 @@ project_create_contract_valid() {
     [[ "$text" == *'Git repositories must not be created or modified'* ]] &&
     [[ "$text" == *'must not add application code, dependencies, services, AGENTS.md, CLAUDE.md, or shared skills'* ]]
 }
+project_create_knowledge_scaffold_valid() {
+  local file="$1" text
+  text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
+
+  [[ "$text" == *'knowledge/README.md'* ]] &&
+    [[ "$text" == *'knowledge/record-template.md'* ]] &&
+    [[ "$text" == *'knowledge/research/'* ]] &&
+    [[ "$text" == *'knowledge/decisions/'* ]] &&
+    [[ "$text" == *'knowledge/risks/'* ]] &&
+    [[ "$text" == *'knowledge/runbooks/'* ]] &&
+    [[ "$text" == *'only the absent knowledge scaffold'* ]] &&
+    [[ "$text" == *'never overwrite records'* ]]
+}
+knowledge_enable_contract_valid() {
+  local file="$1" text
+  text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
+
+  [[ "$text" == *'name: knowledge-enable'* ]] &&
+    [[ "$text" == *'confirmed registered project'* ]] &&
+    [[ "$text" == *'exact registered path'* ]] &&
+    [[ "$text" == *'explicit confirmation'* ]] &&
+    [[ "$text" == *'Do not write before confirmation'* ]] &&
+    [[ "$text" == *'Do not read unrelated project content'* ]] &&
+    [[ "$text" == *'Never follow a symlink'* ]] &&
+    [[ "$text" == *'knowledge/README.md'* ]] &&
+    [[ "$text" == *'knowledge/record-template.md'* ]] &&
+    [[ "$text" == *'knowledge/research/'* ]] &&
+    [[ "$text" == *'knowledge/decisions/'* ]] &&
+    [[ "$text" == *'knowledge/risks/'* ]] &&
+    [[ "$text" == *'knowledge/runbooks/'* ]] &&
+    [[ "$text" == *'only absent scaffold files'* ]] &&
+    [[ "$text" == *'never overwrite records'* ]] &&
+    [[ "$text" == *'Legacy standalone migration is out of scope'* ]]
+}
 project_migrate_contract_valid() {
   local file="$1" text
   text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
@@ -392,7 +426,7 @@ assert_contains <(normalize_entry "$THIRD_ACTIVATION") \
 cmp -s <(normalize_entry "$HUB_AGENTS") <(normalize_entry "$HUB_CLAUDE") \
   || fail 'hub entry files differ beyond title and activation paragraph'
 
-for skill in project-router project-switch project-register project-create project-migrate registry-check environment-check task-intake task-switch task-finish; do
+for skill in project-router project-switch project-register project-create project-migrate registry-check environment-check task-intake task-switch task-finish knowledge-enable; do
   file="$ROOT/hub-template/ai/skills/$skill/SKILL.md"
   assert_file "$file"
   assert_contains "$file" 'name:'
@@ -403,6 +437,8 @@ done
 PROJECT_CREATE_SKILL="$ROOT/hub-template/ai/skills/project-create/SKILL.md"
 project_create_contract_valid "$PROJECT_CREATE_SKILL" \
   || fail 'project-create must define the confirmation-gated creation contract'
+project_create_knowledge_scaffold_valid "$PROJECT_CREATE_SKILL" \
+  || fail 'project-create must preview and create the four knowledge directories safely'
 assert_contains "$PROJECT_CREATE_SKILL" '<canonical-hub>/projects'
 
 PROJECT_CREATE_WITHOUT_UNSAFE_NAMES="$TMP_DIR/project-create-without-unsafe-name-guard.md"
@@ -413,6 +449,24 @@ PROJECT_CREATE_WITHOUT_GIT_GUARANTEE="$TMP_DIR/project-create-without-git-guaran
 sed '/Git repositories must not be created or modified/d' "$PROJECT_CREATE_SKILL" \
   > "$PROJECT_CREATE_WITHOUT_GIT_GUARANTEE"
 assert_rejected project_create_contract_valid "$PROJECT_CREATE_WITHOUT_GIT_GUARANTEE"
+
+PROJECT_CREATE_WITHOUT_KNOWLEDGE_DIRECTORY="$TMP_DIR/project-create-without-knowledge-directory.md"
+sed '/knowledge\/runbooks\//d' "$PROJECT_CREATE_SKILL" > "$PROJECT_CREATE_WITHOUT_KNOWLEDGE_DIRECTORY"
+assert_rejected project_create_knowledge_scaffold_valid "$PROJECT_CREATE_WITHOUT_KNOWLEDGE_DIRECTORY"
+
+KNOWLEDGE_ENABLE_SKILL="$ROOT/hub-template/ai/skills/knowledge-enable/SKILL.md"
+knowledge_enable_contract_valid "$KNOWLEDGE_ENABLE_SKILL" \
+  || fail 'missing knowledge-enable workflow safety contract'
+
+KNOWLEDGE_ENABLE_WITHOUT_NO_WRITES="$TMP_DIR/knowledge-enable-without-preconfirmation-write-gate.md"
+sed '/Do not write before confirmation/d' "$KNOWLEDGE_ENABLE_SKILL" \
+  > "$KNOWLEDGE_ENABLE_WITHOUT_NO_WRITES"
+assert_rejected knowledge_enable_contract_valid "$KNOWLEDGE_ENABLE_WITHOUT_NO_WRITES"
+
+KNOWLEDGE_ENABLE_WITHOUT_SYMLINK_GUARD="$TMP_DIR/knowledge-enable-without-symlink-guard.md"
+sed '/Never follow a symlink/d' "$KNOWLEDGE_ENABLE_SKILL" \
+  > "$KNOWLEDGE_ENABLE_WITHOUT_SYMLINK_GUARD"
+assert_rejected knowledge_enable_contract_valid "$KNOWLEDGE_ENABLE_WITHOUT_SYMLINK_GUARD"
 
 PROJECT_MIGRATE_SKILL="$ROOT/hub-template/ai/skills/project-migrate/SKILL.md"
 project_migrate_contract_valid "$PROJECT_MIGRATE_SKILL" \

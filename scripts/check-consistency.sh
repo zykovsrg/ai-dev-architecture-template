@@ -125,7 +125,7 @@ fi
 hub_skill_ok=1
 hub_skill_count=0
 checked_hub_skills=""
-HUB_REQUIRED_SKILLS="project-router project-switch project-register project-create project-migrate registry-check info-update local-router-install environment-check task-intake task-switch task-finish"
+HUB_REQUIRED_SKILLS="project-router project-switch project-register project-create project-migrate registry-check info-update local-router-install environment-check task-intake task-switch task-finish knowledge-enable"
 if [ ! -f hub-template/ai/architecture.md ]; then
   echo "MISSING [hub skill references] — hub architecture absent"
   fail=1

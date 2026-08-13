@@ -42,8 +42,9 @@ confirmation.
 ## Single preview and approval gate
 
 Show one complete preview after the checks succeed. It must include the name,
-ID, type, canonical path, exactly six `<path>/ai/` files, the draft card, the
-draft registry entry, and the active-project selection. Use this shape:
+ID, type, canonical path, exactly six `<path>/ai/` files, the empty knowledge
+scaffold, the draft card, the draft registry entry, and the active-project
+selection. Use this shape:
 
 ```text
 Режим: routing
@@ -52,8 +53,8 @@ ID: <project-id>
 Тип: <type>
 Путь: <canonical-path>
 
-Будет создано: папка <canonical-path>/ai/; шесть файлов памяти; карточка;
-запись в реестре; активный проект.
+Будет создано: папка <canonical-path>/ai/; шесть файлов памяти; пустой
+knowledge-scaffold; карточка; запись в реестре; активный проект.
 Не будет создано: Git, код, зависимости, сервисы, AGENTS.md, CLAUDE.md или общие skills.
 
 Подтвердите: «Создать <project-id> по пути <canonical-path>».
@@ -70,6 +71,14 @@ Memory files:
 - <canonical-path>/ai/project-context.md
 - <canonical-path>/ai/decisions.md
 - <canonical-path>/ai/changelog.md
+
+Knowledge scaffold:
+- <canonical-path>/knowledge/README.md
+- <canonical-path>/knowledge/record-template.md
+- <canonical-path>/knowledge/research/
+- <canonical-path>/knowledge/decisions/
+- <canonical-path>/knowledge/risks/
+- <canonical-path>/knowledge/runbooks/
 
 Card: ai/project-cards/<project-id>.md
 Project ID: <project-id>
@@ -113,18 +122,23 @@ The preview also explicitly excludes `ai/architecture.md`,
    `current-task.md`, `paused-tasks.md`, `future-tasks.md`,
    `project-context.md`, `decisions.md`, and `changelog.md`. Do not copy
    `ai/architecture.md` or `ai/external-tools.md`.
-3. Write the approved existing-schema card at
+3. Create only the absent knowledge scaffold at `<canonical-path>/knowledge/`:
+   `README.md`, `record-template.md`, and the empty `research/`, `decisions/`,
+   `risks/`, and `runbooks/` directories. Use the canonical contents below for
+   the two files. It must never overwrite records or any existing scaffold file; do not add knowledge-capture,
+   knowledge-review, project instructions, or any other project files.
+4. Write the approved existing-schema card at
    `ai/project-cards/<project-id>.md` and the approved registry entry exactly
    as previewed. The card must retain all required fields and its
    `Memory entry point: <canonical-path>/ai/current-task.md`. Do not read that
    memory entry point while validating.
-4. Run `scripts/check-hub-registry.sh`. On a failure, stop and report the
+5. Run `scripts/check-hub-registry.sh`. On a failure, stop and report the
    validator output. Do not update active-project selection or invoke a
    project workflow.
-5. Only after successful validation, update `ai/active-project.md` with the
+6. Only after successful validation, update `ai/active-project.md` with the
    confirmed ID and canonical path. `active-project.md only after successful validation`;
    it is a selection record, not permission for a future chat.
-6. Invoke hub-owned `environment-check` and then hub-owned `task-intake` for
+7. Invoke hub-owned `environment-check` and then hub-owned `task-intake` for
    the confirmed selected project. Those workflows operate only on the selected
    project's `ai/` memory and cannot override hub confirmation, allowed roots,
    secret, or memory-isolation rules.
@@ -220,4 +234,48 @@ No project decisions yet.
 ## Current changelog
 
 No notable changes yet.
+```
+
+### knowledge/README.md
+
+```markdown
+# Project Knowledge
+
+This local knowledge base is optional reference material. Read it only when a
+task or the user explicitly needs it. It is not default context and is not an
+automatic archive of conversations.
+
+Store records in the category that matches their purpose:
+
+- `research/` — investigated questions and evidence.
+- `decisions/` — durable choices and their rationale.
+- `risks/` — known risks, assumptions, and mitigations.
+- `runbooks/` — repeatable operational procedures.
+
+Knowledge records must be secret-free. Never store credentials, passwords,
+tokens, private keys, or raw environment values.
+```
+
+### knowledge/record-template.md
+
+```markdown
+---
+type: research
+status: draft
+created: YYYY-MM-DD
+reviewed: YYYY-MM-DD
+sources: []
+---
+
+# Record title
+
+## Statement
+
+## Evidence
+
+## Scope
+
+## Related records
+
+## Review notes
 ```

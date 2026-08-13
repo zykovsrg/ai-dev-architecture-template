@@ -89,10 +89,14 @@ Use `project-create` when the user requests a new project. After one complete
 preview and explicit confirmation, it creates exactly one direct-child project
 under the validated `<hub>/projects` root: only its `ai/` memory files (`current-task.md`,
 `paused-tasks.md`, `future-tasks.md`, `project-context.md`, `decisions.md`, and
-`changelog.md`), a card, a registry entry, and an active-project selection.
-It must not create Git, code, dependencies, services, duplicate registry
-entries, or any other project files. Use `project-register` for an existing
-folder; it does not replace the new-project creation flow.
+`changelog.md`), its empty optional `knowledge/` scaffold, a card, a registry
+entry, and an active-project selection. The scaffold consists only of
+`knowledge/README.md`, `knowledge/record-template.md`, and the four empty
+directories `knowledge/research/`, `knowledge/decisions/`, `knowledge/risks/`,
+and `knowledge/runbooks/`. It must not create Git, code, dependencies,
+services, duplicate registry entries, or any other project files. Use
+`project-register` for an existing folder; it does not replace the new-project
+creation flow.
 
 ## Existing Project Migration
 
@@ -161,6 +165,26 @@ Each shared workflow operates only after a confirmed registered project and
 only against that selected project's `ai/` memory. It cannot weaken hub
 confirmation, allowed-root, secret, or memory-isolation rules. It never reads,
 writes, pauses, finishes, or copies another project's memory.
+
+## Optional Project Knowledge
+
+`knowledge/` is optional local reference material, not default context and not
+an automatic conversation archive. A new project receives only the empty
+knowledge scaffold as part of its one confirmed `project-create` operation.
+
+For an existing confirmed registered hub project, use `knowledge-enable` only
+after a separate explicit confirmation that repeats the project ID and exact
+registered path. It may inspect only the registry identity and the exact
+scaffold paths, must not follow symlinks, and must not read records or unrelated
+project content. Its preview names `knowledge/README.md`,
+`knowledge/record-template.md`, and all four category directories. After the
+matching confirmation, it creates only absent scaffold files and directories;
+it never overwrites records or creates project instructions, skills, Git, code,
+dependencies, services, registry entries, cards, or active-project changes.
+
+Knowledge enablement applies only to existing hub projects. Legacy standalone
+migration is out of scope; it neither imports, copies, nor transforms a legacy
+knowledge directory.
 
 ## Information Updates
 
