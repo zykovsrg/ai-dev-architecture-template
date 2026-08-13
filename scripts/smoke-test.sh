@@ -63,6 +63,8 @@ assert_contains "$ROOT/docs/file-roles.md" 'Hub-managed project memory'
 assert_contains "$ROOT/getting-started/getting-started.md" 'personal hub'
 assert_contains "$ROOT/scripts/hub-smoke-test.sh" 'legacy_cleanup_contract_valid'
 assert_contains "$ROOT/scripts/hub-smoke-test.sh" 'legacy_cleanup_order_valid'
+assert_contains "$ROOT/scripts/hub-smoke-test.sh" 'cleanup_section_text'
+assert_contains "$ROOT/scripts/hub-smoke-test.sh" 'legacy_cleanup_mutations_rejected'
 assert_contains "$ROOT/hub-template/ai/skills/project-migrate/SKILL.md" \
   'Optional legacy standalone cleanup'
 assert_contains "$ROOT/hub-template/ai/skills/project-migrate/SKILL.md" \

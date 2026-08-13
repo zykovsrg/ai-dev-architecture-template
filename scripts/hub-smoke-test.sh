@@ -205,31 +205,70 @@ project_migrate_contract_valid() {
     [[ "$text" == *'Never move backups, archives, symlinks, unknown folders, or unsafe candidates'* ]]
 }
 legacy_cleanup_contract_valid() {
-  local file="$1" text
-  text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
+  local file="$1" section candidates expected lower
+  section="$(cleanup_section_text "$file")"
+  candidates="$(printf '%s\n' "$section" | awk '
+    /^Candidate allowlist:$/ { collect = 1; next }
+    collect && /^Preserve / { exit }
+    collect && /^- `/ { print }
+  ')"
+  expected=$'- `AGENTS.md`\n- `CLAUDE.md`\n- `ai/architecture.md`\n- `ai/external-tools.md`'
+  lower="$(printf '%s' "$section" | tr '[:upper:]' '[:lower:]')"
 
-  [[ "$text" == *'Optional legacy standalone cleanup'* ]] &&
-    [[ "$text" == *'Cleanup confirmation is separate from move, preflight, and registration confirmation.'* ]] &&
-    [[ "$text" == *'A previous move, preflight, or registration confirmation never authorizes cleanup.'* ]] &&
-    [[ "$text" == *'- `AGENTS.md`'* ]] &&
-    [[ "$text" == *'- `CLAUDE.md`'* ]] &&
-    [[ "$text" == *'- `ai/architecture.md`'* ]] &&
-    [[ "$text" == *'- `ai/external-tools.md`'* ]] &&
-    [[ "$text" == *'- `ai/skills/`'* ]] &&
-    [[ "$text" == *'- `.claude/`'* ]] &&
-    [[ "$text" == *'- `.codex/`'* ]] &&
-    [[ "$text" == *'- `ai/current-task.md`'* ]] &&
-    [[ "$text" == *'- `ai/paused-tasks.md`'* ]] &&
-    [[ "$text" == *'- `ai/future-tasks.md`'* ]] &&
-    [[ "$text" == *'- `ai/project-context.md`'* ]] &&
-    [[ "$text" == *'- `ai/decisions.md`'* ]] &&
-    [[ "$text" == *'- `ai/changelog.md`'* ]] &&
-    [[ "$text" == *'Do not delete `ai/` as a directory.'* ]] &&
-    [[ "$text" == *'Do not archive, back up, copy, replace, or follow symlinks.'* ]] &&
-    [[ "$text" != *'automatic cleanup'* ]] &&
-    [[ "$text" != *'delete the entire project'* ]] &&
-    [[ "$text" != *'recursively delete'* ]] &&
-    [[ "$text" != *'rm -rf'* ]]
+  [[ -n "$section" ]] &&
+    [[ "$candidates" == "$expected" ]] &&
+    [[ "$section" == *'Cleanup confirmation is separate from move, preflight, and registration confirmation.'* ]] &&
+    [[ "$section" == *'A previous move, preflight, or registration confirmation never authorizes cleanup.'* ]] &&
+    [[ "$section" == *'Preserve `ai/skills/`, `.claude/`, and `.codex/` unchanged.'* ]] &&
+    [[ "$section" == *'- `ai/current-task.md`'* ]] &&
+    [[ "$section" == *'- `ai/paused-tasks.md`'* ]] &&
+    [[ "$section" == *'- `ai/future-tasks.md`'* ]] &&
+    [[ "$section" == *'- `ai/project-context.md`'* ]] &&
+    [[ "$section" == *'- `ai/decisions.md`'* ]] &&
+    [[ "$section" == *'- `ai/changelog.md`'* ]] &&
+    [[ "$section" == *'Do not delete `ai/` as a directory.'* ]] &&
+    [[ "$section" == *'revalidate the canonical direct-child project location'* ]] &&
+    [[ "$section" == *'current registry validation result'* ]] &&
+    [[ "$section" == *'unchanged allowlisted candidate list'* ]] &&
+    [[ "$section" == *'absence of symlinks'* ]] &&
+    [[ "$section" == *'Do not archive, back up, copy, replace, or follow symlinks.'* ]] &&
+    [[ "$lower" != *'automatic cleanup'* ]] &&
+    [[ "$lower" != *'cleanup may proceed without explicit confirmation'* ]] &&
+    [[ "$lower" != *'delete the entire project'* ]] &&
+    [[ "$lower" != *'recursively delete'* ]] &&
+    [[ "$lower" != *'rm -rf'* ]]
+}
+cleanup_section_text() {
+  awk '
+    /^## Optional legacy standalone cleanup$/ { collect = 1; next }
+    collect && /^## / { exit }
+    collect { print }
+  ' "$1"
+}
+legacy_cleanup_mutations_rejected() {
+  local file="$1" fixture phrase
+
+  fixture="$TMP_DIR/migrate-extra-cleanup-candidate.md"
+  awk '{ print; if ($0 == "- `ai/external-tools.md`") print "- `package.json`" }' "$file" > "$fixture"
+  assert_rejected legacy_cleanup_contract_valid "$fixture"
+
+  fixture="$TMP_DIR/migrate-cleanup-directory-candidate.md"
+  awk '{ print; if ($0 == "- `ai/external-tools.md`") print "- `ai/`" }' "$file" > "$fixture"
+  assert_rejected legacy_cleanup_contract_valid "$fixture"
+
+  fixture="$TMP_DIR/migrate-cleanup-without-confirmation.md"
+  awk '{ print; if ($0 == "Cleanup confirmation is separate from move, preflight, and registration confirmation.") print "Cleanup may proceed without explicit confirmation." }' "$file" > "$fixture"
+  assert_rejected legacy_cleanup_contract_valid "$fixture"
+
+  for phrase in \
+    'revalidate the canonical direct-child project location' \
+    'current registry validation result' \
+    'unchanged allowlisted candidate list' \
+    'absence of symlinks'; do
+    fixture="$TMP_DIR/migrate-missing-${phrase// /-}.md"
+    sed "s|$phrase|omitted validation|" "$file" > "$fixture"
+    assert_rejected legacy_cleanup_contract_valid "$fixture"
+  done
 }
 legacy_cleanup_order_valid() {
   local file="$1" text
@@ -401,10 +440,15 @@ sed '/ai\/project-context\.md/d' "$PROJECT_MIGRATE_SKILL" \
 assert_rejected legacy_cleanup_contract_valid "$PROJECT_MIGRATE_WITHOUT_MEMORY_PATH"
 
 PROJECT_MIGRATE_WITH_AUTOMATIC_CLEANUP="$TMP_DIR/project-migrate-with-automatic-cleanup.md"
-cp "$PROJECT_MIGRATE_SKILL" "$PROJECT_MIGRATE_WITH_AUTOMATIC_CLEANUP"
-printf '%s\n' 'Cleanup is automatic: recursively delete the entire project with rm -rf.' \
-  >> "$PROJECT_MIGRATE_WITH_AUTOMATIC_CLEANUP"
+awk '
+  /^## Russian preview template$/ {
+    print "Cleanup is automatic: recursively delete the entire project with rm -rf."
+  }
+  { print }
+' "$PROJECT_MIGRATE_SKILL" > "$PROJECT_MIGRATE_WITH_AUTOMATIC_CLEANUP"
 assert_rejected legacy_cleanup_contract_valid "$PROJECT_MIGRATE_WITH_AUTOMATIC_CLEANUP"
+
+legacy_cleanup_mutations_rejected "$PROJECT_MIGRATE_SKILL"
 
 for hub_entry in "$HUB_AGENTS" "$HUB_CLAUDE" "$ROOT/hub-template/ai/architecture.md"; do
   legacy_cleanup_order_valid "$hub_entry" \

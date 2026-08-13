@@ -101,9 +101,10 @@ Candidate allowlist:
 - `CLAUDE.md`
 - `ai/architecture.md`
 - `ai/external-tools.md`
-- `ai/skills/`
-- `.claude/`
-- `.codex/`
+
+Preserve `ai/skills/`, `.claude/`, and `.codex/` unchanged. They may contain
+user-created skills, permissions, hooks, or tool configuration and are never
+cleanup candidates.
 
 Preserve these project-memory paths unchanged:
 
@@ -114,8 +115,9 @@ Preserve these project-memory paths unchanged:
 - `ai/decisions.md`
 - `ai/changelog.md`
 
-Do not delete `ai/` as a directory. Do not delete project source, `.git`,
-dependencies, unrelated configuration, or any preserved memory path.
+Do not delete `ai/` as a directory. Do not delete `ai/skills/`, `.claude/`,
+or `.codex/`. Do not delete project source, `.git`, dependencies, unrelated
+configuration, or any preserved memory path.
 
 Show only the existing candidates in this preview. Recommend deletion because
 retaining two rule systems can make their instructions diverge.
@@ -142,11 +144,7 @@ displayed candidate path list. If no candidates exist, report that no cleanup
 is needed. If the user declines or does not give that exact confirmation, leave
 every path unchanged.
 
-Immediately before removal, revalidate the canonical direct-child project
-location, the current registry validation result, the unchanged allowlisted
-candidate list, and the absence of symlinks. Stop without deletion on any
-mismatch. Remove only confirmed candidates that still exist. Do not archive, back up, copy, replace, or follow symlinks.
-Report every removed path and every preserved memory path.
+Immediately before removal, revalidate the canonical direct-child project location, the current registry validation result, the unchanged allowlisted candidate list, and the absence of symlinks. Stop without deletion on any mismatch. Remove only confirmed existing candidates from the four-file allowlist. Do not archive, back up, copy, replace, or follow symlinks. Report every removed path, every preserved memory path, and that `ai/skills/`, `.claude/`, and `.codex/` were intentionally retained.
 
 ## Russian preview template
 

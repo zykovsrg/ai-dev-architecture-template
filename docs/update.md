@@ -55,9 +55,10 @@ move a project. To relocate existing folders later, use the installed hub's
 source, shows the exact source-to-destination mapping and Git status, and then
 requires explicit move approval. Registration requires a second confirmation,
 then the hub registry is validated. Only after that may the workflow offer an
-optional cleanup of old standalone rules, with a third separate confirmation.
-The cleanup is never automatic and preserves all project memory files. It
-never copies folders or moves them during installation or update.
+optional cleanup of old standalone rules, with its own separate confirmation.
+The cleanup is never automatic, preserves all project memory files, and keeps
+`ai/skills/`, `.claude/`, and `.codex/` unchanged. It never copies folders or
+moves them during installation or update.
 
 For an installed hub, use its dedicated updater. Check first, then run a
 dry-run; neither command changes files:
