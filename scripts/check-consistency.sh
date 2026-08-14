@@ -174,12 +174,28 @@ EOF
 [ "$hub_classes_ok" -eq 0 ] \
   || echo "OK [hub update classes] — protected files exclude hub memory"
 
+# path_is_or_contains LIST ENTRY -> 0 if ENTRY exactly equals a line in LIST,
+# or ENTRY is a directory prefix of a line in LIST (line starts with "ENTRY/").
+path_is_or_contains() {
+  local list="$1" entry="$2" line
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    case "$line" in
+      "$entry") return 0 ;;
+      "$entry"/*) return 0 ;;
+    esac
+  done <<EOF
+$list
+EOF
+  return 1
+}
+
 hub_superseded="$(extract_array scripts/update-installed-hub.sh SUPERSEDED_PATHS)"
 hub_superseded_ok=1
 while IFS= read -r superseded_path; do
   [ -n "$superseded_path" ] || continue
-  if printf '%s\n' "$hub_memory" | grep -Fxq "$superseded_path" \
-    || printf '%s\n' "$hub_protected" | grep -Fxq "$superseded_path"; then
+  if path_is_or_contains "$hub_memory" "$superseded_path" \
+    || path_is_or_contains "$hub_protected" "$superseded_path"; then
     echo "OVERLAP [hub superseded paths] — $superseded_path is hub memory or a protected file"
     fail=1
     hub_superseded_ok=0

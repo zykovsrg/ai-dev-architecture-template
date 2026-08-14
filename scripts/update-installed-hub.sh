@@ -194,14 +194,25 @@ MEMORY_FILES=(
 
 # Paths removed from an installed hub because they were renamed or retired
 # upstream. Explicit list only — never "delete whatever the template lacks".
-SUPERSEDED_PATHS=()
-if [ -n "${SUPERSEDED_TEST_SOURCE:-}" ]; then
-  SUPERSEDED_PATHS=(
-    "ai/skills/legacy-fixture-skill/SKILL.md"
-  )
-  if [ -n "${SUPERSEDED_TEST_EMPTY:-}" ]; then
-    SUPERSEDED_PATHS+=("")
-  fi
+SUPERSEDED_PATHS=(
+  "ai/skills/environment-check"
+  "ai/skills/info-update"
+  "ai/skills/knowledge-capture"
+  "ai/skills/knowledge-enable"
+  "ai/skills/knowledge-review"
+  "ai/skills/local-router-install"
+  "ai/skills/project-create"
+  "ai/skills/project-migrate"
+  "ai/skills/project-register"
+  "ai/skills/project-router"
+  "ai/skills/project-switch"
+  "ai/skills/registry-check"
+  "ai/skills/task-finish"
+  "ai/skills/task-intake"
+  "ai/skills/task-switch"
+)
+if [ -n "${SUPERSEDED_TEST_EMPTY:-}" ]; then
+  SUPERSEDED_PATHS+=("")
 fi
 
 for_each_superseded_path() {

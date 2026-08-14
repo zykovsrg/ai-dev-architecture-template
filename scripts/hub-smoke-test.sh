@@ -1191,40 +1191,39 @@ assert_not_exists "$HUB_INSTALL/ai/project-cards/.gitkeep"
 # A superseded path present in the hub is announced in dry-run and not removed.
 SUPERSEDED_PREVIEW="$TMP_DIR/superseded-preview-hub"
 cp -R "$HUB_INSTALL" "$SUPERSEDED_PREVIEW"
-mkdir -p "$SUPERSEDED_PREVIEW/ai/skills/legacy-fixture-skill"
-printf '%s\n' '# Legacy fixture' > "$SUPERSEDED_PREVIEW/ai/skills/legacy-fixture-skill/SKILL.md"
-SUPERSEDED_TEST_SOURCE=1 bash "$ROOT/scripts/update-installed-hub.sh" \
+mkdir -p "$SUPERSEDED_PREVIEW/ai/skills/task-intake"
+printf '%s\n' '# Legacy fixture' > "$SUPERSEDED_PREVIEW/ai/skills/task-intake/SKILL.md"
+bash "$ROOT/scripts/update-installed-hub.sh" \
   --hub "$SUPERSEDED_PREVIEW" --source "$ROOT" --dry-run \
   > "$TMP_DIR/superseded-preview.out" 2>&1
 assert_contains "$TMP_DIR/superseded-preview.out" 'Superseded paths to remove:'
-assert_contains "$TMP_DIR/superseded-preview.out" 'ai/skills/legacy-fixture-skill/SKILL.md'
-assert_file "$SUPERSEDED_PREVIEW/ai/skills/legacy-fixture-skill/SKILL.md"
+assert_contains "$TMP_DIR/superseded-preview.out" 'ai/skills/task-intake'
+assert_file "$SUPERSEDED_PREVIEW/ai/skills/task-intake/SKILL.md"
 
-# Apply mode removes the superseded path.
+# Apply mode removes the superseded directory.
 SUPERSEDED_APPLY="$TMP_DIR/superseded-apply-hub"
 cp -R "$HUB_INSTALL" "$SUPERSEDED_APPLY"
-mkdir -p "$SUPERSEDED_APPLY/ai/skills/legacy-fixture-skill"
-printf '%s\n' '# Legacy fixture' > "$SUPERSEDED_APPLY/ai/skills/legacy-fixture-skill/SKILL.md"
-SUPERSEDED_TEST_SOURCE=1 bash "$ROOT/scripts/update-installed-hub.sh" \
+mkdir -p "$SUPERSEDED_APPLY/ai/skills/task-intake"
+printf '%s\n' '# Legacy fixture' > "$SUPERSEDED_APPLY/ai/skills/task-intake/SKILL.md"
+bash "$ROOT/scripts/update-installed-hub.sh" \
   --hub "$SUPERSEDED_APPLY" --source "$ROOT" --apply --allow-dirty \
   > "$TMP_DIR/superseded-apply.out" 2>&1
-assert_contains "$TMP_DIR/superseded-apply.out" 'Removed superseded path: ai/skills/legacy-fixture-skill/SKILL.md'
-assert_not_exists "$SUPERSEDED_APPLY/ai/skills/legacy-fixture-skill/SKILL.md"
+assert_contains "$TMP_DIR/superseded-apply.out" 'Removed superseded path: ai/skills/task-intake'
+assert_not_exists "$SUPERSEDED_APPLY/ai/skills/task-intake"
 
 # A symlinked superseded path is refused, not followed.
 SUPERSEDED_SYMLINK="$TMP_DIR/superseded-symlink-hub"
 cp -R "$HUB_INSTALL" "$SUPERSEDED_SYMLINK"
-printf '%s\n' 'MUST_NOT_BE_REMOVED' > "$TMP_DIR/superseded-outside-target.md"
-mkdir -p "$SUPERSEDED_SYMLINK/ai/skills/legacy-fixture-skill"
-ln -s "$TMP_DIR/superseded-outside-target.md" \
-  "$SUPERSEDED_SYMLINK/ai/skills/legacy-fixture-skill/SKILL.md"
-if SUPERSEDED_TEST_SOURCE=1 bash "$ROOT/scripts/update-installed-hub.sh" \
+mkdir -p "$TMP_DIR/superseded-outside-dir"
+printf '%s\n' 'MUST_NOT_BE_REMOVED' > "$TMP_DIR/superseded-outside-dir/SKILL.md"
+ln -s "$TMP_DIR/superseded-outside-dir" "$SUPERSEDED_SYMLINK/ai/skills/task-intake"
+if bash "$ROOT/scripts/update-installed-hub.sh" \
   --hub "$SUPERSEDED_SYMLINK" --source "$ROOT" --apply --allow-dirty \
   > "$TMP_DIR/superseded-symlink.out" 2>&1; then
   fail 'updater removed a symlinked superseded path'
 fi
 assert_contains "$TMP_DIR/superseded-symlink.out" 'superseded path must not be a symlink'
-assert_file "$TMP_DIR/superseded-outside-target.md"
+assert_file "$TMP_DIR/superseded-outside-dir/SKILL.md"
 
 # A symlinked ANCESTOR directory is refused, not followed.
 SUPERSEDED_ANCESTOR="$TMP_DIR/superseded-ancestor-hub"
@@ -1234,9 +1233,9 @@ printf '%s\n' '# Legacy fixture' > "$TMP_DIR/outsideandirectory-with-legacy/SKIL
 # Replace ai/skills with a symlink to outside directory
 rm -rf "$SUPERSEDED_ANCESTOR/ai/skills"
 ln -s "$TMP_DIR/outsideandirectory-with-legacy" "$SUPERSEDED_ANCESTOR/ai/skills"
-mkdir -p "$SUPERSEDED_ANCESTOR/ai/skills/legacy-fixture-skill"
-printf '%s\n' '# Legacy fixture' > "$SUPERSEDED_ANCESTOR/ai/skills/legacy-fixture-skill/SKILL.md"
-if SUPERSEDED_TEST_SOURCE=1 bash "$ROOT/scripts/update-installed-hub.sh" \
+mkdir -p "$SUPERSEDED_ANCESTOR/ai/skills/task-intake"
+printf '%s\n' '# Legacy fixture' > "$SUPERSEDED_ANCESTOR/ai/skills/task-intake/SKILL.md"
+if bash "$ROOT/scripts/update-installed-hub.sh" \
   --hub "$SUPERSEDED_ANCESTOR" --source "$ROOT" --apply --allow-dirty \
   > "$TMP_DIR/superseded-ancestor.out" 2>&1; then
   fail 'updater removed a superseded path through a symlinked ancestor'
@@ -1247,7 +1246,7 @@ assert_file "$TMP_DIR/outsideandirectory-with-legacy/SKILL.md"
 # Empty rel entry is rejected before rm -rf by the real updater.
 SUPERSEDED_EMPTY_HUB="$TMP_DIR/superseded-empty-hub"
 cp -R "$HUB_INSTALL" "$SUPERSEDED_EMPTY_HUB"
-if SUPERSEDED_TEST_SOURCE=1 SUPERSEDED_TEST_EMPTY=1 bash "$ROOT/scripts/update-installed-hub.sh" \
+if SUPERSEDED_TEST_EMPTY=1 bash "$ROOT/scripts/update-installed-hub.sh" \
   --hub "$SUPERSEDED_EMPTY_HUB" --source "$ROOT" --apply --allow-dirty \
   > "$TMP_DIR/superseded-empty.out" 2>&1; then
   fail 'updater accepted an empty superseded path'
