@@ -1226,6 +1226,38 @@ fi
 assert_contains "$TMP_DIR/superseded-symlink.out" 'superseded path must not be a symlink'
 assert_file "$TMP_DIR/superseded-outside-target.md"
 
+# A symlinked ANCESTOR directory is refused, not followed.
+SUPERSEDED_ANCESTOR="$TMP_DIR/superseded-ancestor-hub"
+cp -R "$HUB_INSTALL" "$SUPERSEDED_ANCESTOR"
+mkdir -p "$TMP_DIR/outsideandirectory-with-legacy"
+printf '%s\n' '# Legacy fixture' > "$TMP_DIR/outsideandirectory-with-legacy/SKILL.md"
+# Replace ai/skills with a symlink to outside directory
+rm -rf "$SUPERSEDED_ANCESTOR/ai/skills"
+ln -s "$TMP_DIR/outsideandirectory-with-legacy" "$SUPERSEDED_ANCESTOR/ai/skills"
+mkdir -p "$SUPERSEDED_ANCESTOR/ai/skills/legacy-fixture-skill"
+printf '%s\n' '# Legacy fixture' > "$SUPERSEDED_ANCESTOR/ai/skills/legacy-fixture-skill/SKILL.md"
+if SUPERSEDED_TEST_SOURCE=1 bash "$ROOT/scripts/update-installed-hub.sh" \
+  --hub "$SUPERSEDED_ANCESTOR" --source "$ROOT" --apply --allow-dirty \
+  > "$TMP_DIR/superseded-ancestor.out" 2>&1; then
+  fail 'updater removed a superseded path through a symlinked ancestor'
+fi
+assert_contains "$TMP_DIR/superseded-ancestor.out" 'superseded path must not be a symlink'
+assert_file "$TMP_DIR/outsideandirectory-with-legacy/SKILL.md"
+
+# Empty rel entry is rejected before rm -rf by direct function test.
+SUPERSEDED_EMPTY="$TMP_DIR/superseded-empty-test.out"
+bash -c '
+  die() { echo "ERROR: $1" >&2; exit 1; }
+  remove_superseded_path() {
+    local rel="$1" target="/test/hub/$rel"
+    case "$rel" in
+      "") die "superseded path must not be empty" ;;
+    esac
+  }
+  remove_superseded_path "" 2>&1
+' > "$SUPERSEDED_EMPTY" 2>&1 || true
+assert_contains "$SUPERSEDED_EMPTY" "superseded path must not be empty"
+
 for check_args in \
   "--check --apply" \
   "--apply --check" \

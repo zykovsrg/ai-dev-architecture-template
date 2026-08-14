@@ -215,13 +215,58 @@ show_superseded_path() {
   echo "  $rel"
 }
 
+path_contains_symlink() {
+  local base="$1" rel="$2" remaining component child
+  remaining="$rel"
+
+  while [ -n "$remaining" ]; do
+    component="${remaining%%/*}"
+    if [ "$remaining" = "$component" ]; then
+      remaining=""
+    else
+      remaining="${remaining#*/}"
+    fi
+
+    case "$component" in
+      ''|.) ;;
+      ..)
+        return 1
+        ;;
+      *)
+        child="$base/$component"
+        if [ -L "$child" ]; then
+          return 0
+        fi
+        base="$child"
+        ;;
+    esac
+  done
+
+  return 1
+}
+
 remove_superseded_path() {
   local rel="$1" target="$HUB_DIR/$rel"
 
+  # Validate rel is non-empty and hub-relative
   case "$rel" in
-    /*|*..*) die "superseded path must be hub-relative without traversal: $rel" ;;
+    "") die "superseded path must not be empty" ;;
+    /*) die "superseded path must be hub-relative without traversal: $rel" ;;
+    *..*)
+      # Check for .. as a path component
+      case "$rel" in
+        */..*|../*)
+          die "superseded path must be hub-relative without traversal: $rel"
+          ;;
+      esac
+      ;;
   esac
-  [ ! -L "$target" ] || die "superseded path must not be a symlink: $rel"
+
+  # Check if any component of the path is a symlink
+  if path_contains_symlink "$HUB_DIR" "$rel"; then
+    die "superseded path must not be a symlink: $rel"
+  fi
+
   [ -e "$target" ] || return 0
 
   rm -rf "$target"
