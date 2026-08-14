@@ -1188,6 +1188,18 @@ assert_contains "$TMP_DIR/hub-dry-run.out" 'Would create missing hub memory file
 assert_not_exists "$HUB_INSTALL/ai/archive/.gitkeep"
 assert_not_exists "$HUB_INSTALL/ai/project-cards/.gitkeep"
 
+# A superseded path present in the hub is announced in dry-run and not removed.
+SUPERSEDED_PREVIEW="$TMP_DIR/superseded-preview-hub"
+cp -R "$HUB_INSTALL" "$SUPERSEDED_PREVIEW"
+mkdir -p "$SUPERSEDED_PREVIEW/ai/skills/legacy-fixture-skill"
+printf '%s\n' '# Legacy fixture' > "$SUPERSEDED_PREVIEW/ai/skills/legacy-fixture-skill/SKILL.md"
+SUPERSEDED_TEST_SOURCE=1 bash "$ROOT/scripts/update-installed-hub.sh" \
+  --hub "$SUPERSEDED_PREVIEW" --source "$ROOT" --dry-run \
+  > "$TMP_DIR/superseded-preview.out" 2>&1
+assert_contains "$TMP_DIR/superseded-preview.out" 'Superseded paths to remove:'
+assert_contains "$TMP_DIR/superseded-preview.out" 'ai/skills/legacy-fixture-skill/SKILL.md'
+assert_file "$SUPERSEDED_PREVIEW/ai/skills/legacy-fixture-skill/SKILL.md"
+
 for check_args in \
   "--check --apply" \
   "--apply --check" \

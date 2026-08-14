@@ -192,6 +192,29 @@ MEMORY_FILES=(
   "ai/cross-project-signals.md"
 )
 
+# Paths removed from an installed hub because they were renamed or retired
+# upstream. Explicit list only — never "delete whatever the template lacks".
+SUPERSEDED_PATHS=()
+if [ -n "${SUPERSEDED_TEST_SOURCE:-}" ]; then
+  SUPERSEDED_PATHS=(
+    "ai/skills/legacy-fixture-skill/SKILL.md"
+  )
+fi
+
+for_each_superseded_path() {
+  local callback="$1" rel
+  for rel in ${SUPERSEDED_PATHS[@]+"${SUPERSEDED_PATHS[@]}"}; do
+    "$callback" "$rel"
+  done
+}
+
+show_superseded_path() {
+  local rel="$1"
+  [ -e "$HUB_DIR/$rel" ] || return 0
+  changes_found=1
+  echo "  $rel"
+}
+
 changes_found=0
 
 show_file_diff() {
@@ -350,6 +373,9 @@ if [ "$MODE" = "dry-run" ]; then
   echo ""
   echo "Hub memory templates to create only if missing:"
   for_each_memory_file show_missing_memory_file
+  echo ""
+  echo "Superseded paths to remove:"
+  for_each_superseded_path show_superseded_path
 
   if [ "$changes_found" -eq 0 ]; then
     echo ""
