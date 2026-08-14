@@ -1,5 +1,13 @@
 # Changelog
 
+## v6.16 — 2026-08-14
+
+- Prefixed all fifteen hub-owned skills with `hub-`. Six of them (`environment-check`, `task-intake`, `task-switch`, `task-finish`, `knowledge-capture`, `knowledge-review`) shared a name with a standalone project skill of different content, so inside a hub-confirmed project it was undefined which one applied. A uniform prefix removes the ambiguity structurally instead of by convention.
+- Added `SUPERSEDED_PATHS` and confirmation-gated removal to `update-installed-hub.sh`, listing the fifteen pre-rename directories. Without it the rename would have left the old directories in every installed hub, reproducing the collision under the old names. Removal refuses a path that is absolute, contains a `..` component, is empty, or has a symlink in any component — not only in its final element — and confirms the resolved target stays inside the hub before deleting.
+- Added three guards: `SUPERSEDED_PATHS` entries may not be, or contain, a hub memory file or protected file; every skill directory in `hub-template/ai/skills/` must carry the prefix; and an unprefixed skill directory in an installed hub fails its registry check, naming the stale path. The last one detects an update that renamed the skills but failed to remove the old directories.
+- Bumped `hub-template/ai/architecture.md` to `1.3` so `update-installed-hub.sh` delivers the change to hubs already at `1.2`.
+- Dated plans and specs under `docs/superpowers/` deliberately keep the unprefixed names: they record work completed when those were the real names. Only living documentation was updated.
+
 ## v6.15 — 2026-08-14
 
 - Back-ported Repository Provisioning into `hub-template/`. The feature had been authored directly in an installed hub, so `hub-template/ai/architecture.md`, `hub-template/CLAUDE.md`, `hub-template/AGENTS.md`, and `hub-template/ai/skills/project-create/SKILL.md` never received it and a reinstall would have silently reverted it.

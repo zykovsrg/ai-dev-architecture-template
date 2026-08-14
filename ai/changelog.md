@@ -16,6 +16,12 @@
 
 ### 2026-08-14
 
+- Change: Renamed all fifteen hub skills to `hub-*`, added superseded-path removal to the hub updater with symlink-component and containment guards, and added three guards covering removal safety and the prefix on both the template and the installed-hub side.
+- Impact: A hub-owned skill can no longer be confused with a standalone project skill of the same name, and an installed hub still holding a pre-1.3 skill directory now fails its registry check instead of silently offering two different skills under one name.
+- Manual checks: `bash scripts/check-consistency.sh`, `bash scripts/hub-smoke-test.sh`, `bash scripts/smoke-test.sh`, and `bash scripts/check-hub-registry.sh` against the live hub all passed. Every guard was mutation-tested: disabling it makes the covering check fail.
+
+### 2026-08-14
+
 - Change: Back-ported Repository Provisioning from an installed hub into `hub-template/` (architecture, both entry files, `project-create`), removed the Git contradiction it left in the hub architecture, bumped hub architecture to `1.2`, and added two installed-hub guards to `scripts/check-hub-registry.sh` — entry-file parity and required project memory files — with smoke coverage for both.
 - Impact: A reinstall or hub update can no longer silently revert Repository Provisioning, and drift introduced directly in an installed hub is now detected there rather than only inside `hub-template/`. Root cause was downstream authoring: the feature never came upstream, and `check-consistency.sh` validates entry parity only in the template.
 - Manual checks: `bash scripts/check-consistency.sh`, `bash scripts/hub-smoke-test.sh`, `bash scripts/smoke-test.sh`, and `bash scripts/check-hub-registry.sh` against the installed hub all passed. Both new guards were mutation-tested: disabling either one makes the smoke test fail.
