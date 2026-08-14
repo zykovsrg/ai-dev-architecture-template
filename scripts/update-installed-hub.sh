@@ -199,6 +199,9 @@ if [ -n "${SUPERSEDED_TEST_SOURCE:-}" ]; then
   SUPERSEDED_PATHS=(
     "ai/skills/legacy-fixture-skill/SKILL.md"
   )
+  if [ -n "${SUPERSEDED_TEST_EMPTY:-}" ]; then
+    SUPERSEDED_PATHS+=("")
+  fi
 fi
 
 for_each_superseded_path() {

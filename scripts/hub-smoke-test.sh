@@ -1244,19 +1244,16 @@ fi
 assert_contains "$TMP_DIR/superseded-ancestor.out" 'superseded path must not be a symlink'
 assert_file "$TMP_DIR/outsideandirectory-with-legacy/SKILL.md"
 
-# Empty rel entry is rejected before rm -rf by direct function test.
-SUPERSEDED_EMPTY="$TMP_DIR/superseded-empty-test.out"
-bash -c '
-  die() { echo "ERROR: $1" >&2; exit 1; }
-  remove_superseded_path() {
-    local rel="$1" target="/test/hub/$rel"
-    case "$rel" in
-      "") die "superseded path must not be empty" ;;
-    esac
-  }
-  remove_superseded_path "" 2>&1
-' > "$SUPERSEDED_EMPTY" 2>&1 || true
-assert_contains "$SUPERSEDED_EMPTY" "superseded path must not be empty"
+# Empty rel entry is rejected before rm -rf by the real updater.
+SUPERSEDED_EMPTY_HUB="$TMP_DIR/superseded-empty-hub"
+cp -R "$HUB_INSTALL" "$SUPERSEDED_EMPTY_HUB"
+if SUPERSEDED_TEST_SOURCE=1 SUPERSEDED_TEST_EMPTY=1 bash "$ROOT/scripts/update-installed-hub.sh" \
+  --hub "$SUPERSEDED_EMPTY_HUB" --source "$ROOT" --apply --allow-dirty \
+  > "$TMP_DIR/superseded-empty.out" 2>&1; then
+  fail 'updater accepted an empty superseded path'
+fi
+assert_contains "$TMP_DIR/superseded-empty.out" 'superseded path must not be empty'
+assert_file "$SUPERSEDED_EMPTY_HUB/ai/architecture.md"
 
 for check_args in \
   "--check --apply" \
