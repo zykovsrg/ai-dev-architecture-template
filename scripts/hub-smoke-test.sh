@@ -986,6 +986,23 @@ if bash "$ROOT/scripts/check-hub-registry.sh" "$ENTRY_HALF_MISSING" \
 fi
 assert_contains "$TMP_DIR/entry-half-missing.out" 'while AGENTS.md is present'
 
+# A leftover unprefixed skill directory means an update did not finish.
+STALE_SKILL="$TMP_DIR/stale-skill-hub"
+copy_valid_hub "$STALE_SKILL"
+mkdir -p "$STALE_SKILL/ai/skills/hub-task-intake" "$STALE_SKILL/ai/skills/task-intake"
+if bash "$ROOT/scripts/check-hub-registry.sh" "$STALE_SKILL" \
+  > "$TMP_DIR/stale-skill.out" 2>&1; then
+  fail 'validator accepted an unprefixed hub skill directory'
+fi
+assert_contains "$TMP_DIR/stale-skill.out" 'hub skill directory must be named hub-*: ai/skills/task-intake'
+
+# A hub whose skills are all prefixed passes.
+FRESH_SKILL="$TMP_DIR/fresh-skill-hub"
+copy_valid_hub "$FRESH_SKILL"
+mkdir -p "$FRESH_SKILL/ai/skills/hub-task-intake"
+bash "$ROOT/scripts/check-hub-registry.sh" "$FRESH_SKILL" > "$TMP_DIR/fresh-skill.out"
+assert_contains "$TMP_DIR/fresh-skill.out" 'Registry check passed'
+
 INVALID="$TMP_DIR/invalid-hub"
 copy_valid_hub "$INVALID"
 sed "s#Path: $INVALID/projects/analytics-seo#Path: $TMP_DIR/outside#" \

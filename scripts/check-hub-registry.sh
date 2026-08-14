@@ -184,7 +184,22 @@ validate_entry_schema() {
   esac
 }
 
+# A directory without the hub- prefix is a leftover from a pre-1.3 hub whose
+# update did not remove the superseded path.
+validate_skill_namespace() {
+  local skills_dir="$HUB_DIR/ai/skills" skill_dir
+  [ -d "$skills_dir" ] || return 0
+  for skill_dir in "$skills_dir"/*/; do
+    [ -d "$skill_dir" ] || continue
+    case "$(basename "$skill_dir")" in
+      hub-*) ;;
+      *) die "hub skill directory must be named hub-*: ai/skills/$(basename "$skill_dir")" ;;
+    esac
+  done
+}
+
 validate_entry_files
+validate_skill_namespace
 validate_projects_root
 
 ids=""
