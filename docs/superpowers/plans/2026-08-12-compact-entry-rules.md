@@ -119,11 +119,11 @@ Keep the current default-context sentence and canonical file lists. Replace dupl
 ```markdown
 ## Lifecycle And Routing
 
-- New session, tool, chat, or restored context → open `hub-environment-check`; show only its snapshot and menu.
-- New work → open `hub-task-intake`; changed unfinished work → open `hub-task-switch`.
+- New session, tool, chat, or restored context → open `environment-check`; show only its snapshot and menu.
+- New work → open `task-intake`; changed unfinished work → open `task-switch`.
 - Bug, regression, crash, performance issue, or complex task → use Superpowers when available.
 - Tests → `write-tests`; UI change → `ui-review`; security-sensitive change → `security-review`; wording or copy review → `copy-review`.
-- Release or merge → `release-check`; architecture change → `architecture-update`; completion → propose `hub-task-finish` and wait for confirmation.
+- Release or merge → `release-check`; architecture change → `architecture-update`; completion → propose `task-finish` and wait for confirmation.
 
 Before using a workflow, open its current `ai/skills/<name>/SKILL.md`. Route by the user's request and the skill's `name` and `description`; do not load all skills. Read extra project memory only when the selected task or skill requires it.
 ```
@@ -285,4 +285,4 @@ Use `superpowers:requesting-code-review` against the complete implementation dif
 
 - [ ] **Step 4: Present completion for confirmation**
 
-Summarize changed rules, tests, token impact, protected-file scope, and any residual risk. Propose `hub-task-finish`; do not merge, push, or close the task without the user's confirmation.
+Summarize changed rules, tests, token impact, protected-file scope, and any residual risk. Propose `task-finish`; do not merge, push, or close the task without the user's confirmation.

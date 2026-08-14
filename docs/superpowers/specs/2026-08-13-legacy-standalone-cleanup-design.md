@@ -9,13 +9,13 @@ rules when an agent is opened directly in the project folder.
 
 ## Scope
 
-The cleanup is an optional final phase of `hub-project-migrate`, not part of the
+The cleanup is an optional final phase of `project-migrate`, not part of the
 move approval or registration approval. A successful migration remains valid
 if the user declines cleanup or stops before it.
 
 The workflow may run only for a project that:
 
-1. was moved successfully by the current `hub-project-migrate` run;
+1. was moved successfully by the current `project-migrate` run;
 2. is a direct child of `<canonical-hub>/projects`;
 3. has passed registration and `scripts/check-hub-registry.sh`.
 
@@ -78,7 +78,7 @@ or does not explicitly confirm, leave every file unchanged.
 
 The hub entry files and architecture overview must make the order explicit:
 
-`hub-project-migrate` move → separate `hub-project-register` confirmation → validator
+`project-migrate` move → separate `project-register` confirmation → validator
 → optional separate legacy cleanup confirmation.
 
 The project remains usable through the hub before cleanup. Cleanup only
