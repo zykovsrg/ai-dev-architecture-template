@@ -144,6 +144,22 @@ done
 [ "$hub_skill_ok" -eq 0 ] \
   || echo "OK [hub skill references] — $hub_skill_count declared skills exist"
 
+hub_prefix_ok=1
+if [ -d hub-template/ai/skills ]; then
+  while IFS= read -r skill_dir; do
+    case "$(basename "$skill_dir")" in
+      hub-*) ;;
+      *)
+        echo "MISMATCH [hub skill prefix] — $skill_dir must be named hub-*"
+        fail=1
+        hub_prefix_ok=0
+        ;;
+    esac
+  done < <(find hub-template/ai/skills -mindepth 1 -maxdepth 1 -type d | sort)
+fi
+[ "$hub_prefix_ok" -eq 0 ] \
+  || echo "OK [hub skill prefix] — every hub skill directory is prefixed"
+
 hub_protected="$(extract_array scripts/update-installed-hub.sh PROTECTED_FILES)"
 if [ -d hub-template/ai/skills ]; then
   while IFS= read -r protected_file; do
