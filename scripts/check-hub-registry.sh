@@ -107,6 +107,32 @@ validate_card_path() {
   printf '%s\n' "$canonical_card"
 }
 
+# Entry files stay equal in meaning; only the tool-specific header lines may differ.
+# This is a parity check, not an existence check: a registry fixture that carries
+# no entry file at all is out of scope, but one missing half is always an error.
+validate_entry_files() {
+  local claude="$HUB_DIR/CLAUDE.md" agents="$HUB_DIR/AGENTS.md"
+  [ -f "$claude" ] || [ -f "$agents" ] || return 0
+  [ -f "$claude" ] || die "missing $claude while AGENTS.md is present"
+  [ -f "$agents" ] || die "missing $agents while CLAUDE.md is present"
+  diff -q \
+    <(grep -v -e '^# Personal AI Hub' -e '^<!-- Tool-specific activation:' "$claude") \
+    <(grep -v -e '^# Personal AI Hub' -e '^<!-- Tool-specific activation:' "$agents") \
+    >/dev/null \
+    || die "CLAUDE.md and AGENTS.md diverge outside their tool-specific header lines"
+}
+
+# Existence only: the check never reads project memory content.
+validate_project_memory() {
+  local project_path="$1" memory_file
+  for memory_file in current-task paused-tasks future-tasks project-context decisions changelog; do
+    [ ! -L "$project_path/ai/$memory_file.md" ] \
+      || die "project memory file must not be a symlink: $current_id ai/$memory_file.md"
+    [ -f "$project_path/ai/$memory_file.md" ] \
+      || die "missing project memory file for $current_id: ai/$memory_file.md"
+  done
+}
+
 reset_entry() {
   entry_name=""
   entry_type=""
@@ -152,8 +178,13 @@ validate_entry_schema() {
     die "card Memory entry point must stay beneath the registered project ai directory for $current_id"
     ;;
   esac
+
+  case "$entry_status" in
+    active|paused) validate_project_memory "$canonical_path" ;;
+  esac
 }
 
+validate_entry_files
 validate_projects_root
 
 ids=""

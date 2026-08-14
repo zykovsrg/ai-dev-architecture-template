@@ -14,6 +14,12 @@
 
 ## Текущий changelog
 
+### 2026-08-14
+
+- Change: Back-ported Repository Provisioning from an installed hub into `hub-template/` (architecture, both entry files, `project-create`), removed the Git contradiction it left in the hub architecture, bumped hub architecture to `1.2`, and added two installed-hub guards to `scripts/check-hub-registry.sh` — entry-file parity and required project memory files — with smoke coverage for both.
+- Impact: A reinstall or hub update can no longer silently revert Repository Provisioning, and drift introduced directly in an installed hub is now detected there rather than only inside `hub-template/`. Root cause was downstream authoring: the feature never came upstream, and `check-consistency.sh` validates entry parity only in the template.
+- Manual checks: `bash scripts/check-consistency.sh`, `bash scripts/hub-smoke-test.sh`, `bash scripts/smoke-test.sh`, and `bash scripts/check-hub-registry.sh` against the installed hub all passed. Both new guards were mutation-tested: disabling either one makes the smoke test fail.
+
 ### 2026-08-13
 
 - Change: Added a local Markdown knowledge layer to new standalone and hub-created projects. It has `research`, `decisions`, `risks`, and `runbooks` categories; explicit capture/review workflows; confirmation-gated hub enablement for existing hub projects; and a task-finish review offer. Updater boundaries, documentation, and regression contracts were added.

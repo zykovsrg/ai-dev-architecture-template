@@ -1,6 +1,6 @@
 # Personal AI Hub Architecture
 
-Version: 1.1
+Version: 1.2
 
 ## Purpose
 
@@ -93,8 +93,9 @@ under the validated `<hub>/projects` root: only its `ai/` memory files (`current
 entry, and an active-project selection. The scaffold consists only of
 `knowledge/README.md`, `knowledge/record-template.md`, and the four empty
 directories `knowledge/research/`, `knowledge/decisions/`, `knowledge/risks/`,
-and `knowledge/runbooks/`. It must not create Git, code, dependencies,
-services, duplicate registry entries, or any other project files. Use
+and `knowledge/runbooks/`. Git initialization is covered by Repository
+Provisioning below. It must not create code, dependencies, services, duplicate
+registry entries, or any other project files. Use
 `project-register` for an existing folder; it does not replace the new-project
 creation flow.
 
@@ -117,6 +118,17 @@ failure or integrity concern. The order is `project-migrate` move → separate
 confirmation authorizes registration or cleanup. The optional cleanup may only
 delete its explicit legacy standalone-rule allowlist after its own confirmation;
 it preserves project memory and is not needed for hub-based work.
+
+## Repository Provisioning
+
+Every new project has its own local Git repository. After the standard
+project-create scaffold and registry validation, the approved creation flow
+initializes Git and commits the initial scaffold. When GitHub CLI
+authentication is available and the project ID is unused, the same confirmed
+flow creates a private GitHub repository named after that ID and pushes `main`.
+The preview and confirmation disclose these actions. If GitHub access or remote
+creation is unavailable, local creation succeeds and is reported as
+`pending-sync`; the workflow never attaches or overwrites an existing remote.
 
 ## Confirmation And Confidence
 

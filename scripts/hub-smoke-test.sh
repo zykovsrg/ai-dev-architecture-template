@@ -18,6 +18,14 @@ assert_forbidden_reads_absent() {
       || fail "trace entered forbidden project content: $forbidden_path"
   done
 }
+# Registered active projects must carry the full memory scaffold; fixtures too.
+scaffold_project_memory() {
+  local project_path="$1" memory_file
+  mkdir -p "$project_path/ai"
+  for memory_file in current-task paused-tasks future-tasks project-context decisions changelog; do
+    printf '# %s\n' "$memory_file" > "$project_path/ai/$memory_file.md"
+  done
+}
 generate_registry() {
   local hub="$1" root="$2" count="$3" i id
   printf '%s\n' '# Project Registry' > "$hub/ai/project-registry.md"
@@ -25,6 +33,7 @@ generate_registry() {
   while [ "$i" -le "$count" ]; do
     id="fixture-project-$i"
     mkdir -p "$root/$id"
+    scaffold_project_memory "$root/$id"
     printf '\n## %s\nName: Fixture %s\nType: work\nStatus: active\nPath: %s/%s\nTags: fixture, area-%s\nCard: ai/project-cards/%s.md\n' \
       "$id" "$i" "$root" "$id" "$i" "$id" >> "$hub/ai/project-registry.md"
     printf '# Project Card\n\nProject ID: %s\nName: Fixture %s\nType: work\nStatus: active\nLast updated: 2026-08-12\nPurpose: Synthetic test project.\nTypical tasks: Exercise registry validation.\nMemory entry point: %s/%s/ai/current-task.md\n' \
@@ -177,7 +186,10 @@ project_create_contract_valid() {
     [[ "$text" == *'hub-owned `environment-check`'* ]] &&
     [[ "$text" == *'hub-owned `task-intake`'* ]] &&
     [[ "$text" == *'unsafe project names'* ]] &&
-    [[ "$text" == *'Git repositories must not be created or modified'* ]] &&
+    [[ "$text" == *'Initialize a local Git repository and commit only the approved scaffold'* ]] &&
+    [[ "$text" == *'create a private repository with that exact name'* ]] &&
+    [[ "$text" == *'report `pending-sync`'* ]] &&
+    [[ "$text" == *'never attach or overwrite an existing remote'* ]] &&
     [[ "$text" == *'must not add application code, dependencies, services, AGENTS.md, CLAUDE.md, or shared skills'* ]]
 }
 project_create_knowledge_scaffold_valid() {
@@ -506,7 +518,7 @@ sed '/unsafe project names/d' "$PROJECT_CREATE_SKILL" > "$PROJECT_CREATE_WITHOUT
 assert_rejected project_create_contract_valid "$PROJECT_CREATE_WITHOUT_UNSAFE_NAMES"
 
 PROJECT_CREATE_WITHOUT_GIT_GUARANTEE="$TMP_DIR/project-create-without-git-guarantee.md"
-sed '/Git repositories must not be created or modified/d' "$PROJECT_CREATE_SKILL" \
+sed '/never attach or overwrite an existing remote/d' "$PROJECT_CREATE_SKILL" \
   > "$PROJECT_CREATE_WITHOUT_GIT_GUARANTEE"
 assert_rejected project_create_contract_valid "$PROJECT_CREATE_WITHOUT_GIT_GUARANTEE"
 
@@ -721,6 +733,7 @@ assert_contains "$CHECK_SKILL" 'cannot invoke it automatically'
 
 VALID="$TMP_DIR/valid-hub"
 mkdir -p "$VALID/ai/project-cards" "$VALID/projects/analytics-seo"
+scaffold_project_memory "$VALID/projects/analytics-seo"
 SENTINEL='MUST_NOT_BE_READ'
 printf '%s\n' "$SENTINEL" > "$VALID/projects/analytics-seo/.env"
 printf '%s\n' "$SENTINEL" > "$VALID/projects/analytics-seo/credentials.txt"
@@ -908,6 +921,70 @@ if bash "$ROOT/scripts/check-hub-registry.sh" "$DUPLICATE_MEMORY_ENTRY" > "$TMP_
   fail 'validator accepted a duplicate Memory entry point field'
 fi
 assert_contains "$TMP_DIR/duplicate-memory-entry.out" 'duplicate card Memory entry point:'
+
+# A registered active project must carry the full memory scaffold.
+for missing_memory_file in current-task paused-tasks future-tasks project-context decisions changelog; do
+  MISSING_MEMORY="$TMP_DIR/missing-memory-$missing_memory_file-hub"
+  copy_valid_hub "$MISSING_MEMORY"
+  rm "$MISSING_MEMORY/projects/analytics-seo/ai/$missing_memory_file.md"
+  if bash "$ROOT/scripts/check-hub-registry.sh" "$MISSING_MEMORY" \
+    > "$TMP_DIR/missing-memory-$missing_memory_file.out" 2>&1; then
+    fail "validator accepted a project without ai/$missing_memory_file.md"
+  fi
+  assert_contains "$TMP_DIR/missing-memory-$missing_memory_file.out" \
+    "missing project memory file for analytics-seo: ai/$missing_memory_file.md"
+done
+
+MEMORY_SYMLINK="$TMP_DIR/memory-symlink-hub"
+copy_valid_hub "$MEMORY_SYMLINK"
+rm "$MEMORY_SYMLINK/projects/analytics-seo/ai/decisions.md"
+ln -s "$TMP_DIR/outside-memory-target.md" "$MEMORY_SYMLINK/projects/analytics-seo/ai/decisions.md"
+printf '%s\n' "$SENTINEL" > "$TMP_DIR/outside-memory-target.md"
+if bash "$ROOT/scripts/check-hub-registry.sh" "$MEMORY_SYMLINK" \
+  > "$TMP_DIR/memory-symlink.out" 2>&1; then
+  fail 'validator accepted a symlinked project memory file'
+fi
+assert_contains "$TMP_DIR/memory-symlink.out" 'project memory file must not be a symlink'
+assert_not_contains "$TMP_DIR/memory-symlink.out" "$SENTINEL"
+
+# An archived project is not required to keep an active memory scaffold.
+ARCHIVED_MEMORY="$TMP_DIR/archived-memory-hub"
+copy_valid_hub "$ARCHIVED_MEMORY"
+rm "$ARCHIVED_MEMORY/projects/analytics-seo/ai/future-tasks.md"
+perl -pi -e 's/^Status: active$/Status: archived/' \
+  "$ARCHIVED_MEMORY/ai/project-registry.md" \
+  "$ARCHIVED_MEMORY/ai/project-cards/analytics-seo.md"
+bash "$ROOT/scripts/check-hub-registry.sh" "$ARCHIVED_MEMORY" > "$TMP_DIR/archived-memory.out"
+assert_contains "$TMP_DIR/archived-memory.out" 'Registry check passed'
+
+# The installed hub's two entry files must stay equal beyond their header lines.
+ENTRY_PARITY="$TMP_DIR/entry-parity-hub"
+copy_valid_hub "$ENTRY_PARITY"
+printf '%s\n' '# Personal AI Hub — Codex' \
+  '<!-- Tool-specific activation: Codex reads AGENTS.md as its project entry file. -->' \
+  '' '- Shared hub rule.' > "$ENTRY_PARITY/AGENTS.md"
+printf '%s\n' '# Personal AI Hub — Claude Code' \
+  '<!-- Tool-specific activation: Claude Code reads CLAUDE.md as its project entry file. -->' \
+  '' '- Shared hub rule.' > "$ENTRY_PARITY/CLAUDE.md"
+bash "$ROOT/scripts/check-hub-registry.sh" "$ENTRY_PARITY" > "$TMP_DIR/entry-parity.out"
+assert_contains "$TMP_DIR/entry-parity.out" 'Registry check passed'
+
+printf '%s\n' '- A rule only Codex received.' >> "$ENTRY_PARITY/AGENTS.md"
+if bash "$ROOT/scripts/check-hub-registry.sh" "$ENTRY_PARITY" \
+  > "$TMP_DIR/entry-divergence.out" 2>&1; then
+  fail 'validator accepted diverging hub entry files'
+fi
+assert_contains "$TMP_DIR/entry-divergence.out" \
+  'CLAUDE.md and AGENTS.md diverge outside their tool-specific header lines'
+
+ENTRY_HALF_MISSING="$TMP_DIR/entry-half-missing-hub"
+copy_valid_hub "$ENTRY_HALF_MISSING"
+printf '%s\n' '# Personal AI Hub — Codex' '' '- Shared hub rule.' > "$ENTRY_HALF_MISSING/AGENTS.md"
+if bash "$ROOT/scripts/check-hub-registry.sh" "$ENTRY_HALF_MISSING" \
+  > "$TMP_DIR/entry-half-missing.out" 2>&1; then
+  fail 'validator accepted a hub carrying only one entry file'
+fi
+assert_contains "$TMP_DIR/entry-half-missing.out" 'while AGENTS.md is present'
 
 INVALID="$TMP_DIR/invalid-hub"
 copy_valid_hub "$INVALID"

@@ -54,8 +54,10 @@ ID: <project-id>
 Путь: <canonical-path>
 
 Будет создано: папка <canonical-path>/ai/; шесть файлов памяти; пустой
-knowledge-scaffold; карточка; запись в реестре; активный проект.
-Не будет создано: Git, код, зависимости, сервисы, AGENTS.md, CLAUDE.md или общие skills.
+knowledge-scaffold; карточка; запись в реестре; активный проект; локальный Git.
+При доступной авторизации GitHub: приватный репозиторий <project-id>, первый
+commit и push ветки main. Иначе результат будет отмечен как pending-sync.
+Не будут созданы: код, зависимости, сервисы, AGENTS.md, CLAUDE.md или общие skills.
 
 Подтвердите: «Создать <project-id> по пути <canonical-path>».
 ```
@@ -140,15 +142,19 @@ The preview also explicitly excludes `ai/architecture.md`,
 6. Only after successful validation, update `ai/active-project.md` with the
    confirmed ID and canonical path. `active-project.md only after successful validation`;
    it is a selection record, not permission for a future chat.
-7. Invoke hub-owned `environment-check` and then hub-owned `task-intake` for
+7. Initialize a local Git repository and commit only the approved scaffold.
+   If authenticated GitHub CLI access is available, verify that `<project-id>`
+   is unused, create a private repository with that exact name, add `origin`,
+   and push `main`. If this remote provisioning is unavailable, retain local
+   Git and report `pending-sync`; never attach or overwrite an existing remote.
+8. Invoke hub-owned `environment-check` and then hub-owned `task-intake` for
    the confirmed selected project. Those workflows operate only on the selected
    project's `ai/` memory and cannot override hub confirmation, allowed roots,
    secret, or memory-isolation rules.
 
 ## Non-negotiable exclusions
 
-Git repositories must not be created or modified. The workflow must not add
-application code, dependencies, services, AGENTS.md, CLAUDE.md, or shared
+The workflow must not add application code, dependencies, services, AGENTS.md, CLAUDE.md, or shared
 skills. It must not write cross-project signals, archives, another project's
 memory, or any path outside the confirmed allowed root and hub metadata needed
 for this approved creation.

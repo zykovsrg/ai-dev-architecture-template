@@ -1,5 +1,13 @@
 # Changelog
 
+## v6.15 — 2026-08-14
+
+- Back-ported Repository Provisioning into `hub-template/`. The feature had been authored directly in an installed hub, so `hub-template/ai/architecture.md`, `hub-template/CLAUDE.md`, `hub-template/AGENTS.md`, and `hub-template/ai/skills/project-create/SKILL.md` never received it and a reinstall would have silently reverted it.
+- Removed the resulting contradiction in the hub architecture: "Project Creation And Registration" no longer forbids Git creation, which "Repository Provisioning" requires.
+- Extended `scripts/check-hub-registry.sh` with two guards that run against an installed hub, where nothing validated before: `CLAUDE.md`/`AGENTS.md` parity outside the tool-specific header lines, and the six required memory files for every `active`/`paused` registered project. `check-consistency.sh` only ever checked entry parity inside `hub-template/`, which is why the divergence stayed invisible.
+- Updated `hub-smoke-test.sh` to the new project-create contract and added coverage for both guards, including the archived-project exemption and the one-entry-file-missing case. Fixtures now scaffold project memory.
+- Bumped `hub-template/ai/architecture.md` to `1.2` so `update-installed-hub.sh` actually delivers the change to hubs already installed at `1.1`.
+
 ## v6.14 — 2026-07-20
 
 - Added the optional project skills `impeccable`, `theme-factory`, `animate`, and `design-motion-principles` to the template and architecture repository. `animate` is a lightweight router to Impeccable's canonical animation workflow.
