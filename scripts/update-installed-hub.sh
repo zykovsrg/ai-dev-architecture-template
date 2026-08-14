@@ -215,6 +215,19 @@ show_superseded_path() {
   echo "  $rel"
 }
 
+remove_superseded_path() {
+  local rel="$1" target="$HUB_DIR/$rel"
+
+  case "$rel" in
+    /*|*..*) die "superseded path must be hub-relative without traversal: $rel" ;;
+  esac
+  [ ! -L "$target" ] || die "superseded path must not be a symlink: $rel"
+  [ -e "$target" ] || return 0
+
+  rm -rf "$target"
+  echo "Removed superseded path: $rel"
+}
+
 changes_found=0
 
 show_file_diff() {
@@ -390,6 +403,7 @@ fi
 
 for_each_protected_file copy_file
 for_each_memory_file copy_missing_memory_file
+for_each_superseded_path remove_superseded_path
 
 UPDATE_PATHS=()
 for_each_protected_file append_existing_path
