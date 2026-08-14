@@ -174,6 +174,22 @@ EOF
 [ "$hub_classes_ok" -eq 0 ] \
   || echo "OK [hub update classes] — protected files exclude hub memory"
 
+hub_superseded="$(extract_array scripts/update-installed-hub.sh SUPERSEDED_PATHS)"
+hub_superseded_ok=1
+while IFS= read -r superseded_path; do
+  [ -n "$superseded_path" ] || continue
+  if printf '%s\n' "$hub_memory" | grep -Fxq "$superseded_path" \
+    || printf '%s\n' "$hub_protected" | grep -Fxq "$superseded_path"; then
+    echo "OVERLAP [hub superseded paths] — $superseded_path is hub memory or a protected file"
+    fail=1
+    hub_superseded_ok=0
+  fi
+done <<EOF
+$hub_superseded
+EOF
+[ "$hub_superseded_ok" -eq 0 ] \
+  || echo "OK [hub superseded paths] — removals exclude hub memory and protected files"
+
 standalone_architecture="$(extract_array scripts/update-installed-architecture.sh ARCHITECTURE_FILES)"
 standalone_memory="$(extract_block "$standalone_base/AGENTS.md" canon:controlled-memory)"
 standalone_boundaries_ok=1
