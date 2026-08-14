@@ -1,5 +1,5 @@
 ---
-name: project-migrate
+name: hub-project-migrate
 description: Use when existing project folders must be moved from a user-named legacy directory into the portable hub projects root.
 ---
 
@@ -75,16 +75,16 @@ unapproved rollback.
 
 A successful move changes no hub metadata by itself. Show the moved project at
 its canonical destination and ask separately whether to prepare registration.
-Use `project-register` for its narrow confirmed context read and draft. Write a
+Use `hub-project-register` for its narrow confirmed context read and draft. Write a
 card and registry entry only after separate card and registry confirmation,
 then run `scripts/check-hub-registry.sh`. On validator failure, stop and report
 the unchanged project location; do not register another project automatically.
 
 ## Optional legacy standalone cleanup
 
-Offer this final phase only when the current `project-migrate` run moved the
+Offer this final phase only when the current `hub-project-migrate` run moved the
 project successfully, the project is a direct child of `<canonical-hub>/projects`,
-its separate `project-register` confirmation completed, and
+its separate `hub-project-register` confirmation completed, and
 `scripts/check-hub-registry.sh` passed. The project remains usable through the
 hub when this phase is skipped.
 

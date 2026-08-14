@@ -15,7 +15,7 @@ bash /path/to/ai-dev-architecture-template/scripts/install.sh --mode hub /path/t
 
 The installer creates `_ai-hub/projects/` as the sole permanent project
 location and does not inspect, register, or move any project. Existing project
-folders may be considered later through `project-migrate`, which needs a
+folders may be considered later through `hub-project-migrate`, which needs a
 separately confirmed temporary source, a displayed preview, and explicit move
 approval. Update the hub itself with `scripts/update-installed-hub.sh`; its
 dry-run preserves hub-managed project memory and does not convert or move
@@ -179,9 +179,9 @@ After the update, open the project in Codex or Claude Code and ask the agent:
 Run environment-check.
 ```
 
-The final menu after `environment-check` is informational. It does not mean the agent should automatically run `task-switch`, `task-finish`, `architecture-update`, or other workflows.
+The final menu after `hub-environment-check` is informational. It does not mean the agent should automatically run `hub-task-switch`, `hub-task-finish`, `architecture-update`, or other workflows.
 
-Before the next working task, the agent must use `task-intake`.
+Before the next working task, the agent must use `hub-task-intake`.
 
 ## Warning: --apply overwrites protected files wholesale
 

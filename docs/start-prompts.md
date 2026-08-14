@@ -21,9 +21,9 @@ The full lists of protected files and controlled memory are in [file-roles.md](f
 They may be changed only through the appropriate workflow:
 
 - `implementation` — update the current task, Stage, handoff, or an explicitly confirmed future task;
-- `task-intake` — record the first task in `ai/current-task.md` or decide whether `task-switch` is needed;
-- `task-switch` — pause a task, replace the current one after confirmation, or promote a future task;
-- `task-finish` — record the result, important decisions, confirmed future tasks, clear the current task after confirmation, and save the result;
+- `hub-task-intake` — record the first task in `ai/current-task.md` or decide whether `hub-task-switch` is needed;
+- `hub-task-switch` — pause a task, replace the current one after confirmation, or promote a future task;
+- `hub-task-finish` — record the result, important decisions, confirmed future tasks, clear the current task after confirmation, and save the result;
 - `architecture-update` — update memory when it is part of a confirmed architecture change.
 
 ### Skills
@@ -40,9 +40,9 @@ For pre-merge or complex review, open `release-check` and check whether `code-re
 
 ### Context compaction
 
-Compressed context, compacted context, restored summary, and conversation summary continuation count as a new session. Before continuing, `environment-check` is required unless the user explicitly says to skip it.
+Compressed context, compacted context, restored summary, and conversation summary continuation count as a new session. Before continuing, `hub-environment-check` is required unless the user explicitly says to skip it.
 
-After `environment-check`, the agent must show a menu of available next commands and skills. The menu is informational: it does not launch workflows automatically.
+After `hub-environment-check`, the agent must show a menu of available next commands and skills. The menu is informational: it does not launch workflows automatically.
 
 ## 1. First installation of the architecture into a project
 
@@ -83,7 +83,7 @@ Task:
    `bash /path/to/ai-dev-architecture-template/scripts/install.sh --mode hub /path/to/_ai-hub`
    The installer must create `_ai-hub/projects/` as the sole permanent project location.
 6. Do not register, move, or read projects during hub installation. Registration
-   and any later `project-migrate` move each need separate explicit confirmation.
+   and any later `hub-project-migrate` move each need separate explicit confirmation.
 7. If required files are missing after installation, show the list and offer to restore them from the template.
 8. After installation, run environment-check.
 9. Before the first working task, use task-intake and record the task in ai/current-task.md.

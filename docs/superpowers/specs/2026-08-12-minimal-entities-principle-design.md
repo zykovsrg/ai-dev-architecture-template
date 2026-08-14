@@ -132,8 +132,8 @@ The generic instruction to open relevant rules is insufficient by itself. The
 entry files must say that routing is based on the user's request and each
 skill's `name` and `description`, then provide the mandatory routes:
 
-- session start or restored context → `environment-check`;
-- new work → `task-intake`; changed unfinished work → `task-switch`;
+- session start or restored context → `hub-environment-check`;
+- new work → `hub-task-intake`; changed unfinished work → `hub-task-switch`;
 - bug, regression, crash, performance issue, or complex task → Superpowers;
 - tests → `write-tests`;
 - UI change → `ui-review`;
@@ -141,7 +141,7 @@ skill's `name` and `description`, then provide the mandatory routes:
 - wording or copy review → `copy-review`;
 - release or merge → `release-check`;
 - architecture change → `architecture-update`;
-- completion → `task-finish`.
+- completion → `hub-task-finish`.
 
 Optional implementation tools remain discoverable through the selected skill
 and should not occupy the always-loaded context.

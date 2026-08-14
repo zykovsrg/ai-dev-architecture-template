@@ -36,12 +36,12 @@ the hub.
 
 ## Project Creation And Registration
 
-`project-create` creates each new project only as a direct child of
+`hub-project-create` creates each new project only as a direct child of
 `<hub>/projects/`. It creates the existing agreed minimal memory, card,
 registry entry, and active-project selection after confirmation; it does not
 create Git, code, dependencies, or duplicated entry files.
 
-`project-register` inventories and registers only direct children of this one
+`hub-project-register` inventories and registers only direct children of this one
 projects directory. A project outside it is not eligible for registration.
 
 ## Existing Projects Migration
@@ -88,7 +88,7 @@ integrity concern, without continuing with other projects automatically.
 - A new hub install creates `_ai-hub/projects/`, writes it as the only allowed
   root, and ignores `/projects/` in hub Git.
 - The installer rejects custom external `--root` values in portable mode.
-- `project-create` and `project-register` route only to the derived projects
+- `hub-project-create` and `hub-project-register` route only to the derived projects
   directory.
 - A hub-installed updater preserves `projects/`, registry data, and cards.
 - Migration is preview-first and never runs from installation or registration.

@@ -57,11 +57,11 @@ pre-knowledge project never creates `knowledge/` and never changes an existing
 knowledge record.
 
 Existing-project knowledge enablement is available only through the hub's
-`knowledge-enable` workflow after the hub has confirmed the registered project.
+`hub-knowledge-enable` workflow after the hub has confirmed the registered project.
 Legacy standalone knowledge migration is out of scope.
 
-Knowledge records are created or changed only through `knowledge-capture` or
-`knowledge-review`. In standalone projects these are project-local skills. In a
+Knowledge records are created or changed only through `hub-knowledge-capture` or
+`hub-knowledge-review`. In standalone projects these are project-local skills. In a
 hub-created project they are central hub-owned workflows, so the hub does not
 copy generic skills or entry files into each project. They canonicalize the
 confirmed project and selected path, reject absolute paths, traversal and
@@ -109,13 +109,13 @@ Do not copy either class into a hub or use the hub to overwrite project memory.
 | `ai/skills/*/SKILL.md` | only `architecture-update` after confirmation |
 | `.claude/` | only `architecture-update` after confirmation |
 | `.codex/` | only `architecture-update` after confirmation |
-| `ai/current-task.md` | `task-intake`, `implementation`, `task-switch`, `task-finish`; `task-intake` may record the first task, but does not overwrite an unfinished one without `task-switch` |
-| `ai/paused-tasks.md` | only `task-switch`; do not use as a backlog, future tasks, or a cleanup-work list |
-| `ai/future-tasks.md` | `implementation` after an explicit request to save an idea, `task-finish` after candidates are confirmed, `task-switch` on promotion |
+| `ai/current-task.md` | `hub-task-intake`, `implementation`, `hub-task-switch`, `hub-task-finish`; `hub-task-intake` may record the first task, but does not overwrite an unfinished one without `hub-task-switch` |
+| `ai/paused-tasks.md` | only `hub-task-switch`; do not use as a backlog, future tasks, or a cleanup-work list |
+| `ai/future-tasks.md` | `implementation` after an explicit request to save an idea, `hub-task-finish` after candidates are confirmed, `hub-task-switch` on promotion |
 | `ai/project-context.md` | after confirmation, when the stack, commands, structure, data model, invariants, or fragile zones change |
-| `ai/decisions.md` | `task-finish` or `architecture-update`, when an important durable decision appears |
-| `ai/changelog.md` | `task-finish` after confirmation; `architecture-update` when an approved architecture change requires it |
-| `knowledge/**` | only `knowledge-capture` or `knowledge-review`, after explicit confirmation of the exact record write or edit |
+| `ai/decisions.md` | `hub-task-finish` or `architecture-update`, when an important durable decision appears |
+| `ai/changelog.md` | `hub-task-finish` after confirmation; `architecture-update` when an approved architecture change requires it |
+| `knowledge/**` | only `hub-knowledge-capture` or `hub-knowledge-review`, after explicit confirmation of the exact record write or edit |
 
 ## 4. Template files
 
@@ -188,13 +188,13 @@ Stage: intake
 - `planning`
 - `implementation`
 - `review`
-- `task-finish`
+- `hub-task-finish`
 
 Do not write free text like `spec done, planning next` into `Status`. That is what `Stage` and the handoff notes are for.
 
 ### `ai/paused-tasks.md`
 
-A short list of tasks temporarily paused through `task-switch`.
+A short list of tasks temporarily paused through `hub-task-switch`.
 
 It is not a backlog, not an idea list, and not a place for cleanup work.
 
@@ -268,7 +268,7 @@ The guideline is to keep the last 2–4 weeks. Move older entries to `ai/archive
 
 The list of expected external skills, tools, and controlled methodologies.
 
-Needed by `environment-check`.
+Needed by `hub-environment-check`.
 
 Missing optional tools are a warning, not a blocker.
 
@@ -282,7 +282,7 @@ If a task matches a skill's trigger, the agent must open the current skill file.
 
 ## 7. Related workflows
 
-### `environment-check`
+### `hub-environment-check`
 
 Checks the architecture installation, base and optional project skills, the local architecture version against the repository, expected external tools, and controlled methodologies.
 
@@ -290,21 +290,21 @@ It is not a work mode and not a deep audit.
 
 It runs on a new session, a new chat, a tool/agent switch, and after compressed context or a restored summary.
 
-After the check, the agent must print a short menu of available next commands and skills. The menu is informational: it does not launch `task-switch`, `task-finish`, `architecture-update`, or other workflows automatically.
+After the check, the agent must print a short menu of available next commands and skills. The menu is informational: it does not launch `hub-task-switch`, `hub-task-finish`, `architecture-update`, or other workflows automatically.
 
-### `task-intake`
+### `hub-task-intake`
 
 Accepts a new working task.
 
-Used before real work, after `environment-check`.
+Used before real work, after `hub-environment-check`.
 
 If `ai/current-task.md` is empty, it records the new task in the current memory.
 
-If the current task is unfinished and the user asks for a different one, it hands control to `task-switch`.
+If the current task is unfinished and the user asks for a different one, it hands control to `hub-task-switch`.
 
 If the user asks to save an idea for later, it does not make the idea the current task and uses `ai/future-tasks.md` instead.
 
-### `task-switch`
+### `hub-task-switch`
 
 Protects `ai/current-task.md` from accidental overwriting.
 
@@ -312,7 +312,7 @@ Used when the current task is unfinished and the user asks to move to another on
 
 Also used when the user explicitly promotes an entry from `ai/future-tasks.md` to the current task.
 
-### `task-finish`
+### `hub-task-finish`
 
 Checks whether the task can be closed.
 

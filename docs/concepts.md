@@ -38,7 +38,7 @@ Work modes tell the agent what exactly it should be doing.
 
 - `implementation` — change code.
 - `review` — check changes and report problems, but do not edit files.
-- `task-finish` — check whether the task can be closed and clean up the context after confirmation.
+- `hub-task-finish` — check whether the task can be closed and clean up the context after confirmation.
 - `architecture-update` — update the AI development rules, not the application code.
 
 ## Optional local knowledge
@@ -51,24 +51,24 @@ be useful later.
 
 A normal architecture update does not enable knowledge in an existing project:
 it never creates `knowledge/` in a pre-knowledge project and never changes
-knowledge records. Capturing knowledge is intentional. `knowledge-capture`
-first proposes an exact category and path, while `knowledge-review` examines
+knowledge records. Capturing knowledge is intentional. `hub-knowledge-capture`
+first proposes an exact category and path, while `hub-knowledge-review` examines
 only an explicitly selected record or set. Neither may create or edit a record
 until the user explicitly confirms the exact write.
 
 Existing-project knowledge enablement is available only through the hub's
-`knowledge-enable` workflow after the hub has confirmed the registered project.
+`hub-knowledge-enable` workflow after the hub has confirmed the registered project.
 Legacy standalone knowledge migration is out of scope.
 
-Hub-created projects use central hub-owned `knowledge-capture` and
-`knowledge-review` workflows; the hub does not copy generic skills into each
+Hub-created projects use central hub-owned `hub-knowledge-capture` and
+`hub-knowledge-review` workflows; the hub does not copy generic skills into each
 project. Both standalone and hub workflows reject absolute paths, traversal,
 and symlink components, and keep records inside the confirmed project's
 matching knowledge category. Records must contain no secrets, personal data,
 or client data.
 
 Every knowledge record has one of five statuses: `draft`, `verified`,
-`needs-review`, `stale`, or `superseded`. `task-finish` may offer a focused
+`needs-review`, `stale`, or `superseded`. `hub-task-finish` may offer a focused
 knowledge review if it is relevant to closing the task. An offer is optional
 and does not itself authorize reading, reviewing, or changing knowledge.
 Review also validates the exact four record types, record and source dates,
@@ -90,7 +90,7 @@ A new hub chat shows the registered project and exact path, then waits for
 confirmation before reading that project's code or memory. Installing or
 updating a hub does not automatically convert projects, clean up files, move
 folders, or send reminders. Existing folders are moved only through
-`project-migrate`: the user separately confirms a temporary source, reviews an
+`hub-project-migrate`: the user separately confirms a temporary source, reviews an
 exact preview, and separately confirms each move or the displayed batch. The
 workflow then uses independent gates: move → registration confirmation →
 registry validation → optional cleanup confirmation. Cleanup is never automatic
@@ -126,14 +126,14 @@ Examples:
 - `ui-review` checks interface changes.
 - `security-review` checks security risks.
 - `write-tests` decides whether automated tests are needed.
-- `task-intake` accepts a new task and records it in the project's current memory.
-- `task-finish` safely closes a task.
+- `hub-task-intake` accepts a new task and records it in the project's current memory.
+- `hub-task-finish` safely closes a task.
 
 Skills should be loaded only when needed.
 
 ## task-finish
 
-`task-finish` has two phases.
+`hub-task-finish` has two phases.
 
 Phase 1 checks whether the task can be closed. No files are edited.
 
@@ -144,7 +144,7 @@ Phase 2 cleans up the context only after user confirmation. It updates:
 - `ai/current-task.md`
 - confirmed entries in `ai/future-tasks.md`, if ideas for later came up during the task
 
-`task-finish` must not change application code. After cleanup it must save the result: a push to GitHub if GitHub is connected, or a local-only fallback if GitHub is unavailable.
+`hub-task-finish` must not change application code. After cleanup it must save the result: a push to GitHub if GitHub is connected, or a local-only fallback if GitHub is unavailable.
 
 ## architecture-update
 
@@ -243,7 +243,7 @@ Superpowers strengthens the process only after permission.
 
 ## environment-check is not a work mode
 
-`environment-check` is a service check for the first run.
+`hub-environment-check` is a service check for the first run.
 
 It checks:
 - base architecture files;
@@ -254,7 +254,7 @@ It checks:
 After this check, the agent continues in one of the modes:
 - `implementation`
 - `review`
-- `task-finish`
+- `hub-task-finish`
 - `architecture-update`
 
 Before continuing, the agent shows the available next commands and skills. The menu does not launch these workflows automatically.
@@ -264,20 +264,20 @@ This keeps the work modes separate from the startup check.
 
 ## Task switching
 
-Before a working task, the agent first uses `task-intake`.
+Before a working task, the agent first uses `hub-task-intake`.
 
-`task-intake` looks at `ai/current-task.md` and decides whether to:
+`hub-task-intake` looks at `ai/current-task.md` and decides whether to:
 
 - record the first task;
 - continue the current one;
-- launch `task-switch` if the user asks for a different task;
+- launch `hub-task-switch` if the user asks for a different task;
 - save an idea to `ai/future-tasks.md`.
 
-`task-switch` is needed when the current task is not yet closed and the user asks to start another one.
+`hub-task-switch` is needed when the current task is not yet closed and the user asks to start another one.
 
-It does not close the old task. Closing is what `task-finish` is for.
+It does not close the old task. Closing is what `hub-task-finish` is for.
 
-What `task-switch` does:
+What `hub-task-switch` does:
 
 1. Shows the current unfinished task.
 2. Shows the new task.
@@ -285,7 +285,7 @@ What `task-switch` does:
 4. Offers options:
    - continue the current task;
    - pause the current task and start the new one;
-   - close the current task through `task-finish`;
+   - close the current task through `hub-task-finish`;
    - replace the current task.
 5. Changes files only after user confirmation.
 

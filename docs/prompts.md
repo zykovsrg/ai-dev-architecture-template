@@ -28,7 +28,7 @@ Requirements:
 Project: none
 Mode: routing
 
-Use the current hub `project-register` workflow.
+Use the current hub `hub-project-register` workflow.
 
 List only direct child directory names under `_ai-hub/projects/`. Do not
 recurse, read project code, project memory, `.env` files, or backups. Propose
@@ -42,7 +42,7 @@ confirmation before reading project context or adding a registry entry.
 Project: none
 Mode: routing
 
-Use the current hub `project-create` workflow to create a new project.
+Use the current hub `hub-project-create` workflow to create a new project.
 
 Collect the new project's name and type. The only target root is
 `_ai-hub/projects/`. Create it only after one complete preview and my exact
@@ -63,7 +63,7 @@ Requirements:
 Project: none
 Mode: routing
 
-Use the current hub `project-migrate` workflow. I want to consider moving
+Use the current hub `hub-project-migrate` workflow. I want to consider moving
 existing project folders into `_ai-hub/projects/`.
 
 First ask me to name and separately confirm one temporary source directory.
@@ -94,7 +94,7 @@ independent. Declining cleanup leaves every old file unchanged.
 Project: none
 Mode: review
 
-Use the current `registry-check` workflow for this personal hub. Run
+Use the current `hub-registry-check` workflow for this personal hub. Run
 `scripts/check-hub-registry.sh` against the hub, report pass/fail and stale or
 missing registry metadata, and do not write, register, archive, migrate, or
 schedule anything automatically.
@@ -110,18 +110,18 @@ hub. Explain that hub installation is separate and uses only this command:
   bash /path/to/ai-dev-architecture-template/scripts/install.sh --mode hub /path/to/_ai-hub
 
 Explain that the hub derives `_ai-hub/projects/` as the only permanent project
-location. Use `project-migrate` only after a separately confirmed temporary
+location. Use `hub-project-migrate` only after a separately confirmed temporary
 source, and do not edit, move, copy, or register anything unless I give the
 required separate confirmations.
 ```
 
-## Use `info-update` for meeting information
+## Use `hub-info-update` for meeting information
 
 ```text
 Project: <confirmed-project-id>
 Mode: review
 
-Use the hub `info-update` workflow for the meeting text below. Keep the source
+Use the hub `hub-info-update` workflow for the meeting text below. Keep the source
 text temporary by default. Produce review-only proposals in the workflow's
 required order, identify every affected project, and request a separate
 confirmation for each project and each hub signal before writing. Do not run
@@ -295,7 +295,7 @@ Goal:
 Check whether AI development architecture is installed correctly in this project.
 
 Use:
-- ai/skills/environment-check/SKILL.md
+- ai/skills/hub-environment-check/SKILL.md
 
 Read:
 - AGENTS.md
@@ -308,17 +308,17 @@ Read:
 - ai/decisions.md
 - ai/changelog.md
 - ai/external-tools.md
-- ai/skills/task-intake/SKILL.md
+- ai/skills/hub-task-intake/SKILL.md
 - ai/skills/start-screen/SKILL.md
 - ai/skills/ui-review/SKILL.md
 - ai/skills/security-review/SKILL.md
 - ai/skills/release-check/SKILL.md
 - ai/skills/copy-review/SKILL.md
 - ai/skills/write-tests/SKILL.md
-- ai/skills/task-finish/SKILL.md
-- ai/skills/task-switch/SKILL.md
+- ai/skills/hub-task-finish/SKILL.md
+- ai/skills/hub-task-switch/SKILL.md
 - ai/skills/architecture-update/SKILL.md
-- ai/skills/environment-check/SKILL.md
+- ai/skills/hub-environment-check/SKILL.md
 
 Do not edit files.
 
@@ -392,7 +392,7 @@ Goal:
 Check whether the AI development architecture has all required base skills and expected external skills/tools available.
 
 Use:
-- ai/skills/environment-check/SKILL.md
+- ai/skills/hub-environment-check/SKILL.md
 
 Check required files:
 - AGENTS.md
@@ -405,17 +405,17 @@ Check required files:
 - ai/decisions.md
 - ai/changelog.md
 - ai/external-tools.md
-- ai/skills/task-intake/SKILL.md
+- ai/skills/hub-task-intake/SKILL.md
 - ai/skills/start-screen/SKILL.md
 - ai/skills/ui-review/SKILL.md
 - ai/skills/security-review/SKILL.md
 - ai/skills/release-check/SKILL.md
 - ai/skills/copy-review/SKILL.md
 - ai/skills/write-tests/SKILL.md
-- ai/skills/task-finish/SKILL.md
-- ai/skills/task-switch/SKILL.md
+- ai/skills/hub-task-finish/SKILL.md
+- ai/skills/hub-task-switch/SKILL.md
 - ai/skills/architecture-update/SKILL.md
-- ai/skills/environment-check/SKILL.md
+- ai/skills/hub-environment-check/SKILL.md
 
 Check expected external skills and tools:
 - code-review-graph

@@ -1,5 +1,5 @@
 ---
-name: info-update
+name: hub-info-update
 description: Turn temporary meeting information into an approval-gated, project-scoped update proposal without retaining the source transcript.
 ---
 
@@ -24,14 +24,14 @@ registered ID and exact path, then obtain the separate project confirmation.
 This skill must not replace the current task. It may propose a refinement to an
 already confirmed project's current task only when that refinement fits the
 existing Done criteria. A different task requires that project's separate
-confirmed `task-switch` workflow. A completed task requires its separate
-confirmed `task-finish` workflow. This skill MUST NOT invoke or perform `task-finish`; it stops and requires that separate confirmed workflow. Never overwrite, pause, finish, or copy a current task from this skill.
+confirmed `hub-task-switch` workflow. A completed task requires its separate
+confirmed `hub-task-finish` workflow. This skill MUST NOT invoke or perform `hub-task-finish`; it stops and requires that separate confirmed workflow. Never overwrite, pause, finish, or copy a current task from this skill.
 
-This skill MUST NOT invoke or perform `project-switch`. It must not invoke or
-perform `project-switch` automatically. If the meeting requires another
+This skill MUST NOT invoke or perform `hub-project-switch`. It must not invoke or
+perform `hub-project-switch` automatically. If the meeting requires another
 project, it stops after the current project group. A separate confirmed
-`project-switch` between project groups is required before any read or proposal
-for the next project; resume `info-update` only after that switch. Project
+`hub-project-switch` between project groups is required before any read or proposal
+for the next project; resume `hub-info-update` only after that switch. Project
 confirmations inside this skill remain separate confirmation gates; they do not
 authorize a project switch.
 
@@ -42,8 +42,8 @@ memory allowed by the hub-managed flow. Do not write while preparing the
 proposal. First present one meeting summary and a distinct `Affected projects`
 section listing every affected project ID and exact path. Then prepare the
 following sections for the currently confirmed project group only. Before a
-next group, stop for the separate confirmed `project-switch`; do not read or
-propose for that group until `info-update` resumes after the switch. Do not
+next group, stop for the separate confirmed `hub-project-switch`; do not read or
+propose for that group until `hub-info-update` resumes after the switch. Do not
 merge items from different projects into a shared facts, decisions, task, or
 approval list.
 
@@ -62,7 +62,7 @@ State the registered project ID and exact registered path.
 ### Task changes
 
 Include only an in-scope refinement; otherwise say that a separate confirmed
-`task-switch` or `task-finish` workflow is required and stop that item.
+`hub-task-switch` or `hub-task-finish` workflow is required and stop that item.
 
 ### Future tasks
 

@@ -1,5 +1,5 @@
 ---
-name: local-router-install
+name: hub-local-router-install
 description: Install a small, approval-gated local area index inside one confirmed project after stable boundaries are proven.
 ---
 

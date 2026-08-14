@@ -1,5 +1,5 @@
 ---
-name: knowledge-capture
+name: hub-knowledge-capture
 type: implementation
 description: |
   Use on demand to create or update one knowledge record inside the currently

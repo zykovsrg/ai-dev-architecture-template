@@ -4,7 +4,7 @@
 
 **Goal:** Add an optional, separately confirmed deletion of obsolete standalone rules after a project is migrated and registered in the portable hub.
 
-**Architecture:** Extend the existing `project-migrate` workflow instead of adding another skill. The workflow inventories an explicit allowlist only after registration validation, shows a deletion preview, and deletes only separately confirmed existing candidate paths. Project memory remains outside the allowlist and must never be removed.
+**Architecture:** Extend the existing `hub-project-migrate` workflow instead of adding another skill. The workflow inventories an explicit allowlist only after registration validation, shows a deletion preview, and deletes only separately confirmed existing candidate paths. Project memory remains outside the allowlist and must never be removed.
 
 **Tech Stack:** Markdown skills and documentation; Bash smoke tests.
 
@@ -29,12 +29,12 @@
 
 **Interfaces:**
 
-- Consumes: `hub-template/ai/skills/project-migrate/SKILL.md`, hub entry files, and `hub-template/ai/architecture.md`.
+- Consumes: `hub-template/ai/skills/hub-project-migrate/SKILL.md`, hub entry files, and `hub-template/ai/architecture.md`.
 - Produces: RED checks that the cleanup workflow is present, optional, allowlisted, separately confirmed, and memory-safe.
 
 - [ ] **Step 1: Write failing checks for the migration cleanup contract**
 
-Add a `legacy_cleanup_contract_valid` helper to `scripts/hub-smoke-test.sh` that requires these literal invariants in `project-migrate/SKILL.md`:
+Add a `legacy_cleanup_contract_valid` helper to `scripts/hub-smoke-test.sh` that requires these literal invariants in `hub-project-migrate/SKILL.md`:
 
 ```bash
 assert_contains "$MIGRATE" 'Optional legacy standalone cleanup'
@@ -56,7 +56,7 @@ Run:
 bash scripts/hub-smoke-test.sh
 ```
 
-Expected: FAIL because `project-migrate` does not yet contain the optional cleanup section or its required safety wording.
+Expected: FAIL because `hub-project-migrate` does not yet contain the optional cleanup section or its required safety wording.
 
 - [ ] **Step 3: Update the required-skill count only if the test currently needs it**
 
@@ -73,17 +73,17 @@ git commit -m "test: define legacy standalone cleanup contract"
 
 **Files:**
 
-- Modify: `hub-template/ai/skills/project-migrate/SKILL.md`
+- Modify: `hub-template/ai/skills/hub-project-migrate/SKILL.md`
 - Modify: `hub-template/AGENTS.md`
 - Modify: `hub-template/CLAUDE.md`
 - Modify: `hub-template/ai/architecture.md`
 
 **Interfaces:**
 
-- Consumes: successful `project-migrate` move and separate `project-register` validation.
-- Produces: an optional `project-migrate` cleanup phase that an agent can execute only after a specific final confirmation.
+- Consumes: successful `hub-project-migrate` move and separate `hub-project-register` validation.
+- Produces: an optional `hub-project-migrate` cleanup phase that an agent can execute only after a specific final confirmation.
 
-- [ ] **Step 1: Add the `Optional legacy standalone cleanup` section to `project-migrate`**
+- [ ] **Step 1: Add the `Optional legacy standalone cleanup` section to `hub-project-migrate`**
 
 Place it after `Separate registration gate`. State that it is available only after the validator passes and the project remains usable through the hub if it is skipped. Include this exact candidate allowlist:
 
@@ -144,7 +144,7 @@ Expected: every command exits 0, the required skill count remains 12, and the sm
 
 ```bash
 git add hub-template/AGENTS.md hub-template/CLAUDE.md \
-  hub-template/ai/architecture.md hub-template/ai/skills/project-migrate/SKILL.md
+  hub-template/ai/architecture.md hub-template/ai/skills/hub-project-migrate/SKILL.md
 git commit -m "feat: add optional legacy standalone cleanup"
 ```
 
@@ -160,7 +160,7 @@ git commit -m "feat: add optional legacy standalone cleanup"
 
 **Interfaces:**
 
-- Consumes: the implemented `project-migrate` cleanup phase.
+- Consumes: the implemented `hub-project-migrate` cleanup phase.
 - Produces: public instructions that distinguish migration, registration, and optional cleanup confirmations.
 
 - [ ] **Step 1: Describe the four independent gates**

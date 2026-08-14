@@ -1,5 +1,5 @@
 ---
-name: project-register
+name: hub-project-register
 description: Propose a safe, approval-gated registration for one direct child of the hub's validated projects root.
 ---
 

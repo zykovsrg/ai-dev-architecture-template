@@ -8,7 +8,7 @@ confirmation-gated workflow. The result is a new project folder with only its
 
 ## Workflow
 
-`project-create` starts in `Mode: routing` when the user explicitly asks to
+`hub-project-create` starts in `Mode: routing` when the user explicitly asks to
 create a new project.
 
 1. Read only hub metadata needed to select a confirmed allowed root and avoid
@@ -20,7 +20,7 @@ create a new project.
    the card and registry entry, validate the hub registry, and select the new
    project as active.
 5. Enter the selected project through the existing hub-owned
-   `environment-check` and `task-intake` workflows.
+   `hub-environment-check` and `hub-task-intake` workflows.
 
 ## Project Contents
 
@@ -37,7 +37,7 @@ workflow skills.
 - Reject absolute or nested project names, traversal segments, symlinks, and
   any path outside the confirmed root.
 - If the target path already exists, do not write or overwrite anything. Offer
-  `project-register` for an existing project or a different name.
+  `hub-project-register` for an existing project or a different name.
 - The preview is not permission to create files. No write occurs before its
   explicit confirmation.
 - One confirmation covers exactly the displayed folder, project-memory files,
@@ -51,7 +51,7 @@ workflow skills.
 
 The new project's `ai/` directory receives only the six minimal project-memory
 files required by hub-owned workflows. Their small initial contents are embedded
-in `project-create`; an installed hub must not depend on the source
+in `hub-project-create`; an installed hub must not depend on the source
 repository's standalone `template/` directory:
 
 - `current-task.md`
@@ -65,11 +65,11 @@ No additional file is created unless a later confirmed workflow requires it.
 
 ## Integration
 
-- Add `project-create` as a required hub skill and route it from hub entry
+- Add `hub-project-create` as a required hub skill and route it from hub entry
   rules and hub architecture.
 - Reuse the existing registry-card schema and validator; do not add a second
   registry or project format.
-- Keep `project-register` for already existing folders only.
+- Keep `hub-project-register` for already existing folders only.
 - Extend hub smoke tests with creation-boundary and creation-result checks.
 - Update public documentation and installation/update guidance where hub skills
   or new-project behavior are listed.

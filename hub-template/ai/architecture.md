@@ -71,7 +71,7 @@ Use this sequence for every new chat or unconfirmed request:
    candidate from `ai/cross-project-signals.md`.
 4. Show `Project: <id>`, the exact registered `Path: <path>`, and `Mode: routing`.
 5. Ask for explicit confirmation of that project and path.
-6. Only after confirmation, invoke the hub-owned `environment-check` against
+6. Only after confirmation, invoke the hub-owned `hub-environment-check` against
    the selected project's `ai/` memory, then use the hub-managed project flow.
 
 The router never discovers projects by listing arbitrary folders, follows a
@@ -85,7 +85,7 @@ It must wait for confirmation before opening `/work/demo/metrics-site`.
 
 ## Project Creation And Registration
 
-Use `project-create` when the user requests a new project. After one complete
+Use `hub-project-create` when the user requests a new project. After one complete
 preview and explicit confirmation, it creates exactly one direct-child project
 under the validated `<hub>/projects` root: only its `ai/` memory files (`current-task.md`,
 `paused-tasks.md`, `future-tasks.md`, `project-context.md`, `decisions.md`, and
@@ -96,12 +96,12 @@ directories `knowledge/research/`, `knowledge/decisions/`, `knowledge/risks/`,
 and `knowledge/runbooks/`. Git initialization is covered by Repository
 Provisioning below. It must not create code, dependencies, services, duplicate
 registry entries, or any other project files. Use
-`project-register` for an existing folder; it does not replace the new-project
+`hub-project-register` for an existing folder; it does not replace the new-project
 creation flow.
 
 ## Existing Project Migration
 
-Use `project-migrate` only when the user asks to move legacy project folders
+Use `hub-project-migrate` only when the user asks to move legacy project folders
 into `<hub>/projects`. It requires a separately confirmed temporary source that
 is never made an allowed root and expires when the workflow ends. Before any
 candidate preflight, inventory direct-child names only, exclude the target hub,
@@ -112,8 +112,8 @@ After a separately confirmed candidate or displayed batch preflight, show each
 exact source-to-destination mapping, narrow Git status, and collision result.
 Moving requires another explicit confirmation. Move the whole folder without
 copying, preserve its existing Git metadata, and stop the batch on the first
-failure or integrity concern. The order is `project-migrate` move → separate
-`project-register` confirmation → `scripts/check-hub-registry.sh` validation
+failure or integrity concern. The order is `hub-project-migrate` move → separate
+`hub-project-register` confirmation → `scripts/check-hub-registry.sh` validation
 → optional legacy cleanup confirmation. Neither source confirmation nor move
 confirmation authorizes registration or cleanup. The optional cleanup may only
 delete its explicit legacy standalone-rule allowlist after its own confirmation;
@@ -152,7 +152,7 @@ A project switch changes the selected project. It always returns to
 explicit confirmation before any read of the new project's memory or code.
 
 A task switch happens inside an already confirmed project. Use that project's
-hub-owned `task-switch` workflow and selected-project `ai/` memory; it is not
+hub-owned `hub-task-switch` workflow and selected-project `ai/` memory; it is not
 a project switch. Do not pause, finish, copy, or rewrite one project's task
 memory while switching to another project. A request that mentions two projects
 needs separate confirmation for each project and a clear boundary for any
@@ -164,18 +164,18 @@ After an explicit confirmation of a registered project and successful registry
 validation, use these central hub-owned skills. They remove any need to copy
 `AGENTS.md`, `CLAUDE.md`, or workflow files into each project:
 
-- `environment-check` — read-only readiness and current-state check of the
+- `hub-environment-check` — read-only readiness and current-state check of the
   selected project's `ai/` memory.
-- `task-intake` — records or classifies the requested work in the selected
+- `hub-task-intake` — records or classifies the requested work in the selected
   project's `ai/current-task.md`.
-- `task-switch` — changes an unfinished task only after a separate explicit
+- `hub-task-switch` — changes an unfinished task only after a separate explicit
   confirmation, using only the selected project's `ai/` memory.
-- `task-finish` — verifies and cleans selected-project task memory only after
+- `hub-task-finish` — verifies and cleans selected-project task memory only after
   a separate explicit confirmation; after its normal completion check it may
-  offer, but never start, a focused `knowledge-review`.
-- `knowledge-capture` — creates or updates one explicitly selected record in
+  offer, but never start, a focused `hub-knowledge-review`.
+- `hub-knowledge-capture` — creates or updates one explicitly selected record in
   the confirmed project's local `knowledge/` tree after exact confirmation.
-- `knowledge-review` — checks one explicit project-local record, folder, or
+- `hub-knowledge-review` — checks one explicit project-local record, folder, or
   task-linked set and waits for exact confirmation before any edit.
 
 Each shared workflow operates only after a confirmed registered project and
@@ -188,14 +188,14 @@ reads, writes, pauses, finishes, or copies another project's memory or records.
 
 `knowledge/` is optional local reference material, not default context and not
 an automatic conversation archive. A new project receives only the empty
-knowledge scaffold as part of its one confirmed `project-create` operation.
-Hub-created projects use the central hub-owned `knowledge-capture` and
-`knowledge-review` workflows; generic project skills are never copied into
+knowledge scaffold as part of its one confirmed `hub-project-create` operation.
+Hub-created projects use the central hub-owned `hub-knowledge-capture` and
+`hub-knowledge-review` workflows; generic project skills are never copied into
 them. Both workflows canonicalize the confirmed project and selected paths,
 reject absolute paths, traversal, and symlink components, and keep every record
 inside that project's `knowledge/` tree and matching type category.
 
-For an existing confirmed registered hub project, use `knowledge-enable` only
+For an existing confirmed registered hub project, use `hub-knowledge-enable` only
 after a separate explicit confirmation that repeats the project ID and exact
 registered path. It may inspect only the registry identity and the exact
 scaffold paths, must not follow symlinks, and must not read records or unrelated
@@ -237,14 +237,14 @@ Never turn an inference into durable memory without identifying it as an
 inference. When an update needs access beyond the confirmed project, stop and
 ask for a separate confirmation.
 
-For temporary meeting text, use the `info-update` workflow. It produces a
+For temporary meeting text, use the `hub-info-update` workflow. It produces a
 review-only proposal before any write, does not save the source transcript by
 default, and confirms each affected project separately. A multi-project update
 processes one confirmed project group at a time and requires a separate
-confirmed `project-switch` between project groups before it resumes. It may
-refine an existing task only under the hub-owned `task-intake` rules; a new task
-or task replacement must use the hub-owned `task-switch` workflow, while
-closure uses the hub-owned `task-finish` workflow.
+confirmed `hub-project-switch` between project groups before it resumes. It may
+refine an existing task only under the hub-owned `hub-task-intake` rules; a new task
+or task replacement must use the hub-owned `hub-task-switch` workflow, while
+closure uses the hub-owned `hub-task-finish` workflow.
 
 ## Cross-Project Signals
 
@@ -308,7 +308,7 @@ Load the smallest useful context in layers:
 1. Before confirmation: the entry file, allowed roots, registry, and at most
    three candidate cards, then only related active signals. Do not load project
    memory or code.
-2. After confirmation: the hub-owned `environment-check`, the selected
+2. After confirmation: the hub-owned `hub-environment-check`, the selected
    project's current task, at most two directly relevant project-memory files,
    and one matching shared workflow skill.
 3. Expand beyond that budget only when the current task needs it; state why and

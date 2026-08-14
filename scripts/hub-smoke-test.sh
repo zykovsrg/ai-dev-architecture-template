@@ -140,9 +140,9 @@ info_update_project_group_sequence_valid() {
   local text
   text="$(tr '\n' ' ' < "$1" | tr -s ' ')"
 
-  [[ "$text" == *'separate confirmed `project-switch` between project groups'* ]] &&
-    [[ "$text" == *'resume `info-update` only after that switch'* ]] &&
-    [[ "$text" == *'must not invoke or perform `project-switch`'* ]]
+  [[ "$text" == *'separate confirmed `hub-project-switch` between project groups'* ]] &&
+    [[ "$text" == *'resume `hub-info-update` only after that switch'* ]] &&
+    [[ "$text" == *'must not invoke or perform `hub-project-switch`'* ]]
 }
 registration_primary_inventory_valid() {
   local section
@@ -183,8 +183,8 @@ project_create_contract_valid() {
     [[ "$text" == *'ai/cross-project-signals.md'* ]] &&
     [[ "$text" == *'ai/archive/'* ]] &&
     [[ "$text" == *'active-project.md only after successful validation'* ]] &&
-    [[ "$text" == *'hub-owned `environment-check`'* ]] &&
-    [[ "$text" == *'hub-owned `task-intake`'* ]] &&
+    [[ "$text" == *'hub-owned `hub-environment-check`'* ]] &&
+    [[ "$text" == *'hub-owned `hub-task-intake`'* ]] &&
     [[ "$text" == *'unsafe project names'* ]] &&
     [[ "$text" == *'Initialize a local Git repository and commit only the approved scaffold'* ]] &&
     [[ "$text" == *'create a private repository with that exact name'* ]] &&
@@ -204,15 +204,15 @@ project_create_knowledge_scaffold_valid() {
     [[ "$text" == *'knowledge/runbooks/'* ]] &&
     [[ "$text" == *'only the absent knowledge scaffold'* ]] &&
     [[ "$text" == *'never overwrite records'* ]] &&
-    [[ "$text" == *'hub-owned `knowledge-capture`'* ]] &&
-    [[ "$text" == *'hub-owned `knowledge-review`'* ]] &&
+    [[ "$text" == *'hub-owned `hub-knowledge-capture`'* ]] &&
+    [[ "$text" == *'hub-owned `hub-knowledge-review`'* ]] &&
     [[ "$text" == *'do not copy generic workflow skills'* ]]
 }
 knowledge_enable_contract_valid() {
   local file="$1" text
   text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
 
-  [[ "$text" == *'name: knowledge-enable'* ]] &&
+  [[ "$text" == *'name: hub-knowledge-enable'* ]] &&
     [[ "$text" == *'confirmed registered project'* ]] &&
     [[ "$text" == *'exact registered path'* ]] &&
     [[ "$text" == *'explicit confirmation'* ]] &&
@@ -249,7 +249,7 @@ hub_knowledge_capture_contract_valid() {
   text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
 
   hub_knowledge_path_boundary_valid "$file" &&
-    [[ "$text" == *'name: knowledge-capture'* ]] &&
+    [[ "$text" == *'name: hub-knowledge-capture'* ]] &&
     [[ "$text" == *'selected project `ai/` memory'* ]] &&
     [[ "$text" == *'explicit confirmation'* ]] &&
     [[ "$text" == *'personal data or client data'* ]] &&
@@ -263,7 +263,7 @@ hub_knowledge_review_contract_valid() {
   text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
 
   hub_knowledge_path_boundary_valid "$file" &&
-    [[ "$text" == *'name: knowledge-review'* ]] &&
+    [[ "$text" == *'name: hub-knowledge-review'* ]] &&
     [[ "$text" == *'selected project `ai/` memory'* ]] &&
     [[ "$text" == *'explicit confirmation'* ]] &&
     [[ "$text" == *'required frontmatter keys: `type`, `status`, `created`, `reviewed`, and `sources`'* ]] &&
@@ -282,7 +282,7 @@ hub_task_finish_knowledge_offer_valid() {
   text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
 
   [[ "$text" == *'After the normal completion check'* ]] &&
-    [[ "$text" == *'may offer the hub-owned `knowledge-review`'* ]] &&
+    [[ "$text" == *'may offer the hub-owned `hub-knowledge-review`'* ]] &&
     [[ "$text" == *'never start it automatically'* ]] &&
     [[ "$text" == *'Declining the offer has no effect on task closure'* ]]
 }
@@ -498,7 +498,7 @@ assert_contains <(normalize_entry "$THIRD_ACTIVATION") \
 cmp -s <(normalize_entry "$HUB_AGENTS") <(normalize_entry "$HUB_CLAUDE") \
   || fail 'hub entry files differ beyond title and activation paragraph'
 
-for skill in project-router project-switch project-register project-create project-migrate registry-check environment-check task-intake task-switch task-finish knowledge-enable knowledge-capture knowledge-review; do
+for skill in hub-project-router hub-project-switch hub-project-register hub-project-create hub-project-migrate hub-registry-check hub-environment-check hub-task-intake hub-task-switch hub-task-finish hub-knowledge-enable hub-knowledge-capture hub-knowledge-review; do
   file="$ROOT/hub-template/ai/skills/$skill/SKILL.md"
   assert_file "$file"
   assert_contains "$file" 'name:'
@@ -506,7 +506,7 @@ for skill in project-router project-switch project-register project-create proje
   assert_contains "$file" 'explicit confirmation'
 done
 
-PROJECT_CREATE_SKILL="$ROOT/hub-template/ai/skills/project-create/SKILL.md"
+PROJECT_CREATE_SKILL="$ROOT/hub-template/ai/skills/hub-project-create/SKILL.md"
 project_create_contract_valid "$PROJECT_CREATE_SKILL" \
   || fail 'project-create must define the confirmation-gated creation contract'
 project_create_knowledge_scaffold_valid "$PROJECT_CREATE_SKILL" \
@@ -526,7 +526,7 @@ PROJECT_CREATE_WITHOUT_KNOWLEDGE_DIRECTORY="$TMP_DIR/project-create-without-know
 sed '/knowledge\/runbooks\//d' "$PROJECT_CREATE_SKILL" > "$PROJECT_CREATE_WITHOUT_KNOWLEDGE_DIRECTORY"
 assert_rejected project_create_knowledge_scaffold_valid "$PROJECT_CREATE_WITHOUT_KNOWLEDGE_DIRECTORY"
 
-KNOWLEDGE_ENABLE_SKILL="$ROOT/hub-template/ai/skills/knowledge-enable/SKILL.md"
+KNOWLEDGE_ENABLE_SKILL="$ROOT/hub-template/ai/skills/hub-knowledge-enable/SKILL.md"
 knowledge_enable_contract_valid "$KNOWLEDGE_ENABLE_SKILL" \
   || fail 'missing knowledge-enable workflow safety contract'
 
@@ -545,8 +545,8 @@ sed '/Inspect path types with `lstat`/d' "$KNOWLEDGE_ENABLE_SKILL" \
   > "$KNOWLEDGE_ENABLE_WITHOUT_PATH_TYPES"
 assert_rejected knowledge_enable_contract_valid "$KNOWLEDGE_ENABLE_WITHOUT_PATH_TYPES"
 
-HUB_KNOWLEDGE_CAPTURE="$ROOT/hub-template/ai/skills/knowledge-capture/SKILL.md"
-HUB_KNOWLEDGE_REVIEW="$ROOT/hub-template/ai/skills/knowledge-review/SKILL.md"
+HUB_KNOWLEDGE_CAPTURE="$ROOT/hub-template/ai/skills/hub-knowledge-capture/SKILL.md"
+HUB_KNOWLEDGE_REVIEW="$ROOT/hub-template/ai/skills/hub-knowledge-review/SKILL.md"
 hub_knowledge_capture_contract_valid "$HUB_KNOWLEDGE_CAPTURE" \
   || fail 'hub-owned knowledge-capture contract is incomplete'
 hub_knowledge_review_contract_valid "$HUB_KNOWLEDGE_REVIEW" \
@@ -562,10 +562,10 @@ sed '/reject any symlink component without following it/d' \
   "$HUB_KNOWLEDGE_REVIEW" > "$HUB_REVIEW_WITHOUT_SYMLINK"
 assert_rejected hub_knowledge_review_contract_valid "$HUB_REVIEW_WITHOUT_SYMLINK"
 
-hub_task_finish_knowledge_offer_valid "$ROOT/hub-template/ai/skills/task-finish/SKILL.md" \
+hub_task_finish_knowledge_offer_valid "$ROOT/hub-template/ai/skills/hub-task-finish/SKILL.md" \
   || fail 'hub task-finish must offer but never start knowledge-review'
 
-PROJECT_MIGRATE_SKILL="$ROOT/hub-template/ai/skills/project-migrate/SKILL.md"
+PROJECT_MIGRATE_SKILL="$ROOT/hub-template/ai/skills/hub-project-migrate/SKILL.md"
 project_migrate_contract_valid "$PROJECT_MIGRATE_SKILL" \
   || fail 'project-migrate must define the preview-first safe move contract'
 
@@ -617,7 +617,7 @@ for hub_entry in "$HUB_AGENTS" "$HUB_CLAUDE" "$ROOT/hub-template/ai/architecture
     || fail "hub cleanup routing order missing or out of order: $hub_entry"
 done
 
-for workflow in environment-check task-intake task-switch task-finish; do
+for workflow in hub-environment-check hub-task-intake hub-task-switch hub-task-finish; do
   hub_shared_workflow_valid "$ROOT/hub-template/ai/skills/$workflow/SKILL.md" "$workflow" \
     || fail "shared hub workflow must preserve post-confirmation and memory-isolation gates: $workflow"
 done
@@ -626,8 +626,8 @@ HUB_ARCHITECTURE="$ROOT/hub-template/ai/architecture.md"
 hub_architecture_security_precedence_valid "$HUB_ARCHITECTURE" \
   || fail 'hub security and routing rules must outrank all project content'
 
-INFO="$ROOT/hub-template/ai/skills/info-update/SKILL.md"
-LOCAL="$ROOT/hub-template/ai/skills/local-router-install/SKILL.md"
+INFO="$ROOT/hub-template/ai/skills/hub-info-update/SKILL.md"
+LOCAL="$ROOT/hub-template/ai/skills/hub-local-router-install/SKILL.md"
 assert_file "$INFO"
 assert_file "$LOCAL"
 grep -Fq 'Do not save the source transcript by default' "$INFO" \
@@ -636,9 +636,9 @@ grep -Fq 'Confirm each affected project separately' "$INFO" \
   || fail 'per-project approval missing'
 grep -Fq 'must not replace the current task' "$INFO" \
   || fail 'current-task protection missing'
-grep -Fq 'MUST NOT invoke or perform `task-finish`' "$INFO" \
+grep -Fq 'MUST NOT invoke or perform `hub-task-finish`' "$INFO" \
   || fail 'info-update task-finish ban missing'
-grep -Fq 'MUST NOT invoke or perform `project-switch`' "$INFO" \
+grep -Fq 'MUST NOT invoke or perform `hub-project-switch`' "$INFO" \
   || fail 'info-update project-switch ban missing'
 info_update_project_group_sequence_valid "$INFO" \
   || fail 'info-update must stop for a separate confirmed project-switch between project groups before resuming'
@@ -672,7 +672,7 @@ grep -Eq 'expected_effect|review_after|expires_at' "$SIGNALS" \
 grep -Fq 'Hypotheses (optional)' "$SIGNALS" \
   || fail 'hypothesis separation missing'
 
-ROUTER_SKILL="$ROOT/hub-template/ai/skills/project-router/SKILL.md"
+ROUTER_SKILL="$ROOT/hub-template/ai/skills/hub-project-router/SKILL.md"
 assert_contains "$ROUTER_SKILL" 'maximum of three candidates'
 assert_contains "$ROUTER_SKILL" 'high, medium, or low'
 assert_contains "$ROUTER_SKILL" 'read only candidate cards'
@@ -692,17 +692,17 @@ ROUTER_WITHOUT_THIRD_SLOT="$TMP_DIR/router-without-third-slot.md"
 sed '/3\. <project-id-3>/d' "$ROUTER_SKILL" > "$ROUTER_WITHOUT_THIRD_SLOT"
 assert_rejected router_multiple_candidates_template_valid "$ROUTER_WITHOUT_THIRD_SLOT"
 
-SWITCH_SKILL="$ROOT/hub-template/ai/skills/project-switch/SKILL.md"
+SWITCH_SKILL="$ROOT/hub-template/ai/skills/hub-project-switch/SKILL.md"
 assert_contains "$SWITCH_SKILL" 'must not modify the current task'
 assert_contains "$SWITCH_SKILL" 'canonical path validation'
 SWITCH_TEXT="$(tr '\n' ' ' < "$SWITCH_SKILL" | tr -s ' ')"
-[[ "$SWITCH_TEXT" == *'hub-owned `environment-check`'* ]] \
+[[ "$SWITCH_TEXT" == *'hub-owned `hub-environment-check`'* ]] \
   || fail 'project-switch must invoke hub-owned environment-check'
-[[ "$SWITCH_TEXT" == *'hub-owned `task-intake`'* ]] \
+[[ "$SWITCH_TEXT" == *'hub-owned `hub-task-intake`'* ]] \
   || fail 'project-switch must invoke hub-owned task-intake'
 assert_not_contains "$SWITCH_SKILL" 'project entry instructions'
 
-REGISTER_SKILL="$ROOT/hub-template/ai/skills/project-register/SKILL.md"
+REGISTER_SKILL="$ROOT/hub-template/ai/skills/hub-project-register/SKILL.md"
 assert_contains "$REGISTER_SKILL" 'direct child directory names only'
 assert_contains "$REGISTER_SKILL" 'Never auto-register backups'
 assert_contains "$REGISTER_SKILL" 'approval before reading project context'
@@ -726,7 +726,7 @@ awk '
 ' "$REGISTER_SKILL" > "$REGISTER_WITH_EARLY_GIT"
 assert_rejected registration_primary_inventory_valid "$REGISTER_WITH_EARLY_GIT"
 
-CHECK_SKILL="$ROOT/hub-template/ai/skills/registry-check/SKILL.md"
+CHECK_SKILL="$ROOT/hub-template/ai/skills/hub-registry-check/SKILL.md"
 assert_contains "$CHECK_SKILL" 'read-only until approval'
 assert_contains "$CHECK_SKILL" 'scripts/check-hub-registry.sh'
 assert_contains "$CHECK_SKILL" 'cannot invoke it automatically'
@@ -1116,8 +1116,8 @@ assert_file "$HUB_INSTALL/CLAUDE.md"
 assert_file "$HUB_INSTALL/ai/project-registry.md"
 assert_file "$HUB_INSTALL/scripts/check-hub-registry.sh"
 assert_file "$HUB_INSTALL/projects/.gitkeep"
-assert_file "$HUB_INSTALL/ai/skills/knowledge-capture/SKILL.md"
-assert_file "$HUB_INSTALL/ai/skills/knowledge-review/SKILL.md"
+assert_file "$HUB_INSTALL/ai/skills/hub-knowledge-capture/SKILL.md"
+assert_file "$HUB_INSTALL/ai/skills/hub-knowledge-review/SKILL.md"
 PROJECT_ROOT="$HUB_INSTALL/projects"
 mkdir -p "$PROJECT_ROOT/example-project" "$PROJECT_ROOT/example-backup"
 printf '%s\n' "$SENTINEL" > "$PROJECT_ROOT/example-project/.env"
@@ -1150,19 +1150,19 @@ assert_contains "$TMP_DIR/standalone-source.out" 'Source template is not a perso
 
 INCOMPLETE_HUB_SOURCE="$TMP_DIR/incomplete-hub-source"
 cp -R "$ROOT/hub-template" "$INCOMPLETE_HUB_SOURCE"
-rm "$INCOMPLETE_HUB_SOURCE/ai/skills/project-router/SKILL.md"
+rm "$INCOMPLETE_HUB_SOURCE/ai/skills/hub-project-router/SKILL.md"
 if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$INCOMPLETE_HUB_SOURCE" --dry-run > "$TMP_DIR/incomplete-hub-source.out" 2>&1; then
   fail 'hub updater accepted a source without a mandatory hub skill'
 fi
-assert_contains "$TMP_DIR/incomplete-hub-source.out" 'missing mandatory hub skill: project-router'
+assert_contains "$TMP_DIR/incomplete-hub-source.out" 'missing mandatory hub skill: hub-project-router'
 
 INCOMPLETE_KNOWLEDGE_SOURCE="$TMP_DIR/incomplete-knowledge-source"
 cp -R "$ROOT/hub-template" "$INCOMPLETE_KNOWLEDGE_SOURCE"
-rm "$INCOMPLETE_KNOWLEDGE_SOURCE/ai/skills/knowledge-review/SKILL.md"
+rm "$INCOMPLETE_KNOWLEDGE_SOURCE/ai/skills/hub-knowledge-review/SKILL.md"
 if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$INCOMPLETE_KNOWLEDGE_SOURCE" --dry-run > "$TMP_DIR/incomplete-knowledge-source.out" 2>&1; then
   fail 'hub updater accepted a source without the mandatory knowledge quality cycle'
 fi
-assert_contains "$TMP_DIR/incomplete-knowledge-source.out" 'missing mandatory hub skill: knowledge-review'
+assert_contains "$TMP_DIR/incomplete-knowledge-source.out" 'missing mandatory hub skill: hub-knowledge-review'
 
 printf '%s\n' '# Allowed Roots' '' '- /custom/projects' > "$HUB_INSTALL/ai/allowed-roots.md"
 printf '%s\n' '# Project Registry' '' 'custom registry' > "$HUB_INSTALL/ai/project-registry.md"

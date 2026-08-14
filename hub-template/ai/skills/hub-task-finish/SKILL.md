@@ -1,5 +1,5 @@
 ---
-name: task-finish
+name: hub-task-finish
 description: Verify and close one confirmed registered project's task memory after separate approval.
 ---
 
@@ -17,7 +17,7 @@ project `ai/` memory only; do not require or read duplicated project
 2. Check recorded Done criteria and report any missing verification or open
    risk. Do not change task memory during this check.
 3. After the normal completion check, if durable records linked from this task
-   may need a focused check, the agent may offer the hub-owned `knowledge-review`
+   may need a focused check, the agent may offer the hub-owned `hub-knowledge-review`
    workflow, but must never start it automatically. Declining the offer has no effect on task closure. An accepted offer starts that separate workflow with
    its own scope, containment checks, and confirmation gate.
 4. Require a separate explicit confirmation before writing the approved

@@ -1,5 +1,5 @@
 ---
-name: project-router
+name: hub-project-router
 description: Route an unconfirmed request to a registered hub project without reading project files before confirmation.
 ---
 

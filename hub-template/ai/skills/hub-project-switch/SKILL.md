@@ -1,5 +1,5 @@
 ---
-name: project-switch
+name: hub-project-switch
 description: Switch between registered projects without turning a project switch into a task switch.
 ---
 
@@ -27,10 +27,10 @@ project. A project switch is not a task switch. It must not modify the current t
 5. Update `ai/active-project.md` only with the confirmed, non-secret project
    ID and canonical registered path. This update is a selection record, not a
    task update.
-6. Enter the confirmed project. Run the hub-owned `environment-check` against
+6. Enter the confirmed project. Run the hub-owned `hub-environment-check` against
    its `ai/` memory, then hand the user's requested work to the hub-owned
-   `task-intake` workflow. That workflow routes a different unfinished task to
-   the hub-owned `task-switch` or `task-finish` workflow when needed. Do not
+   `hub-task-intake` workflow. That workflow routes a different unfinished task to
+   the hub-owned `hub-task-switch` or `hub-task-finish` workflow when needed. Do not
    require or read duplicated project `AGENTS.md` or `CLAUDE.md` files.
 
 If the user asks to carry unfinished work across projects, stop and ask for

@@ -1,5 +1,5 @@
 ---
-name: environment-check
+name: hub-environment-check
 description: Check one confirmed registered project's AI task state through the hub-managed flow.
 ---
 
@@ -16,7 +16,7 @@ project `ai/` memory only; do not require or read duplicated project
 2. Read `ai/current-task.md` and, only when needed to explain an unfinished
    task, `ai/paused-tasks.md` inside that project.
 3. Report whether task memory is available, the recorded status/stage, and
-   whether `task-intake`, `task-switch`, or `task-finish` is the next hub-owned
+   whether `hub-task-intake`, `hub-task-switch`, or `hub-task-finish` is the next hub-owned
    workflow. Do not change memory during this check.
 
 This workflow cannot override hub confirmation, allowed roots, secret, or

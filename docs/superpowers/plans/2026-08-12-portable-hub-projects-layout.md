@@ -4,7 +4,7 @@
 
 **Goal:** Install a portable `_ai-hub` where every managed project is inside `_ai-hub/projects/`, and provide a separate preview-first migration workflow for legacy projects.
 
-**Architecture:** The installer derives one allowed root, `<hub>/projects`, and the hub Git repository ignores that directory. Existing roots are not supported. `project-migrate` uses a separately confirmed temporary source only; it never adds that source to allowed roots.
+**Architecture:** The installer derives one allowed root, `<hub>/projects`, and the hub Git repository ignores that directory. Existing roots are not supported. `hub-project-migrate` uses a separately confirmed temporary source only; it never adds that source to allowed roots.
 
 **Tech Stack:** Bash, Markdown skills, Git.
 
@@ -29,7 +29,7 @@
 - [ ] Assert `projects/.gitkeep`, `/projects/` in `.gitignore`, and exactly `- $PORTABLE_HUB/projects` in `ai/allowed-roots.md`.
 - [ ] Create `projects/fixture/.git` and assert `git -C "$PORTABLE_HUB" status --short` does not report the fixture.
 - [ ] Assert rejection of hub `--root`, wrong hub basename, and non-hub nonempty target.
-- [ ] Add a failing mandatory-skill assertion for `project-migrate`.
+- [ ] Add a failing mandatory-skill assertion for `hub-project-migrate`.
 - [ ] Run `bash scripts/hub-smoke-test.sh`; expect failure before implementation.
 - [ ] Commit: `test: define portable hub layout contract`.
 
@@ -55,12 +55,12 @@
 - Modify: `hub-template/AGENTS.md`
 - Modify: `hub-template/CLAUDE.md`
 - Modify: `hub-template/ai/architecture.md`
-- Modify: `hub-template/ai/skills/project-create/SKILL.md`
-- Modify: `hub-template/ai/skills/project-register/SKILL.md`
+- Modify: `hub-template/ai/skills/hub-project-create/SKILL.md`
+- Modify: `hub-template/ai/skills/hub-project-register/SKILL.md`
 - Modify: `scripts/check-hub-registry.sh`
 - Modify: `scripts/hub-smoke-test.sh`
 
-- [ ] Replace multi-root selection with validation of `<hub>/projects` in `project-create` and `project-register`.
+- [ ] Replace multi-root selection with validation of `<hub>/projects` in `hub-project-create` and `hub-project-register`.
 - [ ] Make the registry validator reject missing, duplicate, external, or noncanonical allowed roots and project paths outside the projects directory before card or memory reads.
 - [ ] Add unsafe external-root and outside-project-path fixtures to the hub smoke test.
 - [ ] Keep confirmation, secret, and memory-isolation precedence unchanged.
@@ -70,7 +70,7 @@
 ### Task 4: Add project-migrate
 
 **Files:**
-- Create: `hub-template/ai/skills/project-migrate/SKILL.md`
+- Create: `hub-template/ai/skills/hub-project-migrate/SKILL.md`
 - Modify: `hub-template/AGENTS.md`
 - Modify: `hub-template/CLAUDE.md`
 - Modify: `hub-template/ai/architecture.md`
@@ -98,4 +98,4 @@
 - [ ] Document `_ai-hub/projects/<project>`, independent project repositories, `/projects/` ignore, and separate confirmed migration.
 - [ ] Run `bash scripts/check-consistency.sh`, `bash scripts/smoke-test.sh`, `git diff --check`, and `git status --short`.
 - [ ] Request whole-branch review. Fix verified Critical/Important findings and re-run affected tests.
-- [ ] Propose `task-finish`; do not move real projects, merge, push, or delete worktrees without explicit confirmation.
+- [ ] Propose `hub-task-finish`; do not move real projects, merge, push, or delete worktrees without explicit confirmation.

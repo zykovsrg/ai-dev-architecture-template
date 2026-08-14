@@ -51,7 +51,7 @@ bash /path/to/ai-dev-architecture-template/scripts/install.sh --mode hub /path/t
 
 The installer creates `_ai-hub/projects/` and does not inspect, register, or
 move a project. To relocate existing folders later, use the installed hub's
-`project-migrate` workflow: it requires a separately confirmed temporary
+`hub-project-migrate` workflow: it requires a separately confirmed temporary
 source, shows the exact source-to-destination mapping and Git status, and then
 requires explicit move approval. Registration requires its own separate confirmation,
 then the hub registry is validated. Only after that may the workflow offer an
@@ -118,17 +118,17 @@ knowledge files. This boundary applies to `--check`, `--dry-run`, `--apply`,
 and `--commit`.
 
 Existing-project knowledge enablement is available only through the hub's
-`knowledge-enable` workflow after the hub has confirmed the registered project.
+`hub-knowledge-enable` workflow after the hub has confirmed the registered project.
 Legacy standalone knowledge migration is out of scope.
 
 Hub-created projects receive the quality cycle through central hub-owned
-`knowledge-capture` and `knowledge-review` workflows. The hub does not copy
+`hub-knowledge-capture` and `hub-knowledge-review` workflows. The hub does not copy
 generic project skills or entry files into individual projects.
 
-Create or edit a knowledge record only through `knowledge-capture` or
-`knowledge-review`, after the workflow has selected the exact path and the
+Create or edit a knowledge record only through `hub-knowledge-capture` or
+`hub-knowledge-review`, after the workflow has selected the exact path and the
 user has explicitly confirmed the write. Valid statuses are `draft`,
-`verified`, `needs-review`, `stale`, and `superseded`. At `task-finish`, an
+`verified`, `needs-review`, `stale`, and `superseded`. At `hub-task-finish`, an
 agent may offer a focused knowledge review when it is relevant; the offer does
 not authorize a review or an edit.
 
@@ -197,12 +197,12 @@ When updating an existing project, do not copy protected architecture files over
 
 They may be updated only as project memory:
 
-- `ai/current-task.md` — through `task-intake`, the current task, `task-switch`, or `task-finish`;
-- `ai/paused-tasks.md` — through `task-switch`;
+- `ai/current-task.md` — through `hub-task-intake`, the current task, `hub-task-switch`, or `hub-task-finish`;
+- `ai/paused-tasks.md` — through `hub-task-switch`;
 - `ai/future-tasks.md` — for future tasks explicitly saved by the user or confirmed as future task candidates;
 - `ai/project-context.md` — after confirmation, when the stack, commands, structure, data model, invariants, or fragile zones change;
 - `ai/decisions.md` — when a durable decision appears that future agents must not break;
-- `ai/changelog.md` — through a confirmed `task-finish` or an approved `architecture-update`.
+- `ai/changelog.md` — through a confirmed `hub-task-finish` or an approved `architecture-update`.
 
 ## 6. Safe update rule
 
@@ -213,9 +213,9 @@ For an existing project:
 3. Make sure project-specific additions will not be lost.
 4. Apply the update only if the diff is clear.
 5. Before a merge or release, run `release-check`.
-6. After the update, run `environment-check` and review the final menu of available commands and skills.
+6. After the update, run `hub-environment-check` and review the final menu of available commands and skills.
 
-The menu after `environment-check` is informational. It does not mean the agent should automatically run `task-switch`, `task-finish`, `architecture-update`, or other workflows.
+The menu after `hub-environment-check` is informational. It does not mean the agent should automatically run `hub-task-switch`, `hub-task-finish`, `architecture-update`, or other workflows.
 
 ## 7. When code-review-graph is useful
 

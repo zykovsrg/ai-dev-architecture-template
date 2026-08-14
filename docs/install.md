@@ -34,7 +34,7 @@ own `.git/` directory, history, and remote repository without becoming part of
 the hub repository.
 
 Do not use hub installation to convert or move an existing standalone project.
-From the installed hub, use `project-migrate`: it inventories only direct-child
+From the installed hub, use `hub-project-migrate`: it inventories only direct-child
 names in a separately confirmed temporary source, shows an exact move preview,
 and waits for explicit move confirmation. After a successful move, registration
 has its own confirmation and is followed by `scripts/check-hub-registry.sh`.
@@ -93,10 +93,10 @@ ai/paused-tasks.md
 ai/future-tasks.md
 ai/decisions.md
 ai/project-context.md
-ai/skills/task-intake/SKILL.md
+ai/skills/hub-task-intake/SKILL.md
 ai/skills/start-screen/SKILL.md
 ai/skills/architecture-update/SKILL.md
-ai/skills/environment-check/SKILL.md
+ai/skills/hub-environment-check/SKILL.md
 ai/skills/impeccable/SKILL.md
 ai/skills/theme-factory/SKILL.md
 ai/skills/animate/SKILL.md
@@ -104,8 +104,8 @@ ai/skills/design-motion-principles/SKILL.md
 ai/skills/copy-review/SKILL.md
 ai/skills/release-check/SKILL.md
 ai/skills/security-review/SKILL.md
-ai/skills/task-finish/SKILL.md
-ai/skills/task-switch/SKILL.md
+ai/skills/hub-task-finish/SKILL.md
+ai/skills/hub-task-switch/SKILL.md
 ai/skills/ui-review/SKILL.md
 ai/skills/write-tests/SKILL.md
 ```
@@ -118,7 +118,7 @@ its README, record template, and `research`, `decisions`, `risks`, and
 holds the project facts needed for ordinary work, while knowledge stores
 explicitly captured reference records.
 
-Use `knowledge-capture` to propose a record and `knowledge-review` to assess a
+Use `hub-knowledge-capture` to propose a record and `hub-knowledge-review` to assess a
 selected record or set. Both workflows require an exact path and explicit user
 confirmation before creating or changing content. Record statuses are limited
 to `draft`, `verified`, `needs-review`, `stale`, and `superseded`.
@@ -126,17 +126,17 @@ They reject absolute paths, traversal, and symlink components, and prohibit
 secrets, personal data, and client data.
 
 The normal architecture updater never enables this layer for an existing
-pre-knowledge project and never changes its records. `task-finish` may offer a
+pre-knowledge project and never changes its records. `hub-task-finish` may offer a
 focused knowledge review when relevant, but it never starts that review or
 edits knowledge without a request and confirmation.
 
 Existing-project knowledge enablement is available only through the hub's
-`knowledge-enable` workflow after the hub has confirmed the registered project.
+`hub-knowledge-enable` workflow after the hub has confirmed the registered project.
 Legacy standalone knowledge migration is out of scope.
 
-Hub-created projects use the hub's central `knowledge-capture` and
-`knowledge-review` workflows. Generic project skills are not copied into each
-project. The hub `task-finish` workflow may offer the same focused review after
+Hub-created projects use the hub's central `hub-knowledge-capture` and
+`hub-knowledge-review` workflows. Generic project skills are not copied into each
+project. The hub `hub-task-finish` workflow may offer the same focused review after
 its normal completion check, but never starts it automatically.
 
 ## 5. Fill in the project files
@@ -157,7 +157,7 @@ These can stay as empty templates until real decisions, changes, pauses, or futu
 
 ## 6. Run environment-check
 
-After installation, ask the agent to run `environment-check`.
+After installation, ask the agent to run `hub-environment-check`.
 
 The check should report:
 

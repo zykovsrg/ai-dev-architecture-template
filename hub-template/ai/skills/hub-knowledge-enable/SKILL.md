@@ -1,5 +1,5 @@
 ---
-name: knowledge-enable
+name: hub-knowledge-enable
 type: implementation
 description: |
   Use on demand to add the optional empty knowledge scaffold to an existing
@@ -105,8 +105,8 @@ Store records in the category that matches their purpose:
 - `risks/` — known risks, assumptions, and mitigations.
 - `runbooks/` — repeatable operational procedures.
 
-Create and update records only through the hub-owned `knowledge-capture` or
-`knowledge-review` workflow after its exact confirmation. Do not copy generic
+Create and update records only through the hub-owned `hub-knowledge-capture` or
+`hub-knowledge-review` workflow after its exact confirmation. Do not copy generic
 workflow skills into this project.
 
 Knowledge records must contain no secrets, personal data or client data. Never

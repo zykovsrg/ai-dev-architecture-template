@@ -18,7 +18,7 @@ knowledge/
 
 The folders are present by default but their content is never automatically loaded, indexed, generated, or inferred from a conversation.
 
-Existing hub projects remain unchanged until the user confirms a project-scoped `knowledge-enable` workflow. Hub routing and per-project confirmation remain mandatory for every such migration. Legacy standalone-project migration is explicitly out of scope.
+Existing hub projects remain unchanged until the user confirms a project-scoped `hub-knowledge-enable` workflow. Hub routing and per-project confirmation remain mandatory for every such migration. Legacy standalone-project migration is explicitly out of scope.
 
 ## Record Format
 
@@ -28,13 +28,13 @@ The body records the statement, supporting evidence, scope, and links to related
 
 ## Workflows
 
-`knowledge-capture` creates or updates a record only when the user explicitly asks or confirms it during a current task. It uses the project-local `knowledge/` directory only.
+`hub-knowledge-capture` creates or updates a record only when the user explicitly asks or confirms it during a current task. It uses the project-local `knowledge/` directory only.
 
-`knowledge-review` examines an explicitly selected record, folder, or the records linked from the just-finished task. It checks source dates, statuses, and explicit contradictions. It proposes a review result but does not edit any record until the user confirms the exact changes.
+`hub-knowledge-review` examines an explicitly selected record, folder, or the records linked from the just-finished task. It checks source dates, statuses, and explicit contradictions. It proposes a review result but does not edit any record until the user confirms the exact changes.
 
-`task-finish` may offer, but never start, `knowledge-review` after the normal completion check. Declining has no effect on task closure.
+`hub-task-finish` may offer, but never start, `hub-knowledge-review` after the normal completion check. Declining has no effect on task closure.
 
-`knowledge-enable` is a hub-managed, read-minimal workflow for an existing confirmed project. It first shows the exact project and the four directories to be created, then requires confirmation before creating empty scaffold files.
+`hub-knowledge-enable` is a hub-managed, read-minimal workflow for an existing confirmed project. It first shows the exact project and the four directories to be created, then requires confirmation before creating empty scaffold files.
 
 ## Boundaries and Safety
 
@@ -48,7 +48,7 @@ The body records the statement, supporting evidence, scope, and links to related
 
 The change updates the standalone and hub templates, corresponding entry rules and workflow skills, installer/updater documentation, and smoke tests.
 
-Tests verify that fresh installs and hub-created projects contain the scaffold, while normal updates do not create or mutate knowledge data in existing projects. They also verify that `task-finish` only offers review and that a knowledge review requires explicit confirmation before a write.
+Tests verify that fresh installs and hub-created projects contain the scaffold, while normal updates do not create or mutate knowledge data in existing projects. They also verify that `hub-task-finish` only offers review and that a knowledge review requires explicit confirmation before a write.
 
 ## Token Impact
 

@@ -1,5 +1,5 @@
 ---
-name: registry-check
+name: hub-registry-check
 description: Audit hub registration metadata and propose separately approved maintenance actions.
 ---
 

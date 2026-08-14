@@ -1,5 +1,5 @@
 ---
-name: knowledge-review
+name: hub-knowledge-review
 type: review
 description: |
   Use on demand to review an explicit knowledge scope inside the currently

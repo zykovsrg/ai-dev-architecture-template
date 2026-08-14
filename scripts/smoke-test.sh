@@ -119,11 +119,11 @@ assert_contains "$ROOT/scripts/hub-smoke-test.sh" 'legacy_cleanup_contract_valid
 assert_contains "$ROOT/scripts/hub-smoke-test.sh" 'legacy_cleanup_order_valid'
 assert_contains "$ROOT/scripts/hub-smoke-test.sh" 'cleanup_section_text'
 assert_contains "$ROOT/scripts/hub-smoke-test.sh" 'legacy_cleanup_mutations_rejected'
-assert_contains "$ROOT/hub-template/ai/skills/project-migrate/SKILL.md" \
+assert_contains "$ROOT/hub-template/ai/skills/hub-project-migrate/SKILL.md" \
   'Optional legacy standalone cleanup'
-assert_contains "$ROOT/hub-template/ai/skills/project-migrate/SKILL.md" \
+assert_contains "$ROOT/hub-template/ai/skills/hub-project-migrate/SKILL.md" \
   'Do not delete `ai/` as a directory.'
-assert_contains "$ROOT/hub-template/ai/skills/project-migrate/SKILL.md" \
+assert_contains "$ROOT/hub-template/ai/skills/hub-project-migrate/SKILL.md" \
   'Do not archive, back up, copy, replace, or follow symlinks.'
 
 for entry in "$ROOT/template/AGENTS.md" "$ROOT/template/CLAUDE.md"; do

@@ -1,12 +1,12 @@
 ---
-name: task-switch
+name: hub-task-switch
 description: Safely change one confirmed registered project's unfinished task after separate approval.
 ---
 
 # Hub Task Switch
 
 Use this skill only after explicit confirmation of a confirmed registered
-project and after the hub-owned `task-intake` classifies the request as a
+project and after the hub-owned `hub-task-intake` classifies the request as a
 different task. Its scope is the selected project `ai/` memory only; do not
 require or read duplicated project `AGENTS.md` or `CLAUDE.md` files.
 

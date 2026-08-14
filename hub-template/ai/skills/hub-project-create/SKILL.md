@@ -1,5 +1,5 @@
 ---
-name: project-create
+name: hub-project-create
 description: Use when a user asks to create and register a new project directly beneath the hub's validated projects root.
 ---
 
@@ -7,7 +7,7 @@ description: Use when a user asks to create and register a new project directly 
 
 Use this workflow only to create a new project. It starts and remains in
 `Mode: routing` until one explicit confirmation authorizes the displayed ID
-and exact path. `project-register` is for an already existing project; do not
+and exact path. `hub-project-register` is for an already existing project; do not
 invoke it for this creation workflow.
 
 ## Before confirmation: narrow read and validation boundary
@@ -128,8 +128,8 @@ The preview also explicitly excludes `ai/architecture.md`,
    `README.md`, `record-template.md`, and the empty `research/`, `decisions/`,
    `risks/`, and `runbooks/` directories. Use the canonical contents below for
    the two files. It must never overwrite records or any existing scaffold
-   file. The created project uses the hub-owned `knowledge-capture` and
-   hub-owned `knowledge-review` workflows; do not copy generic workflow skills,
+   file. The created project uses the hub-owned `hub-knowledge-capture` and
+   hub-owned `hub-knowledge-review` workflows; do not copy generic workflow skills,
    project instructions, or any other project files into it.
 4. Write the approved existing-schema card at
    `ai/project-cards/<project-id>.md` and the approved registry entry exactly
@@ -147,7 +147,7 @@ The preview also explicitly excludes `ai/architecture.md`,
    is unused, create a private repository with that exact name, add `origin`,
    and push `main`. If this remote provisioning is unavailable, retain local
    Git and report `pending-sync`; never attach or overwrite an existing remote.
-8. Invoke hub-owned `environment-check` and then hub-owned `task-intake` for
+8. Invoke hub-owned `hub-environment-check` and then hub-owned `hub-task-intake` for
    the confirmed selected project. Those workflows operate only on the selected
    project's `ai/` memory and cannot override hub confirmation, allowed roots,
    secret, or memory-isolation rules.
@@ -260,8 +260,8 @@ Store records in the category that matches their purpose:
 - `risks/` — known risks, assumptions, and mitigations.
 - `runbooks/` — repeatable operational procedures.
 
-Create and update records only through the hub-owned `knowledge-capture` or
-`knowledge-review` workflow after its exact confirmation. Do not copy generic
+Create and update records only through the hub-owned `hub-knowledge-capture` or
+`hub-knowledge-review` workflow after its exact confirmation. Do not copy generic
 workflow skills into this project.
 
 Knowledge records must contain no secrets, personal data or client data. Never
