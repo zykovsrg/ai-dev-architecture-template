@@ -1334,4 +1334,76 @@ assert_not_contains <(git -C "$HUB_COMMIT" show --format= --name-only HEAD) 'ai/
 git -C "$HUB_COMMIT" diff --quiet -- ai/project-registry.md && fail 'hub commit unexpectedly cleaned custom registry change'
 git -C "$HUB_COMMIT" diff --cached --quiet || fail 'hub updater left staged changes after commit'
 
+# Regression: --commit must stage, commit, and report removed superseded
+# paths (Finding 1). Without the fix, UPDATE_PATHS never included the
+# removed path, so the commit was skipped and the tree was left dirty.
+COMMIT_REMOVAL_HUB="$TMP_DIR/commit-removal-hub/_ai-hub"
+bash "$ROOT/scripts/install.sh" --mode hub "$COMMIT_REMOVAL_HUB" >/dev/null
+git -C "$COMMIT_REMOVAL_HUB" config user.email "smoke@example.invalid"
+git -C "$COMMIT_REMOVAL_HUB" config user.name "Smoke Test"
+mkdir -p "$COMMIT_REMOVAL_HUB/ai/skills/task-intake"
+printf '%s\n' '# Legacy fixture' > "$COMMIT_REMOVAL_HUB/ai/skills/task-intake/SKILL.md"
+git -C "$COMMIT_REMOVAL_HUB" add .
+git -C "$COMMIT_REMOVAL_HUB" commit -m "test: install hub with legacy skill" >/dev/null
+bash "$ROOT/scripts/update-installed-hub.sh" \
+  --hub "$COMMIT_REMOVAL_HUB" --source "$ROOT" --commit \
+  > "$TMP_DIR/commit-removal.out"
+assert_contains "$TMP_DIR/commit-removal.out" 'Removed 1 superseded path(s):'
+assert_contains "$TMP_DIR/commit-removal.out" 'ai/skills/task-intake'
+assert_not_exists "$COMMIT_REMOVAL_HUB/ai/skills/task-intake"
+[ -z "$(git -C "$COMMIT_REMOVAL_HUB" status --porcelain)" ] \
+  || fail 'commit did not stage/commit the removed superseded path, leaving the tree dirty'
+assert_contains <(git -C "$COMMIT_REMOVAL_HUB" show --format= --name-only HEAD) 'ai/skills/task-intake/SKILL.md'
+
+# Regression: --check must not report "up to date" while a stale superseded
+# path is still present, even when the architecture version already matches
+# (Finding 2).
+STALE_CHECK_HUB="$TMP_DIR/stale-check-hub"
+cp -R "$HUB_INSTALL" "$STALE_CHECK_HUB"
+mkdir -p "$STALE_CHECK_HUB/ai/skills/task-intake"
+printf '%s\n' '# Legacy fixture' > "$STALE_CHECK_HUB/ai/skills/task-intake/SKILL.md"
+if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$STALE_CHECK_HUB" --source "$ROOT" --check \
+  > "$TMP_DIR/stale-check.out" 2>&1; then
+  fail '--check reported up to date while a stale superseded path remained'
+fi
+assert_contains "$TMP_DIR/stale-check.out" 'stale superseded paths remain'
+assert_file "$STALE_CHECK_HUB/ai/skills/task-intake/SKILL.md"
+
+# Regression: refuse to remove superseded paths when --source points at a
+# template older than the version that introduced removal (Finding 3).
+OLD_SOURCE="$TMP_DIR/old-source-hub"
+cp -R "$ROOT/hub-template" "$OLD_SOURCE"
+perl -0pi -e 's/Version: [0-9]+\.[0-9]+/Version: 1.2/' "$OLD_SOURCE/ai/architecture.md"
+mkdir -p "$OLD_SOURCE/ai/skills/task-intake"
+printf '%s\n' '# Legacy fixture' > "$OLD_SOURCE/ai/skills/task-intake/SKILL.md"
+OLD_SOURCE_HUB="$TMP_DIR/old-source-target-hub"
+cp -R "$HUB_INSTALL" "$OLD_SOURCE_HUB"
+mkdir -p "$OLD_SOURCE_HUB/ai/skills/task-intake"
+printf '%s\n' '# Legacy fixture' > "$OLD_SOURCE_HUB/ai/skills/task-intake/SKILL.md"
+if bash "$ROOT/scripts/update-installed-hub.sh" \
+  --hub "$OLD_SOURCE_HUB" --source "$OLD_SOURCE" --apply --allow-dirty \
+  > "$TMP_DIR/old-source.out" 2>&1; then
+  fail 'updater removed superseded paths using an older-than-1.3 source template'
+fi
+assert_contains "$TMP_DIR/old-source.out" 'refusing to delete hub skills'
+assert_file "$OLD_SOURCE_HUB/ai/skills/task-intake/SKILL.md"
+assert_file "$OLD_SOURCE_HUB/ai/skills/hub-project-router/SKILL.md"
+
+# Regression: a superseded path value of exactly ".." (no slash) must be
+# rejected by the traversal guard, not fall through to rm -rf on the hub's
+# parent directory (Finding 4). Reuses the SUPERSEDED_TEST_* env hook
+# pattern already used above for the empty-path regression.
+DOTDOT_HUB="$TMP_DIR/dotdot-hub"
+cp -R "$HUB_INSTALL" "$DOTDOT_HUB"
+DOTDOT_SIBLING_MARKER="$TMP_DIR/dotdot-sibling-marker"
+printf '%s\n' 'must survive' > "$DOTDOT_SIBLING_MARKER"
+if SUPERSEDED_TEST_DOTDOT=1 bash "$ROOT/scripts/update-installed-hub.sh" \
+  --hub "$DOTDOT_HUB" --source "$ROOT" --apply --allow-dirty \
+  > "$TMP_DIR/dotdot.out" 2>&1; then
+  fail 'updater accepted a bare ".." superseded path'
+fi
+assert_contains "$TMP_DIR/dotdot.out" 'superseded path must be hub-relative without traversal'
+assert_file "$DOTDOT_SIBLING_MARKER"
+assert_file "$DOTDOT_HUB/ai/architecture.md"
+
 echo "Hub smoke tests passed."

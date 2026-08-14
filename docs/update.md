@@ -77,6 +77,11 @@ bash /path/to/ai-dev-architecture-template/scripts/update-installed-hub.sh --hub
 The hub updater preserves hub-managed project memory. It does not register
 projects, migrate a standalone project, clean up files, or create reminders.
 
+Updating an installed hub also removes superseded paths listed by the
+updater — hub skill directories that were renamed or retired upstream.
+`--dry-run` (and `--check`, when it detects stale superseded paths) shows
+the exact list of paths to be removed first, before anything is applied.
+
 ## What the updater does
 
 The updater updates the protected architecture files:

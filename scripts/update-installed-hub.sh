@@ -14,6 +14,7 @@ TMP_DIR=""
 SOURCE_TEMPLATE=""
 SOURCE_VALIDATOR=""
 CREATED_MEMORY_FILES=()
+REMOVED_PATHS=()
 
 usage() {
   cat <<'EOF'
@@ -28,7 +29,8 @@ Options:
   --check            Compare the hub architecture version with the source and,
                      if the hub is behind, show a dry-run preview. Never writes.
   --dry-run          Show planned changes only. Default.
-  --apply            Apply protected-file updates and add missing memory templates.
+  --apply            Apply protected-file updates, add missing memory templates,
+                     and remove superseded paths listed by the updater.
   --commit           Apply updates and commit only updater-managed changes.
   --hub DIR          Hub directory. Default: current directory.
   --source DIR       Local template repository or hub-template directory. Optional.
@@ -214,6 +216,9 @@ SUPERSEDED_PATHS=(
 if [ -n "${SUPERSEDED_TEST_EMPTY:-}" ]; then
   SUPERSEDED_PATHS+=("")
 fi
+if [ -n "${SUPERSEDED_TEST_DOTDOT:-}" ]; then
+  SUPERSEDED_PATHS+=("..")
+fi
 
 for_each_superseded_path() {
   local callback="$1" rel
@@ -227,6 +232,20 @@ show_superseded_path() {
   [ -e "$HUB_DIR/$rel" ] || return 0
   changes_found=1
   echo "  $rel"
+}
+
+STALE_SUPERSEDED_FOUND=0
+mark_stale_superseded_path() {
+  local rel="$1"
+  [ -n "$rel" ] || return 0
+  [ -e "$HUB_DIR/$rel" ] || return 0
+  STALE_SUPERSEDED_FOUND=1
+}
+
+hub_has_stale_superseded_paths() {
+  STALE_SUPERSEDED_FOUND=0
+  for_each_superseded_path mark_stale_superseded_path
+  [ "$STALE_SUPERSEDED_FOUND" -eq 1 ]
 }
 
 path_contains_symlink() {
@@ -266,10 +285,10 @@ remove_superseded_path() {
   case "$rel" in
     "") die "superseded path must not be empty" ;;
     /*) die "superseded path must be hub-relative without traversal: $rel" ;;
-    *..*)
-      # Check for .. as a path component
+    ..|*..*)
+      # Check for .. as a whole path component, in any position.
       case "$rel" in
-        */..*|../*)
+        ..|*/..|../*|*/../*)
           die "superseded path must be hub-relative without traversal: $rel"
           ;;
       esac
@@ -284,6 +303,7 @@ remove_superseded_path() {
   [ -e "$target" ] || return 0
 
   rm -rf "$target"
+  REMOVED_PATHS+=("$rel")
   echo "Removed superseded path: $rel"
 }
 
@@ -430,6 +450,10 @@ if [ "$CHECK" = "true" ]; then
     echo "Latest architecture version: v$source_version"
     echo "Update available. Preview below (no files are changed)."
     DRY_RUN_EXIT=1
+  elif hub_has_stale_superseded_paths; then
+    echo "Hub architecture is up to date (v$hub_version), but stale superseded paths remain."
+    echo "Run --apply to remove them. Preview below (no files are changed)."
+    DRY_RUN_EXIT=1
   else
     echo "Hub architecture is up to date (v$hub_version)."
     exit 0
@@ -462,6 +486,13 @@ fi
 
 for_each_protected_file copy_file
 for_each_memory_file copy_missing_memory_file
+
+SOURCE_VERSION_FOR_REMOVAL="$(read_arch_version "$SOURCE_TEMPLATE/ai/architecture.md")"
+MIN_REMOVAL_VERSION="1.3"
+if [ -z "$SOURCE_VERSION_FOR_REMOVAL" ] || version_lt "$SOURCE_VERSION_FOR_REMOVAL" "$MIN_REMOVAL_VERSION"; then
+  die "Source template version ${SOURCE_VERSION_FOR_REMOVAL:-unknown} is older than $MIN_REMOVAL_VERSION (the version that introduced superseded-path removal); refusing to delete hub skills — use a source template at or above version $MIN_REMOVAL_VERSION."
+fi
+
 for_each_superseded_path remove_superseded_path
 
 UPDATE_PATHS=()
@@ -469,6 +500,19 @@ for_each_protected_file append_existing_path
 if [ "${#CREATED_MEMORY_FILES[@]}" -gt 0 ]; then
   for rel in "${CREATED_MEMORY_FILES[@]}"; do
     UPDATE_PATHS+=("$rel")
+  done
+fi
+if [ "${#REMOVED_PATHS[@]}" -gt 0 ]; then
+  for rel in "${REMOVED_PATHS[@]}"; do
+    UPDATE_PATHS+=("$rel")
+  done
+fi
+
+if [ "${#REMOVED_PATHS[@]}" -gt 0 ]; then
+  echo ""
+  echo "Removed ${#REMOVED_PATHS[@]} superseded path(s):"
+  for rel in "${REMOVED_PATHS[@]}"; do
+    echo "  $rel"
   done
 fi
 
