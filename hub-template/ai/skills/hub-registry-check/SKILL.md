@@ -17,8 +17,8 @@ signals, archives, active-project data, or any registered project.
    - registered paths that are missing or no longer canonical;
    - stale or missing cards and card relationships that no longer name a
      registered project;
-   - unregistered direct children of each allowed root, using names only and
-     without recursive scanning or project-content reads;
+   - unregistered direct children of the sole allowed root, using names only
+     and without recursive scanning or project-content reads;
    - archive candidates indicated by registry status or clearly obsolete hub
      metadata;
    - old signals in `ai/cross-project-signals.md`, based on their recorded
