@@ -1204,6 +1204,24 @@ if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$
 fi
 assert_contains "$TMP_DIR/incomplete-knowledge-source.out" 'missing mandatory hub skill: hub-knowledge-review'
 
+# Regression: --source must resolve against the caller's directory, not the hub.
+# Before this fix a relative --source silently resolved inside the hub, so the
+# updater could compare the hub with itself and report "no updates" (Audit 1).
+RELATIVE_SOURCE_OUT="$TMP_DIR/relative-source.out"
+(cd "$ROOT" && bash "$ROOT/scripts/update-installed-hub.sh" \
+  --hub "$HUB_INSTALL" --source . --dry-run) > "$RELATIVE_SOURCE_OUT" 2>&1
+assert_contains "$RELATIVE_SOURCE_OUT" "Source template: $ROOT/hub-template"
+assert_not_contains "$RELATIVE_SOURCE_OUT" "Source template: $HUB_INSTALL"
+
+# A source that resolves to the target itself is refused outright.
+if bash "$ROOT/scripts/update-installed-hub.sh" \
+  --hub "$HUB_INSTALL" --source "$HUB_INSTALL" --dry-run \
+  > "$TMP_DIR/self-source.out" 2>&1; then
+  fail 'hub updater compared the hub with itself'
+fi
+assert_contains "$TMP_DIR/self-source.out" 'resolves to the hub itself'
+echo 'Source-resolution evidence: relative --source resolved against the caller, self-source refused.'
+
 printf '%s\n' '# Allowed Roots' '' '- /custom/projects' > "$HUB_INSTALL/ai/allowed-roots.md"
 printf '%s\n' '# Project Registry' '' 'custom registry' > "$HUB_INSTALL/ai/project-registry.md"
 printf '%s\n' 'Project ID: custom' > "$HUB_INSTALL/ai/active-project.md"

@@ -95,7 +95,10 @@ while [ "$#" -gt 0 ]; do
     --source)
       shift
       [ "$#" -gt 0 ] || die "--source requires a directory"
-      SOURCE_DIR="$1"
+      # Resolve now, before the script cd's into the hub. A relative path
+      # resolved later would be taken relative to the hub, not the caller.
+      [ -d "$1" ] || die "--source directory not found: $1"
+      SOURCE_DIR="$(cd "$1" && pwd -P)"
       ;;
     --ref)
       shift
@@ -145,7 +148,6 @@ fi
 
 resolve_source_template() {
   if [ -n "$SOURCE_DIR" ]; then
-    SOURCE_DIR="$(cd "$SOURCE_DIR" && pwd)"
     if [ -d "$SOURCE_DIR/hub-template/ai" ]; then
       SOURCE_TEMPLATE="$SOURCE_DIR/hub-template"
       SOURCE_VALIDATOR="$SOURCE_DIR/scripts/check-hub-registry.sh"
@@ -175,6 +177,12 @@ resolve_source_template() {
     || die "Source template is not a personal AI hub"
   grep -Fqx '# Personal AI Hub Architecture' "$SOURCE_TEMPLATE/ai/architecture.md" \
     || die "Source template is not a personal AI hub"
+  # An installed hub is a copy of the template and satisfies every check above,
+  # so without this guard the updater can compare the hub with itself and
+  # report "no updates" (Audit 1).
+  if [ "$(cd "$SOURCE_TEMPLATE" && pwd -P)" = "$(cd "$HUB_DIR" && pwd -P)" ]; then
+    die "--source resolves to the hub itself; pass the template repository path"
+  fi
   for mandatory_skill in hub-project-router hub-project-switch hub-project-register hub-registry-check hub-knowledge-capture hub-knowledge-review; do
     [ -f "$SOURCE_TEMPLATE/ai/skills/$mandatory_skill/SKILL.md" ] \
       || die "Source template missing mandatory hub skill: $mandatory_skill"

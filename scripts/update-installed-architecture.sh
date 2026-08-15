@@ -97,7 +97,10 @@ while [ "$#" -gt 0 ]; do
     --source)
       shift
       [ "$#" -gt 0 ] || die "--source requires a directory"
-      SOURCE_DIR="$1"
+      # Resolve now, before the script cd's into the project. A relative path
+      # resolved later would be taken relative to the project, not the caller.
+      [ -d "$1" ] || die "--source directory not found: $1"
+      SOURCE_DIR="$(cd "$1" && pwd -P)"
       ;;
     --ref)
       shift
@@ -178,13 +181,15 @@ fi
 
 resolve_source_template() {
   if [ -n "$SOURCE_DIR" ]; then
-    SOURCE_DIR="$(cd "$SOURCE_DIR" && pwd)"
     if [ -d "$SOURCE_DIR/template/ai" ]; then
       SOURCE_TEMPLATE="$SOURCE_DIR/template"
     elif [ -d "$SOURCE_DIR/ai" ] && [ -f "$SOURCE_DIR/AGENTS.md" ]; then
       SOURCE_TEMPLATE="$SOURCE_DIR"
     else
       die "--source must point to the template repository or to its template/ directory"
+    fi
+    if [ "$(cd "$SOURCE_TEMPLATE" && pwd -P)" = "$(cd "$PROJECT_DIR" && pwd -P)" ]; then
+      die "--source resolves to the project itself; pass the template repository path"
     fi
   else
     command -v curl >/dev/null 2>&1 || die "curl is required"

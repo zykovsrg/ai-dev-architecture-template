@@ -300,6 +300,19 @@ for check_args in \
   [ "$(git -C "$CHECK_PROJECT" rev-parse HEAD)" = "$before_commit" ] || fail "$check_args created a commit"
 done
 
+# Regression: same relative-source defect in the standalone updater (Audit 1).
+RELATIVE_SOURCE_OUT="$TMP_DIR/relative-source.out"
+(cd "$ROOT" && bash "$ROOT/scripts/update-installed-architecture.sh" \
+  --project "$PROJECT" --source . --dry-run) > "$RELATIVE_SOURCE_OUT" 2>&1
+assert_not_contains "$RELATIVE_SOURCE_OUT" "Source template: $PROJECT"
+
+if bash "$ROOT/scripts/update-installed-architecture.sh" \
+  --project "$PROJECT" --source "$PROJECT" --dry-run \
+  > "$TMP_DIR/self-source.out" 2>&1; then
+  fail 'standalone updater compared the project with itself'
+fi
+assert_contains "$TMP_DIR/self-source.out" 'resolves to the project itself'
+
 BAD_PROJECT="$TMP_DIR/bad-project"
 init_git_project "$BAD_PROJECT"
 printf 'not enough\n' > "$BAD_PROJECT/AGENTS.md"
