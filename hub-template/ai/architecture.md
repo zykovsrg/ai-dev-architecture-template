@@ -1,6 +1,6 @@
 # Personal AI Hub Architecture
 
-Version: 1.3
+Version: 1.4
 
 ## Purpose
 
@@ -29,6 +29,8 @@ for clarification rather than widening access.
 ## Simplicity, Evidence, And Intellectual Rigor
 
 Prefer the simplest solution that is sufficient, safe, and complete. Before proposing or adding any entity, state the problem it solves, check whether an existing entity solves it adequately, and compare the benefit with the burden of understanding, monitoring, maintaining, and managing it. Necessary complexity remains justified for safety, correctness, legal compliance, or the user's confirmed goal.
+
+When a task admits both a structurally clean option and a cheaper one that leaves something unresolved, present both, state what the clean option costs, and let the user choose. Do not settle that trade-off silently in either direction. Whatever is deferred must be recorded where it will be read again — a future-task entry or the changelog — naming what was deferred and why. Silent deferral is not allowed.
 
 Use evidence appropriate to the claim. Project files, diffs, tests, and logs are primary evidence for local-project facts; current authoritative or professional sources are required for unstable external and health-related claims. Separate verified facts from inference and opinion, state uncertainty, and never invent facts, statistics, sources, or confidence.
 

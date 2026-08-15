@@ -14,6 +14,12 @@
 
 ## Текущий changelog
 
+### 2026-08-15
+
+- Change: Added one decision rule to both architectures and all six entry files — present the clean and the cheap option together with the clean option's cost, let the user choose, and record anything deferred where it will be read again. Standalone architecture bumped to `7.2`, hub architecture to `1.4`, and the live hub updated through `update-installed-hub.sh`.
+- Impact: The trade-off between a structurally clean solution and a cheaper one is now an explicit user decision instead of a silent agent choice, and deferred items cannot vanish. The broader rule the user first proposed — always choose the cleanest solution, no tech debt — was rejected after review: it contradicts the existing cost-benefit test and the ban on mixing refactoring with bug work, and today's own session produced two cases where deliberately not choosing the cleanest option was correct.
+- Manual checks: `bash scripts/check-consistency.sh`, `bash scripts/hub-smoke-test.sh`, `bash scripts/smoke-test.sh` passed; root and `template/` copies verified identical; the live hub update was previewed with `--dry-run`, applied, and confirmed to touch only the three rule files while leaving hub memory intact; `check-hub-registry.sh` passed at 28 projects.
+
 ### 2026-08-14
 
 - Change: Renamed all fifteen hub skills to `hub-*`, added superseded-path removal to the hub updater with symlink-component and containment guards, and added three guards covering removal safety and the prefix on both the template and the installed-hub side.

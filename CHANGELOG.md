@@ -1,5 +1,11 @@
 # Changelog
 
+## v6.17 — 2026-08-15
+
+- Added one decision rule to both architectures and all entry files: when a task admits both a structurally clean option and a cheaper one that leaves something unresolved, present both, state what the clean option costs, and let the user choose; whatever is deferred must be recorded where it will be read again, naming what was deferred and why. Silent deferral is not allowed.
+- Considered and rejected the broader rule "always choose the architecturally cleanest solution, no tech debt". It would have contradicted two rules already in place — the cost-benefit test in "Prefer the simplest solution that is sufficient, safe, and complete", and the ban on mixing refactoring with bug work — and it is unfalsifiable, since any decision can be argued to carry some debt. The narrower rule keeps the trade-off explicit and puts the choice with the user.
+- Bumped the standalone architecture to `7.2` and the hub architecture to `1.4`.
+
 ## v6.16 — 2026-08-14
 
 - Prefixed all fifteen hub-owned skills with `hub-`. Six of them (`environment-check`, `task-intake`, `task-switch`, `task-finish`, `knowledge-capture`, `knowledge-review`) shared a name with a standalone project skill of different content, so inside a hub-confirmed project it was undefined which one applied. A uniform prefix removes the ambiguity structurally instead of by convention.
