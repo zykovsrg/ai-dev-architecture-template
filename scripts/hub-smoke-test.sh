@@ -6,8 +6,8 @@ TMP_DIR="$(mktemp -d /private/tmp/ai-hub-smoke.XXXXXX)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
-assert_contains() { grep -Fq "$2" "$1" || fail "expected '$2' in $1"; }
-assert_not_contains() { ! grep -Fq "$2" "$1" || fail "did not expect '$2' in $1"; }
+assert_contains() { grep -Fq -- "$2" "$1" || fail "expected '$2' in $1"; }
+assert_not_contains() { ! grep -Fq -- "$2" "$1" || fail "did not expect '$2' in $1"; }
 assert_file() { [ -f "$1" ] || fail "missing file: $1"; }
 assert_not_exists() { [ ! -e "$1" ] || fail "expected path to be absent: $1"; }
 assert_forbidden_reads_absent() {
@@ -1221,6 +1221,16 @@ if bash "$ROOT/scripts/update-installed-hub.sh" \
 fi
 assert_contains "$TMP_DIR/self-source.out" 'resolves to the hub itself'
 echo 'Source-resolution evidence: relative --source resolved against the caller, self-source refused.'
+
+# --check compares version numbers only. Its success message must not read as
+# "the files match", because a hub with a matching version and a drifted rule
+# file is reported as up to date (Audit 3, FT-20260815-002).
+bash "$ROOT/scripts/update-installed-hub.sh" \
+  --hub "$HUB_INSTALL" --source "$ROOT" --check > "$TMP_DIR/check-wording.out" 2>&1
+assert_contains "$TMP_DIR/check-wording.out" 'Version numbers match'
+assert_contains "$TMP_DIR/check-wording.out" '--dry-run'
+assert_not_contains "$TMP_DIR/check-wording.out" 'Hub architecture is up to date (v'
+echo 'Check-wording evidence: --check states that it compared version numbers only.'
 
 printf '%s\n' '# Allowed Roots' '' '- /custom/projects' > "$HUB_INSTALL/ai/allowed-roots.md"
 printf '%s\n' '# Project Registry' '' 'custom registry' > "$HUB_INSTALL/ai/project-registry.md"

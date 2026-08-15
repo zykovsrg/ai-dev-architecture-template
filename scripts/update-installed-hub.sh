@@ -26,8 +26,9 @@ Safe updater for an installed personal AI hub.
 Default mode is --dry-run: print protected-file diffs without changing files.
 
 Options:
-  --check            Compare the hub architecture version with the source and,
-                     if the hub is behind, show a dry-run preview. Never writes.
+  --check            Compare the hub architecture VERSION NUMBER with the source
+                     and, if the hub is behind, show a dry-run preview. Does not
+                     compare file contents — use --dry-run for that. Never writes.
   --dry-run          Show planned changes only. Default.
   --apply            Apply protected-file updates, add missing memory templates,
                      and remove superseded paths listed by the updater.
@@ -477,7 +478,8 @@ if [ "$CHECK" = "true" ]; then
     echo "Run --apply to remove them. Preview below (no files are changed)."
     DRY_RUN_EXIT=1
   else
-    echo "Hub architecture is up to date (v$hub_version)."
+    echo "Version numbers match (v$hub_version). This compares the version line only,"
+    echo "not file contents. Run --dry-run to compare the files themselves."
     exit 0
   fi
 fi

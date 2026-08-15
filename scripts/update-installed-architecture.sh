@@ -24,8 +24,9 @@ Safe updater for projects where ai-dev-architecture-template is already installe
 Default mode is --dry-run: print the architecture diff without changing files.
 
 Options:
-  --check            Compare the project architecture version with the source and,
-                     if the project is behind, show a dry-run preview. Never writes.
+  --check            Compare the project architecture VERSION NUMBER with the source
+                     and, if the project is behind, show a dry-run preview. Does not
+                     compare file contents — use --dry-run for that. Never writes.
   --dry-run          Show planned changes only. Default.
   --apply            Apply architecture updates.
   --commit           Apply updates and commit them.
@@ -364,7 +365,8 @@ if [ "$CHECK" = "true" ]; then
     echo "Update available. Preview below (no files are changed)."
     DRY_RUN_EXIT=1
   else
-    echo "Architecture is up to date (v$project_version)."
+    echo "Version numbers match (v$project_version). This compares the version line only,"
+    echo "not file contents. Run --dry-run to compare the files themselves."
     exit 0
   fi
 fi
