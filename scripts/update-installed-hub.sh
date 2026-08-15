@@ -387,6 +387,16 @@ copy_missing_memory_file() {
   fi
 }
 
+# Append-only, mirroring install-hub.sh:90-91. Never overwrite: the hub's
+# .gitignore may carry the user's own entries, which a protected-file copy
+# would destroy (Audit 5).
+ensure_projects_ignored() {
+  if ! grep -Fqx '/projects/' "$HUB_DIR/.gitignore" 2>/dev/null; then
+    printf '%s\n' '/projects/' >> "$HUB_DIR/.gitignore"
+    echo "Added missing ignore line: /projects/"
+  fi
+}
+
 for_each_protected_file() {
   local callback="$1"
   local rel
@@ -519,6 +529,7 @@ if removal_version_gate_blocked; then
 fi
 
 for_each_protected_file copy_file
+ensure_projects_ignored
 for_each_memory_file copy_missing_memory_file
 
 # Validate every superseded-path entry before deleting anything: an invalid

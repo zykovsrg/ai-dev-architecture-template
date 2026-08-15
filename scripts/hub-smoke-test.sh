@@ -1364,6 +1364,22 @@ assert_file "$HUB_INSTALL/ai/project-cards/.gitkeep"
 bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$ROOT" --apply --allow-dirty > "$TMP_DIR/hub-repeat-update.out"
 assert_contains "$TMP_DIR/hub-repeat-update.out" 'Applied personal AI hub update.'
 
+# The updater must guarantee the required ignore line without overwriting a
+# hub .gitignore that carries the user's own entries (Audit 5).
+printf '%s\n' '# user entry' '/scratch/' > "$HUB_INSTALL/.gitignore"
+bash "$ROOT/scripts/update-installed-hub.sh" \
+  --hub "$HUB_INSTALL" --source "$ROOT" --apply --allow-dirty > "$TMP_DIR/gitignore-update.out"
+assert_contains "$HUB_INSTALL/.gitignore" '/projects/'
+assert_contains "$HUB_INSTALL/.gitignore" '# user entry'
+assert_contains "$HUB_INSTALL/.gitignore" '/scratch/'
+
+# Running again must not duplicate the line.
+bash "$ROOT/scripts/update-installed-hub.sh" \
+  --hub "$HUB_INSTALL" --source "$ROOT" --apply --allow-dirty > "$TMP_DIR/gitignore-repeat.out"
+[ "$(grep -Fxc '/projects/' "$HUB_INSTALL/.gitignore")" -eq 1 ] \
+  || fail 'updater duplicated the /projects/ ignore line'
+echo 'Gitignore evidence: required line ensured, user entries preserved, no duplication.'
+
 HUB_COMMIT="$TMP_DIR/commit-hub/_ai-hub"
 bash "$ROOT/scripts/install.sh" --mode hub "$HUB_COMMIT" >/dev/null
 git -C "$HUB_COMMIT" config user.email "smoke@example.invalid"
