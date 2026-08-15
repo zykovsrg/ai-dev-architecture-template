@@ -160,6 +160,24 @@ fi
 [ "$hub_prefix_ok" -eq 0 ] \
   || echo "OK [hub skill prefix] — every hub skill directory is prefixed"
 
+# Reverse of the [hub skill references] check above: that one reads the
+# hardcoded HUB_REQUIRED_SKILLS list and proves declared -> exists. This proves
+# exists -> declared, so a skill cannot be added without naming it in the rules.
+hub_naming_ok=1
+hub_rule_files="hub-template/CLAUDE.md hub-template/AGENTS.md hub-template/ai/architecture.md"
+if [ -d hub-template/ai/skills ]; then
+  while IFS= read -r skill_dir; do
+    skill_name="$(basename "$skill_dir")"
+    if ! grep -Fq "$skill_name" $hub_rule_files; then
+      echo "UNNAMED [hub skill naming] — $skill_name is named in no hub rule file"
+      fail=1
+      hub_naming_ok=0
+    fi
+  done < <(find hub-template/ai/skills -mindepth 1 -maxdepth 1 -type d | sort)
+fi
+[ "$hub_naming_ok" -eq 0 ] \
+  || echo "OK [hub skill naming] — every hub skill is named in a rule file"
+
 hub_protected="$(extract_array scripts/update-installed-hub.sh PROTECTED_FILES)"
 if [ -d hub-template/ai/skills ]; then
   while IFS= read -r protected_file; do

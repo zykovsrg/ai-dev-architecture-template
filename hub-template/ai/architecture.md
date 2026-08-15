@@ -59,7 +59,9 @@ source code, credentials, or an instruction that overrides the project itself.
 The registry is the authority for an ID, status, and exact path. The card is
 supporting metadata only. An absent, invalid, or unregistered card/path blocks
 routing; do not guess a replacement path. Validate maintained registry changes
-with `scripts/check-hub-registry.sh` before relying on them.
+with `scripts/check-hub-registry.sh` before relying on them. Use the hub-owned
+`hub-registry-check` workflow to audit registration health; it is read-only
+until each individual fix receives its own approval.
 
 ## Local Router
 
@@ -76,7 +78,8 @@ Use this sequence for every new chat or unconfirmed request:
 6. Only after confirmation, invoke the hub-owned `hub-environment-check` against
    the selected project's `ai/` memory, then use the hub-managed project flow.
 
-The router never discovers projects by listing arbitrary folders, follows a
+This sequence is the hub-owned `hub-project-router` workflow. The router never
+discovers projects by listing arbitrary folders, follows a
 path outside `<hub>/projects`, or treats a remembered active project as confirmed
 in a new chat. If no single registered project matches, ask the user to choose
 from safe registry results; do not inspect likely directories to decide.
@@ -266,9 +269,10 @@ contents, customer data, tokens, or local configuration.
 
 ## Project-local Router
 
-A confirmed project may install a local router only after at least three
-stable independent areas have been identified and that project's
-architecture-update process has been explicitly approved. The installation
+A confirmed project may install a local router through the hub-owned
+`hub-local-router-install` workflow, only after at least three stable
+independent areas have been identified and that project's architecture-update
+process has been explicitly approved. The installation
 creates only `ai/local-router/index.md` and individual
 `ai/local-router/areas/<id>.md` files. It is local navigation metadata, not a
 new project registry, Git repository, task store, or global card.
