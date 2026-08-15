@@ -168,7 +168,7 @@ hub_rule_files="hub-template/CLAUDE.md hub-template/AGENTS.md hub-template/ai/ar
 if [ -d hub-template/ai/skills ]; then
   while IFS= read -r skill_dir; do
     skill_name="$(basename "$skill_dir")"
-    if ! grep -Fq "$skill_name" $hub_rule_files; then
+    if ! grep -Fq "\`$skill_name\`" $hub_rule_files; then
       echo "UNNAMED [hub skill naming] — $skill_name is named in no hub rule file"
       fail=1
       hub_naming_ok=0
