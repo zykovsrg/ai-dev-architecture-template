@@ -102,6 +102,32 @@ assert_contains "$TMP_DIR/consistency.out" 'OK [hub entry parity]'
 assert_contains "$TMP_DIR/consistency.out" 'OK [hub skill references] — 15 declared skills exist'
 assert_contains "$TMP_DIR/consistency.out" 'OK [hub update classes]'
 assert_contains "$TMP_DIR/consistency.out" 'OK [standalone memory updater boundaries]'
+assert_contains "$TMP_DIR/consistency.out" 'OK [hub skill naming]'
+
+# Regression: [hub skill naming] must actually catch an unnamed skill, and its
+# backtick-delimited match must not let a longer existing name (hub-project-router,
+# hub-project-create, hub-project-migrate, hub-project-register, hub-project-switch)
+# falsely credit a same-prefix probe (hub-project) that no rule file names on its own.
+NAMING_PROBE_UNNAMED="hub-template/ai/skills/hub-naming-probe-unnamed"
+NAMING_PROBE_PREFIX="hub-template/ai/skills/hub-project"
+naming_probe_cleanup() {
+  rm -rf "$ROOT/$NAMING_PROBE_UNNAMED" "$ROOT/$NAMING_PROBE_PREFIX"
+}
+trap 'naming_probe_cleanup; cleanup' EXIT
+mkdir -p "$ROOT/$NAMING_PROBE_UNNAMED" "$ROOT/$NAMING_PROBE_PREFIX"
+
+set +e
+(cd "$ROOT" && bash scripts/check-consistency.sh) > "$TMP_DIR/naming-probe.out" 2>&1
+naming_probe_status=$?
+set -e
+
+naming_probe_cleanup
+trap cleanup EXIT
+
+[ "$naming_probe_status" -ne 0 ] || fail "[hub skill naming] should fail with an unnamed skill present"
+assert_contains "$TMP_DIR/naming-probe.out" 'UNNAMED [hub skill naming] — hub-naming-probe-unnamed is named in no hub rule file'
+assert_contains "$TMP_DIR/naming-probe.out" 'UNNAMED [hub skill naming] — hub-project is named in no hub rule file'
+
 assert_contains "$ROOT/scripts/check-consistency.sh" 'extract_block "$standalone_base/AGENTS.md" canon:controlled-memory'
 assert_contains "$ROOT/scripts/check-consistency.sh" 'hub architecture absent'
 assert_contains "$ROOT/README.md" 'Personal hub'
@@ -303,7 +329,9 @@ done
 # Regression: same relative-source defect in the standalone updater (Audit 1).
 RELATIVE_SOURCE_OUT="$TMP_DIR/relative-source.out"
 (cd "$ROOT" && bash "$ROOT/scripts/update-installed-architecture.sh" \
-  --project "$PROJECT" --source . --dry-run) > "$RELATIVE_SOURCE_OUT" 2>&1
+  --project "$PROJECT" --source . --dry-run) > "$RELATIVE_SOURCE_OUT" 2>&1 \
+  || fail "relative --source dry-run against the project failed unexpectedly"
+assert_contains "$RELATIVE_SOURCE_OUT" "Source template: $ROOT/template"
 assert_not_contains "$RELATIVE_SOURCE_OUT" "Source template: $PROJECT"
 
 if bash "$ROOT/scripts/update-installed-architecture.sh" \

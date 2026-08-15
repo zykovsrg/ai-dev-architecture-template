@@ -1209,7 +1209,8 @@ assert_contains "$TMP_DIR/incomplete-knowledge-source.out" 'missing mandatory hu
 # updater could compare the hub with itself and report "no updates" (Audit 1).
 RELATIVE_SOURCE_OUT="$TMP_DIR/relative-source.out"
 (cd "$ROOT" && bash "$ROOT/scripts/update-installed-hub.sh" \
-  --hub "$HUB_INSTALL" --source . --dry-run) > "$RELATIVE_SOURCE_OUT" 2>&1
+  --hub "$HUB_INSTALL" --source . --dry-run) > "$RELATIVE_SOURCE_OUT" 2>&1 \
+  || fail "relative --source dry-run against the hub failed unexpectedly"
 assert_contains "$RELATIVE_SOURCE_OUT" "Source template: $ROOT/hub-template"
 assert_not_contains "$RELATIVE_SOURCE_OUT" "Source template: $HUB_INSTALL"
 
@@ -1226,7 +1227,8 @@ echo 'Source-resolution evidence: relative --source resolved against the caller,
 # "the files match", because a hub with a matching version and a drifted rule
 # file is reported as up to date (Audit 3, FT-20260815-002).
 bash "$ROOT/scripts/update-installed-hub.sh" \
-  --hub "$HUB_INSTALL" --source "$ROOT" --check > "$TMP_DIR/check-wording.out" 2>&1
+  --hub "$HUB_INSTALL" --source "$ROOT" --check > "$TMP_DIR/check-wording.out" 2>&1 \
+  || fail "--check against a matching-version hub failed unexpectedly"
 assert_contains "$TMP_DIR/check-wording.out" 'Version numbers match'
 assert_contains "$TMP_DIR/check-wording.out" '--dry-run'
 assert_not_contains "$TMP_DIR/check-wording.out" 'Hub architecture is up to date (v'
