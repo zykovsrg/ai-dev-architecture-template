@@ -278,8 +278,8 @@ path_contains_symlink() {
   return 1
 }
 
-remove_superseded_path() {
-  local rel="$1" target="$HUB_DIR/$rel"
+validate_superseded_path() {
+  local rel="$1"
 
   # Validate rel is non-empty and hub-relative
   case "$rel" in
@@ -299,6 +299,10 @@ remove_superseded_path() {
   if path_contains_symlink "$HUB_DIR" "$rel"; then
     die "superseded path must not be a symlink: $rel"
   fi
+}
+
+remove_superseded_path() {
+  local rel="$1" target="$HUB_DIR/$rel"
 
   [ -e "$target" ] || return 0
 
@@ -421,6 +425,16 @@ append_existing_path() {
 
 resolve_source_template
 
+# The version gate for superseded-path removal is evaluated up front, right
+# after the source template is resolved, so it can refuse an old source
+# before --apply copies a single byte (dry-run/check only report it).
+MIN_REMOVAL_VERSION="1.3"
+SOURCE_VERSION_FOR_REMOVAL="$(read_arch_version "$SOURCE_TEMPLATE/ai/architecture.md")"
+REMOVAL_VERSION_GATE_MESSAGE="Source template version ${SOURCE_VERSION_FOR_REMOVAL:-unknown} is older than $MIN_REMOVAL_VERSION (the version that introduced superseded-path removal); refusing to delete hub skills — use a source template at or above version $MIN_REMOVAL_VERSION."
+removal_version_gate_blocked() {
+  [ -z "$SOURCE_VERSION_FOR_REMOVAL" ] || version_lt "$SOURCE_VERSION_FOR_REMOVAL" "$MIN_REMOVAL_VERSION"
+}
+
 echo "Hub: $HUB_DIR"
 echo "Source template: $SOURCE_TEMPLATE"
 if [ "$CHECK" = "true" ]; then
@@ -473,6 +487,12 @@ if [ "$MODE" = "dry-run" ]; then
   echo "Superseded paths to remove:"
   for_each_superseded_path show_superseded_path
 
+  if removal_version_gate_blocked; then
+    changes_found=1
+    echo ""
+    echo "$REMOVAL_VERSION_GATE_MESSAGE"
+  fi
+
   if [ "$changes_found" -eq 0 ]; then
     echo ""
     echo "No hub updates found."
@@ -484,15 +504,17 @@ if [ "$MODE" = "dry-run" ]; then
   exit "$DRY_RUN_EXIT"
 fi
 
+if removal_version_gate_blocked; then
+  die "$REMOVAL_VERSION_GATE_MESSAGE"
+fi
+
 for_each_protected_file copy_file
 for_each_memory_file copy_missing_memory_file
 
-SOURCE_VERSION_FOR_REMOVAL="$(read_arch_version "$SOURCE_TEMPLATE/ai/architecture.md")"
-MIN_REMOVAL_VERSION="1.3"
-if [ -z "$SOURCE_VERSION_FOR_REMOVAL" ] || version_lt "$SOURCE_VERSION_FOR_REMOVAL" "$MIN_REMOVAL_VERSION"; then
-  die "Source template version ${SOURCE_VERSION_FOR_REMOVAL:-unknown} is older than $MIN_REMOVAL_VERSION (the version that introduced superseded-path removal); refusing to delete hub skills — use a source template at or above version $MIN_REMOVAL_VERSION."
-fi
-
+# Validate every superseded-path entry before deleting anything: an invalid
+# entry discovered mid-list must not leave earlier, valid entries already
+# removed while later entries are still untouched.
+for_each_superseded_path validate_superseded_path
 for_each_superseded_path remove_superseded_path
 
 UPDATE_PATHS=()

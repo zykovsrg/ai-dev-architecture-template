@@ -1389,6 +1389,44 @@ assert_contains "$TMP_DIR/old-source.out" 'refusing to delete hub skills'
 assert_file "$OLD_SOURCE_HUB/ai/skills/task-intake/SKILL.md"
 assert_file "$OLD_SOURCE_HUB/ai/skills/hub-project-router/SKILL.md"
 
+# Regression: the source-version gate must run BEFORE any protected-file
+# copying, so an old source template is refused before it can write
+# anything to the hub (deferred Finding A). Without the fix, --apply copies
+# AGENTS.md/CLAUDE.md/ai/architecture.md and only aborts afterward, leaving
+# the hub partially downgraded.
+GATE_ORDER_SOURCE="$TMP_DIR/gate-order-source"
+cp -R "$ROOT/hub-template" "$GATE_ORDER_SOURCE"
+perl -0pi -e 's/Version: [0-9]+\.[0-9]+/Version: 1.2/' "$GATE_ORDER_SOURCE/ai/architecture.md"
+printf '%s\n' '' '<!-- must never land in the hub: version gate ran too late -->' >> "$GATE_ORDER_SOURCE/AGENTS.md"
+GATE_ORDER_HUB="$TMP_DIR/gate-order-hub"
+cp -R "$HUB_INSTALL" "$GATE_ORDER_HUB"
+cp "$GATE_ORDER_HUB/AGENTS.md" "$TMP_DIR/gate-order-agents.before"
+if bash "$ROOT/scripts/update-installed-hub.sh" \
+  --hub "$GATE_ORDER_HUB" --source "$GATE_ORDER_SOURCE" --apply --allow-dirty \
+  > "$TMP_DIR/gate-order.out" 2>&1; then
+  fail 'updater applied protected-file updates using an older-than-1.3 source template'
+fi
+assert_contains "$TMP_DIR/gate-order.out" 'refusing to delete hub skills'
+cmp -s "$TMP_DIR/gate-order-agents.before" "$GATE_ORDER_HUB/AGENTS.md" \
+  || fail 'version gate ran after copying protected files: AGENTS.md was overwritten before the refusal'
+
+# Regression: superseded-path removal must validate every entry before
+# deleting anything (deferred Finding B). Without the fix,
+# remove_superseded_path validates and deletes in the same pass, so a valid
+# entry earlier in SUPERSEDED_PATHS is already removed by the time a later
+# invalid entry aborts the run.
+ATOMIC_REMOVAL_HUB="$TMP_DIR/atomic-removal-hub"
+cp -R "$HUB_INSTALL" "$ATOMIC_REMOVAL_HUB"
+mkdir -p "$ATOMIC_REMOVAL_HUB/ai/skills/task-intake"
+printf '%s\n' '# Legacy fixture' > "$ATOMIC_REMOVAL_HUB/ai/skills/task-intake/SKILL.md"
+if SUPERSEDED_TEST_EMPTY=1 bash "$ROOT/scripts/update-installed-hub.sh" \
+  --hub "$ATOMIC_REMOVAL_HUB" --source "$ROOT" --apply --allow-dirty \
+  > "$TMP_DIR/atomic-removal.out" 2>&1; then
+  fail 'updater accepted an empty superseded path entry'
+fi
+assert_contains "$TMP_DIR/atomic-removal.out" 'superseded path must not be empty'
+assert_file "$ATOMIC_REMOVAL_HUB/ai/skills/task-intake/SKILL.md"
+
 # Regression: a superseded path value of exactly ".." (no slash) must be
 # rejected by the traversal guard, not fall through to rm -rf on the hub's
 # parent directory (Finding 4). Reuses the SUPERSEDED_TEST_* env hook
