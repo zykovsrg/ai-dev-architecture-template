@@ -230,4 +230,23 @@ while IFS= read -r line; do
 done < "$REGISTRY_FILE"
 validate_entry_schema
 
+# Reverse direction: the registry loop above proves every entry has a directory.
+# This proves the operator sees directories that have no entry. Names only —
+# nothing inside a project is opened. A warning, never an error: the router only
+# ever opens registered paths, and hub-project-migrate legitimately leaves a
+# moved folder unregistered until its separate registration confirmation.
+warn_unregistered_directories() {
+  local child name
+  for child in "$PROJECTS_ROOT"/*/; do
+    [ -d "$child" ] || continue
+    name="$(basename "$child")"
+    if printf '%s\n' "$ids" | grep -Fxq "$name"; then
+      continue
+    fi
+    echo "WARNING: unregistered directory in projects root: $name" >&2
+  done
+}
+
+warn_unregistered_directories
+
 echo "Registry check passed: $project_count projects"

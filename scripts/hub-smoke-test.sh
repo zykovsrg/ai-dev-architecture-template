@@ -777,6 +777,29 @@ assert_forbidden_reads_absent "$TMP_DIR/valid.trace" \
   '/.env' '/credentials.txt' '/unregistered-project/private.txt' '/analytics-seo-backup/private.txt'
 echo 'Sentinel evidence: validator output and xtrace contain neither the marker nor the named forbidden file paths.'
 
+# The valid fixture intentionally holds two unregistered directories. They must
+# be reported on stderr without changing the exit code or the stdout summary,
+# and without reading anything inside them.
+bash "$ROOT/scripts/check-hub-registry.sh" "$VALID" \
+  > "$TMP_DIR/valid-warn.out" 2> "$TMP_DIR/valid-warn.err" \
+  || fail 'an unregistered directory must not change the validator exit code'
+assert_contains "$TMP_DIR/valid-warn.err" 'WARNING: unregistered directory in projects root: unregistered-project'
+assert_contains "$TMP_DIR/valid-warn.err" 'WARNING: unregistered directory in projects root: analytics-seo-backup'
+assert_contains "$TMP_DIR/valid-warn.out" 'Registry check passed: 1 projects'
+assert_not_contains "$TMP_DIR/valid-warn.out" 'WARNING'
+assert_not_contains "$TMP_DIR/valid-warn.err" "$SENTINEL"
+
+# A hub whose projects root holds only registered projects stays silent.
+QUIET_HUB="$TMP_DIR/quiet-hub"
+copy_valid_hub "$QUIET_HUB"
+rm -rf "$QUIET_HUB/projects/unregistered-project" "$QUIET_HUB/projects/analytics-seo-backup"
+bash "$ROOT/scripts/check-hub-registry.sh" "$QUIET_HUB" \
+  > "$TMP_DIR/quiet.out" 2> "$TMP_DIR/quiet.err" \
+  || fail 'clean fixture must pass'
+assert_contains "$TMP_DIR/quiet.out" 'Registry check passed: 1 projects'
+assert_not_contains "$TMP_DIR/quiet.err" 'WARNING'
+echo 'Unregistered-directory evidence: warned on stderr, exit code and stdout summary unchanged.'
+
 EXTERNAL_ALLOWED_ROOT="$TMP_DIR/external-allowed-root-hub"
 mkdir -p "$TMP_DIR/external-projects"
 copy_valid_hub "$EXTERNAL_ALLOWED_ROOT"
