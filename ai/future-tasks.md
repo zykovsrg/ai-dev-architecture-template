@@ -49,6 +49,63 @@ What to check before moving this task to `ai/current-task.md`.
 
 ## Future tasks
 
+### FT-20260815-001 — Почистить проекты под новую архитектуру
+
+Status: ready
+
+Priority: medium
+
+Source: решение пользователя, сессия 2026-08-15
+
+Created: 2026-08-15
+
+Context:
+
+В 15 проектах хаба лежат legacy standalone-копии архитектуры: собственные
+`ai/architecture.md`, `AGENTS.md`, `CLAUDE.md` и наборы `ai/skills/`. Они
+устарели — установлены версии 5.2, 6.9, 6.13 и 6.14 при шаблоне 7.1:
+
+- 6.14: `hadassah-seo-audits`, `medscan-yauza-seo-editor`, `personal-finance`, `seo-content-creator`
+- 6.13: `hadassah-analytics`, `hadassah-content-oncology`, `hadassah-content-pediatric-surgery`,
+  `hadassah-content-weight-metabolism`, `hadassah-seo-audit-jul`, `hadassah-seo-tech-contractor`,
+  `hadassah-yandex-doctor-feed`, `simracing-setup`
+- 6.9: `analytics-seo`, `horizon-task-tracker`
+- 5.2: `hadassah-seo-planner` (установка неполная: не было `task-intake`)
+
+Пользователь подтвердил 2026-08-15, что работа идёт только через хаб и обновлять
+эти копии не нужно. Правильный шаг — не обновление, а удаление. Сам хаб при этом
+актуален: `hub-template` и живая установка совпадают побайтово на версии 1.3.
+
+Отдельно: у четырёх из этих проектов имена скиллов `environment-check`,
+`task-intake`, `task-switch`, `task-finish` больше не конфликтуют с хабовыми —
+хабовые получили префикс `hub-` (v6.16). Коллизии нет, но дубликаты остались.
+
+Proposed task:
+
+Удалить legacy standalone-файлы из проектов хаба: `ai/architecture.md`,
+`ai/external-tools.md`, `AGENTS.md`, `CLAUDE.md`, `ai/skills/`, `.claude/`.
+Память задач (`ai/current-task.md` и остальные пять файлов) и `knowledge/`
+не трогать — они остаются каноничными и проверяются `check-hub-registry.sh`.
+
+Выполнять только после [[FT-20260813-001]], которая решает судьбу
+standalone-режима в целом: без этого решения непонятно, удаляем мы дубликаты
+или ломаем поддерживаемый режим работы.
+
+Acceptance criteria:
+
+- Ни один проект хаба не содержит собственных копий архитектуры и скиллов.
+- Шесть файлов памяти и `knowledge/` в каждом проекте целы;
+  `bash scripts/check-hub-registry.sh` проходит.
+- Каждое удаление подтверждено отдельно по проекту, с показом списка файлов до удаления.
+- Изменения закоммичены в репозитории каждого проекта, история сохранена.
+
+Promotion notes:
+
+Проверить, не ссылается ли что-то в памяти проекта на его локальные скиллы —
+такие ссылки станут битыми. Начать с одного проекта и убедиться, что хабовый
+поток работы (`hub-environment-check`, `hub-task-intake`) полностью его
+покрывает, прежде чем чистить остальные 14.
+
 ### FT-20260814-002 — Решить судьбу собственной памяти `ai/` в этом репозитории
 
 Status: idea
