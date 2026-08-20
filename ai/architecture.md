@@ -1,6 +1,6 @@
 # AI Development Architecture
 
-Version: 7.2
+Version: 7.3
 
 This file is the reference for workflows and the rule hierarchy. It does not need to be loaded for every task. Read it only when a task concerns workflows, rule conflicts, architecture-update, or when a rule is unclear.
 
@@ -390,8 +390,12 @@ The user is not a developer. Write to someone who is just starting to learn IT.
 - Avoid unexplained jargon, English-only tech words without a gloss, and dense abbreviations.
 - If a concept is unavoidably complex, break it into small numbered steps.
 - Explain enough for the current decision; prefer a short clear answer over exhaustive background.
+- Use very simple words. Default to a short answer: a few lines, the answer first, details only if the user asks for them. Long, exhaustive write-ups are produced only on explicit request.
+- Never trade simplicity for completeness: if the full explanation would be long, give the simple short version and offer to expand.
 
 This rule applies to all user-facing communication, including mode statements, risk notes, and final reports. It does not change the language of persistent AI-facing instruction files, which stay in English.
+
+It also applies to work done under any external methodology, including Superpowers, `code-review-graph`, and plugin skills. Their internal process may be long and verbose; the reply shown to the user must still be short and written in very simple words.
 
 ## Skills
 
@@ -887,6 +891,7 @@ Superpowers must not override:
 - `environment-check` rules;
 - `architecture-update` rules;
 - clean architecture principle;
+- user communication style (short, very simple wording);
 - project-specific rules in `ai/project-context.md`.
 
 If Superpowers suggests a heavier workflow, first propose it to the user and ask for confirmation.

@@ -14,6 +14,12 @@
 
 ## Текущий changelog
 
+### 2026-08-20 — Короткие ответы простыми словами
+
+- Change: Стиль общения усилен и закреплён. В `ai/architecture.md` (раздел «Talking to the user») добавлены правила: очень простые слова, по умолчанию короткий ответ, длинные разборы — только по запросу; отдельно указано, что правило действует и для работы под внешними методологиями (Superpowers, `code-review-graph`, плагинные скиллы). В список «Superpowers must not override» добавлен пункт `user communication style`. Строка Core Principles обновлена в `AGENTS.md` и `CLAUDE.md`. Те же правки продублированы в `template/` и в `hub-template/`, чтобы новые проекты и новый хаб получали правило сразу.
+- Impact: Пользователю больше не нужно повторять просьбу «объясняй коротко и просто» в каждом чате.
+- Manual checks: `bash scripts/check-consistency.sh` — все проверки OK.
+
 ### 2026-08-15 — Hub audit fixes
 
 - Change: Fixed six defects found by an architecture audit, all sharing one theme — checks that reported success without verifying anything. `--source` is now resolved before either updater enters its target, and a source resolving to the target itself is refused; previously a relative `--source` resolved against the target, so the updater could compare a hub with itself and report "no updates". `check-hub-registry.sh` now warns on stderr about directories in `projects/` with no registry entry, leaving the exit code and stdout summary unchanged so the documented migration order (move → separate registration → validation) still works. `--check` now states in both updaters and in `--help` that it compared version numbers, not file contents. The hub updater guarantees the `/projects/` line in the hub `.gitignore` by appending it when missing, never overwriting. `hub-project-router`, `hub-registry-check` and `hub-local-router-install` are now named in `hub-template/ai/architecture.md`, and a new `[hub skill naming]` check fails if any hub skill is named in no rule file. `hub-registry-check` no longer says "each allowed root".

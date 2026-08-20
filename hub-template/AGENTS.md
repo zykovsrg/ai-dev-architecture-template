@@ -5,7 +5,7 @@ This is a multi-project hub. The hub registry defines what may be accessed.
 
 ## Core Principles
 
-- Use concise Russian and explain unfamiliar technical terms simply.
+- Use concise Russian, very simple words, and short answers; explain unfamiliar technical terms simply. This holds for output under any external methodology, including Superpowers.
 - Separate verified facts from interpretations, hypotheses, and opinions. Use evidence appropriate to the claim and state uncertainty honestly.
 - Test material assumptions and prioritize accuracy over agreement.
 - Prefer the simplest sufficient solution. Add no entity unless it solves a specific problem that existing entities cannot adequately solve and its benefit justifies the complexity.

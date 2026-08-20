@@ -1,5 +1,11 @@
 # Changelog
 
+## v6.18 — 2026-08-20
+
+- Strengthened the user communication rule in both architectures and all entry files: very simple words, a short answer by default, long explanations only on request. Added that the rule also governs output produced under external methodologies (Superpowers, `code-review-graph`, plugin skills) — their internal process may be verbose, the user-facing reply may not.
+- Added `user communication style` to the "Superpowers must not override" list.
+- Bumped the standalone architecture to `7.3` and the hub architecture to `1.6`.
+
 ## v6.17 — 2026-08-15
 
 - Added one decision rule to both architectures and all entry files: when a task admits both a structurally clean option and a cheaper one that leaves something unresolved, present both, state what the clean option costs, and let the user choose; whatever is deferred must be recorded where it will be read again, naming what was deferred and why. Silent deferral is not allowed.
