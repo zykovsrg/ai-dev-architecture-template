@@ -24,7 +24,7 @@ Python 3.10+ в своём manifest; на главной странице — 16
 | Источник | Что подтверждает | Дата проверки |
 | --- | --- | --- |
 | [Apple: EventKit access](https://developer.apple.com/documentation/eventkit/accessing-the-event-store) | Для чтения Calendar нужен full access; write-only не даёт читать события. Для sandboxed macOS app требуется entitlement Calendar. | 2026-08-24 |
-| [Apple: EventKit/Calendar](https://developer.apple.com/documentation/eventkit/accessing-calendar-using-eventkit-and-eventkitui) | Full access позволяет читать, создавать, менять и удалять события; EventKit умеет rollback/reset при неуспешном batch commit. | 2026-08-24 |
+| [Apple: EventKit/Calendar](https://developer.apple.com/documentation/eventkit/accessing-calendar-using-eventkit-and-eventkitui) | Full access позволяет читать, создавать, менять и удалять события; `reset()` очищает несохранённые локальные изменения, но не обещает отмену уже сохранённой/синхронизированной записи. | 2026-08-24 |
 | [Manifest `apple-calendar-mcp`](https://github.com/s-morgan-jeffries/apple-calendar-mcp/blob/main/pyproject.toml) | Версия `0.9.0`, Beta, Python `>=3.10`, macOS/Darwin. | 2026-08-24 |
 | [README выбранного MCP](https://github.com/s-morgan-jeffries/apple-calendar-mcp) | Tools, EventKit/Swift helper, availability/conflicts, локальный ISO формат и требования macOS. | 2026-08-24 |
 | [security issue выбранного MCP](https://github.com/s-morgan-jeffries/apple-calendar-mcp/issues/215) | Содержимое чужих событий может быть prompt injection; title, notes и location нельзя трактовать как инструкции. | 2026-08-24 |
@@ -142,10 +142,12 @@ Python 3.10+ в своём manifest; на главной странице — 16
 7. **Unavailable Calendar.** Отсутствие прав, offline account, read-only
    calendar или EventKit error возвращают понятный status без fallback на другой
    календарь и без записи.
-8. **Rollback/delete.** При ошибке batch commit adapter выполняет EventKit
-   rollback/reset и не сохраняет UID. Update хранит prior snapshot для
-   предложенного обратного update. Delete остаётся выключенным: удалённое
-   приглашение может не иметь безопасного полного rollback.
+8. **Rollback/delete.** До commit adapter может очистить несохранённые локальные
+   изменения через EventKit `reset()` и не сохраняет UID. После частично
+   применённого или уже синхронизированного результата автоматического rollback
+   нет: update хранит prior snapshot и предлагает отдельный подтверждённый
+   компенсирующий update. Delete остаётся выключенным: удалённое приглашение
+   может не иметь безопасного полного восстановления.
 
 ## Условия следующего этапа
 
