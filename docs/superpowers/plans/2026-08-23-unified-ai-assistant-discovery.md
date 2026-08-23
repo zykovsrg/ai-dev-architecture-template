@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Run this work in confirmed `architecture-update` mode because the approved outcome may propose changes to protected architecture files.
+- Run Tasks 1–7 in `review` or `implementation` mode because they create research and design documents only. Enter confirmed `architecture-update` mode only after the user approves exact protected-file changes in Task 8.
 - Do not implement architecture changes, migrate notes, change the live Obsidian vault, or write Calendar events during this plan.
 - Use `/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/tmp/obsidian-vault-copy/Obsidian` only as a read-only research copy.
 - The AI architecture remains the sole source of truth for projects and tasks.
