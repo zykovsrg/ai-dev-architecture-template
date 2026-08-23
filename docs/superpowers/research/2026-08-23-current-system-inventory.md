@@ -80,8 +80,10 @@ were not modified.
 - The AI architecture has an explicit project/task model in its rules and
   working memory, with one current task and separate paused/future work.
 - The copied vault has a distinct Kanban area at `3. Канбан`. Its observed
-  Markdown distribution includes 65 files in `Дантистофф — 2025`, 14 in
-  `Доходы и бюджет — 2025`, 1 in `Хадасса`, and 3 directly in `3. Канбан`.
+  Markdown distribution includes 80 files in two dated Kanban subfolders, 1
+  file in another named Kanban subfolder, and 3 files directly in the Kanban
+  root. The subfolder names are intentionally redacted because they identify
+  projects or clients.
 - The vault has many checkbox lines spread across Markdown files, but the
   inventory did not treat every checkbox as a task record.
 
