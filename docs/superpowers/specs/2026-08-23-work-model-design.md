@@ -70,6 +70,8 @@
 | task | один контейнер `task` в `ai/current-task.md` | existing | Сохраняет правило одной текущей задачи на проект. |
 | task | `id` | new-required | Уникален в пределах проекта; будущая запись сохраняет этот ID после продвижения. |
 | task | `title` | new-required | Короткое название для списка и представления. |
+| task | `due` | new-required | Дата в ISO-формате `YYYY-MM-DD` либо явное `none`; одно каноническое значение для current и future task. |
+| task | `owner` | rejected | Каноническая task — действие пользователя; обязательство другой стороны остаётся решением/контекстом встречи или waiting, а не второй task. |
 | current task record | верхнее `Status` | existing | Жизненный статус текущей записи: `empty`, `active`, `review`, `blocked`, `done`, `paused`; в схеме это `record_status`. |
 | future task record | верхнее `Status` записи | existing | Статус бэклога: `idea`, `ready`, `blocked`, `promoted`, `done`, `dropped`; в схеме это `backlog_status`. |
 | task | `execution_state` | new-required | Состояние исполнения только текущей задачи: `active`, `waiting`, `blocked` или `done`. |
@@ -143,6 +145,7 @@ ID и не дают вклад в прогресс. Существующий `St
 task:
   id: T-20260823-001
   title: Подготовить минимальную модель работы
+  due: none
   execution_state: active
   stage: spec
   mode: architecture-update
@@ -171,16 +174,17 @@ task:
 `ai/future-tasks.md` хранит отдельный YAML-блок каждой будущей записи под её
 существующим заголовком. Его верхний `Status` имеет только смысл
 `backlog_status` и сохраняет существующий словарь бэклога. Блок сохраняет
-`id`, `title`, `goal`, `done_criteria`, `priority`, `source`, `created`,
+`id`, `title`, `due`, `goal`, `done_criteria`, `priority`, `source`, `created`,
 `context`, `promotion_notes` и `use_superpowers`; до продвижения у него нет
 `execution_state`. Миграция разбирает существующий заголовок
 `FT-YYYYMMDD-001 — Task title`: часть до тире переходит без изменения в `id`,
 часть после тире — без изменения в `title`. Она также сопоставляет
 `Proposed task` с `goal`, `Acceptance criteria` с `done_criteria`, а
 `Use Superpowers` с `use_superpowers` без потери текста; отсутствующее у
-старых future-задач `use_superpowers` получает явное значение `no` до ручного
-изменения. Продвижение не создаёт новую задачу: тот же `id`, `title`, `goal`,
-`done_criteria` и `use_superpowers` переходят в единственный объект `task`
+старых future-задач `use_superpowers` получает явное значение `no`, а
+отсутствующее `due` — `none` до ручного изменения. Продвижение не создаёт новую
+задачу: тот же `id`, `title`, `due`, `goal`, `done_criteria` и
+`use_superpowers` переходят в единственный объект `task`
 текущего файла.
 
 Подзадача не может быть второй текущей задачей проекта. Подзадача с
