@@ -62,26 +62,29 @@
 | archiproject | список задач | rejected | Задачи остаются в файлах своих проектов. |
 | project | `Project ID` | existing | Уникальный идентификатор из карточки проекта. |
 | project | `Name`, `Type`, `Status`, `Last updated`, `Purpose`, `Typical tasks`, `Memory entry point` | existing | Текущий минимум карточки проекта. |
-| project | `primary_archiproject` | new-required | Ноль или одна основная связь с archiproject. |
-| project | `primary_archiproject.id` | new-required | Ссылается на существующий `archiproject.id`. |
-| project | `primary_archiproject.contribution.completed` | new-required | Неотрицательное число в единице данного archiproject; единственный вклад проекта в его прогресс. |
-| project | `related_archiprojects` | new-required | Массив из нуля или более `archiproject.id`; каждый ID уникален и не равен primary ID. |
+| project | `Primary archiproject` | new-required | Plain-text ID или `none`; ссылается на существующий `archiproject.id`. |
+| project | `Archiproject contribution` | new-required | Неотрицательное число в единице основного archiproject либо `none`; единственный вклад проекта в его прогресс. |
+| project | `Related archiprojects` | new-required | Уникальные ID через запятую либо `none`; ни один не равен primary ID. |
 | project | сохранённый `work_state: waiting` | rejected | Project-level waiting вычисляется, а не дублируется в карточке. |
 | project | самостоятельный список задач | rejected | Карточка ссылается на существующий файл текущей задачи. |
 | task | один контейнер `task` в `ai/current-task.md` | existing | Сохраняет правило одной текущей задачи на проект. |
 | task | `id` | new-required | Уникален в пределах проекта; будущая запись сохраняет этот ID после продвижения. |
 | task | `title` | new-required | Короткое название для списка и представления. |
-| task | `status` | existing + new-required | Существующие состояния сохраняются; `waiting` добавляется как новое состояние. |
+| current task record | верхнее `Status` | existing | Жизненный статус текущей записи: `empty`, `active`, `review`, `blocked`, `done`, `paused`; в схеме это `record_status`. |
+| future task record | верхнее `Status` записи | existing | Статус бэклога: `idea`, `ready`, `blocked`, `promoted`, `done`, `dropped`; в схеме это `backlog_status`. |
+| task | `execution_state` | new-required | Состояние исполнения только текущей задачи: `active`, `waiting`, `blocked` или `done`. |
 | task | `stage`, `mode`, `goal`, `relevant_files`, `done_criteria`, `agent_handoff` | existing | Поля текущего шаблона; в машинном блоке используются один раз, без второй копии. |
-| task | `priority`, `source`, `created`, `context`, `promotion_notes` | existing | Поля шаблона будущих задач; применяются к записи в `ai/future-tasks.md`. |
+| task | `use_superpowers` | existing | Сохраняет существующее поле `Use Superpowers` без изменения значения. |
+| future task | `priority`, `source`, `created`, `context`, `promotion_notes` | existing | Поля шаблона будущих задач. |
+| future task | `goal`, `done_criteria` | existing | Канонические значения существующих `Proposed task` и `Acceptance criteria`. |
 | task | `subtasks` | new-required | Единственный вложенный массив подзадач этой задачи. |
 | task | `project_id` | rejected | Проект однозначно задаёт путь файла и его карточка; дублировать ID не нужно. |
 | task | отдельный task index | rejected | Индекс может быть только производным, неизменяемым представлением. |
 | subtask | `id` | new-required | Уникален в массиве `task.subtasks`. |
 | subtask | `title` | new-required | Короткое действие. |
-| subtask | `status` | new-required | `pending`, `active`, `waiting` или `done`. |
+| subtask | `execution_state` | new-required | `pending`, `active`, `waiting` или `done`. |
 | subtask | `done_criteria` | new-required | Проверяемый результат. |
-| subtask | `waiting` | new-required | Допустим только при `status: waiting`; тот же контракт ожидания. |
+| task/subtask | `waiting` | new-required | Вложенный объект; допустим только при `execution_state: waiting`. |
 | subtask | отдельный файл или глобальный ID | rejected | Подзадача не является самостоятельной текущей задачей или вторым хранилищем. |
 | waiting | `waiting_for` | new-required | Внешняя сторона, событие или ответ, которого ждут. |
 | waiting | `waiting_since` | new-required | Дата начала ожидания в ISO-формате. |
@@ -91,41 +94,44 @@
 
 ## Контракт archiproject
 
-Канонический реестр archiproject — один новый архитектурный Markdown-файл с
-машиночитаемыми объектами. Он содержит только сами archiproject, а не копии
-проектов и задач. Минимальная запись имеет ровно этот вид:
+Канонический реестр archiproject — новый hub-owned controlled-memory файл
+`ai/archiprojects.md`. Он содержит только archiproject, а не копии проектов и
+задач. Каждая запись — Markdown-заголовок с fenced YAML-блоком; `id` —
+единственная стабильная ссылка из карточки проекта:
 
 ```yaml
+---
 id: august-32-pages
 name: Выпустить 32 страницы за август
 status: active
 target: 32
 unit: pages
 due: 2026-08-31
+---
 ```
 
-Прогресс archiproject вычисляется как сумма
-`primary_archiproject.contribution.completed` всех связанных проектов с тем же
-`id` и `unit`. Связи из `related_archiprojects` никогда не участвуют в этой
-сумме. Это сохраняет одну primary-связь проекта и исключает двойной учёт.
+Прогресс archiproject вычисляется как сумма поля `Archiproject contribution`
+всех карточек с тем же `Primary archiproject` и единицей `unit`. Связи из
+`Related archiprojects` никогда не участвуют в этой сумме. Это сохраняет одну
+primary-связь проекта и исключает двойной учёт.
 
 ## Контракт project
 
-В карточку проекта добавляется один машинный блок, например:
+В карточку проекта добавляются три plain-text поля, не изменяющие существующие
+обязательные поля валидатора:
 
-```yaml
-primary_archiproject:
-  id: august-32-pages
-  contribution:
-    completed: 0
-related_archiprojects: []
+```text
+Primary archiproject: august-32-pages
+Archiproject contribution: 0
+Related archiprojects: none
 ```
 
-`primary_archiproject` может отсутствовать, если проект не входит в
-archiproject. Если он есть, он ровно один. `related_archiprojects` содержит
-только дополнительные связи для навигации и контекста, без вклада в прогресс.
-Существующий `Status` карточки остаётся жизненным состоянием проекта;
-ожидание не заменяет и не расширяет это поле.
+`Primary archiproject` получает ID или `none`; он не может ссылаться на
+отсутствующую запись. `Archiproject contribution` — неотрицательное число в
+единице основного archiproject либо `none`. `Related archiprojects` —
+уникальные дополнительные ID через запятую либо `none`; они не равны primary
+ID и не дают вклад в прогресс. Существующий `Status` карточки остаётся
+жизненным состоянием проекта; ожидание не заменяет и не расширяет это поле.
 
 ## Контракт task и subtask
 
@@ -136,9 +142,10 @@ archiproject. Если он есть, он ровно один. `related_archipr
 task:
   id: T-20260823-001
   title: Подготовить минимальную модель работы
-  status: active
+  execution_state: active
   stage: spec
   mode: architecture-update
+  use_superpowers: yes
   goal: Зафиксировать минимальные контракты работы.
   relevant_files:
     - docs/superpowers/specs/2026-08-23-work-model-design.md
@@ -152,54 +159,87 @@ task:
   subtasks:
     - id: ST-001
       title: Проверить обязательные поля
-      status: pending
+      execution_state: pending
       done_criteria: Все обязательные поля есть в спецификации.
 ```
 
-`ai/future-tasks.md` хранит такие же task-поля для каждой будущей записи в
-отдельном YAML-блоке под её существующим заголовком. Там дополнительно
-используются уже существующие `priority`, `source`, `created`, `context` и
-`promotion_notes`. Продвижение не создаёт новую задачу: тот же `id` переносится
-в единственный объект `task` текущего файла.
+Пустой `ai/current-task.md` остаётся машиночитаемым: верхнее поле
+`Status: empty` означает `record_status: empty`, а объекта `task` в нём нет.
+Если `Status` не `empty`, объект `task` обязателен.
 
-Подзадача не может быть второй текущей задачей проекта. Подзадача со статусом
-`waiting` не переводит родительскую задачу в `waiting`, пока у родителя есть
-другая выполнимая подзадача или действие.
+`ai/future-tasks.md` хранит отдельный YAML-блок каждой будущей записи под её
+существующим заголовком. Его верхний `Status` имеет только смысл
+`backlog_status` и сохраняет существующий словарь бэклога. Блок сохраняет
+`id`, `title`, `goal`, `done_criteria`, `priority`, `source`, `created`,
+`context`, `promotion_notes` и `use_superpowers`; до продвижения у него нет
+`execution_state`. Миграция сопоставляет `Proposed task` с `goal`,
+`Acceptance criteria` с `done_criteria`, а `Use Superpowers` с
+`use_superpowers` без потери текста. Продвижение не создаёт новую задачу: тот
+же `id`, `goal`, `done_criteria` и `use_superpowers` переходят в единственный
+объект `task` текущего файла.
+
+Подзадача не может быть второй текущей задачей проекта. Подзадача с
+`execution_state: waiting` не переводит родительскую задачу в `waiting`, пока
+у родителя есть другая выполнимая подзадача или действие.
 
 ## Контракт waiting
 
-Ожидание хранится только у task или subtask со статусом `waiting`:
+Ожидание хранится только во вложенном объекте `waiting` у task или subtask с
+`execution_state: waiting`:
 
 ```yaml
-status: waiting
-waiting_for: contractor
-waiting_since: 2026-08-23
-follow_up: 2026-08-26
-next_after_response: Review the contractor's answer
+execution_state: waiting
+waiting:
+  waiting_for: contractor
+  waiting_since: 2026-08-23
+  follow_up: 2026-08-26
+  next_after_response: Review the contractor's answer
 ```
 
-Все четыре поля обязательны при `status: waiting` и отсутствуют при любом
-другом статусе. `waiting` означает внешний ожидаемый ответ или событие с
+Все четыре поля объекта `waiting` обязательны при `execution_state: waiting`
+и отсутствуют при любом другом состоянии. `waiting` означает внешний ожидаемый ответ или событие с
 назначенной проверкой. `blocked` сохраняет существующий смысл препятствия,
 которое нельзя снять только ожиданием внешнего ответа.
 
 Task-level waiting относится к одной task или subtask и не меняет статус
-проекта. Project-level waiting — только вычисляемое представление: оно верно,
-только когда в проекте нет текущей выполнимой работы. Для единственной текущей
-задачи это означает `task.status: waiting` либо отсутствие выполнимых действий
-во всех её подзадачах. Наличие ожидающей подзадачи при другой активной работе
-не делает проект ожидающим.
+проекта. Project-level waiting — только вычисляемое представление. Оно верно,
+только когда есть хотя бы один открытый task/subtask с
+`execution_state: waiting` и нет другого открытого действия со состоянием
+`pending` или `active`. Пустой, завершённый или только `blocked` проект не
+считается ожидающим. Наличие ожидающей подзадачи при другой активной работе не
+делает проект ожидающим.
 
 ## Совместимость и rollback
 
 Совместимость сохраняется по путям и ролям файлов: существующие маршрутизаторы
 по-прежнему открывают `ai/current-task.md`, а будущая работа остаётся в
-`ai/future-tasks.md`. Переход должен быть построчным и обратимым: сначала
-добавляется канонический машинный блок в тот же файл, после проверки старые
-повторяющиеся поля удаляются либо превращаются в пояснительный текст. Никакие
-задачи не копируются в Obsidian или в отдельный индекс.
+`ai/future-tasks.md`. Переход построчный и обратимый: сначала добавляется
+машиночитаемый блок в тот же файл и сопоставляются `Use Superpowers`,
+`Proposed task` и `Acceptance criteria`; только затем валидатор подтверждает
+равенство старых и новых значений. Никакие задачи не копируются в Obsidian или
+в отдельный индекс.
 
-rollback выполняется Git-ревертом изменения формата в этих же файлах. До
-удаления старого поля его значение сопоставляется с новым полем в том же
-коммите. При ошибке представления Obsidian откатывается только представление;
-архитектурные записи задач и проектов остаются единственным источником данных.
+В первом совместимом релизе `ai/archiprojects.md` и три новых поля карточки
+проекта только добавляются. Валидатор проверяет существование primary и related
+ID, отсутствие дублей, неотрицательный вклад и совпадение единицы с
+archiproject. Старые обязательные поля карточки не изменяются. rollback —
+Git-реверт добавочного коммита: удаляет `ai/archiprojects.md` и только новые
+поля карточек, оставляя прежние required fields и task-файлы нетронутыми.
+
+После миграции task-файлов rollback выполняется Git-ревертом того же формата;
+старый текст восстанавливается из пары «старое поле — новое каноническое
+поле». При ошибке представления Obsidian откатывается только представление;
+архитектурные записи задач, проектов и archiproject остаются единственным
+источником данных.
+
+## Контрольные проверки будущей реализации
+
+```bash
+rg -n 'Use Superpowers|Proposed task|Acceptance criteria|use_superpowers|goal|done_criteria' template/ai/current-task.md template/ai/future-tasks.md
+rg -n 'Primary archiproject|Archiproject contribution|Related archiprojects' hub-template/ai/project-registry.md hub-template/ai/project-cards
+rg -n 'archiprojects.md|execution_state|record_status|backlog_status|waiting_for|follow_up' docs/superpowers/specs/2026-08-23-work-model-design.md
+```
+
+Будущий валидатор обязан отклонить missing archiproject ID, duplicate related
+ID, primary ID в related списке, отрицательный вклад, `waiting` без всех четырёх
+полей и non-waiting объект с объектом `waiting`.
