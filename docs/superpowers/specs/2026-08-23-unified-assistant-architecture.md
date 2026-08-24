@@ -195,10 +195,10 @@ applied by this document**:
 | Class | Exact proposed files | Purpose |
 | --- | --- | --- |
 | Protected rules | `AGENTS.md`, `CLAUDE.md`, `ai/architecture.md`, `ai/external-tools.md`, `ai/skills/architecture-update/SKILL.md`, `ai/skills/release-check/SKILL.md`, `docs/file-roles.md` | Add the archiproject/task/index contracts and update the canonical memory lists/rules. |
-| Template parity | `template/AGENTS.md`, `template/CLAUDE.md`, `template/ai/architecture.md`, `template/ai/current-task.md`, `template/ai/future-tasks.md`, `template/ai/skills/architecture-update/SKILL.md`, `template/ai/skills/release-check/SKILL.md` | Preserve the same contracts for new installations. |
-| New controlled memory | `ai/archiprojects.md`, `template/ai/archiprojects.md` | Canonical archiproject records; adding it requires synchronising controlled-memory lists. |
+| Template parity | `hub-template/AGENTS.md`, `hub-template/CLAUDE.md`, `hub-template/ai/architecture.md`, `hub-template/ai/skills/hub-registry-check/SKILL.md`, `hub-template/ai/skills/hub-project-router/SKILL.md` | Preserve the hub-only contracts for new hub installations. |
+| New controlled memory | `hub-template/ai/archiprojects.md` | One canonical hub-owned archiproject registry; adding it requires synchronising hub memory rules. |
 | Hub scaffold | `hub-template/ai/archiprojects.md`, `hub-template/ai/project-registry.md`, `hub-template/ai/project-cards/*` | Supply registry/card fields only; no live project card is changed in foundation. |
-| Validators/updaters/tests | `scripts/check-hub-registry.sh`, `scripts/hub-smoke-test.sh`, `scripts/check-consistency.sh`, `scripts/install.sh`, `scripts/update-installed-architecture.sh` | Validate contracts and preserve user memory during install/update. |
+| Validators/updaters/tests | `scripts/check-hub-registry.sh`, `scripts/hub-smoke-test.sh`, `scripts/check-consistency.sh`, `scripts/install-hub.sh`, `scripts/update-installed-hub.sh` | Validate contracts and preserve hub memory during install/update. |
 
 Exact files may narrow after a preflight; no unlisted protected or controlled
 file may be changed without a new confirmation.

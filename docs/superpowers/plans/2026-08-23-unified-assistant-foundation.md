@@ -31,52 +31,37 @@ vault migration, meeting capture, recurring reviews, or session audit.
 
 Protected changes, requiring the architecture-update exact-diff confirmation:
 
-- `AGENTS.md`, `CLAUDE.md`, `ai/architecture.md`, `ai/external-tools.md`;
-- `ai/skills/architecture-update/SKILL.md` and
-  `ai/skills/release-check/SKILL.md`;
-- `template/AGENTS.md`, `template/CLAUDE.md`,
-  `template/ai/architecture.md`,
-  `template/ai/skills/release-check/SKILL.md`.
+- `hub-template/AGENTS.md`, `hub-template/CLAUDE.md`,
+  `hub-template/ai/architecture.md`;
+- `hub-template/ai/skills/hub-registry-check/SKILL.md` and
+  `hub-template/ai/skills/hub-project-router/SKILL.md`.
 
 Controlled changes:
 
-- `ai/archiprojects.md` (new canonical hub registry);
-- `template/ai/archiprojects.md`;
-- task templates and the selected project's `ai/current-task.md` only when the
-  documented workflow requires them.
+- `hub-template/ai/archiprojects.md` (new canonical hub registry).
 
 Regular code/docs:
 
 - `scripts/check-hub-registry.sh`, `scripts/hub-smoke-test.sh`,
-  `scripts/check-consistency.sh`, `scripts/install.sh`,
-  `scripts/update-installed-architecture.sh`,
+  `scripts/check-consistency.sh`, `scripts/install-hub.sh`,
+  `scripts/update-installed-hub.sh`,
   `scripts/read-compact-project-index.sh` (new), `docs/file-roles.md`.
 
-## Task 0 — obtain the one scope extension
+## Task 1 — define the canonical hub work-model files and rules
 
-`scripts/update-installed-hub.sh` also copies hub-owned memory. It must preserve
-an existing `ai/archiprojects.md`; otherwise a future hub update can overwrite
-the registry. This file was absent from the approved exact scope.
-
-Before editing it, ask for a separate scope extension naming exactly
-`scripts/update-installed-hub.sh`. Do not edit the file if it is not approved.
-The remainder may be implemented and tested without it; mark hub-updater
-preservation deferred in that case.
-
-## Task 1 — define the canonical work-model files and rules
-
-1. Add `ai/archiprojects.md` and its template with a short schema: `id`, `name`,
+1. Add `hub-template/ai/archiprojects.md` with a short schema: `id`, `name`,
    `status`, `target`, `unit`, `due`. A concrete entry has one fenced YAML block
    under a human heading. `due` is `YYYY-MM-DD` or `none`.
-2. Update current/future task templates so task fields are `id`, `title`, `due`,
-   `subtasks`; `owner` is not a task field. Waiting is task/subtask-only and
-   requires `waiting_for`, `waiting_since`, `follow_up`, `next_after_response`.
-3. Amend project card guidance with optional all-or-nothing fields:
+2. Add the hub routing contract: project/task files remain canonical, project
+   cards are metadata only, and a link never grants a project read. Waiting is
+   task/subtask-only and does not place a project in Waiting when other work is
+   actionable.
+3. Amend hub project-card guidance with optional all-or-nothing fields:
    `Primary archiproject`, `Archiproject contribution`, `Related archiprojects`.
    Use `none` where absent. Related links never add contribution.
-4. Make the same rule meaning available in root and template entry documents,
-   `ai/architecture.md`, `docs/file-roles.md`, architecture-update and
-   release-check skills. Mark Calendar as researched only, not installed.
+4. Make the same rule meaning available in hub entry documents,
+   `hub-template/ai/architecture.md`, hub router/registry skills and
+   `docs/file-roles.md`. The ordinary project template stays unchanged.
 
 Tests first:
 
@@ -126,16 +111,12 @@ Expected result: routing stays fast and flexible without weakening the boundary.
 
 ## Task 4 — preserve the registry in installers and updaters
 
-1. Add tests that a fresh install creates the template `ai/archiprojects.md`.
-2. Add tests that `update-installed-architecture.sh` preserves an existing file
+1. Add tests that a fresh hub installation creates `ai/archiprojects.md`.
+2. Add tests that `update-installed-hub.sh` preserves an existing file
    containing `USER_ARCHIPROJECT_MUST_SURVIVE` byte-for-byte.
 3. Modify only missing-file copy logic so the file is copied when absent and
    never overwritten when present.
-4. If Task 0 was approved, repeat the same test and change for
-   `update-installed-hub.sh`. If not approved, leave it unchanged, record the
-   risk in `ai/future-tasks.md` only after confirmation, and do not claim hub
-   updater support.
-5. Run install/updater tests in disposable temporary fixtures; never run an
+4. Run install/updater tests in disposable temporary fixtures; never run an
    updater against the user's active hub as a test.
 
 Expected result: installations receive the registry and updates cannot destroy
