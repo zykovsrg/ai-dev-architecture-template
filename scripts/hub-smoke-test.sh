@@ -113,25 +113,23 @@ router_read_boundary_valid() {
   local section
   section="$(section_text "$1" '## Read allowlist and phases' '## Required response shape' | tr '\n' ' ' | tr -s ' ')"
 
-  [[ "$section" == *'ai/cross-project-signals.md'* ]] &&
-    [[ "$section" == *'name one of the candidates'* ]] &&
-    [[ "$section" == *'active/relevant'* ]] &&
-    [[ "$section" == *'Do not read project memory, source code'* ]] &&
-    [[ "$section" != *'Do not read cross-project signals'* ]]
+  [[ "$section" == *'scripts/read-compact-project-index.sh'* ]] &&
+    [[ "$section" == *'project_id'*'name'*'tags'*'status'*'purpose_brief'* ]] &&
+    [[ "$section" == *'Do not read candidate cards, signals, project memory, knowledge, source code'* ]] &&
+    [[ "$section" == *'exact registered path only'* ]]
 }
-router_staged_signal_reads_valid() {
+router_compact_index_reads_valid() {
   local section step_one step_two step_four
   section="$(section_text "$1" '## Read allowlist and phases' '## Required response shape')"
-  step_one="$(printf '%s\n' "$section" | awk '/^1\. /{in_step=1} in_step && /^2\. /{exit} in_step{print}')"
-  step_two="$(printf '%s\n' "$section" | awk '/^2\. /{in_step=1} in_step && /^3\. /{exit} in_step{print}')"
-  step_four="$(printf '%s\n' "$section" | awk '/^4\. /{in_step=1} in_step && /^5\. /{exit} in_step{print}')"
+  step_one="$(printf '%s\n' "$section" | awk '/^1\. /{in_step=1} in_step && /^2\. /{exit} in_step{print}' | tr '\n' ' ' | tr -s ' ')"
+  step_two="$(printf '%s\n' "$section" | awk '/^2\. /{in_step=1} in_step && /^3\. /{exit} in_step{print}' | tr '\n' ' ' | tr -s ' ')"
+  step_four="$(printf '%s\n' "$section" | awk '/^4\. /{in_step=1} in_step && /^5\. /{exit} in_step{print}' | tr '\n' ' ' | tr -s ' ')"
 
-  [[ "$step_one" == *'compact hub index only'* ]] &&
-    [[ "$step_one" == *'active-project.md'* ]] &&
-    [[ "$step_one" != *'cross-project-signals.md'* ]] &&
+  [[ "$step_one" == *'read-compact-project-index.sh'* ]] &&
+    [[ "$step_one" == *'project_id'*'name'*'tags'*'status'*'purpose_brief'* ]] &&
     [[ "$step_two" == *'maximum of three candidates'* ]] &&
-    [[ "$step_four" == *'only related active signals'* ]] &&
-    [[ "$step_four" == *'name one of the candidates'* ]]
+    [[ "$step_four" == *'exact registered path only'* ]] &&
+    [[ "$step_four" == *'explicit confirmation'* ]]
 }
 router_multiple_candidates_template_valid() {
   local section
@@ -145,7 +143,7 @@ hub_entry_staged_allowlist_valid() {
   local section
   section="$(section_text "$1" '## Project Routing' '## Work Header And Procedures' | tr '\n' ' ' | tr -s ' ')"
 
-  [[ "$section" == *'ai/allowed-roots.md'*'ai/project-registry.md'*'ai/active-project.md'*'up to three candidate cards'*'related active signals'* ]]
+  [[ "$section" == *'scripts/read-compact-project-index.sh'*'project_id'*'name'*'tags'*'status'*'purpose_brief'*'exact registered path'*'Do not read candidate cards, signals'* ]]
 }
 hub_architecture_security_precedence_valid() {
   local section
@@ -519,7 +517,7 @@ grep -Fq 'sole allowed root' "$HUB_AGENTS" || fail 'missing allowed-root gate'
 grep -Fq 'explicit confirmation' "$HUB_CLAUDE" || fail 'missing confirmation gate'
 grep -Fq 'sole allowed root' "$HUB_CLAUDE" || fail 'missing allowed-root gate'
 hub_entry_staged_allowlist_valid "$HUB_AGENTS" \
-  || fail 'hub entry must match staged router reads: index, up to three cards, then related active signals'
+  || fail 'hub entry must allow only compact-index routing before confirmation'
 assert_contains "$HUB_AGENTS" 'ai/architecture.md'
 assert_not_contains "$HUB_AGENTS" 'hub-template/ai/architecture.md'
 
@@ -955,20 +953,20 @@ grep -Fq 'Hypotheses (optional)' "$SIGNALS" \
   || fail 'hypothesis separation missing'
 
 ROUTER_SKILL="$ROOT/hub-template/ai/skills/hub-project-router/SKILL.md"
-assert_contains "$ROUTER_SKILL" 'maximum of three candidates'
+assert_contains "$ROUTER_SKILL" 'maximum of three'
 assert_contains "$ROUTER_SKILL" 'high, medium, or low'
-assert_contains "$ROUTER_SKILL" 'read only candidate cards'
+assert_contains "$ROUTER_SKILL" 'read-compact-project-index.sh'
 assert_contains "$ROUTER_SKILL" 'wait for explicit confirmation'
 router_read_boundary_valid "$ROUTER_SKILL" \
-  || fail 'router must allow only relevant hub cross-project signals and forbid project memory/code before confirmation'
-router_staged_signal_reads_valid "$ROUTER_SKILL" \
-  || fail 'router must stage cross-project signal reads after candidate selection'
+  || fail 'router must allow only the compact index and forbid broader reads before confirmation'
+router_compact_index_reads_valid "$ROUTER_SKILL" \
+  || fail 'router must use compact index fields before confirmation'
 router_multiple_candidates_template_valid "$ROUTER_SKILL" \
   || fail 'router multi-candidate template must include confidence for all three candidate slots'
 
-ROUTER_WITHOUT_SIGNALS="$TMP_DIR/router-without-signals.md"
-sed '/ai\/cross-project-signals\.md/d' "$ROUTER_SKILL" > "$ROUTER_WITHOUT_SIGNALS"
-assert_rejected router_read_boundary_valid "$ROUTER_WITHOUT_SIGNALS"
+ROUTER_WITHOUT_INDEX="$TMP_DIR/router-without-index.md"
+sed '/read-compact-project-index\.sh/d' "$ROUTER_SKILL" > "$ROUTER_WITHOUT_INDEX"
+assert_rejected router_read_boundary_valid "$ROUTER_WITHOUT_INDEX"
 
 ROUTER_WITHOUT_THIRD_SLOT="$TMP_DIR/router-without-third-slot.md"
 sed '/3\. <project-id-3>/d' "$ROUTER_SKILL" > "$ROUTER_WITHOUT_THIRD_SLOT"
