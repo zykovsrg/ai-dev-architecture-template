@@ -765,6 +765,18 @@ for malformed_archiproject in \
   assert_contains "$TMP_DIR/malformed-archiproject-value.out" 'invalid archiproject'
 done
 
+reset_work_model_hub "$TASK2_ARCHIPROJECT"
+awk '
+  /^due: / { print; print "unexpected: must-fail"; next }
+  { print }
+' "$TASK2_ARCHIPROJECT/ai/archiprojects.md" \
+  > "$TASK2_ARCHIPROJECT/ai/archiprojects.md.tmp"
+mv "$TASK2_ARCHIPROJECT/ai/archiprojects.md.tmp" "$TASK2_ARCHIPROJECT/ai/archiprojects.md"
+if bash "$ROOT/scripts/check-hub-registry.sh" "$TASK2_ARCHIPROJECT" > "$TMP_DIR/unknown-archiproject-key.out" 2>&1; then
+  fail 'validator accepted an unknown YAML key in archiproject registry'
+fi
+assert_contains "$TMP_DIR/unknown-archiproject-key.out" 'unrecognized YAML line'
+
 bash "$ROOT/scripts/check-consistency.sh" > "$TMP_DIR/work-model-consistency.out"
 assert_contains "$TMP_DIR/work-model-consistency.out" 'All canonical lists are consistent.'
 
@@ -1139,6 +1151,39 @@ assert_not_contains "$TMP_DIR/compact-index.out" 'MUST_NOT_BE_READ'
 assert_not_contains "$TMP_DIR/compact-index.out" 'Memory entry point'
 assert_not_contains "$TMP_DIR/compact-index.out" 'ai/current-task.md'
 assert_not_contains "$TMP_DIR/compact-index.err" 'MUST_NOT_BE_READ'
+
+for symlink_case in ai registry project-cards card; do
+  SYMLINK_COMPACT="$TMP_DIR/compact-index-symlink-$symlink_case"
+  SYMLINK_OUTSIDE="$TMP_DIR/compact-index-outside-$symlink_case"
+  cp -R "$COMPACT" "$SYMLINK_COMPACT"
+  mkdir -p "$SYMLINK_OUTSIDE"
+  printf '%s\n' 'COMPACT_INDEX_SYMLINK_SENTINEL' > "$SYMLINK_OUTSIDE/private.txt"
+  case "$symlink_case" in
+    ai)
+      rm -rf "$SYMLINK_COMPACT/ai"
+      ln -s "$SYMLINK_OUTSIDE" "$SYMLINK_COMPACT/ai"
+      ;;
+    registry)
+      rm "$SYMLINK_COMPACT/ai/project-registry.md"
+      ln -s "$SYMLINK_OUTSIDE/private.txt" "$SYMLINK_COMPACT/ai/project-registry.md"
+      ;;
+    project-cards)
+      rm -rf "$SYMLINK_COMPACT/ai/project-cards"
+      ln -s "$SYMLINK_OUTSIDE" "$SYMLINK_COMPACT/ai/project-cards"
+      ;;
+    card)
+      rm "$SYMLINK_COMPACT/ai/project-cards/alpha-project.md"
+      ln -s "$SYMLINK_OUTSIDE/private.txt" "$SYMLINK_COMPACT/ai/project-cards/alpha-project.md"
+      ;;
+  esac
+  if bash "$ROOT/scripts/read-compact-project-index.sh" "$SYMLINK_COMPACT" \
+    > "$TMP_DIR/compact-index-symlink-$symlink_case.out" \
+    2> "$TMP_DIR/compact-index-symlink-$symlink_case.err"; then
+    fail "compact project index accepted a $symlink_case symlink"
+  fi
+  assert_not_contains "$TMP_DIR/compact-index-symlink-$symlink_case.out" 'COMPACT_INDEX_SYMLINK_SENTINEL'
+  assert_not_contains "$TMP_DIR/compact-index-symlink-$symlink_case.err" 'COMPACT_INDEX_SYMLINK_SENTINEL'
+done
 
 # Metadata search must not traverse into project directories or require full
 # project cards. It reads only index fields and each card's Purpose line.
@@ -1616,6 +1661,14 @@ if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$
   fail 'hub updater accepted the standalone template as a hub source'
 fi
 assert_contains "$TMP_DIR/standalone-source.out" 'Source template is not a personal AI hub'
+
+MISSING_COMPACT_SOURCE="$TMP_DIR/missing-compact-source"
+mkdir -p "$MISSING_COMPACT_SOURCE"
+cp -R "$ROOT/hub-template" "$MISSING_COMPACT_SOURCE/hub-template"
+if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$MISSING_COMPACT_SOURCE" --dry-run > "$TMP_DIR/missing-compact-source.out" 2>&1; then
+  fail 'hub updater accepted a source without the mandatory compact reader'
+fi
+assert_contains "$TMP_DIR/missing-compact-source.out" 'missing mandatory script: scripts/read-compact-project-index.sh'
 
 INCOMPLETE_HUB_SOURCE="$TMP_DIR/incomplete-hub-source"
 mkdir -p "$INCOMPLETE_HUB_SOURCE"
