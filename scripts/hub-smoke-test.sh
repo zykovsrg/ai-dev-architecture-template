@@ -1494,10 +1494,13 @@ echo 'Sentinel evidence: installer output and xtrace contain neither the marker 
 assert_file "$HUB_INSTALL/AGENTS.md"
 assert_file "$HUB_INSTALL/CLAUDE.md"
 assert_file "$HUB_INSTALL/ai/project-registry.md"
+assert_file "$HUB_INSTALL/ai/archiprojects.md"
 assert_file "$HUB_INSTALL/scripts/check-hub-registry.sh"
 assert_file "$HUB_INSTALL/projects/.gitkeep"
 assert_file "$HUB_INSTALL/ai/skills/hub-knowledge-capture/SKILL.md"
 assert_file "$HUB_INSTALL/ai/skills/hub-knowledge-review/SKILL.md"
+ARCHIPROJECTS_BASE="$TMP_DIR/archiprojects-base"
+cp -R "$HUB_INSTALL" "$ARCHIPROJECTS_BASE"
 PROJECT_ROOT="$HUB_INSTALL/projects"
 mkdir -p "$PROJECT_ROOT/example-project" "$PROJECT_ROOT/example-backup"
 printf '%s\n' "$SENTINEL" > "$PROJECT_ROOT/example-project/.env"
@@ -1513,6 +1516,22 @@ bash "$ROOT/scripts/check-hub-registry.sh" "$HUB_INSTALL" > "$TMP_DIR/installed-
 assert_contains "$TMP_DIR/installed-hub-registry.out" 'Registry check passed'
 bash "$HUB_INSTALL/scripts/check-hub-registry.sh" "$HUB_INSTALL" > "$TMP_DIR/installed-hub-local-registry.out"
 assert_contains "$TMP_DIR/installed-hub-local-registry.out" 'Registry check passed'
+
+ARCHIPROJECTS_SURVIVE="$TMP_DIR/archiprojects-survive-hub"
+cp -R "$ARCHIPROJECTS_BASE" "$ARCHIPROJECTS_SURVIVE"
+printf '%s\n' '# Archiprojects' '' 'USER_ARCHIPROJECT_MUST_SURVIVE' > "$ARCHIPROJECTS_SURVIVE/ai/archiprojects.md"
+cp "$ARCHIPROJECTS_SURVIVE/ai/archiprojects.md" "$TMP_DIR/archiprojects.before"
+bash "$ROOT/scripts/update-installed-hub.sh" --hub "$ARCHIPROJECTS_SURVIVE" --source "$ROOT" --apply --allow-dirty > "$TMP_DIR/archiprojects-survive.out"
+cmp -s "$TMP_DIR/archiprojects.before" "$ARCHIPROJECTS_SURVIVE/ai/archiprojects.md" || fail 'hub updater overwrote existing archiprojects.md'
+
+ARCHIPROJECTS_MISSING="$TMP_DIR/archiprojects-missing-hub"
+cp -R "$ARCHIPROJECTS_BASE" "$ARCHIPROJECTS_MISSING"
+rm "$ARCHIPROJECTS_MISSING/ai/archiprojects.md"
+bash "$ROOT/scripts/update-installed-hub.sh" --hub "$ARCHIPROJECTS_MISSING" --source "$ROOT" --apply --allow-dirty > "$TMP_DIR/archiprojects-missing.out"
+assert_file "$ARCHIPROJECTS_MISSING/ai/archiprojects.md"
+cmp -s "$ROOT/hub-template/ai/archiprojects.md" "$ARCHIPROJECTS_MISSING/ai/archiprojects.md" \
+  || fail 'hub updater did not restore missing archiprojects.md from the template'
+
 cp "$HUB_INSTALL/ai/project-registry.md" "$TMP_DIR/install-registry.before"
 cp "$HUB_INSTALL/ai/allowed-roots.md" "$TMP_DIR/install-roots.before"
 bash "$ROOT/scripts/install.sh" --mode hub "$HUB_INSTALL" > "$TMP_DIR/install-update.out"

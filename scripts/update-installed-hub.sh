@@ -199,6 +199,7 @@ PROTECTED_FILES=(
 MEMORY_FILES=(
   "ai/allowed-roots.md"
   "ai/active-project.md"
+  "ai/archiprojects.md"
   "ai/project-registry.md"
   "ai/cross-project-signals.md"
 )
