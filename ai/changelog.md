@@ -14,6 +14,12 @@
 
 ## Текущий changelog
 
+### 2026-08-24 — Unified assistant foundation
+
+- Change: Завершены каноническая модель задач и архипроектов, безопасный компактный индекс, валидаторы и сохранение этих файлов при обновлении.
+- Impact: Архитектура стала готовой основой для будущей Obsidian-проекции без второй базы задач и без доступа к live vault или Calendar.
+- Manual checks: `bash scripts/check-consistency.sh` и `bash scripts/hub-smoke-test.sh` прошли после финальной проверки.
+
 ### 2026-08-20 — Короткие ответы простыми словами
 
 - Change: Стиль общения усилен и закреплён. В `ai/architecture.md` (раздел «Talking to the user») добавлены правила: очень простые слова, по умолчанию короткий ответ, длинные разборы — только по запросу; отдельно указано, что правило действует и для работы под внешними методологиями (Superpowers, `code-review-graph`, плагинные скиллы). В список «Superpowers must not override» добавлен пункт `user communication style`. Строка Core Principles обновлена в `AGENTS.md` и `CLAUDE.md`. Те же правки продублированы в `template/` и в `hub-template/`, чтобы новые проекты и новый хаб получали правило сразу.

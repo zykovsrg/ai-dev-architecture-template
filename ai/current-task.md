@@ -1,6 +1,6 @@
 # Current Task
 
-Status: active
+Status: done
 
 Allowed statuses: empty / active / review / blocked / done / paused
 
@@ -8,7 +8,7 @@ Note: `paused` is a transient status used only while `task-switch` is moving thi
 task into `ai/paused-tasks.md`. After the switch this file holds the new task and
 the paused one lives in `ai/paused-tasks.md`.
 
-Stage: review
+Stage: task-finish
 
 Allowed stages: intake / spec / planning / implementation / review / task-finish
 
@@ -45,18 +45,16 @@ yes — brainstorming, writing-plans, subagent-driven-development
 
 Last agent: Codex
 
-What changed: Foundation merged into local `main` at `6f8c622`. Fresh
-`scripts/check-consistency.sh`, full `scripts/hub-smoke-test.sh`, and an
-independent final security review passed. The worktree and feature branch were
-removed. No live hub, Obsidian vault, Apple Calendar, MCP, or external system
-was changed.
+What changed: Foundation merged into local `main` at `6f8c622` and was closed
+through `hub-task-finish`. Fresh `scripts/check-consistency.sh` and full
+`scripts/hub-smoke-test.sh` passed. No live hub, Obsidian vault, Apple
+Calendar, MCP, or external system was changed.
 
 Open risks: EventKit full access шире allowlist MCP; будущая интеграция Calendar
 нуждается в test calendar. Существующий vault не мигрируется до отдельного
 content-aware review и подтверждения.
 
-Next agent should check: Foundation is ready for `task-finish`, but do not
-close it until the user confirms. After that, promote the confirmed Obsidian
+Next agent should check: After a separate confirmation, promote the Obsidian
 phase from `ai/future-tasks.md` through task-intake/task-switch. Start with
 the copied vault's read-only inventory and an approved implementation plan;
 do not migrate notes, write task data, or enable Apple Calendar without a new
