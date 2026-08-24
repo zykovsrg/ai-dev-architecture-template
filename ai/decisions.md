@@ -18,6 +18,40 @@ Impact:
 
 ## Текущие решения
 
+### 2026-08-24 — Unified assistant: canonical data and safe human control
+
+Status: active
+
+Decision: The hub and each project's `ai/` records remain the canonical
+source for archiprojects, projects, tasks, subtasks, deadlines, and waiting.
+Obsidian is a generated local human-facing projection, not a second task
+database. One project has at most one `primary_archiproject`; only
+`archiproject_contribution` affects its progress, while
+`related_archiprojects` never double-count. A zero contribution is valid.
+Waiting belongs to a task or subtask; a project is shown as Waiting only when
+it has no other actionable work.
+
+The first Obsidian surface is one generated Kanban board with one card per
+project and embedded next actions. Its columns are Incoming, Planned, Active,
+Waiting, Paused, and Completed. Knowledge uses a mixed PARA-style structure:
+project knowledge stays with its project; shared knowledge stays once in the
+common base, including shared meetings. Inbox is a fallback for ambiguous
+captures, not a mandatory stop.
+
+Agents may analyse and propose. Every write of a task, deadline, note,
+Obsidian file, Calendar event, or migration requires a fresh explicit user
+confirmation. Calendar integration is deferred: use a selected test calendar,
+preview first, separate write confirmation, and no deletion. Session audits
+are proposals only and should be offered only when they find a material issue.
+
+Why: The user needs fast retrieval and planning across many projects without
+losing manual control, data ownership, or the hub's narrow routing boundary.
+
+Impact: Continue in ordered phases: read-only vault inventory and Obsidian
+projection design; confirmed projection implementation; workflow commands and
+reviews; then a separately confirmed Apple Calendar MCP pilot. Never treat old
+checkboxes or Kanban cards as canonical tasks without classification.
+
 ### 2026-08-15 — Hub skills must be named in the rules, and checks must be seen failing
 
 Каждая папка `hub-template/ai/skills/*` обязана быть названа в
