@@ -10,16 +10,22 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 assert_file() { [ -f "$1" ] || fail "missing file: $1"; }
 assert_not_exists() { [ ! -e "$1" ] || fail "unexpected preview output: $1"; }
 assert_contains() { grep -Fq -- "$2" "$1" || fail "expected '$2' in $1"; }
+assert_not_contains() { ! grep -Fq -- "$2" "$1" || fail "unexpected '$2' in $1"; }
 assert_count() {
   local expected="$1" needle="$2" file="$3" actual
   actual="$(grep -F -- "$needle" "$file" | wc -l | tr -d ' ')"
   [ "$actual" -eq "$expected" ] || fail "expected $expected occurrences of '$needle' in $file, got $actual"
 }
+assert_column() {
+  local id="$1" expected="$2" actual
+  actual="$(awk -v wanted="$id" '/^## / {column=substr($0, 4)} $0 == "- id: " wanted {print column; exit}' "$TMP_DIR/preview.txt")"
+  [ "$actual" = "$expected" ] || fail "expected $id in $expected, got ${actual:-none}"
+}
 
 HUB="$TMP_DIR/hub"
 PROJECTS="$HUB/projects"
 VAULT="$HUB/tmp/obsidian-vault-copy"
-SCOPE="$TMP_DIR/scope.txt"
+SCOPE="$HUB/scope.txt"
 mkdir -p "$HUB/ai/project-cards" "$PROJECTS" \
   "$VAULT/Obsidian/AI-архитектура/Projects/_views"
 
@@ -65,7 +71,7 @@ add_fixture "completed-project" "Completed project" "completed" \
 add_fixture "archived-project" "Archived project" "archived" \
   $'Status: none' $'Status: none' $'Status: none'
 add_fixture "legacy-complete-project" "Legacy complete project" "active" \
-  $'Status: complete\n- [x] Legacy task must be reviewed' $'Status: none' $'Status: none'
+  $'Status: complete\n- [x] Legacy task must be reviewed\nTASK-BODY-SENTINEL' $'Status: none' $'Status: none'
 
 BOARD="$VAULT/Obsidian/AI-архитектура/Projects/_views/Projects-Kanban.md"
 MANIFEST="$VAULT/Obsidian/AI-архитектура/Projects/_views/Projects-Kanban.manifest.json"
@@ -77,7 +83,9 @@ if [ ! -x "$GENERATOR" ]; then
 fi
 
 before_files="$(find "$VAULT" -type f -print | sort)"
-"$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/preview.txt"
+SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/preview.txt"
+SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/preview-repeat.txt"
+cmp -s "$TMP_DIR/preview.txt" "$TMP_DIR/preview-repeat.txt" || fail 'fixed-time preview is not deterministic'
 assert_count 1 'id: active-project' "$TMP_DIR/preview.txt"
 assert_count 1 'id: ready-future-project' "$TMP_DIR/preview.txt"
 assert_count 1 'id: waiting-project' "$TMP_DIR/preview.txt"
@@ -88,6 +96,21 @@ assert_count 1 'id: legacy-complete-project' "$TMP_DIR/preview.txt"
 assert_contains "$TMP_DIR/preview.txt" 'legacy-complete-project'
 assert_contains "$TMP_DIR/preview.txt" 'Incoming'
 assert_contains "$TMP_DIR/preview.txt" 'нужно проверить'
+assert_column active-project Active
+assert_column ready-future-project Planned
+assert_column waiting-project Waiting
+assert_column paused-project Paused
+assert_column completed-project Completed
+assert_column archived-project Archived
+assert_column legacy-complete-project Incoming
+assert_contains "$TMP_DIR/preview.txt" '## Incoming'
+assert_contains "$TMP_DIR/preview.txt" '## Planned'
+assert_contains "$TMP_DIR/preview.txt" '## Active'
+assert_contains "$TMP_DIR/preview.txt" '## Waiting'
+assert_contains "$TMP_DIR/preview.txt" '## Paused'
+assert_contains "$TMP_DIR/preview.txt" '## Completed'
+assert_contains "$TMP_DIR/preview.txt" '## Archived'
+[ "$(grep -n '^## ' "$TMP_DIR/preview.txt" | cut -d: -f2 | sed 's/^## //' | tr '\n' '|')" = 'Incoming|Planned|Active|Waiting|Paused|Completed|Archived|' ] || fail 'column order is not deterministic'
 [ "$before_files" = "$(find "$VAULT" -type f -print | sort)" ] || fail 'preview created files'
 assert_not_exists "$BOARD"
 assert_not_exists "$MANIFEST"
@@ -102,5 +125,35 @@ expect_scope_failure() {
 printf '%s\n' 'active-project' > "$TMP_DIR/outside-scope.txt"
 expect_scope_failure "$TMP_DIR/outside-scope.txt"
 expect_scope_failure "relative-scope.txt"
+
+expect_write_failure() {
+  if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write "$@" >"$TMP_DIR/write-error.txt" 2>&1; then
+    fail "expected unsafe write to fail"
+  fi
+}
+
+expect_write_failure
+"$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write > "$TMP_DIR/write.txt"
+assert_file "$BOARD"
+assert_file "$MANIFEST"
+[ "$(find "$VAULT" -type f | wc -l | tr -d ' ')" -eq 2 ] || fail 'write created files other than board and manifest'
+assert_not_contains "$MANIFEST" 'TASK-BODY-SENTINEL'
+assert_contains "$MANIFEST" '"format_version"'
+assert_contains "$MANIFEST" '"sources"'
+
+printf '\nmanual edit\n' >> "$BOARD"
+board_before="$(shasum -a 256 "$BOARD" | awk '{print $1}')"
+if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write >"$TMP_DIR/manual-edit.txt" 2>&1; then
+  fail 'manual board edit must block replacement'
+fi
+assert_contains "$TMP_DIR/manual-edit.txt" 'proposal pending'
+[ "$board_before" = "$(shasum -a 256 "$BOARD" | awk '{print $1}')" ] || fail 'manual board edit was replaced'
+
+rm -f "$BOARD" "$MANIFEST"
+rmdir "$VAULT/Obsidian/AI-архитектура/Projects/_views"
+ln -s "$TMP_DIR" "$VAULT/Obsidian/AI-архитектура/Projects/_views"
+if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write >"$TMP_DIR/symlink-write.txt" 2>&1; then
+  fail 'symlinked target directory must block write'
+fi
 
 echo "PASS: Obsidian project board contract"
