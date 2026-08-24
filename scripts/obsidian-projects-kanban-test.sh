@@ -24,12 +24,23 @@ assert_column() {
 
 HUB="$TMP_DIR/hub"
 PROJECTS="$HUB/projects"
-VAULT="$HUB/tmp/obsidian-vault-copy"
+ARCHITECTURE_PROJECT="$PROJECTS/ai-dev-architecture"
+VAULT="$ARCHITECTURE_PROJECT/tmp/obsidian-vault-copy"
 SCOPE="$HUB/scope.txt"
 mkdir -p "$HUB/ai/project-cards" "$PROJECTS" \
   "$VAULT/Obsidian/AI-архитектура/Projects/_views"
 
 printf '%s\n' '# Project Registry' > "$HUB/ai/project-registry.md"
+
+mkdir -p "$ARCHITECTURE_PROJECT"
+cat >> "$HUB/ai/project-registry.md" <<EOF
+
+## ai-dev-architecture
+Name: AI Development Architecture
+Status: active
+Path: $ARCHITECTURE_PROJECT
+Card: $HUB/ai/project-cards/ai-dev-architecture.md
+EOF
 
 add_fixture() {
   local id="$1" name="$2" registry_status="$3" current="$4" future="$5" paused="$6"
@@ -128,6 +139,19 @@ assert_contains "$TMP_DIR/preview.txt" '## Archived'
 [ "$before_preview_tmp" = "$(find "$PREVIEW_TMP" -print | sort)" ] || fail 'preview created temp files'
 assert_not_exists "$BOARD"
 assert_not_exists "$MANIFEST"
+
+expect_vault_failure() {
+  local vault_path="$1"
+  if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$vault_path" --preview >"$TMP_DIR/vault-error.txt" 2>&1; then
+    fail "expected invalid vault to fail: $vault_path"
+  fi
+}
+
+ORIGINAL_VAULT="$TMP_DIR/original-obsidian-vault"
+mkdir -p "$HUB/tmp/obsidian-vault-copy" "$PROJECTS/other-project/tmp/obsidian-vault-copy" "$ORIGINAL_VAULT"
+expect_vault_failure "$HUB/tmp/obsidian-vault-copy"
+expect_vault_failure "$PROJECTS/other-project/tmp/obsidian-vault-copy"
+expect_vault_failure "$ORIGINAL_VAULT"
 
 expect_scope_failure() {
   local scope_path="$1"

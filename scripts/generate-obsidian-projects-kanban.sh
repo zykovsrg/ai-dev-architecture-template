@@ -53,12 +53,24 @@ HUB="$(cd "$HUB" && pwd -P)"
 [ -f "$SCOPE" ] && [ ! -L "$SCOPE" ] || die 'scope must be a regular non-symlink file'
 SCOPE="$(cd "$(dirname "$SCOPE")" && pwd -P)/$(basename "$SCOPE")"
 inside "$SCOPE" "$HUB" || die 'scope must be inside hub'
-[ -d "$VAULT" ] && [ ! -L "$VAULT" ] || die 'vault must be a non-symlink directory'
-VAULT="$(cd "$VAULT" && pwd -P)"
-[ "$VAULT" = "$HUB/tmp/obsidian-vault-copy" ] || die 'vault must be the copied vault under hub/tmp/obsidian-vault-copy'
 
 REGISTRY="$HUB/ai/project-registry.md"
 [ -f "$REGISTRY" ] && [ ! -L "$REGISTRY" ] || die 'missing or unsafe project registry'
+ARCHITECTURE_ID='ai-dev-architecture'
+architecture_count="$(grep -Ec "^## ${ARCHITECTURE_ID}$" "$REGISTRY" || true)"
+[ "$architecture_count" -eq 1 ] || die 'missing or duplicate registered architecture project'
+architecture_block="$(awk -v heading="## $ARCHITECTURE_ID" '$0 == heading {found=1; next} found && /^## / {exit} found {print}' "$REGISTRY")"
+architecture_path="$(printf '%s\n' "$architecture_block" | sed -n 's/^Path: //p' | head -n 1)"
+[ -n "$architecture_path" ] && is_absolute "$architecture_path" || die 'architecture project path must be absolute'
+inside "$architecture_path" "$HUB/projects" || die 'architecture project path outside allowed root'
+[ -d "$architecture_path" ] && [ ! -L "$architecture_path" ] || die 'missing or symlinked architecture project'
+architecture_real="$(physical_dir "$architecture_path")"
+inside "$architecture_real" "$HUB/projects" || die 'architecture project path escapes allowed root'
+[ -d "$VAULT" ] && [ ! -L "$VAULT" ] || die 'vault must be a non-symlink directory'
+VAULT="$(physical_dir "$VAULT")"
+EXPECTED_VAULT="$architecture_real/tmp/obsidian-vault-copy"
+inside "$VAULT" "$architecture_real" || die 'vault must be inside the architecture project'
+[ "$VAULT" = "$EXPECTED_VAULT" ] || die 'vault must be the copied vault under ai-dev-architecture/tmp/obsidian-vault-copy'
 IDS=()
 while IFS= read -r id; do
   IDS+=("$id")
