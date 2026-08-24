@@ -178,7 +178,6 @@ resolve_source_template() {
   [ -f "$SOURCE_TEMPLATE/AGENTS.md" ] || die "Source hub template is missing AGENTS.md"
   [ -f "$SOURCE_TEMPLATE/CLAUDE.md" ] || die "Source hub template is missing CLAUDE.md"
   [ -f "$SOURCE_TEMPLATE/ai/architecture.md" ] || die "Source hub template is missing ai/architecture.md"
-  [ -f "$SOURCE_COMPACT_INDEX" ] || die "Source template is missing mandatory script: scripts/read-compact-project-index.sh"
   grep -Fqx '# Personal AI Hub — Codex' "$SOURCE_TEMPLATE/AGENTS.md" \
     || die "Source template is not a personal AI hub"
   grep -Fqx '# Personal AI Hub Architecture' "$SOURCE_TEMPLATE/ai/architecture.md" \
@@ -189,6 +188,7 @@ resolve_source_template() {
   if [ "$(cd "$SOURCE_TEMPLATE" && pwd -P)" = "$(cd "$HUB_DIR" && pwd -P)" ]; then
     die "--source resolves to the hub itself; pass the template repository path"
   fi
+  [ -f "$SOURCE_COMPACT_INDEX" ] || die "Source template is missing mandatory script: scripts/read-compact-project-index.sh"
   for mandatory_skill in hub-project-router hub-project-switch hub-project-register hub-registry-check hub-knowledge-capture hub-knowledge-review; do
     [ -f "$SOURCE_TEMPLATE/ai/skills/$mandatory_skill/SKILL.md" ] \
       || die "Source template missing mandatory hub skill: $mandatory_skill"

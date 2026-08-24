@@ -24,15 +24,15 @@ current chat. Keep `Mode: routing` until the user gives explicit confirmation.
    reason, registered project ID, exact path, and confidence; then ask for and
    wait for explicit confirmation. Do not enter, read, or change a project first.
 
-The registry is authoritative for the ID and path. If a candidate is missing,
-invalid, outside allowed roots, or has an unusable card, reject it safely and
-ask for a registered alternative. A remembered active project is not a
-confirmation in a new chat.
+The registry is authoritative for the ID and path. If a candidate is missing
+from the compact index, has invalid compact metadata, or is outside allowed
+roots, reject it safely and ask for a registered alternative. A remembered
+active project is not a confirmation in a new chat.
 
-Project/task files remain canonical; project cards are metadata only and a link
-never grants a project read. Waiting is task/subtask-only: do not place a
-project in Waiting while other work is actionable. Related archiproject links
-never add contribution.
+Project/task files remain canonical; project cards are metadata only and remain
+unavailable before confirmation. Compact-index metadata never grants a project
+read, and a link never grants a project read. Waiting is task/subtask-only: do not place a project in Waiting
+while other work is actionable. Related archiproject links never add contribution.
 
 ## Required response shape
 
@@ -46,7 +46,7 @@ angle-bracket placeholders with registered hub metadata.
 Путь: <registered-path>
 Режим: routing
 Уверенность маршрутизации: высокая|средняя|низкая
-Причина: <краткая причина из реестра и карточки>.
+Причина: <краткая причина из метаданных compact index>.
 
 Подтвердите, что открыть именно этот проект по указанному пути.
 ```
@@ -76,7 +76,7 @@ angle-bracket placeholders with registered hub metadata.
 
 ```text
 Режим: routing
-Не могу выбрать <project-id>: <причина — нет в реестре|путь вне разрешённых корней|некорректная карточка>.
+Не могу выбрать <project-id>: <причина — нет в compact index|путь вне разрешённых корней|некорректные метаданные>.
 
 Назовите другой зарегистрированный проект или подтвердите отдельную регистрацию.
 ```

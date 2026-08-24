@@ -60,6 +60,7 @@ hub_work_model_contract_valid() {
 generate_registry() {
   local hub="$1" root="$2" count="$3" i id
   printf '%s\n' '# Project Registry' > "$hub/ai/project-registry.md"
+  printf '%s\n' '# Archiprojects' > "$hub/ai/archiprojects.md"
   i=1
   while [ "$i" -le "$count" ]; do
     id="fixture-project-$i"
@@ -1029,6 +1030,7 @@ printf '%s\n' '# Project Registry' '' \
   "Path: $VALID/projects/analytics-seo" \
   'Tags: seo, analytics, traffic, leads' \
   'Card: ai/project-cards/analytics-seo.md' > "$VALID/ai/project-registry.md"
+printf '%s\n' '# Archiprojects' > "$VALID/ai/archiprojects.md"
 printf '%s\n' '# Project Card' '' \
   'Project ID: analytics-seo' \
   'Name: SEO Analytics' \
@@ -1068,6 +1070,13 @@ assert_not_contains "$TMP_DIR/valid.trace" "$SENTINEL"
 assert_forbidden_reads_absent "$TMP_DIR/valid.trace" \
   '/.env' '/credentials.txt' '/unregistered-project/private.txt' '/analytics-seo-backup/private.txt'
 echo 'Sentinel evidence: validator output and xtrace contain neither the marker nor the named forbidden file paths.'
+
+MISSING_ARCHIPROJECTS="$TMP_DIR/missing-archiprojects"
+copy_valid_hub "$MISSING_ARCHIPROJECTS"
+rm "$MISSING_ARCHIPROJECTS/ai/archiprojects.md"
+if bash "$ROOT/scripts/check-hub-registry.sh" "$MISSING_ARCHIPROJECTS" > "$TMP_DIR/missing-archiprojects.out" 2>&1; then
+  fail 'registry validator accepted a hub without canonical archiprojects.md'
+fi
 
 # The valid fixture intentionally holds two unregistered directories. They must
 # be reported on stderr without changing the exit code or the stdout summary,
@@ -1609,16 +1618,22 @@ fi
 assert_contains "$TMP_DIR/standalone-source.out" 'Source template is not a personal AI hub'
 
 INCOMPLETE_HUB_SOURCE="$TMP_DIR/incomplete-hub-source"
-cp -R "$ROOT/hub-template" "$INCOMPLETE_HUB_SOURCE"
-rm "$INCOMPLETE_HUB_SOURCE/ai/skills/hub-project-router/SKILL.md"
+mkdir -p "$INCOMPLETE_HUB_SOURCE"
+cp -R "$ROOT/hub-template" "$INCOMPLETE_HUB_SOURCE/hub-template"
+mkdir -p "$INCOMPLETE_HUB_SOURCE/scripts"
+cp "$ROOT/scripts/read-compact-project-index.sh" "$INCOMPLETE_HUB_SOURCE/scripts/read-compact-project-index.sh"
+rm "$INCOMPLETE_HUB_SOURCE/hub-template/ai/skills/hub-project-router/SKILL.md"
 if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$INCOMPLETE_HUB_SOURCE" --dry-run > "$TMP_DIR/incomplete-hub-source.out" 2>&1; then
   fail 'hub updater accepted a source without a mandatory hub skill'
 fi
 assert_contains "$TMP_DIR/incomplete-hub-source.out" 'missing mandatory hub skill: hub-project-router'
 
 INCOMPLETE_KNOWLEDGE_SOURCE="$TMP_DIR/incomplete-knowledge-source"
-cp -R "$ROOT/hub-template" "$INCOMPLETE_KNOWLEDGE_SOURCE"
-rm "$INCOMPLETE_KNOWLEDGE_SOURCE/ai/skills/hub-knowledge-review/SKILL.md"
+mkdir -p "$INCOMPLETE_KNOWLEDGE_SOURCE"
+cp -R "$ROOT/hub-template" "$INCOMPLETE_KNOWLEDGE_SOURCE/hub-template"
+mkdir -p "$INCOMPLETE_KNOWLEDGE_SOURCE/scripts"
+cp "$ROOT/scripts/read-compact-project-index.sh" "$INCOMPLETE_KNOWLEDGE_SOURCE/scripts/read-compact-project-index.sh"
+rm "$INCOMPLETE_KNOWLEDGE_SOURCE/hub-template/ai/skills/hub-knowledge-review/SKILL.md"
 if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$INCOMPLETE_KNOWLEDGE_SOURCE" --dry-run > "$TMP_DIR/incomplete-knowledge-source.out" 2>&1; then
   fail 'hub updater accepted a source without the mandatory knowledge quality cycle'
 fi
@@ -1814,9 +1829,11 @@ git -C "$HUB_COMMIT" commit -m "test: install hub" >/dev/null
 printf '%s\n' '# Project Registry' '' 'commit-safe registry' > "$HUB_COMMIT/ai/project-registry.md"
 cp "$HUB_COMMIT/ai/project-registry.md" "$TMP_DIR/commit-registry.before"
 COMMIT_SOURCE="$TMP_DIR/commit-source"
-cp -R "$ROOT/hub-template" "$COMMIT_SOURCE"
-printf '%s\n' '' '<!-- updater commit fixture -->' >> "$COMMIT_SOURCE/AGENTS.md"
-printf '%s\n' '# New Archive Template' > "$COMMIT_SOURCE/ai/archive/new-template.md"
+mkdir -p "$COMMIT_SOURCE/scripts"
+cp -R "$ROOT/hub-template" "$COMMIT_SOURCE/hub-template"
+cp "$ROOT/scripts/read-compact-project-index.sh" "$COMMIT_SOURCE/scripts/read-compact-project-index.sh"
+printf '%s\n' '' '<!-- updater commit fixture -->' >> "$COMMIT_SOURCE/hub-template/AGENTS.md"
+printf '%s\n' '# New Archive Template' > "$COMMIT_SOURCE/hub-template/ai/archive/new-template.md"
 bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_COMMIT" --source "$COMMIT_SOURCE" --commit --allow-dirty > "$TMP_DIR/hub-commit.out"
 cmp -s "$TMP_DIR/commit-registry.before" "$HUB_COMMIT/ai/project-registry.md" || fail 'hub commit overwrote registry'
 assert_contains <(git -C "$HUB_COMMIT" show --format= --name-only HEAD) 'AGENTS.md'
@@ -1864,10 +1881,12 @@ assert_file "$STALE_CHECK_HUB/ai/skills/task-intake/SKILL.md"
 # Regression: refuse to remove superseded paths when --source points at a
 # template older than the version that introduced removal (Finding 3).
 OLD_SOURCE="$TMP_DIR/old-source-hub"
-cp -R "$ROOT/hub-template" "$OLD_SOURCE"
-perl -0pi -e 's/Version: [0-9]+\.[0-9]+/Version: 1.2/' "$OLD_SOURCE/ai/architecture.md"
-mkdir -p "$OLD_SOURCE/ai/skills/task-intake"
-printf '%s\n' '# Legacy fixture' > "$OLD_SOURCE/ai/skills/task-intake/SKILL.md"
+mkdir -p "$OLD_SOURCE/scripts"
+cp -R "$ROOT/hub-template" "$OLD_SOURCE/hub-template"
+cp "$ROOT/scripts/read-compact-project-index.sh" "$OLD_SOURCE/scripts/read-compact-project-index.sh"
+perl -0pi -e 's/Version: [0-9]+\.[0-9]+/Version: 1.2/' "$OLD_SOURCE/hub-template/ai/architecture.md"
+mkdir -p "$OLD_SOURCE/hub-template/ai/skills/task-intake"
+printf '%s\n' '# Legacy fixture' > "$OLD_SOURCE/hub-template/ai/skills/task-intake/SKILL.md"
 OLD_SOURCE_HUB="$TMP_DIR/old-source-target-hub"
 cp -R "$HUB_INSTALL" "$OLD_SOURCE_HUB"
 mkdir -p "$OLD_SOURCE_HUB/ai/skills/task-intake"
@@ -1887,9 +1906,11 @@ assert_file "$OLD_SOURCE_HUB/ai/skills/hub-project-router/SKILL.md"
 # AGENTS.md/CLAUDE.md/ai/architecture.md and only aborts afterward, leaving
 # the hub partially downgraded.
 GATE_ORDER_SOURCE="$TMP_DIR/gate-order-source"
-cp -R "$ROOT/hub-template" "$GATE_ORDER_SOURCE"
-perl -0pi -e 's/Version: [0-9]+\.[0-9]+/Version: 1.2/' "$GATE_ORDER_SOURCE/ai/architecture.md"
-printf '%s\n' '' '<!-- must never land in the hub: version gate ran too late -->' >> "$GATE_ORDER_SOURCE/AGENTS.md"
+mkdir -p "$GATE_ORDER_SOURCE/scripts"
+cp -R "$ROOT/hub-template" "$GATE_ORDER_SOURCE/hub-template"
+cp "$ROOT/scripts/read-compact-project-index.sh" "$GATE_ORDER_SOURCE/scripts/read-compact-project-index.sh"
+perl -0pi -e 's/Version: [0-9]+\.[0-9]+/Version: 1.2/' "$GATE_ORDER_SOURCE/hub-template/ai/architecture.md"
+printf '%s\n' '' '<!-- must never land in the hub: version gate ran too late -->' >> "$GATE_ORDER_SOURCE/hub-template/AGENTS.md"
 GATE_ORDER_HUB="$TMP_DIR/gate-order-hub"
 cp -R "$HUB_INSTALL" "$GATE_ORDER_HUB"
 cp "$GATE_ORDER_HUB/AGENTS.md" "$TMP_DIR/gate-order-agents.before"
