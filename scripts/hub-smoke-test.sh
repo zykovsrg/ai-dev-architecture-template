@@ -585,6 +585,16 @@ printf '%s\n' '# Project Card' '' \
   "Memory entry point: $WORK_MODEL_HUB/projects/legacy-project/ai/current-task.md" \
   > "$WORK_MODEL_HUB/ai/project-cards/legacy-project.md"
 cp "$ARCHIPROJECTS_TEMPLATE" "$WORK_MODEL_HUB/ai/archiprojects.md"
+printf '%s\n' '' \
+  '## unified-assistant' \
+  '```yaml' \
+  'id: unified-assistant' \
+  'name: Unified assistant' \
+  'status: active' \
+  'target: 100' \
+  'unit: percent' \
+  'due: none' \
+  '```' >> "$WORK_MODEL_HUB/ai/archiprojects.md"
 archiproject_card_fields_valid "$WORK_MODEL_HUB/ai/project-cards/primary-project.md" \
   || fail 'primary archiproject fixture fields are invalid'
 archiproject_card_fields_valid "$WORK_MODEL_HUB/ai/project-cards/none-project.md" \
@@ -592,6 +602,84 @@ archiproject_card_fields_valid "$WORK_MODEL_HUB/ai/project-cards/none-project.md
 assert_not_contains "$WORK_MODEL_HUB/ai/project-cards/legacy-project.md" 'Primary archiproject:'
 bash "$ROOT/scripts/check-hub-registry.sh" "$WORK_MODEL_HUB" > "$TMP_DIR/work-model-registry.out"
 assert_contains "$TMP_DIR/work-model-registry.out" 'Registry check passed: 3 projects'
+
+copy_work_model_hub() {
+  local destination="$1"
+  cp -R "$WORK_MODEL_HUB" "$destination"
+  perl -pi -e "s#\\Q$WORK_MODEL_HUB\\E#$destination#g" \
+    "$destination/ai/allowed-roots.md" \
+    "$destination/ai/project-registry.md" \
+    "$destination/ai/project-cards/primary-project.md" \
+    "$destination/ai/project-cards/none-project.md" \
+    "$destination/ai/project-cards/legacy-project.md"
+}
+
+# New archiproject metadata must be all-or-nothing and link only to well-formed,
+# known registry entries. Legacy cards intentionally remain valid.
+for partial_field in 'Primary archiproject' 'Archiproject contribution' 'Related archiprojects'; do
+  PARTIAL_ARCHIPROJECT="$TMP_DIR/partial-archiproject-${partial_field// /-}"
+  copy_work_model_hub "$PARTIAL_ARCHIPROJECT"
+  sed "/^$partial_field: /d" "$PARTIAL_ARCHIPROJECT/ai/project-cards/primary-project.md" \
+    > "$PARTIAL_ARCHIPROJECT/ai/project-cards/primary-project.md.tmp"
+  mv "$PARTIAL_ARCHIPROJECT/ai/project-cards/primary-project.md.tmp" \
+    "$PARTIAL_ARCHIPROJECT/ai/project-cards/primary-project.md"
+  if bash "$ROOT/scripts/check-hub-registry.sh" "$PARTIAL_ARCHIPROJECT" > "$TMP_DIR/partial-archiproject.out" 2>&1; then
+    fail "validator accepted partially supplied archiproject fields without $partial_field"
+  fi
+  assert_contains "$TMP_DIR/partial-archiproject.out" 'archiproject fields must be supplied together'
+done
+
+UNKNOWN_PRIMARY="$TMP_DIR/unknown-primary-archiproject"
+copy_work_model_hub "$UNKNOWN_PRIMARY"
+sed 's/^Primary archiproject: unified-assistant$/Primary archiproject: unknown-archiproject/' \
+  "$UNKNOWN_PRIMARY/ai/project-cards/primary-project.md" > "$UNKNOWN_PRIMARY/ai/project-cards/primary-project.md.tmp"
+mv "$UNKNOWN_PRIMARY/ai/project-cards/primary-project.md.tmp" "$UNKNOWN_PRIMARY/ai/project-cards/primary-project.md"
+if bash "$ROOT/scripts/check-hub-registry.sh" "$UNKNOWN_PRIMARY" > "$TMP_DIR/unknown-primary.out" 2>&1; then
+  fail 'validator accepted an unknown primary archiproject'
+fi
+assert_contains "$TMP_DIR/unknown-primary.out" 'unknown primary archiproject'
+
+for invalid_contribution in 0 -1 not-a-number; do
+  INVALID_CONTRIBUTION="$TMP_DIR/invalid-contribution-$invalid_contribution"
+  copy_work_model_hub "$INVALID_CONTRIBUTION"
+  sed "s/^Archiproject contribution: 25$/Archiproject contribution: $invalid_contribution/" \
+    "$INVALID_CONTRIBUTION/ai/project-cards/primary-project.md" > "$INVALID_CONTRIBUTION/ai/project-cards/primary-project.md.tmp"
+  mv "$INVALID_CONTRIBUTION/ai/project-cards/primary-project.md.tmp" "$INVALID_CONTRIBUTION/ai/project-cards/primary-project.md"
+  if bash "$ROOT/scripts/check-hub-registry.sh" "$INVALID_CONTRIBUTION" > "$TMP_DIR/invalid-contribution.out" 2>&1; then
+    fail "validator accepted invalid archiproject contribution: $invalid_contribution"
+  fi
+  assert_contains "$TMP_DIR/invalid-contribution.out" 'archiproject contribution must be a positive number'
+done
+
+DUPLICATE_RELATED="$TMP_DIR/duplicate-related-archiprojects"
+copy_work_model_hub "$DUPLICATE_RELATED"
+sed 's/^Related archiprojects: none$/Related archiprojects: related-work, related-work/' \
+  "$DUPLICATE_RELATED/ai/project-cards/primary-project.md" > "$DUPLICATE_RELATED/ai/project-cards/primary-project.md.tmp"
+mv "$DUPLICATE_RELATED/ai/project-cards/primary-project.md.tmp" "$DUPLICATE_RELATED/ai/project-cards/primary-project.md"
+if bash "$ROOT/scripts/check-hub-registry.sh" "$DUPLICATE_RELATED" > "$TMP_DIR/duplicate-related.out" 2>&1; then
+  fail 'validator accepted duplicate related archiproject IDs'
+fi
+assert_contains "$TMP_DIR/duplicate-related.out" 'duplicate related archiproject'
+
+RELATED_PRIMARY="$TMP_DIR/related-primary-archiproject"
+copy_work_model_hub "$RELATED_PRIMARY"
+sed 's/^Related archiprojects: none$/Related archiprojects: unified-assistant/' \
+  "$RELATED_PRIMARY/ai/project-cards/primary-project.md" > "$RELATED_PRIMARY/ai/project-cards/primary-project.md.tmp"
+mv "$RELATED_PRIMARY/ai/project-cards/primary-project.md.tmp" "$RELATED_PRIMARY/ai/project-cards/primary-project.md"
+if bash "$ROOT/scripts/check-hub-registry.sh" "$RELATED_PRIMARY" > "$TMP_DIR/related-primary.out" 2>&1; then
+  fail 'validator accepted a related archiproject equal to the primary ID'
+fi
+assert_contains "$TMP_DIR/related-primary.out" 'related archiproject must not equal primary archiproject'
+
+MALFORMED_ARCHIPROJECT_REGISTRY="$TMP_DIR/malformed-archiproject-registry"
+copy_work_model_hub "$MALFORMED_ARCHIPROJECT_REGISTRY"
+sed 's/^id: unified-assistant$/id: different-id/' "$MALFORMED_ARCHIPROJECT_REGISTRY/ai/archiprojects.md" \
+  > "$MALFORMED_ARCHIPROJECT_REGISTRY/ai/archiprojects.md.tmp"
+mv "$MALFORMED_ARCHIPROJECT_REGISTRY/ai/archiprojects.md.tmp" "$MALFORMED_ARCHIPROJECT_REGISTRY/ai/archiprojects.md"
+if bash "$ROOT/scripts/check-hub-registry.sh" "$MALFORMED_ARCHIPROJECT_REGISTRY" > "$TMP_DIR/malformed-archiproject-registry.out" 2>&1; then
+  fail 'validator accepted a malformed archiproject registry entry'
+fi
+assert_contains "$TMP_DIR/malformed-archiproject-registry.out" 'archiproject registry entry ID mismatch'
 
 bash "$ROOT/scripts/check-consistency.sh" > "$TMP_DIR/work-model-consistency.out"
 assert_contains "$TMP_DIR/work-model-consistency.out" 'All canonical lists are consistent.'
