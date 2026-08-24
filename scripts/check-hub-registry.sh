@@ -88,6 +88,33 @@ status_ok() {
   return 1
 }
 
+id_ok() {
+  [[ "$1" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]]
+}
+
+iso_date_or_none_ok() {
+  local value="$1" year month day max_day
+  [ "$value" = none ] && return 0
+  [[ "$value" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || return 1
+
+  year="${value:0:4}"
+  month="${value:5:2}"
+  day="${value:8:2}"
+  case "$month" in
+    01|03|05|07|08|10|12) max_day=31 ;;
+    04|06|09|11) max_day=30 ;;
+    02)
+      if (( (10#$year % 4 == 0 && 10#$year % 100 != 0) || 10#$year % 400 == 0 )); then
+        max_day=29
+      else
+        max_day=28
+      fi
+      ;;
+    *) return 1 ;;
+  esac
+  (( 10#$day >= 1 && 10#$day <= max_day ))
+}
+
 validate_card_path() {
   local card_path="$1" card_target canonical_card card_root
 
@@ -149,6 +176,11 @@ reset_archiproject_entry_fields() {
   archiproject_unit_count=0
   archiproject_due_count=0
   archiproject_value_id=""
+  archiproject_value_name=""
+  archiproject_value_status=""
+  archiproject_value_target=""
+  archiproject_value_unit=""
+  archiproject_value_due=""
 }
 
 archiproject_field_count() {
@@ -184,6 +216,18 @@ validate_archiproject_entry() {
   done
   [ "$archiproject_value_id" = "$archiproject_entry_id" ] \
     || die "archiproject registry entry ID mismatch: $archiproject_entry_id"
+  id_ok "$archiproject_entry_id" \
+    || die "invalid archiproject ID: $archiproject_entry_id"
+  [ -n "$archiproject_value_name" ] \
+    || die "invalid archiproject name: $archiproject_entry_id"
+  status_ok "$archiproject_value_status" \
+    || die "invalid archiproject status: $archiproject_entry_id"
+  [[ "$archiproject_value_target" =~ ^[0-9]+([.][0-9]+)?$ ]] \
+    || die "invalid archiproject target: $archiproject_entry_id"
+  [ -n "$archiproject_value_unit" ] \
+    || die "invalid archiproject unit: $archiproject_entry_id"
+  iso_date_or_none_ok "$archiproject_value_due" \
+    || die "invalid archiproject due: $archiproject_entry_id"
   archiproject_id_known "$archiproject_entry_id" \
     && die "duplicate archiproject registry ID: $archiproject_entry_id"
   archiproject_ids="${archiproject_ids}${archiproject_entry_id}
@@ -232,16 +276,32 @@ load_archiproject_registry() {
           archiproject_fence_closed=1
           continue
         fi
-        for field in id name status target unit due; do
-          case "$line" in
-            "$field: "*)
-              increment_archiproject_field "$field"
-              if [ "$field" = id ]; then
-                archiproject_value_id="${line#id: }"
-              fi
-              ;;
-          esac
-        done
+        case "$line" in
+          'id: '*)
+            increment_archiproject_field id
+            archiproject_value_id="${line#id: }"
+            ;;
+          'name: '*)
+            increment_archiproject_field name
+            archiproject_value_name="${line#name: }"
+            ;;
+          'status: '*)
+            increment_archiproject_field status
+            archiproject_value_status="${line#status: }"
+            ;;
+          'target: '*)
+            increment_archiproject_field target
+            archiproject_value_target="${line#target: }"
+            ;;
+          'unit: '*)
+            increment_archiproject_field unit
+            archiproject_value_unit="${line#unit: }"
+            ;;
+          'due: '*)
+            increment_archiproject_field due
+            archiproject_value_due="${line#due: }"
+            ;;
+        esac
         ;;
     esac
   done < "$ARCHIPROJECTS_FILE"
@@ -273,8 +333,8 @@ validate_archiproject_metadata() {
   else
     archiproject_id_known "$primary" \
       || die "unknown primary archiproject for $current_id: $primary"
-    [[ "$contribution" =~ ^[0-9]+([.][0-9]+)?$ ]] && awk "BEGIN { exit !($contribution > 0) }" \
-      || die "archiproject contribution must be a positive number for $current_id"
+    [[ "$contribution" =~ ^[0-9]+([.][0-9]+)?$ ]] && awk "BEGIN { exit !($contribution >= 0) }" \
+      || die "archiproject contribution must be a nonnegative number for $current_id"
   fi
 
   [ "$related" = none ] && return 0

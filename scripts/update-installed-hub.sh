@@ -13,6 +13,7 @@ COMMIT_MESSAGE="chore: update personal AI hub"
 TMP_DIR=""
 SOURCE_TEMPLATE=""
 SOURCE_VALIDATOR=""
+SOURCE_COMPACT_INDEX=""
 CREATED_MEMORY_FILES=()
 REMOVED_PATHS=()
 
@@ -152,9 +153,11 @@ resolve_source_template() {
     if [ -d "$SOURCE_DIR/hub-template/ai" ]; then
       SOURCE_TEMPLATE="$SOURCE_DIR/hub-template"
       SOURCE_VALIDATOR="$SOURCE_DIR/scripts/check-hub-registry.sh"
+      SOURCE_COMPACT_INDEX="$SOURCE_DIR/scripts/read-compact-project-index.sh"
     elif [ -d "$SOURCE_DIR/ai" ] && [ -f "$SOURCE_DIR/AGENTS.md" ]; then
       SOURCE_TEMPLATE="$SOURCE_DIR"
       SOURCE_VALIDATOR="$(cd "$SOURCE_DIR/.." && pwd)/scripts/check-hub-registry.sh"
+      SOURCE_COMPACT_INDEX="$(cd "$SOURCE_DIR/.." && pwd)/scripts/read-compact-project-index.sh"
     else
       die "--source must point to the template repository or to its hub-template/ directory"
     fi
@@ -169,6 +172,7 @@ resolve_source_template() {
     [ -n "$SOURCE_ROOT" ] || die "Could not find extracted template repository"
     SOURCE_TEMPLATE="$SOURCE_ROOT/hub-template"
     SOURCE_VALIDATOR="$SOURCE_ROOT/scripts/check-hub-registry.sh"
+    SOURCE_COMPACT_INDEX="$SOURCE_ROOT/scripts/read-compact-project-index.sh"
   fi
 
   [ -f "$SOURCE_TEMPLATE/AGENTS.md" ] || die "Source hub template is missing AGENTS.md"
@@ -329,6 +333,7 @@ show_file_diff() {
   local dst="$HUB_DIR/$rel"
 
   [ "$rel" = "scripts/check-hub-registry.sh" ] && src="$SOURCE_VALIDATOR"
+  [ "$rel" = "scripts/read-compact-project-index.sh" ] && src="$SOURCE_COMPACT_INDEX"
 
   [ -f "$src" ] || return 0
 
@@ -369,6 +374,7 @@ copy_file() {
   local dst="$HUB_DIR/$rel"
 
   [ "$rel" = "scripts/check-hub-registry.sh" ] && src="$SOURCE_VALIDATOR"
+  [ "$rel" = "scripts/read-compact-project-index.sh" ] && src="$SOURCE_COMPACT_INDEX"
 
   [ -f "$src" ] || return 0
   mkdir -p "$(dirname "$dst")"
@@ -408,6 +414,10 @@ for_each_protected_file() {
 
   if [ -f "$SOURCE_VALIDATOR" ]; then
     "$callback" "scripts/check-hub-registry.sh"
+  fi
+
+  if [ -f "$SOURCE_COMPACT_INDEX" ]; then
+    "$callback" "scripts/read-compact-project-index.sh"
   fi
 
   if [ -d "$SOURCE_TEMPLATE/ai/skills" ]; then

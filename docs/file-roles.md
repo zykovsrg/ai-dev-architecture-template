@@ -97,8 +97,8 @@ but preserves hub-managed project memory and creates only missing memory
 templates. A project card is metadata, not permission to read a project.
 Project/task files remain canonical; project cards are metadata only and a link
 never grants a project read. Cards may optionally use the all-or-nothing fields
-`Primary archiproject:`, `Archiproject contribution:`, and `Related
-archiprojects:`; use `none` where absent, and related archiproject links never
+`primary_archiproject:`, `archiproject_contribution:`, and
+`related_archiprojects:`; use `none` where absent, and related archiproject links never
 add contribution. Waiting is task/subtask-only: do not place a project in
 Waiting while other work is actionable.
 

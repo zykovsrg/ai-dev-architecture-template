@@ -457,6 +457,7 @@ portable_hub_install_contract() {
     fail 'portable hub install without --root was rejected'
   fi
   assert_file "$portable_hub/projects/.gitkeep"
+  assert_file "$portable_hub/scripts/read-compact-project-index.sh"
   assert_contains "$portable_hub/.gitignore" '/projects/'
   portable_projects_root="$(cd "$portable_hub/projects" && pwd -P)"
   [ "$(grep -Fxc -- "- $portable_projects_root" "$portable_hub/ai/allowed-roots.md")" -eq 1 ] \
@@ -655,7 +656,14 @@ if bash "$ROOT/scripts/check-hub-registry.sh" "$TASK2_ARCHIPROJECT" > "$TMP_DIR/
 fi
 assert_contains "$TMP_DIR/unknown-primary.out" 'unknown primary archiproject'
 
-for invalid_contribution in 0 -1 not-a-number; do
+reset_work_model_hub "$TASK2_ARCHIPROJECT"
+sed 's/^archiproject_contribution: 25$/archiproject_contribution: 0/' \
+  "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md" > "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md.tmp"
+mv "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md.tmp" "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md"
+bash "$ROOT/scripts/check-hub-registry.sh" "$TASK2_ARCHIPROJECT" > "$TMP_DIR/zero-contribution.out"
+assert_contains "$TMP_DIR/zero-contribution.out" 'Registry check passed: 3 projects'
+
+for invalid_contribution in -1 not-a-number; do
   reset_work_model_hub "$TASK2_ARCHIPROJECT"
   sed "s/^archiproject_contribution: 25$/archiproject_contribution: $invalid_contribution/" \
     "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md" > "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md.tmp"
@@ -663,7 +671,7 @@ for invalid_contribution in 0 -1 not-a-number; do
   if bash "$ROOT/scripts/check-hub-registry.sh" "$TASK2_ARCHIPROJECT" > "$TMP_DIR/invalid-contribution.out" 2>&1; then
     fail "validator accepted invalid archiproject contribution: $invalid_contribution"
   fi
-  assert_contains "$TMP_DIR/invalid-contribution.out" 'archiproject contribution must be a positive number'
+  assert_contains "$TMP_DIR/invalid-contribution.out" 'archiproject contribution must be a nonnegative number'
 done
 
 DUPLICATE_RELATED="$TMP_DIR/duplicate-related-archiprojects"
@@ -728,6 +736,35 @@ if bash "$ROOT/scripts/check-hub-registry.sh" "$TASK2_ARCHIPROJECT" > "$TMP_DIR/
   fail 'validator accepted a malformed archiproject registry entry'
 fi
 assert_contains "$TMP_DIR/malformed-archiproject-registry.out" 'archiproject registry entry ID mismatch'
+
+for malformed_archiproject in \
+  'status: unknown' \
+  'name: ' \
+  'heading: invalid_id' \
+  'target: not-a-number' \
+  'unit: ' \
+  'due: 2026-02-30' \
+  'due: 2026/08/24'; do
+  reset_work_model_hub "$TASK2_ARCHIPROJECT"
+  field="${malformed_archiproject%%:*}"
+  value="${malformed_archiproject#*: }"
+  case "$field" in
+    heading)
+      sed -e 's/^## unified-assistant$/## invalid_id/' -e 's/^id: unified-assistant$/id: invalid_id/' \
+        "$TASK2_ARCHIPROJECT/ai/archiprojects.md" \
+        > "$TASK2_ARCHIPROJECT/ai/archiprojects.md.tmp"
+      ;;
+    *)
+      sed "s|^$field: .*|$field: $value|" "$TASK2_ARCHIPROJECT/ai/archiprojects.md" \
+        > "$TASK2_ARCHIPROJECT/ai/archiprojects.md.tmp"
+      ;;
+  esac
+  mv "$TASK2_ARCHIPROJECT/ai/archiprojects.md.tmp" "$TASK2_ARCHIPROJECT/ai/archiprojects.md"
+  if bash "$ROOT/scripts/check-hub-registry.sh" "$TASK2_ARCHIPROJECT" > "$TMP_DIR/malformed-archiproject-value.out" 2>&1; then
+    fail "validator accepted malformed archiproject $malformed_archiproject"
+  fi
+  assert_contains "$TMP_DIR/malformed-archiproject-value.out" 'invalid archiproject'
+done
 
 bash "$ROOT/scripts/check-consistency.sh" > "$TMP_DIR/work-model-consistency.out"
 assert_contains "$TMP_DIR/work-model-consistency.out" 'All canonical lists are consistent.'
@@ -1096,6 +1133,31 @@ assert_not_contains "$TMP_DIR/compact-index.out" 'Memory entry point'
 assert_not_contains "$TMP_DIR/compact-index.out" 'ai/current-task.md'
 assert_not_contains "$TMP_DIR/compact-index.err" 'MUST_NOT_BE_READ'
 
+# Metadata search must not traverse into project directories or require full
+# project cards. It reads only index fields and each card's Purpose line.
+COMPACT_METADATA_ONLY="$TMP_DIR/compact-metadata-only-hub"
+mkdir -p "$COMPACT_METADATA_ONLY/ai/project-cards" "$COMPACT_METADATA_ONLY/projects/unregistered-project"
+printf '%s\n' 'MUST_NOT_BE_READ' > "$COMPACT_METADATA_ONLY/projects/unregistered-project/private.txt"
+printf '%s\n' '# Project Registry' '' \
+  '## beta-project' \
+  'Name: Beta Project' \
+  'Tags: beta, routing' \
+  'Status: paused' \
+  '## alpha-project' \
+  'Name: Alpha Project' \
+  'Tags: alpha, search' \
+  'Status: active' > "$COMPACT_METADATA_ONLY/ai/project-registry.md"
+printf '%s\n' 'Purpose: Beta purpose.' > "$COMPACT_METADATA_ONLY/ai/project-cards/beta-project.md"
+printf '%s\n' 'Purpose: Alpha purpose.' > "$COMPACT_METADATA_ONLY/ai/project-cards/alpha-project.md"
+bash "$ROOT/scripts/read-compact-project-index.sh" "$COMPACT_METADATA_ONLY" \
+  > "$TMP_DIR/compact-metadata-only.out" 2> "$TMP_DIR/compact-metadata-only.err"
+assert_compact_index_rows_valid "$TMP_DIR/compact-metadata-only.out"
+[ ! -s "$TMP_DIR/compact-metadata-only.err" ] \
+  || fail 'compact project index must keep a valid metadata-only lookup quiet'
+assert_not_contains "$TMP_DIR/compact-metadata-only.out" 'MUST_NOT_BE_READ'
+assert_not_contains "$TMP_DIR/compact-metadata-only.err" 'MUST_NOT_BE_READ'
+assert_not_contains "$TMP_DIR/compact-metadata-only.err" 'unregistered-project'
+
 TAB_COMPACT="$TMP_DIR/tab-compact-index-hub"
 cp -R "$COMPACT" "$TAB_COMPACT"
 perl -pi -e "s#\\Q$COMPACT\\E#$TAB_COMPACT#g" \
@@ -1109,9 +1171,9 @@ if bash "$ROOT/scripts/read-compact-project-index.sh" "$TAB_COMPACT" \
   > "$TMP_DIR/tab-compact-index.out" 2> "$TMP_DIR/tab-compact-index.err"; then
   fail 'compact project index accepted tab-bearing metadata'
 fi
-assert_contains "$TMP_DIR/tab-compact-index.out" $'project_id\tname\ttags\tstatus\tpurpose_brief'
-[ "$(wc -l < "$TMP_DIR/tab-compact-index.out" | tr -d '[:space:]')" -eq 1 ] \
-  || fail 'tab-bearing metadata must not produce a data row after the header'
+assert_not_contains "$TMP_DIR/tab-compact-index.out" $'project_id\tname\ttags\tstatus\tpurpose_brief'
+[ ! -s "$TMP_DIR/tab-compact-index.out" ] \
+  || fail 'tab-bearing metadata must not produce compact-index output'
 
 BROKEN_COMPACT="$TMP_DIR/broken-compact-index-hub"
 cp -R "$COMPACT" "$BROKEN_COMPACT"
@@ -1494,6 +1556,7 @@ echo 'Sentinel evidence: installer output and xtrace contain neither the marker 
 assert_file "$HUB_INSTALL/AGENTS.md"
 assert_file "$HUB_INSTALL/CLAUDE.md"
 assert_file "$HUB_INSTALL/ai/project-registry.md"
+assert_file "$HUB_INSTALL/scripts/read-compact-project-index.sh"
 assert_file "$HUB_INSTALL/ai/archiprojects.md"
 assert_file "$HUB_INSTALL/scripts/check-hub-registry.sh"
 assert_file "$HUB_INSTALL/projects/.gitkeep"
@@ -1609,9 +1672,11 @@ rm "$HUB_INSTALL/ai/archive/.gitkeep"
 rm "$HUB_INSTALL/ai/project-cards/.gitkeep"
 printf '%s\n' 'stale hub entry' > "$HUB_INSTALL/AGENTS.md"
 printf '%s\n' 'stale validator' > "$HUB_INSTALL/scripts/check-hub-registry.sh"
+printf '%s\n' 'stale compact index' > "$HUB_INSTALL/scripts/read-compact-project-index.sh"
 
 bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$ROOT" --dry-run > "$TMP_DIR/hub-dry-run.out"
 assert_contains "$TMP_DIR/hub-dry-run.out" '### AGENTS.md'
+assert_contains "$TMP_DIR/hub-dry-run.out" '### scripts/read-compact-project-index.sh'
 assert_contains "$TMP_DIR/hub-dry-run.out" 'Would create missing hub memory file without overwriting hub memory: ai/archive/.gitkeep'
 assert_contains "$TMP_DIR/hub-dry-run.out" 'Would create missing hub memory file without overwriting hub memory: ai/project-cards/.gitkeep'
 assert_not_exists "$HUB_INSTALL/ai/archive/.gitkeep"
@@ -1711,6 +1776,7 @@ assert_contains "$TMP_DIR/hub-dirty.out" 'Working tree is not clean'
 bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$ROOT" --apply --allow-dirty > "$TMP_DIR/hub-update.out"
 cmp -s "$ROOT/hub-template/AGENTS.md" "$HUB_INSTALL/AGENTS.md" || fail 'hub update did not replace protected entry file'
 cmp -s "$ROOT/scripts/check-hub-registry.sh" "$HUB_INSTALL/scripts/check-hub-registry.sh" || fail 'hub update did not replace protected validator'
+cmp -s "$ROOT/scripts/read-compact-project-index.sh" "$HUB_INSTALL/scripts/read-compact-project-index.sh" || fail 'hub update did not replace compact project index reader'
 cmp -s "$TMP_DIR/allowed-roots.before" "$HUB_INSTALL/ai/allowed-roots.md" || fail 'hub update overwrote allowed roots'
 cmp -s "$TMP_DIR/registry.before" "$HUB_INSTALL/ai/project-registry.md" || fail 'hub update overwrote registry'
 cmp -s "$TMP_DIR/active.before" "$HUB_INSTALL/ai/active-project.md" || fail 'hub update overwrote active project'

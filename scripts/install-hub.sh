@@ -92,6 +92,8 @@ grep -Fqx '/projects/' "$HUB_DIR/.gitignore" 2>/dev/null \
 mkdir -p "$HUB_DIR/scripts"
 [ -e "$HUB_DIR/scripts/check-hub-registry.sh" ] \
   || cp "$SCRIPT_DIR/check-hub-registry.sh" "$HUB_DIR/scripts/check-hub-registry.sh"
+[ -e "$HUB_DIR/scripts/read-compact-project-index.sh" ] \
+  || cp "$SCRIPT_DIR/read-compact-project-index.sh" "$HUB_DIR/scripts/read-compact-project-index.sh"
 
 ROOTS_FILE="$HUB_DIR/ai/allowed-roots.md"
 printf '%s\n' '# Allowed Roots' '' "- $PROJECTS_ROOT" > "$ROOTS_FILE"
