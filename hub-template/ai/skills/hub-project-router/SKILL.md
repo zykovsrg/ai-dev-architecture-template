@@ -10,32 +10,29 @@ current chat. Keep `Mode: routing` until the user gives explicit confirmation.
 
 ## Read allowlist and phases
 
-1. Read the compact hub index only: `ai/allowed-roots.md`,
-   `ai/project-registry.md`, and `ai/active-project.md`. Do not read signal
-   entries, list allowed roots, or inspect project directories at this stage.
-2. Match the request against registered IDs, names, types, statuses, and tags.
-   Select a maximum of three candidates. An unregistered path is never a
-   candidate.
-3. In this phase, read only candidate cards at
-   `ai/project-cards/<registered-id>.md`. Do not read project memory, source
-   code, configuration, or arbitrary hub files. Compare only each card's
-   purpose, tasks, boundaries, and relationships.
-4. Only after candidate selection, read only related active signals from
-   `ai/cross-project-signals.md`: use entries that name one of the candidates
-   and are active/relevant to those candidates. Ignore unrelated, inactive, or
-   unscoped signals. Do not read project memory, source code, configuration, or
-   project files during routing.
-5. Classify routing confidence as `high, medium, or low` and preserve evidence
+1. Run `scripts/read-compact-project-index.sh`. Before confirmation, use only
+   its five fields: `project_id`, `name`, `tags`, `status`, `purpose_brief`.
+   Do not read candidate cards, signals, project memory, knowledge, source code,
+   configuration, arbitrary hub files, or linked targets.
+2. Match the request against those five fields and select a maximum of three
+   candidates. An unregistered path is never a candidate.
+3. Classify routing confidence as `high, medium, or low` and preserve evidence
    confidence from the hub architecture (`verified`, `stated`, `inferred`, or
    `unknown`). High means a direct registered ID/name match; medium means a
    bounded metadata match; low means weak or conflicting metadata.
-6. Show the reason, registered project ID, and exact registered path. State
-   the confidence and ask for explicit confirmation. Then wait for explicit confirmation; do not enter, read, or change a project first.
+4. To show a selected candidate, read its exact registered path only. Show the
+   reason, registered project ID, exact path, and confidence; then ask for and
+   wait for explicit confirmation. Do not enter, read, or change a project first.
 
-The registry is authoritative for the ID and path. If a candidate is missing,
-invalid, outside allowed roots, or has an unusable card, reject it safely and
-ask for a registered alternative. A remembered active project is not a
-confirmation in a new chat.
+The registry is authoritative for the ID and path. If a candidate is missing
+from the compact index, has invalid compact metadata, or is outside allowed
+roots, reject it safely and ask for a registered alternative. A remembered
+active project is not a confirmation in a new chat.
+
+Project/task files remain canonical; project cards are metadata only and remain
+unavailable before confirmation. Compact-index metadata never grants a project
+read, and a link never grants a project read. Waiting is task/subtask-only: do not place a project in Waiting
+while other work is actionable. Related archiproject links never add contribution.
 
 ## Required response shape
 
@@ -49,7 +46,7 @@ angle-bracket placeholders with registered hub metadata.
 Путь: <registered-path>
 Режим: routing
 Уверенность маршрутизации: высокая|средняя|низкая
-Причина: <краткая причина из реестра и карточки>.
+Причина: <краткая причина из метаданных compact index>.
 
 Подтвердите, что открыть именно этот проект по указанному пути.
 ```
@@ -79,7 +76,7 @@ angle-bracket placeholders with registered hub metadata.
 
 ```text
 Режим: routing
-Не могу выбрать <project-id>: <причина — нет в реестре|путь вне разрешённых корней|некорректная карточка>.
+Не могу выбрать <project-id>: <причина — нет в compact index|путь вне разрешённых корней|некорректные метаданные>.
 
 Назовите другой зарегистрированный проект или подтвердите отдельную регистрацию.
 ```

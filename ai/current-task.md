@@ -8,7 +8,7 @@ Note: `paused` is a transient status used only while `task-switch` is moving thi
 task into `ai/paused-tasks.md`. After the switch this file holds the new task and
 the paused one lives in `ai/paused-tasks.md`.
 
-Stage: planning
+Stage: review
 
 Allowed stages: intake / spec / planning / implementation / review / task-finish
 
@@ -18,10 +18,9 @@ architecture-update
 
 ## Goal
 
-Подготовить первый TDD-план фундаментальных изменений для единого AI-ассистента:
-канонической модели задач и архипроектов, безопасного компактного индекса и
-валидаторов. Не реализовывать Obsidian, Calendar, миграцию vault или аудит чатов
-в этом плане.
+Завершить foundation: каноническую модель задач и архипроектов, безопасный
+компактный индекс и валидаторы. Не реализовывать Obsidian, Calendar, миграцию
+vault или аудит чатов.
 
 ## Use Superpowers
 
@@ -36,24 +35,22 @@ yes — brainstorming, writing-plans, subagent-driven-development
 
 ## Done criteria
 
-- Пользователь одобрил сводную архитектуру и scope architecture-update.
-- Написан проверяемый TDD-план foundation без задач Obsidian, Calendar, миграции
-  vault и session audit.
-- План перечисляет точные protected/controlled files, тесты, rollback и
-  подтверждения перед заменой правил.
+- Реализованы и протестированы work/archiproject contract, безопасный компактный
+  индекс, проверки реестра и сохранение этих файлов при update.
+- Защищённые правила маршрутизации используют только compact index до явного
+  подтверждения проекта.
+- Не выполнены изменения в live hub, Obsidian, Calendar, vault или аудит чатов.
 
 ## Agent handoff
 
 Last agent: Codex
 
-What changed: Tasks 1–7 завершены и независимо проверены. Пользователь одобрил
-сводную архитектуру и scope будущего architecture-update; сейчас пишется только
-foundation plan.
+What changed: Foundation реализован в отдельной ветке и проходит финальное
+независимое ревью. Пользователь разрешил автономно вести этот объём работ.
 
 Open risks: EventKit full access шире allowlist MCP; будущая интеграция Calendar
 нуждается в test calendar. Существующий vault не мигрируется до отдельного
 content-aware review и подтверждения.
 
-Next agent should check: Проверить foundation plan against approved architecture,
-показать точные replacement diffs protected files и запросить подтверждение перед
-самой реализацией.
+Next agent should check: Запустить финальные проверки и ревью; затем предложить
+безопасную интеграцию ветки. Не применять её к live hub без отдельного решения.

@@ -86,6 +86,7 @@ to the hub, not to any registered project's `ai/` directory:
 - `ai/allowed-roots.md`
 - `ai/active-project.md`
 - `ai/project-registry.md`
+- `ai/archiprojects.md`
 - `ai/project-cards/*`
 - `ai/cross-project-signals.md`
 - `ai/archive/*`
@@ -94,6 +95,12 @@ Hub protected files are its `AGENTS.md`, `CLAUDE.md`, `ai/architecture.md`,
 and `ai/skills/*/SKILL.md`. The hub updater can replace protected hub files,
 but preserves hub-managed project memory and creates only missing memory
 templates. A project card is metadata, not permission to read a project.
+Project/task files remain canonical; project cards are metadata only and a link
+never grants a project read. Cards may optionally use the all-or-nothing fields
+`primary_archiproject:`, `archiproject_contribution:`, and
+`related_archiprojects:`; use `none` where absent, and related archiproject links never
+add contribution. Waiting is task/subtask-only: do not place a project in
+Waiting while other work is actionable.
 
 Standalone protected files and controlled memory remain scoped to one project.
 Do not copy either class into a hub or use the hub to overwrite project memory.

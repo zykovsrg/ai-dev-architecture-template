@@ -33,6 +33,11 @@ signals, archives, active-project data, or any registered project.
 A weekly reminder may offer this skill, but cannot invoke it automatically.
 The reminder must not run the validator, enumerate roots, or create a report.
 
+Project/task files remain canonical; project cards are metadata only and a link
+never grants a project read. Waiting is task/subtask-only: do not place a
+project in Waiting while other work is actionable. Related archiproject links
+never add contribution.
+
 ## Russian report template
 
 ```text

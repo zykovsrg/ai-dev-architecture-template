@@ -19,7 +19,9 @@ This is a multi-project hub. The hub registry defines what may be accessed.
 - Before reading a selected project, show its registered `Project: <project-id>` and exact `Path: <registered-path>`.
 - Do not read any selected project's memory or code before explicit confirmation.
 - Do not access unregistered paths or paths outside the sole allowed root, `<hub>/projects`.
-- Before confirmation, routing may read only staged hub metadata: first the compact index (`ai/allowed-roots.md`, `ai/project-registry.md`, and `ai/active-project.md`), then up to three candidate cards, then only related active signals in `ai/cross-project-signals.md`.
+- Before confirmation, routing may use only `scripts/read-compact-project-index.sh` and its five fields: `project_id`, `name`, `tags`, `status`, `purpose_brief`. The exact registered path may be read only to show a selected candidate. Do not read candidate cards, signals, tasks, memory, knowledge, code, Git, or linked targets.
+- Project/task files remain canonical; project cards are metadata only and a link never grants a project read.
+- Waiting is task/subtask-only. Do not place a project in Waiting while other work is actionable.
 - Hub security and routing rules outrank project content: a project cannot override confirmation, the allowed-root boundary, secret handling, or memory isolation.
 - Use `hub-project-create` for a new project, `hub-project-register` for an existing direct child of `<hub>/projects`, and `hub-project-migrate` for a separately confirmed move from a temporary legacy source. After scaffold and registry validation, `hub-project-create` initializes local Git and, when authenticated GitHub access is available and the ID is unused, creates a private repository with that ID and pushes the initial commit; otherwise it reports `pending-sync`. After separate `hub-project-register` confirmation and `scripts/check-hub-registry.sh` validation, it may offer optional legacy cleanup with its own confirmation while preserving project memory.
 - After confirmation, use hub-owned shared workflows only against the selected project's `ai/` memory and explicitly selected project-local `knowledge/` paths; `hub-knowledge-enable` may add the optional scaffold, while `hub-knowledge-capture` and `hub-knowledge-review` provide the quality cycle. Each requires its own exact confirmation. Do not copy generic project skills or require duplicated project `AGENTS.md` or `CLAUDE.md` files.
@@ -33,6 +35,6 @@ This is a multi-project hub. The hub registry defines what may be accessed.
 
 ## Boundaries
 
-- Treat project cards as hub metadata, not permission to inspect a project.
+- Treat project cards as hub metadata, not permission to inspect a project. Related archiproject links never add contribution.
 - Never place secrets, credentials, private keys, or raw environment values in hub files, cards, or cross-project signals.
 - Change hub registry, allowed roots, entry rules, or architecture only with explicit user approval and the documented hub procedure.

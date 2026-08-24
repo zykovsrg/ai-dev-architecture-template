@@ -26,9 +26,41 @@ scaffold_project_memory() {
     printf '# %s\n' "$memory_file" > "$project_path/ai/$memory_file.md"
   done
 }
+archiproject_template_valid() {
+  local file="$1" text
+  text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
+
+  [[ "$text" == *'canonical hub-owned archiproject registry'* ]] &&
+    [[ "$text" == *'not a parallel task store'* ]] &&
+    [[ "$text" == *'id:'*'name:'*'status:'*'target:'*'unit:'*'due:'* ]] &&
+    [[ "$text" == *'due: YYYY-MM-DD or none'* ]] &&
+    [[ "$text" == *'## <archiproject-id>'*'```yaml'* ]]
+}
+archiproject_card_fields_valid() {
+  local file="$1" primary contribution related
+  primary="$(sed -n 's/^primary_archiproject: //p' "$file")"
+  contribution="$(sed -n 's/^archiproject_contribution: //p' "$file")"
+  related="$(sed -n 's/^related_archiprojects: //p' "$file")"
+
+  [ "$(printf '%s\n' "$primary" | wc -l | tr -d ' ')" -eq 1 ] &&
+    [ "$(printf '%s\n' "$contribution" | wc -l | tr -d ' ')" -eq 1 ] &&
+    [ "$(printf '%s\n' "$related" | wc -l | tr -d ' ')" -eq 1 ] &&
+    [ -n "$primary" ] && [ -n "$contribution" ] && [ -n "$related" ]
+}
+hub_work_model_contract_valid() {
+  local file="$1" text
+  text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
+
+  [[ "$text" == *'Project/task files remain canonical'* ]] &&
+    [[ "$text" == *'project cards are metadata only'* ]] &&
+    [[ "$text" == *'link never grants a project read'* ]] &&
+    [[ "$text" == *'Waiting is task/subtask-only'* ]] &&
+    [[ "$text" == *'other work is actionable'* ]]
+}
 generate_registry() {
   local hub="$1" root="$2" count="$3" i id
   printf '%s\n' '# Project Registry' > "$hub/ai/project-registry.md"
+  printf '%s\n' '# Archiprojects' > "$hub/ai/archiprojects.md"
   i=1
   while [ "$i" -le "$count" ]; do
     id="fixture-project-$i"
@@ -82,25 +114,23 @@ router_read_boundary_valid() {
   local section
   section="$(section_text "$1" '## Read allowlist and phases' '## Required response shape' | tr '\n' ' ' | tr -s ' ')"
 
-  [[ "$section" == *'ai/cross-project-signals.md'* ]] &&
-    [[ "$section" == *'name one of the candidates'* ]] &&
-    [[ "$section" == *'active/relevant'* ]] &&
-    [[ "$section" == *'Do not read project memory, source code'* ]] &&
-    [[ "$section" != *'Do not read cross-project signals'* ]]
+  [[ "$section" == *'scripts/read-compact-project-index.sh'* ]] &&
+    [[ "$section" == *'project_id'*'name'*'tags'*'status'*'purpose_brief'* ]] &&
+    [[ "$section" == *'Do not read candidate cards, signals, project memory, knowledge, source code'* ]] &&
+    [[ "$section" == *'exact registered path only'* ]]
 }
-router_staged_signal_reads_valid() {
+router_compact_index_reads_valid() {
   local section step_one step_two step_four
   section="$(section_text "$1" '## Read allowlist and phases' '## Required response shape')"
-  step_one="$(printf '%s\n' "$section" | awk '/^1\. /{in_step=1} in_step && /^2\. /{exit} in_step{print}')"
-  step_two="$(printf '%s\n' "$section" | awk '/^2\. /{in_step=1} in_step && /^3\. /{exit} in_step{print}')"
-  step_four="$(printf '%s\n' "$section" | awk '/^4\. /{in_step=1} in_step && /^5\. /{exit} in_step{print}')"
+  step_one="$(printf '%s\n' "$section" | awk '/^1\. /{in_step=1} in_step && /^2\. /{exit} in_step{print}' | tr '\n' ' ' | tr -s ' ')"
+  step_two="$(printf '%s\n' "$section" | awk '/^2\. /{in_step=1} in_step && /^3\. /{exit} in_step{print}' | tr '\n' ' ' | tr -s ' ')"
+  step_four="$(printf '%s\n' "$section" | awk '/^4\. /{in_step=1} in_step && /^5\. /{exit} in_step{print}' | tr '\n' ' ' | tr -s ' ')"
 
-  [[ "$step_one" == *'compact hub index only'* ]] &&
-    [[ "$step_one" == *'active-project.md'* ]] &&
-    [[ "$step_one" != *'cross-project-signals.md'* ]] &&
+  [[ "$step_one" == *'read-compact-project-index.sh'* ]] &&
+    [[ "$step_one" == *'project_id'*'name'*'tags'*'status'*'purpose_brief'* ]] &&
     [[ "$step_two" == *'maximum of three candidates'* ]] &&
-    [[ "$step_four" == *'only related active signals'* ]] &&
-    [[ "$step_four" == *'name one of the candidates'* ]]
+    [[ "$step_four" == *'exact registered path only'* ]] &&
+    [[ "$step_four" == *'explicit confirmation'* ]]
 }
 router_multiple_candidates_template_valid() {
   local section
@@ -114,7 +144,7 @@ hub_entry_staged_allowlist_valid() {
   local section
   section="$(section_text "$1" '## Project Routing' '## Work Header And Procedures' | tr '\n' ' ' | tr -s ' ')"
 
-  [[ "$section" == *'ai/allowed-roots.md'*'ai/project-registry.md'*'ai/active-project.md'*'up to three candidate cards'*'related active signals'* ]]
+  [[ "$section" == *'scripts/read-compact-project-index.sh'*'project_id'*'name'*'tags'*'status'*'purpose_brief'*'exact registered path'*'Do not read candidate cards, signals'* ]]
 }
 hub_architecture_security_precedence_valid() {
   local section
@@ -190,6 +220,10 @@ project_create_contract_valid() {
     [[ "$text" == *'create a private repository with that exact name'* ]] &&
     [[ "$text" == *'report `pending-sync`'* ]] &&
     [[ "$text" == *'never attach or overwrite an existing remote'* ]] &&
+    [[ "$text" == *'primary_archiproject: <archiproject-id|none>'* ]] &&
+    [[ "$text" == *'archiproject_contribution: <contribution|none>'* ]] &&
+    [[ "$text" == *'related_archiprojects: <archiproject-id list|none>'* ]] &&
+    [[ "$text" == *'Related archiproject links never add contribution'* ]] &&
     [[ "$text" == *'must not add application code, dependencies, services, AGENTS.md, CLAUDE.md, or shared skills'* ]]
 }
 project_create_knowledge_scaffold_valid() {
@@ -422,6 +456,7 @@ portable_hub_install_contract() {
     fail 'portable hub install without --root was rejected'
   fi
   assert_file "$portable_hub/projects/.gitkeep"
+  assert_file "$portable_hub/scripts/read-compact-project-index.sh"
   assert_contains "$portable_hub/.gitignore" '/projects/'
   portable_projects_root="$(cd "$portable_hub/projects" && pwd -P)"
   [ "$(grep -Fxc -- "- $portable_projects_root" "$portable_hub/ai/allowed-roots.md")" -eq 1 ] \
@@ -483,9 +518,267 @@ grep -Fq 'sole allowed root' "$HUB_AGENTS" || fail 'missing allowed-root gate'
 grep -Fq 'explicit confirmation' "$HUB_CLAUDE" || fail 'missing confirmation gate'
 grep -Fq 'sole allowed root' "$HUB_CLAUDE" || fail 'missing allowed-root gate'
 hub_entry_staged_allowlist_valid "$HUB_AGENTS" \
-  || fail 'hub entry must match staged router reads: index, up to three cards, then related active signals'
+  || fail 'hub entry must allow only compact-index routing before confirmation'
 assert_contains "$HUB_AGENTS" 'ai/architecture.md'
 assert_not_contains "$HUB_AGENTS" 'hub-template/ai/architecture.md'
+
+ARCHIPROJECTS_TEMPLATE="$ROOT/hub-template/ai/archiprojects.md"
+assert_file "$ARCHIPROJECTS_TEMPLATE"
+archiproject_template_valid "$ARCHIPROJECTS_TEMPLATE" \
+  || fail 'archiproject template must define the canonical YAML registry schema'
+
+for work_model_file in \
+  "$HUB_AGENTS" \
+  "$HUB_CLAUDE" \
+  "$ROOT/hub-template/ai/architecture.md" \
+  "$ROOT/hub-template/ai/skills/hub-project-router/SKILL.md" \
+  "$ROOT/hub-template/ai/skills/hub-registry-check/SKILL.md" \
+  "$ROOT/docs/file-roles.md"; do
+  hub_work_model_contract_valid "$work_model_file" \
+    || fail "hub work-model contract missing: $work_model_file"
+done
+
+WORK_MODEL_HUB="$TMP_DIR/work-model-hub"
+mkdir -p "$WORK_MODEL_HUB/ai/project-cards" "$WORK_MODEL_HUB/projects/primary-project" \
+  "$WORK_MODEL_HUB/projects/none-project" "$WORK_MODEL_HUB/projects/legacy-project"
+for work_model_project in primary-project none-project legacy-project; do
+  scaffold_project_memory "$WORK_MODEL_HUB/projects/$work_model_project"
+done
+printf '%s\n' '# Allowed Roots' '' "- $WORK_MODEL_HUB/projects" > "$WORK_MODEL_HUB/ai/allowed-roots.md"
+printf '%s\n' '# Project Registry' '' \
+  '## primary-project' \
+  'Name: Primary contribution' \
+  'Type: work' \
+  'Status: active' \
+  "Path: $WORK_MODEL_HUB/projects/primary-project" \
+  'Tags: fixture' \
+  'Card: ai/project-cards/primary-project.md' '' \
+  '## none-project' \
+  'Name: No archiproject' \
+  'Type: work' \
+  'Status: active' \
+  "Path: $WORK_MODEL_HUB/projects/none-project" \
+  'Tags: fixture' \
+  'Card: ai/project-cards/none-project.md' '' \
+  '## legacy-project' \
+  'Name: Legacy card' \
+  'Type: work' \
+  'Status: active' \
+  "Path: $WORK_MODEL_HUB/projects/legacy-project" \
+  'Tags: fixture' \
+  'Card: ai/project-cards/legacy-project.md' > "$WORK_MODEL_HUB/ai/project-registry.md"
+printf '%s\n' '# Project Card' '' \
+  'Project ID: primary-project' 'Name: Primary contribution' 'Type: work' 'Status: active' \
+  'Last updated: 2026-08-24' 'Purpose: Smoke fixture.' 'Typical tasks: Exercise compatibility.' \
+  "Memory entry point: $WORK_MODEL_HUB/projects/primary-project/ai/current-task.md" \
+  'primary_archiproject: unified-assistant' 'archiproject_contribution: 25' \
+  'related_archiprojects: none' > "$WORK_MODEL_HUB/ai/project-cards/primary-project.md"
+printf '%s\n' '# Project Card' '' \
+  'Project ID: none-project' 'Name: No archiproject' 'Type: work' 'Status: active' \
+  'Last updated: 2026-08-24' 'Purpose: Smoke fixture.' 'Typical tasks: Exercise compatibility.' \
+  "Memory entry point: $WORK_MODEL_HUB/projects/none-project/ai/current-task.md" \
+  'primary_archiproject: none' 'archiproject_contribution: none' \
+  'related_archiprojects: none' > "$WORK_MODEL_HUB/ai/project-cards/none-project.md"
+printf '%s\n' '# Project Card' '' \
+  'Project ID: legacy-project' 'Name: Legacy card' 'Type: work' 'Status: active' \
+  'Last updated: 2026-08-24' 'Purpose: Smoke fixture.' 'Typical tasks: Exercise compatibility.' \
+  "Memory entry point: $WORK_MODEL_HUB/projects/legacy-project/ai/current-task.md" \
+  > "$WORK_MODEL_HUB/ai/project-cards/legacy-project.md"
+cp "$ARCHIPROJECTS_TEMPLATE" "$WORK_MODEL_HUB/ai/archiprojects.md"
+printf '%s\n' '' \
+  '## unified-assistant' \
+  '```yaml' \
+  'id: unified-assistant' \
+  'name: Unified assistant' \
+  'status: active' \
+  'target: 100' \
+  'unit: percent' \
+  'due: none' \
+  '```' >> "$WORK_MODEL_HUB/ai/archiprojects.md"
+archiproject_card_fields_valid "$WORK_MODEL_HUB/ai/project-cards/primary-project.md" \
+  || fail 'primary archiproject fixture fields are invalid'
+archiproject_card_fields_valid "$WORK_MODEL_HUB/ai/project-cards/none-project.md" \
+  || fail 'none archiproject fixture fields are invalid'
+assert_not_contains "$WORK_MODEL_HUB/ai/project-cards/legacy-project.md" 'primary_archiproject:'
+bash "$ROOT/scripts/check-hub-registry.sh" "$WORK_MODEL_HUB" > "$TMP_DIR/work-model-registry.out"
+assert_contains "$TMP_DIR/work-model-registry.out" 'Registry check passed: 3 projects'
+
+copy_work_model_hub() {
+  local destination="$1"
+  cp -R "$WORK_MODEL_HUB" "$destination"
+  perl -pi -e "s#\\Q$WORK_MODEL_HUB\\E#$destination#g" \
+    "$destination/ai/allowed-roots.md" \
+    "$destination/ai/project-registry.md" \
+    "$destination/ai/project-cards/primary-project.md" \
+    "$destination/ai/project-cards/none-project.md" \
+    "$destination/ai/project-cards/legacy-project.md"
+}
+
+# Task 2 reuses one mutable fixture and resets it cheaply between cases.
+reset_work_model_hub() {
+  local destination="$1"
+  rsync -a --delete "$WORK_MODEL_BASE"/ "$destination"/
+  perl -pi -e "s#\\Q$WORK_MODEL_BASE\\E#$destination#g" \
+    "$destination/ai/allowed-roots.md" \
+    "$destination/ai/project-registry.md" \
+    "$destination/ai/project-cards/primary-project.md" \
+    "$destination/ai/project-cards/none-project.md" \
+    "$destination/ai/project-cards/legacy-project.md"
+}
+
+WORK_MODEL_BASE="$TMP_DIR/work-model-base"
+copy_work_model_hub "$WORK_MODEL_BASE"
+
+# New archiproject metadata must be all-or-nothing and link only to well-formed,
+# known registry entries. Legacy cards intentionally remain valid.
+TASK2_ARCHIPROJECT="$TMP_DIR/task2-archiproject"
+reset_work_model_hub "$TASK2_ARCHIPROJECT"
+
+for partial_field in primary_archiproject archiproject_contribution related_archiprojects; do
+  reset_work_model_hub "$TASK2_ARCHIPROJECT"
+  sed "/^$partial_field:/d" "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md" \
+    > "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md.tmp"
+  mv "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md.tmp" \
+    "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md"
+  if bash "$ROOT/scripts/check-hub-registry.sh" "$TASK2_ARCHIPROJECT" > "$TMP_DIR/partial-archiproject.out" 2>&1; then
+    fail "validator accepted partially supplied archiproject fields without $partial_field"
+  fi
+  assert_contains "$TMP_DIR/partial-archiproject.out" 'archiproject fields must be supplied together'
+done
+
+reset_work_model_hub "$TASK2_ARCHIPROJECT"
+sed 's/^primary_archiproject: unified-assistant$/primary_archiproject: unknown-archiproject/' \
+  "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md" > "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md.tmp"
+mv "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md.tmp" "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md"
+if bash "$ROOT/scripts/check-hub-registry.sh" "$TASK2_ARCHIPROJECT" > "$TMP_DIR/unknown-primary.out" 2>&1; then
+  fail 'validator accepted an unknown primary archiproject'
+fi
+assert_contains "$TMP_DIR/unknown-primary.out" 'unknown primary archiproject'
+
+reset_work_model_hub "$TASK2_ARCHIPROJECT"
+sed 's/^archiproject_contribution: 25$/archiproject_contribution: 0/' \
+  "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md" > "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md.tmp"
+mv "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md.tmp" "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md"
+bash "$ROOT/scripts/check-hub-registry.sh" "$TASK2_ARCHIPROJECT" > "$TMP_DIR/zero-contribution.out"
+assert_contains "$TMP_DIR/zero-contribution.out" 'Registry check passed: 3 projects'
+
+for invalid_contribution in -1 not-a-number; do
+  reset_work_model_hub "$TASK2_ARCHIPROJECT"
+  sed "s/^archiproject_contribution: 25$/archiproject_contribution: $invalid_contribution/" \
+    "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md" > "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md.tmp"
+  mv "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md.tmp" "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md"
+  if bash "$ROOT/scripts/check-hub-registry.sh" "$TASK2_ARCHIPROJECT" > "$TMP_DIR/invalid-contribution.out" 2>&1; then
+    fail "validator accepted invalid archiproject contribution: $invalid_contribution"
+  fi
+  assert_contains "$TMP_DIR/invalid-contribution.out" 'archiproject contribution must be a nonnegative number'
+done
+
+DUPLICATE_RELATED="$TMP_DIR/duplicate-related-archiprojects"
+reset_work_model_hub "$TASK2_ARCHIPROJECT"
+sed 's/^related_archiprojects: none$/related_archiprojects: related-work, related-work/' \
+  "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md" > "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md.tmp"
+mv "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md.tmp" "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md"
+if bash "$ROOT/scripts/check-hub-registry.sh" "$TASK2_ARCHIPROJECT" > "$TMP_DIR/duplicate-related.out" 2>&1; then
+  fail 'validator accepted duplicate related archiproject IDs'
+fi
+assert_contains "$TMP_DIR/duplicate-related.out" 'duplicate related archiproject'
+
+RELATED_PRIMARY="$TMP_DIR/related-primary-archiproject"
+reset_work_model_hub "$TASK2_ARCHIPROJECT"
+sed 's/^related_archiprojects: none$/related_archiprojects: unified-assistant/' \
+  "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md" > "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md.tmp"
+mv "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md.tmp" "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md"
+if bash "$ROOT/scripts/check-hub-registry.sh" "$TASK2_ARCHIPROJECT" > "$TMP_DIR/related-primary.out" 2>&1; then
+  fail 'validator accepted a related archiproject equal to the primary ID'
+fi
+assert_contains "$TMP_DIR/related-primary.out" 'related archiproject must not equal primary archiproject'
+
+UNKNOWN_RELATED="$TMP_DIR/unknown-related-archiproject"
+reset_work_model_hub "$TASK2_ARCHIPROJECT"
+sed 's/^related_archiprojects: none$/related_archiprojects: unknown-archiproject/' \
+  "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md" > "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md.tmp"
+mv "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md.tmp" "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md"
+if bash "$ROOT/scripts/check-hub-registry.sh" "$TASK2_ARCHIPROJECT" > "$TMP_DIR/unknown-related.out" 2>&1; then
+  fail 'validator accepted an unknown related archiproject'
+fi
+assert_contains "$TMP_DIR/unknown-related.out" 'unknown related archiproject'
+
+for malformed_field in primary_archiproject archiproject_contribution related_archiprojects; do
+  reset_work_model_hub "$TASK2_ARCHIPROJECT"
+  sed "s/^$malformed_field: .*/$malformed_field:/" \
+    "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md" \
+    > "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md.tmp"
+  mv "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md.tmp" \
+    "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md"
+  if bash "$ROOT/scripts/check-hub-registry.sh" "$TASK2_ARCHIPROJECT" > "$TMP_DIR/malformed-archiproject-field.out" 2>&1; then
+    fail "validator accepted an empty archiproject field: $malformed_field"
+  fi
+  assert_contains "$TMP_DIR/malformed-archiproject-field.out" 'archiproject fields must be non-empty'
+
+  reset_work_model_hub "$TASK2_ARCHIPROJECT"
+  sed "s/^$malformed_field: /$malformed_field:/" \
+    "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md" \
+    > "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md.tmp"
+  mv "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md.tmp" \
+    "$TASK2_ARCHIPROJECT/ai/project-cards/primary-project.md"
+  if bash "$ROOT/scripts/check-hub-registry.sh" "$TASK2_ARCHIPROJECT" > "$TMP_DIR/malformed-archiproject-field.out" 2>&1; then
+    fail "validator accepted a no-space archiproject field: $malformed_field"
+  fi
+  assert_contains "$TMP_DIR/malformed-archiproject-field.out" 'archiproject fields must be non-empty'
+done
+
+reset_work_model_hub "$TASK2_ARCHIPROJECT"
+sed 's/^id: unified-assistant$/id: different-id/' "$TASK2_ARCHIPROJECT/ai/archiprojects.md" \
+  > "$TASK2_ARCHIPROJECT/ai/archiprojects.md.tmp"
+mv "$TASK2_ARCHIPROJECT/ai/archiprojects.md.tmp" "$TASK2_ARCHIPROJECT/ai/archiprojects.md"
+if bash "$ROOT/scripts/check-hub-registry.sh" "$TASK2_ARCHIPROJECT" > "$TMP_DIR/malformed-archiproject-registry.out" 2>&1; then
+  fail 'validator accepted a malformed archiproject registry entry'
+fi
+assert_contains "$TMP_DIR/malformed-archiproject-registry.out" 'archiproject registry entry ID mismatch'
+
+for malformed_archiproject in \
+  'status: unknown' \
+  'name: ' \
+  'heading: invalid_id' \
+  'target: not-a-number' \
+  'unit: ' \
+  'due: 2026-02-30' \
+  'due: 2026/08/24'; do
+  reset_work_model_hub "$TASK2_ARCHIPROJECT"
+  field="${malformed_archiproject%%:*}"
+  value="${malformed_archiproject#*: }"
+  case "$field" in
+    heading)
+      sed -e 's/^## unified-assistant$/## invalid_id/' -e 's/^id: unified-assistant$/id: invalid_id/' \
+        "$TASK2_ARCHIPROJECT/ai/archiprojects.md" \
+        > "$TASK2_ARCHIPROJECT/ai/archiprojects.md.tmp"
+      ;;
+    *)
+      sed "s|^$field: .*|$field: $value|" "$TASK2_ARCHIPROJECT/ai/archiprojects.md" \
+        > "$TASK2_ARCHIPROJECT/ai/archiprojects.md.tmp"
+      ;;
+  esac
+  mv "$TASK2_ARCHIPROJECT/ai/archiprojects.md.tmp" "$TASK2_ARCHIPROJECT/ai/archiprojects.md"
+  if bash "$ROOT/scripts/check-hub-registry.sh" "$TASK2_ARCHIPROJECT" > "$TMP_DIR/malformed-archiproject-value.out" 2>&1; then
+    fail "validator accepted malformed archiproject $malformed_archiproject"
+  fi
+  assert_contains "$TMP_DIR/malformed-archiproject-value.out" 'invalid archiproject'
+done
+
+reset_work_model_hub "$TASK2_ARCHIPROJECT"
+awk '
+  /^due: / { print; print "unexpected: must-fail"; next }
+  { print }
+' "$TASK2_ARCHIPROJECT/ai/archiprojects.md" \
+  > "$TASK2_ARCHIPROJECT/ai/archiprojects.md.tmp"
+mv "$TASK2_ARCHIPROJECT/ai/archiprojects.md.tmp" "$TASK2_ARCHIPROJECT/ai/archiprojects.md"
+if bash "$ROOT/scripts/check-hub-registry.sh" "$TASK2_ARCHIPROJECT" > "$TMP_DIR/unknown-archiproject-key.out" 2>&1; then
+  fail 'validator accepted an unknown YAML key in archiproject registry'
+fi
+assert_contains "$TMP_DIR/unknown-archiproject-key.out" 'unrecognized YAML line'
+
+bash "$ROOT/scripts/check-consistency.sh" > "$TMP_DIR/work-model-consistency.out"
+assert_contains "$TMP_DIR/work-model-consistency.out" 'All canonical lists are consistent.'
 
 portable_hub_install_contract
 
@@ -673,20 +966,20 @@ grep -Fq 'Hypotheses (optional)' "$SIGNALS" \
   || fail 'hypothesis separation missing'
 
 ROUTER_SKILL="$ROOT/hub-template/ai/skills/hub-project-router/SKILL.md"
-assert_contains "$ROUTER_SKILL" 'maximum of three candidates'
+assert_contains "$ROUTER_SKILL" 'maximum of three'
 assert_contains "$ROUTER_SKILL" 'high, medium, or low'
-assert_contains "$ROUTER_SKILL" 'read only candidate cards'
+assert_contains "$ROUTER_SKILL" 'read-compact-project-index.sh'
 assert_contains "$ROUTER_SKILL" 'wait for explicit confirmation'
 router_read_boundary_valid "$ROUTER_SKILL" \
-  || fail 'router must allow only relevant hub cross-project signals and forbid project memory/code before confirmation'
-router_staged_signal_reads_valid "$ROUTER_SKILL" \
-  || fail 'router must stage cross-project signal reads after candidate selection'
+  || fail 'router must allow only the compact index and forbid broader reads before confirmation'
+router_compact_index_reads_valid "$ROUTER_SKILL" \
+  || fail 'router must use compact index fields before confirmation'
 router_multiple_candidates_template_valid "$ROUTER_SKILL" \
   || fail 'router multi-candidate template must include confidence for all three candidate slots'
 
-ROUTER_WITHOUT_SIGNALS="$TMP_DIR/router-without-signals.md"
-sed '/ai\/cross-project-signals\.md/d' "$ROUTER_SKILL" > "$ROUTER_WITHOUT_SIGNALS"
-assert_rejected router_read_boundary_valid "$ROUTER_WITHOUT_SIGNALS"
+ROUTER_WITHOUT_INDEX="$TMP_DIR/router-without-index.md"
+sed '/read-compact-project-index\.sh/d' "$ROUTER_SKILL" > "$ROUTER_WITHOUT_INDEX"
+assert_rejected router_read_boundary_valid "$ROUTER_WITHOUT_INDEX"
 
 ROUTER_WITHOUT_THIRD_SLOT="$TMP_DIR/router-without-third-slot.md"
 sed '/3\. <project-id-3>/d' "$ROUTER_SKILL" > "$ROUTER_WITHOUT_THIRD_SLOT"
@@ -749,6 +1042,7 @@ printf '%s\n' '# Project Registry' '' \
   "Path: $VALID/projects/analytics-seo" \
   'Tags: seo, analytics, traffic, leads' \
   'Card: ai/project-cards/analytics-seo.md' > "$VALID/ai/project-registry.md"
+printf '%s\n' '# Archiprojects' > "$VALID/ai/archiprojects.md"
 printf '%s\n' '# Project Card' '' \
   'Project ID: analytics-seo' \
   'Name: SEO Analytics' \
@@ -768,6 +1062,18 @@ copy_valid_hub() {
     "$destination/ai/project-cards/analytics-seo.md"
 }
 
+assert_compact_index_rows_valid() {
+  local file="$1" expected
+  expected="$TMP_DIR/compact-index.expected"
+  printf '%s\n' \
+    $'project_id\tname\ttags\tstatus\tpurpose_brief' \
+    $'alpha-project\tAlpha Project\talpha, search\tactive\tAlpha purpose.' \
+    $'beta-project\tBeta Project\tbeta, routing\tpaused\tBeta purpose.' \
+    > "$expected"
+  cmp -s "$expected" "$file" \
+    || fail "compact project index must be deterministic TSV with exactly five columns"
+}
+
 bash -x "$ROOT/scripts/check-hub-registry.sh" "$VALID" > "$TMP_DIR/valid.out" 2> "$TMP_DIR/valid.trace"
 assert_contains "$TMP_DIR/valid.out" 'Registry check passed'
 assert_contains "$TMP_DIR/valid.out" '1 projects'
@@ -776,6 +1082,13 @@ assert_not_contains "$TMP_DIR/valid.trace" "$SENTINEL"
 assert_forbidden_reads_absent "$TMP_DIR/valid.trace" \
   '/.env' '/credentials.txt' '/unregistered-project/private.txt' '/analytics-seo-backup/private.txt'
 echo 'Sentinel evidence: validator output and xtrace contain neither the marker nor the named forbidden file paths.'
+
+MISSING_ARCHIPROJECTS="$TMP_DIR/missing-archiprojects"
+copy_valid_hub "$MISSING_ARCHIPROJECTS"
+rm "$MISSING_ARCHIPROJECTS/ai/archiprojects.md"
+if bash "$ROOT/scripts/check-hub-registry.sh" "$MISSING_ARCHIPROJECTS" > "$TMP_DIR/missing-archiprojects.out" 2>&1; then
+  fail 'registry validator accepted a hub without canonical archiprojects.md'
+fi
 
 # The valid fixture intentionally holds two unregistered directories. They must
 # be reported on stderr without changing the exit code or the stdout summary,
@@ -788,6 +1101,147 @@ assert_contains "$TMP_DIR/valid-warn.err" 'WARNING: unregistered directory in pr
 assert_contains "$TMP_DIR/valid-warn.out" 'Registry check passed: 1 projects'
 assert_not_contains "$TMP_DIR/valid-warn.out" 'WARNING'
 assert_not_contains "$TMP_DIR/valid-warn.err" "$SENTINEL"
+
+COMPACT="$TMP_DIR/compact-index-hub"
+mkdir -p "$COMPACT/ai/project-cards" "$COMPACT/projects/alpha-project" "$COMPACT/projects/beta-project"
+scaffold_project_memory "$COMPACT/projects/alpha-project"
+scaffold_project_memory "$COMPACT/projects/beta-project"
+printf '%s\n' 'MUST_NOT_BE_READ' > "$COMPACT/projects/alpha-project/ai/current-task.md"
+printf '%s\n' '# Allowed Roots' '' "- $COMPACT/projects" > "$COMPACT/ai/allowed-roots.md"
+printf '%s\n' '# Project Registry' '' \
+  '## beta-project' \
+  'Name: Beta Project' \
+  'Type: work' \
+  'Status: paused' \
+  "Path: $COMPACT/projects/beta-project" \
+  'Tags: beta, routing' \
+  'Card: ai/project-cards/beta-project.md' '' \
+  '## alpha-project' \
+  'Name: Alpha Project' \
+  'Type: work' \
+  'Status: active' \
+  "Path: $COMPACT/projects/alpha-project" \
+  'Tags: alpha, search' \
+  'Card: ai/project-cards/alpha-project.md' > "$COMPACT/ai/project-registry.md"
+printf '%s\n' '# Project Card' '' \
+  'Project ID: beta-project' \
+  'Name: Beta Project' \
+  'Type: work' \
+  'Status: paused' \
+  'Last updated: 2026-08-12' \
+  'Purpose: Beta purpose.' \
+  'Typical tasks: Route queries.' \
+  "Memory entry point: $COMPACT/projects/beta-project/ai/current-task.md" \
+  > "$COMPACT/ai/project-cards/beta-project.md"
+printf '%s\n' '# Project Card' '' \
+  'Project ID: alpha-project' \
+  'Name: Alpha Project' \
+  'Type: work' \
+  'Status: active' \
+  'Last updated: 2026-08-12' \
+  'Purpose: Alpha purpose.' \
+  'Typical tasks: Find projects.' \
+  "Memory entry point: $COMPACT/projects/alpha-project/ai/current-task-MUST_NOT_BE_READ.md" \
+  > "$COMPACT/ai/project-cards/alpha-project.md"
+
+bash "$ROOT/scripts/read-compact-project-index.sh" "$COMPACT" \
+  > "$TMP_DIR/compact-index.out" 2> "$TMP_DIR/compact-index.err"
+assert_compact_index_rows_valid "$TMP_DIR/compact-index.out"
+assert_not_contains "$TMP_DIR/compact-index.out" 'MUST_NOT_BE_READ'
+assert_not_contains "$TMP_DIR/compact-index.out" 'Memory entry point'
+assert_not_contains "$TMP_DIR/compact-index.out" 'ai/current-task.md'
+assert_not_contains "$TMP_DIR/compact-index.err" 'MUST_NOT_BE_READ'
+
+for symlink_case in ai registry project-cards card; do
+  SYMLINK_COMPACT="$TMP_DIR/compact-index-symlink-$symlink_case"
+  SYMLINK_OUTSIDE="$TMP_DIR/compact-index-outside-$symlink_case"
+  cp -R "$COMPACT" "$SYMLINK_COMPACT"
+  mkdir -p "$SYMLINK_OUTSIDE"
+  printf '%s\n' 'COMPACT_INDEX_SYMLINK_SENTINEL' > "$SYMLINK_OUTSIDE/private.txt"
+  case "$symlink_case" in
+    ai)
+      rm -rf "$SYMLINK_COMPACT/ai"
+      ln -s "$SYMLINK_OUTSIDE" "$SYMLINK_COMPACT/ai"
+      ;;
+    registry)
+      rm "$SYMLINK_COMPACT/ai/project-registry.md"
+      ln -s "$SYMLINK_OUTSIDE/private.txt" "$SYMLINK_COMPACT/ai/project-registry.md"
+      ;;
+    project-cards)
+      rm -rf "$SYMLINK_COMPACT/ai/project-cards"
+      ln -s "$SYMLINK_OUTSIDE" "$SYMLINK_COMPACT/ai/project-cards"
+      ;;
+    card)
+      rm "$SYMLINK_COMPACT/ai/project-cards/alpha-project.md"
+      ln -s "$SYMLINK_OUTSIDE/private.txt" "$SYMLINK_COMPACT/ai/project-cards/alpha-project.md"
+      ;;
+  esac
+  if bash "$ROOT/scripts/read-compact-project-index.sh" "$SYMLINK_COMPACT" \
+    > "$TMP_DIR/compact-index-symlink-$symlink_case.out" \
+    2> "$TMP_DIR/compact-index-symlink-$symlink_case.err"; then
+    fail "compact project index accepted a $symlink_case symlink"
+  fi
+  assert_not_contains "$TMP_DIR/compact-index-symlink-$symlink_case.out" 'COMPACT_INDEX_SYMLINK_SENTINEL'
+  assert_not_contains "$TMP_DIR/compact-index-symlink-$symlink_case.err" 'COMPACT_INDEX_SYMLINK_SENTINEL'
+done
+
+# Metadata search must not traverse into project directories or require full
+# project cards. It reads only index fields and each card's Purpose line.
+COMPACT_METADATA_ONLY="$TMP_DIR/compact-metadata-only-hub"
+mkdir -p "$COMPACT_METADATA_ONLY/ai/project-cards" "$COMPACT_METADATA_ONLY/projects/unregistered-project"
+printf '%s\n' 'MUST_NOT_BE_READ' > "$COMPACT_METADATA_ONLY/projects/unregistered-project/private.txt"
+printf '%s\n' '# Project Registry' '' \
+  '## beta-project' \
+  'Name: Beta Project' \
+  'Tags: beta, routing' \
+  'Status: paused' \
+  '## alpha-project' \
+  'Name: Alpha Project' \
+  'Tags: alpha, search' \
+  'Status: active' > "$COMPACT_METADATA_ONLY/ai/project-registry.md"
+printf '%s\n' 'Purpose: Beta purpose.' > "$COMPACT_METADATA_ONLY/ai/project-cards/beta-project.md"
+printf '%s\n' 'Purpose: Alpha purpose.' > "$COMPACT_METADATA_ONLY/ai/project-cards/alpha-project.md"
+bash "$ROOT/scripts/read-compact-project-index.sh" "$COMPACT_METADATA_ONLY" \
+  > "$TMP_DIR/compact-metadata-only.out" 2> "$TMP_DIR/compact-metadata-only.err"
+assert_compact_index_rows_valid "$TMP_DIR/compact-metadata-only.out"
+[ ! -s "$TMP_DIR/compact-metadata-only.err" ] \
+  || fail 'compact project index must keep a valid metadata-only lookup quiet'
+assert_not_contains "$TMP_DIR/compact-metadata-only.out" 'MUST_NOT_BE_READ'
+assert_not_contains "$TMP_DIR/compact-metadata-only.err" 'MUST_NOT_BE_READ'
+assert_not_contains "$TMP_DIR/compact-metadata-only.err" 'unregistered-project'
+
+TAB_COMPACT="$TMP_DIR/tab-compact-index-hub"
+cp -R "$COMPACT" "$TAB_COMPACT"
+perl -pi -e "s#\\Q$COMPACT\\E#$TAB_COMPACT#g" \
+  "$TAB_COMPACT/ai/allowed-roots.md" \
+  "$TAB_COMPACT/ai/project-registry.md" \
+  "$TAB_COMPACT/ai/project-cards/alpha-project.md" \
+  "$TAB_COMPACT/ai/project-cards/beta-project.md"
+perl -0pi -e 's/Tags: alpha, search/Tags: alpha,\tsearch/' \
+  "$TAB_COMPACT/ai/project-registry.md"
+if bash "$ROOT/scripts/read-compact-project-index.sh" "$TAB_COMPACT" \
+  > "$TMP_DIR/tab-compact-index.out" 2> "$TMP_DIR/tab-compact-index.err"; then
+  fail 'compact project index accepted tab-bearing metadata'
+fi
+assert_not_contains "$TMP_DIR/tab-compact-index.out" $'project_id\tname\ttags\tstatus\tpurpose_brief'
+[ ! -s "$TMP_DIR/tab-compact-index.out" ] \
+  || fail 'tab-bearing metadata must not produce compact-index output'
+
+BROKEN_COMPACT="$TMP_DIR/broken-compact-index-hub"
+cp -R "$COMPACT" "$BROKEN_COMPACT"
+awk '
+  /^## alpha-project$/ { in_alpha = 1 }
+  /^## / && $0 != "## alpha-project" { in_alpha = 0 }
+  in_alpha && /^Tags: / { next }
+  { print }
+' "$BROKEN_COMPACT/ai/project-registry.md" \
+  > "$BROKEN_COMPACT/ai/project-registry.md.tmp"
+mv "$BROKEN_COMPACT/ai/project-registry.md.tmp" "$BROKEN_COMPACT/ai/project-registry.md"
+if bash "$ROOT/scripts/read-compact-project-index.sh" "$BROKEN_COMPACT" \
+  > "$TMP_DIR/broken-compact-index.out" 2> "$TMP_DIR/broken-compact-index.err"; then
+  fail 'compact project index accepted invalid registry data'
+fi
+assert_not_contains "$TMP_DIR/broken-compact-index.out" $'project_id\tname\ttags\tstatus\tpurpose_brief'
 
 # A hub whose projects root holds only registered projects stays silent.
 QUIET_HUB="$TMP_DIR/quiet-hub"
@@ -1154,10 +1608,14 @@ echo 'Sentinel evidence: installer output and xtrace contain neither the marker 
 assert_file "$HUB_INSTALL/AGENTS.md"
 assert_file "$HUB_INSTALL/CLAUDE.md"
 assert_file "$HUB_INSTALL/ai/project-registry.md"
+assert_file "$HUB_INSTALL/scripts/read-compact-project-index.sh"
+assert_file "$HUB_INSTALL/ai/archiprojects.md"
 assert_file "$HUB_INSTALL/scripts/check-hub-registry.sh"
 assert_file "$HUB_INSTALL/projects/.gitkeep"
 assert_file "$HUB_INSTALL/ai/skills/hub-knowledge-capture/SKILL.md"
 assert_file "$HUB_INSTALL/ai/skills/hub-knowledge-review/SKILL.md"
+ARCHIPROJECTS_BASE="$TMP_DIR/archiprojects-base"
+cp -R "$HUB_INSTALL" "$ARCHIPROJECTS_BASE"
 PROJECT_ROOT="$HUB_INSTALL/projects"
 mkdir -p "$PROJECT_ROOT/example-project" "$PROJECT_ROOT/example-backup"
 printf '%s\n' "$SENTINEL" > "$PROJECT_ROOT/example-project/.env"
@@ -1173,6 +1631,22 @@ bash "$ROOT/scripts/check-hub-registry.sh" "$HUB_INSTALL" > "$TMP_DIR/installed-
 assert_contains "$TMP_DIR/installed-hub-registry.out" 'Registry check passed'
 bash "$HUB_INSTALL/scripts/check-hub-registry.sh" "$HUB_INSTALL" > "$TMP_DIR/installed-hub-local-registry.out"
 assert_contains "$TMP_DIR/installed-hub-local-registry.out" 'Registry check passed'
+
+ARCHIPROJECTS_SURVIVE="$TMP_DIR/archiprojects-survive-hub"
+cp -R "$ARCHIPROJECTS_BASE" "$ARCHIPROJECTS_SURVIVE"
+printf '%s\n' '# Archiprojects' '' 'USER_ARCHIPROJECT_MUST_SURVIVE' > "$ARCHIPROJECTS_SURVIVE/ai/archiprojects.md"
+cp "$ARCHIPROJECTS_SURVIVE/ai/archiprojects.md" "$TMP_DIR/archiprojects.before"
+bash "$ROOT/scripts/update-installed-hub.sh" --hub "$ARCHIPROJECTS_SURVIVE" --source "$ROOT" --apply --allow-dirty > "$TMP_DIR/archiprojects-survive.out"
+cmp -s "$TMP_DIR/archiprojects.before" "$ARCHIPROJECTS_SURVIVE/ai/archiprojects.md" || fail 'hub updater overwrote existing archiprojects.md'
+
+ARCHIPROJECTS_MISSING="$TMP_DIR/archiprojects-missing-hub"
+cp -R "$ARCHIPROJECTS_BASE" "$ARCHIPROJECTS_MISSING"
+rm "$ARCHIPROJECTS_MISSING/ai/archiprojects.md"
+bash "$ROOT/scripts/update-installed-hub.sh" --hub "$ARCHIPROJECTS_MISSING" --source "$ROOT" --apply --allow-dirty > "$TMP_DIR/archiprojects-missing.out"
+assert_file "$ARCHIPROJECTS_MISSING/ai/archiprojects.md"
+cmp -s "$ROOT/hub-template/ai/archiprojects.md" "$ARCHIPROJECTS_MISSING/ai/archiprojects.md" \
+  || fail 'hub updater did not restore missing archiprojects.md from the template'
+
 cp "$HUB_INSTALL/ai/project-registry.md" "$TMP_DIR/install-registry.before"
 cp "$HUB_INSTALL/ai/allowed-roots.md" "$TMP_DIR/install-roots.before"
 bash "$ROOT/scripts/install.sh" --mode hub "$HUB_INSTALL" > "$TMP_DIR/install-update.out"
@@ -1188,17 +1662,31 @@ if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$
 fi
 assert_contains "$TMP_DIR/standalone-source.out" 'Source template is not a personal AI hub'
 
+MISSING_COMPACT_SOURCE="$TMP_DIR/missing-compact-source"
+mkdir -p "$MISSING_COMPACT_SOURCE"
+cp -R "$ROOT/hub-template" "$MISSING_COMPACT_SOURCE/hub-template"
+if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$MISSING_COMPACT_SOURCE" --dry-run > "$TMP_DIR/missing-compact-source.out" 2>&1; then
+  fail 'hub updater accepted a source without the mandatory compact reader'
+fi
+assert_contains "$TMP_DIR/missing-compact-source.out" 'missing mandatory script: scripts/read-compact-project-index.sh'
+
 INCOMPLETE_HUB_SOURCE="$TMP_DIR/incomplete-hub-source"
-cp -R "$ROOT/hub-template" "$INCOMPLETE_HUB_SOURCE"
-rm "$INCOMPLETE_HUB_SOURCE/ai/skills/hub-project-router/SKILL.md"
+mkdir -p "$INCOMPLETE_HUB_SOURCE"
+cp -R "$ROOT/hub-template" "$INCOMPLETE_HUB_SOURCE/hub-template"
+mkdir -p "$INCOMPLETE_HUB_SOURCE/scripts"
+cp "$ROOT/scripts/read-compact-project-index.sh" "$INCOMPLETE_HUB_SOURCE/scripts/read-compact-project-index.sh"
+rm "$INCOMPLETE_HUB_SOURCE/hub-template/ai/skills/hub-project-router/SKILL.md"
 if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$INCOMPLETE_HUB_SOURCE" --dry-run > "$TMP_DIR/incomplete-hub-source.out" 2>&1; then
   fail 'hub updater accepted a source without a mandatory hub skill'
 fi
 assert_contains "$TMP_DIR/incomplete-hub-source.out" 'missing mandatory hub skill: hub-project-router'
 
 INCOMPLETE_KNOWLEDGE_SOURCE="$TMP_DIR/incomplete-knowledge-source"
-cp -R "$ROOT/hub-template" "$INCOMPLETE_KNOWLEDGE_SOURCE"
-rm "$INCOMPLETE_KNOWLEDGE_SOURCE/ai/skills/hub-knowledge-review/SKILL.md"
+mkdir -p "$INCOMPLETE_KNOWLEDGE_SOURCE"
+cp -R "$ROOT/hub-template" "$INCOMPLETE_KNOWLEDGE_SOURCE/hub-template"
+mkdir -p "$INCOMPLETE_KNOWLEDGE_SOURCE/scripts"
+cp "$ROOT/scripts/read-compact-project-index.sh" "$INCOMPLETE_KNOWLEDGE_SOURCE/scripts/read-compact-project-index.sh"
+rm "$INCOMPLETE_KNOWLEDGE_SOURCE/hub-template/ai/skills/hub-knowledge-review/SKILL.md"
 if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$INCOMPLETE_KNOWLEDGE_SOURCE" --dry-run > "$TMP_DIR/incomplete-knowledge-source.out" 2>&1; then
   fail 'hub updater accepted a source without the mandatory knowledge quality cycle'
 fi
@@ -1250,9 +1738,11 @@ rm "$HUB_INSTALL/ai/archive/.gitkeep"
 rm "$HUB_INSTALL/ai/project-cards/.gitkeep"
 printf '%s\n' 'stale hub entry' > "$HUB_INSTALL/AGENTS.md"
 printf '%s\n' 'stale validator' > "$HUB_INSTALL/scripts/check-hub-registry.sh"
+printf '%s\n' 'stale compact index' > "$HUB_INSTALL/scripts/read-compact-project-index.sh"
 
 bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$ROOT" --dry-run > "$TMP_DIR/hub-dry-run.out"
 assert_contains "$TMP_DIR/hub-dry-run.out" '### AGENTS.md'
+assert_contains "$TMP_DIR/hub-dry-run.out" '### scripts/read-compact-project-index.sh'
 assert_contains "$TMP_DIR/hub-dry-run.out" 'Would create missing hub memory file without overwriting hub memory: ai/archive/.gitkeep'
 assert_contains "$TMP_DIR/hub-dry-run.out" 'Would create missing hub memory file without overwriting hub memory: ai/project-cards/.gitkeep'
 assert_not_exists "$HUB_INSTALL/ai/archive/.gitkeep"
@@ -1352,6 +1842,7 @@ assert_contains "$TMP_DIR/hub-dirty.out" 'Working tree is not clean'
 bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$ROOT" --apply --allow-dirty > "$TMP_DIR/hub-update.out"
 cmp -s "$ROOT/hub-template/AGENTS.md" "$HUB_INSTALL/AGENTS.md" || fail 'hub update did not replace protected entry file'
 cmp -s "$ROOT/scripts/check-hub-registry.sh" "$HUB_INSTALL/scripts/check-hub-registry.sh" || fail 'hub update did not replace protected validator'
+cmp -s "$ROOT/scripts/read-compact-project-index.sh" "$HUB_INSTALL/scripts/read-compact-project-index.sh" || fail 'hub update did not replace compact project index reader'
 cmp -s "$TMP_DIR/allowed-roots.before" "$HUB_INSTALL/ai/allowed-roots.md" || fail 'hub update overwrote allowed roots'
 cmp -s "$TMP_DIR/registry.before" "$HUB_INSTALL/ai/project-registry.md" || fail 'hub update overwrote registry'
 cmp -s "$TMP_DIR/active.before" "$HUB_INSTALL/ai/active-project.md" || fail 'hub update overwrote active project'
@@ -1391,9 +1882,11 @@ git -C "$HUB_COMMIT" commit -m "test: install hub" >/dev/null
 printf '%s\n' '# Project Registry' '' 'commit-safe registry' > "$HUB_COMMIT/ai/project-registry.md"
 cp "$HUB_COMMIT/ai/project-registry.md" "$TMP_DIR/commit-registry.before"
 COMMIT_SOURCE="$TMP_DIR/commit-source"
-cp -R "$ROOT/hub-template" "$COMMIT_SOURCE"
-printf '%s\n' '' '<!-- updater commit fixture -->' >> "$COMMIT_SOURCE/AGENTS.md"
-printf '%s\n' '# New Archive Template' > "$COMMIT_SOURCE/ai/archive/new-template.md"
+mkdir -p "$COMMIT_SOURCE/scripts"
+cp -R "$ROOT/hub-template" "$COMMIT_SOURCE/hub-template"
+cp "$ROOT/scripts/read-compact-project-index.sh" "$COMMIT_SOURCE/scripts/read-compact-project-index.sh"
+printf '%s\n' '' '<!-- updater commit fixture -->' >> "$COMMIT_SOURCE/hub-template/AGENTS.md"
+printf '%s\n' '# New Archive Template' > "$COMMIT_SOURCE/hub-template/ai/archive/new-template.md"
 bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_COMMIT" --source "$COMMIT_SOURCE" --commit --allow-dirty > "$TMP_DIR/hub-commit.out"
 cmp -s "$TMP_DIR/commit-registry.before" "$HUB_COMMIT/ai/project-registry.md" || fail 'hub commit overwrote registry'
 assert_contains <(git -C "$HUB_COMMIT" show --format= --name-only HEAD) 'AGENTS.md'
@@ -1441,10 +1934,12 @@ assert_file "$STALE_CHECK_HUB/ai/skills/task-intake/SKILL.md"
 # Regression: refuse to remove superseded paths when --source points at a
 # template older than the version that introduced removal (Finding 3).
 OLD_SOURCE="$TMP_DIR/old-source-hub"
-cp -R "$ROOT/hub-template" "$OLD_SOURCE"
-perl -0pi -e 's/Version: [0-9]+\.[0-9]+/Version: 1.2/' "$OLD_SOURCE/ai/architecture.md"
-mkdir -p "$OLD_SOURCE/ai/skills/task-intake"
-printf '%s\n' '# Legacy fixture' > "$OLD_SOURCE/ai/skills/task-intake/SKILL.md"
+mkdir -p "$OLD_SOURCE/scripts"
+cp -R "$ROOT/hub-template" "$OLD_SOURCE/hub-template"
+cp "$ROOT/scripts/read-compact-project-index.sh" "$OLD_SOURCE/scripts/read-compact-project-index.sh"
+perl -0pi -e 's/Version: [0-9]+\.[0-9]+/Version: 1.2/' "$OLD_SOURCE/hub-template/ai/architecture.md"
+mkdir -p "$OLD_SOURCE/hub-template/ai/skills/task-intake"
+printf '%s\n' '# Legacy fixture' > "$OLD_SOURCE/hub-template/ai/skills/task-intake/SKILL.md"
 OLD_SOURCE_HUB="$TMP_DIR/old-source-target-hub"
 cp -R "$HUB_INSTALL" "$OLD_SOURCE_HUB"
 mkdir -p "$OLD_SOURCE_HUB/ai/skills/task-intake"
@@ -1464,9 +1959,11 @@ assert_file "$OLD_SOURCE_HUB/ai/skills/hub-project-router/SKILL.md"
 # AGENTS.md/CLAUDE.md/ai/architecture.md and only aborts afterward, leaving
 # the hub partially downgraded.
 GATE_ORDER_SOURCE="$TMP_DIR/gate-order-source"
-cp -R "$ROOT/hub-template" "$GATE_ORDER_SOURCE"
-perl -0pi -e 's/Version: [0-9]+\.[0-9]+/Version: 1.2/' "$GATE_ORDER_SOURCE/ai/architecture.md"
-printf '%s\n' '' '<!-- must never land in the hub: version gate ran too late -->' >> "$GATE_ORDER_SOURCE/AGENTS.md"
+mkdir -p "$GATE_ORDER_SOURCE/scripts"
+cp -R "$ROOT/hub-template" "$GATE_ORDER_SOURCE/hub-template"
+cp "$ROOT/scripts/read-compact-project-index.sh" "$GATE_ORDER_SOURCE/scripts/read-compact-project-index.sh"
+perl -0pi -e 's/Version: [0-9]+\.[0-9]+/Version: 1.2/' "$GATE_ORDER_SOURCE/hub-template/ai/architecture.md"
+printf '%s\n' '' '<!-- must never land in the hub: version gate ran too late -->' >> "$GATE_ORDER_SOURCE/hub-template/AGENTS.md"
 GATE_ORDER_HUB="$TMP_DIR/gate-order-hub"
 cp -R "$HUB_INSTALL" "$GATE_ORDER_HUB"
 cp "$GATE_ORDER_HUB/AGENTS.md" "$TMP_DIR/gate-order-agents.before"

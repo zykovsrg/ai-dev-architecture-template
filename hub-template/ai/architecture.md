@@ -1,6 +1,6 @@
 # Personal AI Hub Architecture
 
-Version: 1.6
+Version: 1.7
 
 ## Purpose
 
@@ -49,12 +49,19 @@ Hub-owned files are the routing inventory:
 - `ai/project-registry.md` maps each project ID to its name, status, path,
   tags, and card.
 - `ai/project-cards/<id>.md` holds compact hub metadata for that ID.
+- `ai/archiprojects.md` is the canonical hub-owned archiproject registry.
 - `ai/active-project.md` is a convenience record, never a new-chat permission.
 - `ai/cross-project-signals.md` holds sanitized, explicitly scoped signals.
 
 Project-owned files are the selected project's code, memory, instructions,
 configuration, and history. A project card must not contain copied task memory,
 source code, credentials, or an instruction that overrides the project itself.
+Project/task files remain canonical; project cards are metadata only and a link
+never grants a project read. A card may optionally use all three archiproject
+fields: `primary_archiproject:`, `archiproject_contribution:`, and
+`related_archiprojects:`. Use `none` where absent. Related archiproject links never add
+contribution. Waiting is task/subtask-only: do not place a project in Waiting
+while other work is actionable.
 
 The registry is the authority for an ID, status, and exact path. The card is
 supporting metadata only. An absent, invalid, or unregistered card/path blocks
@@ -67,15 +74,14 @@ until each individual fix receives its own approval.
 
 Use this sequence for every new chat or unconfirmed request:
 
-1. Read the compact hub index only: `ai/allowed-roots.md`,
-   `ai/project-registry.md`, and `ai/active-project.md`.
-2. Match the request without reading project files, then read up to three
-   candidate cards only.
-3. After candidate selection, read only related active signals that name a
-   candidate from `ai/cross-project-signals.md`.
-4. Show `Project: <id>`, the exact registered `Path: <path>`, and `Mode: routing`.
-5. Ask for explicit confirmation of that project and path.
-6. Only after confirmation, invoke the hub-owned `hub-environment-check` against
+1. Run `scripts/read-compact-project-index.sh` and match the request using only
+   `project_id`, `name`, `tags`, `status`, and `purpose_brief`.
+2. For a selected candidate, read its exact registered path only to display
+   `Project: <id>`, `Path: <path>`, and `Mode: routing`.
+3. Ask for explicit confirmation of that project and path. Before confirmation,
+   do not read cards, signals, tasks, memory, knowledge, code, Git, or linked
+   targets.
+4. Only after confirmation, invoke the hub-owned `hub-environment-check` against
    the selected project's `ai/` memory, then use the hub-managed project flow.
 
 This sequence is the hub-owned `hub-project-router` workflow. The router never
@@ -311,9 +317,10 @@ The hub never uses a card or signal to exfiltrate information from a project.
 
 Load the smallest useful context in layers:
 
-1. Before confirmation: the entry file, allowed roots, registry, and at most
-   three candidate cards, then only related active signals. Do not load project
-   memory or code.
+1. Before confirmation: the entry file and the five-field result of
+   `scripts/read-compact-project-index.sh`; read an exact registered path only
+   to display a selected candidate. Do not load cards, signals, project memory,
+   knowledge, code, Git, or linked targets.
 2. After confirmation: the hub-owned `hub-environment-check`, the selected
    project's current task, at most two directly relevant project-memory files,
    and one matching shared workflow skill.
