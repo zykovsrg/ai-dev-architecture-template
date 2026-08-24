@@ -5,6 +5,7 @@ HUB_DIR="${1:-.}"
 HUB_DIR="$(cd "$HUB_DIR" && pwd -P)"
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 TAB="$(printf '\t')"
+CR="$(printf '\r')"
 
 die() {
   echo "ERROR: $*" >&2
@@ -16,7 +17,7 @@ die() {
 bash "$ROOT/scripts/check-hub-registry.sh" "$HUB_DIR" >/dev/null
 
 printf 'project_id\tname\ttags\tstatus\tpurpose_brief\n'
-awk -v hub_dir="$HUB_DIR" '
+awk -v hub_dir="$HUB_DIR" -v tab="$TAB" -v cr="$CR" '
 function trim(text) {
   sub(/^ +/, "", text)
   sub(/ +$/, "", text)
@@ -27,7 +28,15 @@ function reset_fields() {
   delete fields
 }
 
-function emit_row(   card_path, line, name, tags, status, purpose) {
+function reject_tsv_breakers(label, value) {
+  if (index(value, tab) > 0 || index(value, cr) > 0) {
+    bad_row = 1
+    print "ERROR: compact index field contains forbidden control character in " label > "/dev/stderr"
+    exit 1
+  }
+}
+
+function emit_row(   card_path, line, name, tags, status, purpose, row) {
   if (project_id == "") {
     return
   }
@@ -49,7 +58,14 @@ function emit_row(   card_path, line, name, tags, status, purpose) {
   }
   close(card_path)
 
-  printf "%s\t%s\t%s\t%s\t%s\n", project_id, name, tags, status, purpose
+  reject_tsv_breakers("project_id", project_id)
+  reject_tsv_breakers("name", name)
+  reject_tsv_breakers("tags", tags)
+  reject_tsv_breakers("status", status)
+  reject_tsv_breakers("purpose_brief", purpose)
+
+  row = project_id "\t" name "\t" tags "\t" status "\t" purpose
+  rows[++row_count] = row
 }
 
 /^## / {
@@ -76,5 +92,11 @@ project_id != "" {
 
 END {
   emit_row()
+  if (bad_row) {
+    exit 1
+  }
+  for (i = 1; i <= row_count; i++) {
+    print rows[i]
+  }
 }
 ' "$HUB_DIR/ai/project-registry.md" | LC_ALL=C sort -t "$TAB" -k1,1

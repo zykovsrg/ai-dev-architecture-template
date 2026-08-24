@@ -1096,6 +1096,23 @@ assert_not_contains "$TMP_DIR/compact-index.out" 'Memory entry point'
 assert_not_contains "$TMP_DIR/compact-index.out" 'ai/current-task.md'
 assert_not_contains "$TMP_DIR/compact-index.err" 'MUST_NOT_BE_READ'
 
+TAB_COMPACT="$TMP_DIR/tab-compact-index-hub"
+cp -R "$COMPACT" "$TAB_COMPACT"
+perl -pi -e "s#\\Q$COMPACT\\E#$TAB_COMPACT#g" \
+  "$TAB_COMPACT/ai/allowed-roots.md" \
+  "$TAB_COMPACT/ai/project-registry.md" \
+  "$TAB_COMPACT/ai/project-cards/alpha-project.md" \
+  "$TAB_COMPACT/ai/project-cards/beta-project.md"
+perl -0pi -e 's/Tags: alpha, search/Tags: alpha,\tsearch/' \
+  "$TAB_COMPACT/ai/project-registry.md"
+if bash "$ROOT/scripts/read-compact-project-index.sh" "$TAB_COMPACT" \
+  > "$TMP_DIR/tab-compact-index.out" 2> "$TMP_DIR/tab-compact-index.err"; then
+  fail 'compact project index accepted tab-bearing metadata'
+fi
+assert_contains "$TMP_DIR/tab-compact-index.out" $'project_id\tname\ttags\tstatus\tpurpose_brief'
+[ "$(wc -l < "$TMP_DIR/tab-compact-index.out" | tr -d '[:space:]')" -eq 1 ] \
+  || fail 'tab-bearing metadata must not produce a data row after the header'
+
 BROKEN_COMPACT="$TMP_DIR/broken-compact-index-hub"
 cp -R "$COMPACT" "$BROKEN_COMPACT"
 awk '
