@@ -17,4 +17,3 @@ target: <target>
 unit: <unit>
 due: YYYY-MM-DD or none
 ```
-

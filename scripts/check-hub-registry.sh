@@ -301,6 +301,9 @@ load_archiproject_registry() {
             increment_archiproject_field due
             archiproject_value_due="${line#due: }"
             ;;
+          *)
+            die "unrecognized YAML line in archiproject registry entry: $archiproject_entry_id"
+            ;;
         esac
         ;;
     esac
@@ -428,6 +431,7 @@ validate_skill_namespace() {
 validate_entry_files
 validate_skill_namespace
 validate_projects_root
+load_archiproject_registry
 
 ids=""
 current_id=""
