@@ -58,7 +58,7 @@ EOF
 }
 
 add_fixture "active-project" "Active project" "active" \
-  $'Status: active\n- [ ] Ship the active task' \
+  $'Status: active\ntask:\n  due: 2026-08-31\n  subtasks:\n    - title: First structured action\n    - title: Second structured action\n    - title: Third structured action\n    - title: Fourth structured action\n    - title: Fifth structured action\n    - title: Sixth structured action\n    - title: Seventh structured action\n    - title: Eighth structured action' \
   $'Status: none' $'Status: none'
 add_fixture "ready-future-project" "Ready future project" "active" \
   $'Status: none' $'Status: ready\n- [ ] Promote the ready task' $'Status: none'
@@ -72,6 +72,10 @@ add_fixture "archived-project" "Archived project" "archived" \
   $'Status: none' $'Status: none' $'Status: none'
 add_fixture "legacy-complete-project" "Legacy complete project" "active" \
   $'Status: complete\n- [x] Legacy task must be reviewed\nTASK-BODY-SENTINEL' $'Status: none' $'Status: none'
+add_fixture "none-status-project" "None status project" "none" \
+  $'Status: none' $'Status: none' $'Status: none'
+add_fixture "unknown-status-project" "Unknown status project" "mystery" \
+  $'Status: active' $'Status: none' $'Status: none'
 
 BOARD="$VAULT/Obsidian/AI-архитектура/Projects/_views/Projects-Kanban.md"
 MANIFEST="$VAULT/Obsidian/AI-архитектура/Projects/_views/Projects-Kanban.manifest.json"
@@ -83,6 +87,9 @@ if [ ! -x "$GENERATOR" ]; then
 fi
 
 before_files="$(find "$VAULT" -type f -print | sort)"
+PREVIEW_TMP="$TMP_DIR/preview-tmp"
+mkdir "$PREVIEW_TMP"
+before_preview_tmp="$(find "$PREVIEW_TMP" -print | sort)"
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/preview.txt"
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/preview-repeat.txt"
 cmp -s "$TMP_DIR/preview.txt" "$TMP_DIR/preview-repeat.txt" || fail 'fixed-time preview is not deterministic'
@@ -103,6 +110,12 @@ assert_column paused-project Paused
 assert_column completed-project Completed
 assert_column archived-project Archived
 assert_column legacy-complete-project Incoming
+assert_column none-status-project Incoming
+assert_column unknown-status-project Incoming
+assert_contains "$TMP_DIR/preview.txt" 'First structured action'
+assert_count 7 'structured action' "$TMP_DIR/preview.txt"
+assert_not_contains "$TMP_DIR/preview.txt" 'Eighth structured action'
+assert_contains "$TMP_DIR/preview.txt" 'due: 2026-08-31'
 assert_contains "$TMP_DIR/preview.txt" '## Incoming'
 assert_contains "$TMP_DIR/preview.txt" '## Planned'
 assert_contains "$TMP_DIR/preview.txt" '## Active'
@@ -112,6 +125,7 @@ assert_contains "$TMP_DIR/preview.txt" '## Completed'
 assert_contains "$TMP_DIR/preview.txt" '## Archived'
 [ "$(grep -n '^## ' "$TMP_DIR/preview.txt" | cut -d: -f2 | sed 's/^## //' | tr '\n' '|')" = 'Incoming|Planned|Active|Waiting|Paused|Completed|Archived|' ] || fail 'column order is not deterministic'
 [ "$before_files" = "$(find "$VAULT" -type f -print | sort)" ] || fail 'preview created files'
+[ "$before_preview_tmp" = "$(find "$PREVIEW_TMP" -print | sort)" ] || fail 'preview created temp files'
 assert_not_exists "$BOARD"
 assert_not_exists "$MANIFEST"
 
@@ -124,6 +138,8 @@ expect_scope_failure() {
 
 printf '%s\n' 'active-project' > "$TMP_DIR/outside-scope.txt"
 expect_scope_failure "$TMP_DIR/outside-scope.txt"
+printf '%s\n' 'active-project' > "$TMP_DIR/dotdot-scope.txt"
+expect_scope_failure "$HUB/../dotdot-scope.txt"
 expect_scope_failure "relative-scope.txt"
 
 expect_write_failure() {

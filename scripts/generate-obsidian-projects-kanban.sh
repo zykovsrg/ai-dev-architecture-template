@@ -14,6 +14,21 @@ inside() { [[ "$1" == "$2" || "$1" == "$2"/* ]]; }
 physical_dir() { cd "$1" && pwd -P; }
 read_field() { sed -n "s/^$2: //p" "$1" | head -n 1; }
 file_state() { sed -n 's/^Status: //p' "$1" | head -n 1; }
+safe_due() {
+  sed -nE 's/^[[:space:]]*due:[[:space:]]*([0-9]{4}-[0-9]{2}-[0-9]{2})[[:space:]]*$/\1/p' "$@" |
+    sort -u | head -n 1
+}
+structured_actions() {
+  awk '
+    /^task:[[:space:]]*$/ { in_task=1; next }
+    in_task && /^[^[:space:]]/ { in_task=0 }
+    in_task && /^  subtasks:[[:space:]]*$/ { in_subtasks=1; next }
+    in_subtasks && /^[^[:space:]]/ { in_subtasks=0 }
+    in_subtasks && /^[[:space:]]{4,}-?[[:space:]]*title:[[:space:]]*[^[:space:]].*$/ {
+      line=$0; sub(/^[[:space:]]*-[[:space:]]*title:[[:space:]]*/, "", line); print line
+    }
+  ' "$@" | sed 's/[[:space:]]*$//' | awk 'length && !seen[$0]++' | head -n 7
+}
 
 HUB='' SCOPE='' VAULT='' MODE='' CONFIRM=0
 while [ "$#" -gt 0 ]; do
@@ -36,6 +51,7 @@ is_absolute "$HUB" && is_absolute "$SCOPE" && is_absolute "$VAULT" || die 'hub, 
 [ -d "$HUB" ] && [ ! -L "$HUB" ] || die 'hub must be a non-symlink directory'
 HUB="$(cd "$HUB" && pwd -P)"
 [ -f "$SCOPE" ] && [ ! -L "$SCOPE" ] || die 'scope must be a regular non-symlink file'
+SCOPE="$(cd "$(dirname "$SCOPE")" && pwd -P)/$(basename "$SCOPE")"
 inside "$SCOPE" "$HUB" || die 'scope must be inside hub'
 [ -d "$VAULT" ] && [ ! -L "$VAULT" ] || die 'vault must be a non-symlink directory'
 VAULT="$(cd "$VAULT" && pwd -P)"
@@ -50,12 +66,23 @@ done < <(sed '/^[[:space:]]*$/d' "$SCOPE" | sort)
 [ "${#IDS[@]}" -gt 0 ] || die 'scope is empty'
 if printf '%s\n' "${IDS[@]}" | uniq -d | grep -q .; then die 'duplicate project ID in scope'; fi
 
-WORK="$(mktemp -d "${TMPDIR:-/private/tmp}/obsidian-board.XXXXXX")"
-trap 'rm -rf "$WORK"' EXIT
-BOARD_RENDER="$WORK/Projects-Kanban.md"
-MANIFEST_RENDER="$WORK/Projects-Kanban.manifest.json"
-record() { printf '%s' "$2" > "$WORK/$1.$3"; }
-field() { sed -n '1p' "$WORK/$1.$2"; }
+if [ "$MODE" = write ]; then
+  WORK="$(mktemp -d "$VAULT/.obsidian-board.XXXXXX")"
+  trap 'rm -rf "$WORK"' EXIT
+fi
+PROJECT_PATHS=() CARD_PATHS=() NAMES=() PURPOSES=() COLUMNS=() STATUSES=() SOURCE_HASHES=() DUES=() ACTIONS=()
+field() {
+  local wanted="$1" key="$2" i
+  for i in "${!IDS[@]}"; do
+    [ "${IDS[$i]}" = "$wanted" ] || continue
+    case "$key" in
+      project_path) printf '%s' "${PROJECT_PATHS[$i]}";; card_path) printf '%s' "${CARD_PATHS[$i]}";;
+      name) printf '%s' "${NAMES[$i]}";; purpose) printf '%s' "${PURPOSES[$i]}";;
+      column) printf '%s' "${COLUMNS[$i]}";; status) printf '%s' "${STATUSES[$i]}";; source_hash) printf '%s' "${SOURCE_HASHES[$i]}";;
+    esac
+    return
+  done
+}
 
 for id in "${IDS[@]}"; do
   [[ "$id" =~ ^[a-z0-9][a-z0-9-]*$ ]] || die "invalid project ID: $id"
@@ -84,9 +111,14 @@ for id in "${IDS[@]}"; do
   future="$(file_state "$path/ai/future-tasks.md")"
   paused="$(file_state "$path/ai/paused-tasks.md")"
   legacy=0
+  case "$registry_status" in active|completed|archived) ;; *) legacy=1;; esac
   for state in "$current" "$future" "$paused"; do
-    case "$state" in ''|complete|kanban|legacy) legacy=1;; esac
+    case "$state" in ''|complete|kanban|legacy) legacy=1;;
+      *) ;; esac
   done
+  case "$current" in active|ready|in_progress|waiting|completed|none) ;; *) legacy=1;; esac
+  case "$future" in ready|none) ;; *) legacy=1;; esac
+  case "$paused" in paused|none) ;; *) legacy=1;; esac
   if [ "$registry_status" = archived ]; then column=Archived; status=archived
   elif [ "$legacy" -eq 1 ]; then column=Incoming; status='нужно проверить'
   elif [[ "$current" = active || "$current" = ready || "$current" = in_progress ]]; then column=Active; status=active
@@ -96,13 +128,14 @@ for id in "${IDS[@]}"; do
   elif [ "$registry_status" = completed ]; then column=Completed; status=completed
   else column=Incoming; status=incoming
   fi
-  record "$id" "$path" project_path; record "$id" "$card" card_path
-  record "$id" "$name" name; record "$id" "$purpose" purpose
-  record "$id" "$column" column; record "$id" "$status" status
-  record "$id" "$(sha256 "$card" "$path/ai/current-task.md" "$path/ai/future-tasks.md" "$path/ai/paused-tasks.md")" source_hash
+  due="$(safe_due "$path/ai/current-task.md" "$path/ai/future-tasks.md" "$path/ai/paused-tasks.md")"
+  actions="$(structured_actions "$path/ai/current-task.md")"
+  PROJECT_PATHS+=("$path"); CARD_PATHS+=("$card"); NAMES+=("$name"); PURPOSES+=("$purpose")
+  COLUMNS+=("$column"); STATUSES+=("$status"); DUES+=("$due"); ACTIONS+=("$actions")
+  SOURCE_HASHES+=("$(sha256 "$card" "$path/ai/current-task.md" "$path/ai/future-tasks.md" "$path/ai/paused-tasks.md")")
 done
 
-{
+BOARD_RENDER="$( {
   printf '%s\n\n' '# Projects Kanban (generated)' '_Источник истины: проектные записи AI. Ручные изменения — proposal pending._'
   for column in Incoming Planned Active Waiting Paused Completed Archived; do
     printf '\n## %s\n' "$column"
@@ -110,15 +143,23 @@ done
       [ "$(field "$id" column)" = "$column" ] || continue
       printf '\n- id: %s\n  name: %s\n  purpose: %s\n  status: %s\n' "$id" "$(field "$id" name)" "$(field "$id" purpose)" "$(field "$id" status)"
       if [ "$column" != Archived ]; then
-        printf '%s\n' '  due: нет срока' '  actions: нет следующего действия'
+        due=''; actions=''
+        for i in "${!IDS[@]}"; do [ "${IDS[$i]}" = "$id" ] && due="${DUES[$i]}" && actions="${ACTIONS[$i]}"; done
+        [ -n "$due" ] || due='нет срока'
+        printf '  due: %s\n  actions:\n' "$due"
+        count=0
+        if [ -n "$actions" ]; then
+          while IFS= read -r action; do [ -n "$action" ] || continue; printf '    - %s\n' "$action"; count=$((count + 1)); done <<< "$actions"
+        fi
+        while [ "$count" -lt 3 ]; do printf '%s\n' '    - нет следующего действия'; count=$((count + 1)); done
       fi
     done
   done
-} > "$BOARD_RENDER"
+} )"
 
 GENERATED_AT="${SOURCE_DATE_EPOCH:-$(date -u +%s)}"
-BOARD_HASH="$(shasum -a 256 "$BOARD_RENDER" | awk '{print $1}')"
-{
+BOARD_HASH="$(printf '%s' "$BOARD_RENDER" | shasum -a 256 | awk '{print $1}')"
+MANIFEST_RENDER="$( {
   printf '{\n  "format_version": 1,\n  "generated_at": '
   json_string "$GENERATED_AT"
   printf ',\n  "target": '
@@ -136,12 +177,12 @@ BOARD_HASH="$(shasum -a 256 "$BOARD_RENDER" | awk '{print $1}')"
     comma=',\n'
   done
   printf '\n  ]\n}\n'
-} > "$MANIFEST_RENDER"
+} )"
 
 if [ "$MODE" = preview ]; then
-  cat "$BOARD_RENDER"
+  printf '%s' "$BOARD_RENDER"
   printf '\n--- manifest ---\n'
-  cat "$MANIFEST_RENDER"
+  printf '%s' "$MANIFEST_RENDER"
   exit 0
 fi
 
@@ -161,9 +202,9 @@ if [ -e "$TARGET_BOARD" ] || [ -e "$TARGET_MANIFEST" ]; then
 fi
 tmp_board="$(mktemp "$TARGET_DIR/.Projects-Kanban.md.XXXXXX")"
 tmp_manifest="$(mktemp "$TARGET_DIR/.Projects-Kanban.manifest.json.XXXXXX")"
-cp "$BOARD_RENDER" "$tmp_board"; cp "$MANIFEST_RENDER" "$tmp_manifest"
+printf '%s' "$BOARD_RENDER" > "$tmp_board"; printf '%s' "$MANIFEST_RENDER" > "$tmp_manifest"
 [ "$(shasum -a 256 "$tmp_board" | awk '{print $1}')" = "$BOARD_HASH" ] || die 'temporary board hash validation failed'
-[ "$(shasum -a 256 "$tmp_manifest" | awk '{print $1}')" = "$(shasum -a 256 "$MANIFEST_RENDER" | awk '{print $1}')" ] || die 'temporary manifest hash validation failed'
+[ "$(shasum -a 256 "$tmp_manifest" | awk '{print $1}')" = "$(printf '%s' "$MANIFEST_RENDER" | shasum -a 256 | awk '{print $1}')" ] || die 'temporary manifest hash validation failed'
 mv -f "$tmp_board" "$TARGET_BOARD"
 mv -f "$tmp_manifest" "$TARGET_MANIFEST"
 printf 'wrote %s and %s\n' "$TARGET_BOARD" "$TARGET_MANIFEST"
