@@ -247,7 +247,7 @@ MANIFEST_RENDER="$( {
     printf ', "card_path": '; json_string "$(field "$id" card_path)"
     printf ', "sha256": '; json_string "$(field "$id" source_hash)"
     printf '}'
-    comma=',\n'
+    comma=$',\n'
   done
   printf '\n  ]\n}\n'
 } )"

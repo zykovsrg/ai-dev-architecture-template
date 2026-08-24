@@ -206,6 +206,7 @@ assert_file "$MANIFEST"
 assert_not_contains "$MANIFEST" 'TASK-BODY-SENTINEL'
 assert_contains "$MANIFEST" '"format_version"'
 assert_contains "$MANIFEST" '"sources"'
+node -e 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"))' "$MANIFEST" || fail 'manifest must be valid JSON'
 
 printf '\nmanual edit\n' >> "$BOARD"
 board_before="$(shasum -a 256 "$BOARD" | awk '{print $1}')"
