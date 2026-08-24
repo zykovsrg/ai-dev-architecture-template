@@ -4,8 +4,8 @@
 
 Task 3 adds one read-only discovery entry point:
 `scripts/read-compact-project-index.sh`.
-It validates the hub first with the existing registry checker, then prints a
-deterministic TSV index sorted by `project_id` with exactly these columns:
+It performs an index-only quiet validation of the five compact metadata fields,
+then prints a deterministic TSV index sorted by `project_id` with exactly these columns:
 `project_id`, `name`, `tags`, `status`, `purpose_brief`.
 
 The smoke suite now covers the new compact index path and the two required
@@ -27,7 +27,8 @@ project or confirmed-set approval.
 ## Security properties
 
 - Reads only registry and card metadata.
-- Calls the existing registry validator before any index output.
+- Does not call the full registry validator before index output; validates only
+  the compact metadata contract.
 - Emits only the five approved TSV fields.
 - Sorts by `project_id` for stable output.
 - Does not print project paths, `ai/current-task.md`, `knowledge/`, code, or
