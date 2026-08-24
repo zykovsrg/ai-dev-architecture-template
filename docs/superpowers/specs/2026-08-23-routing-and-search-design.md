@@ -109,6 +109,11 @@ Compact index — логический read-only контракт над сущ�
 но такое представление всегда пересобирается из источников и никогда не
 редактируется вручную.
 
+`scripts/read-compact-project-index.sh` — единственный pre-confirmation вход для
+project discovery. Он сначала проверяет реестр через существующий validator, а
+затем выводит только TSV-проекцию пяти полей: `project_id`, `name`, `tags`,
+`status`, `purpose_brief`.
+
 Одна запись имеет только этот payload:
 
 ```yaml

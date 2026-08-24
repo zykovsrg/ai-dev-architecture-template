@@ -1013,6 +1013,18 @@ copy_valid_hub() {
     "$destination/ai/project-cards/analytics-seo.md"
 }
 
+assert_compact_index_rows_valid() {
+  local file="$1" expected
+  expected="$TMP_DIR/compact-index.expected"
+  printf '%s\n' \
+    $'project_id\tname\ttags\tstatus\tpurpose_brief' \
+    $'alpha-project\tAlpha Project\talpha, search\tactive\tAlpha purpose.' \
+    $'beta-project\tBeta Project\tbeta, routing\tpaused\tBeta purpose.' \
+    > "$expected"
+  cmp -s "$expected" "$file" \
+    || fail "compact project index must be deterministic TSV with exactly five columns"
+}
+
 bash -x "$ROOT/scripts/check-hub-registry.sh" "$VALID" > "$TMP_DIR/valid.out" 2> "$TMP_DIR/valid.trace"
 assert_contains "$TMP_DIR/valid.out" 'Registry check passed'
 assert_contains "$TMP_DIR/valid.out" '1 projects'
@@ -1033,6 +1045,72 @@ assert_contains "$TMP_DIR/valid-warn.err" 'WARNING: unregistered directory in pr
 assert_contains "$TMP_DIR/valid-warn.out" 'Registry check passed: 1 projects'
 assert_not_contains "$TMP_DIR/valid-warn.out" 'WARNING'
 assert_not_contains "$TMP_DIR/valid-warn.err" "$SENTINEL"
+
+COMPACT="$TMP_DIR/compact-index-hub"
+mkdir -p "$COMPACT/ai/project-cards" "$COMPACT/projects/alpha-project" "$COMPACT/projects/beta-project"
+scaffold_project_memory "$COMPACT/projects/alpha-project"
+scaffold_project_memory "$COMPACT/projects/beta-project"
+printf '%s\n' 'MUST_NOT_BE_READ' > "$COMPACT/projects/alpha-project/ai/current-task.md"
+printf '%s\n' '# Allowed Roots' '' "- $COMPACT/projects" > "$COMPACT/ai/allowed-roots.md"
+printf '%s\n' '# Project Registry' '' \
+  '## beta-project' \
+  'Name: Beta Project' \
+  'Type: work' \
+  'Status: paused' \
+  "Path: $COMPACT/projects/beta-project" \
+  'Tags: beta, routing' \
+  'Card: ai/project-cards/beta-project.md' '' \
+  '## alpha-project' \
+  'Name: Alpha Project' \
+  'Type: work' \
+  'Status: active' \
+  "Path: $COMPACT/projects/alpha-project" \
+  'Tags: alpha, search' \
+  'Card: ai/project-cards/alpha-project.md' > "$COMPACT/ai/project-registry.md"
+printf '%s\n' '# Project Card' '' \
+  'Project ID: beta-project' \
+  'Name: Beta Project' \
+  'Type: work' \
+  'Status: paused' \
+  'Last updated: 2026-08-12' \
+  'Purpose: Beta purpose.' \
+  'Typical tasks: Route queries.' \
+  "Memory entry point: $COMPACT/projects/beta-project/ai/current-task.md" \
+  > "$COMPACT/ai/project-cards/beta-project.md"
+printf '%s\n' '# Project Card' '' \
+  'Project ID: alpha-project' \
+  'Name: Alpha Project' \
+  'Type: work' \
+  'Status: active' \
+  'Last updated: 2026-08-12' \
+  'Purpose: Alpha purpose.' \
+  'Typical tasks: Find projects.' \
+  "Memory entry point: $COMPACT/projects/alpha-project/ai/current-task-MUST_NOT_BE_READ.md" \
+  > "$COMPACT/ai/project-cards/alpha-project.md"
+
+bash "$ROOT/scripts/read-compact-project-index.sh" "$COMPACT" \
+  > "$TMP_DIR/compact-index.out" 2> "$TMP_DIR/compact-index.err"
+assert_compact_index_rows_valid "$TMP_DIR/compact-index.out"
+assert_not_contains "$TMP_DIR/compact-index.out" 'MUST_NOT_BE_READ'
+assert_not_contains "$TMP_DIR/compact-index.out" 'Memory entry point'
+assert_not_contains "$TMP_DIR/compact-index.out" 'ai/current-task.md'
+assert_not_contains "$TMP_DIR/compact-index.err" 'MUST_NOT_BE_READ'
+
+BROKEN_COMPACT="$TMP_DIR/broken-compact-index-hub"
+cp -R "$COMPACT" "$BROKEN_COMPACT"
+awk '
+  /^## alpha-project$/ { in_alpha = 1 }
+  /^## / && $0 != "## alpha-project" { in_alpha = 0 }
+  in_alpha && /^Tags: / { next }
+  { print }
+' "$BROKEN_COMPACT/ai/project-registry.md" \
+  > "$BROKEN_COMPACT/ai/project-registry.md.tmp"
+mv "$BROKEN_COMPACT/ai/project-registry.md.tmp" "$BROKEN_COMPACT/ai/project-registry.md"
+if bash "$ROOT/scripts/read-compact-project-index.sh" "$BROKEN_COMPACT" \
+  > "$TMP_DIR/broken-compact-index.out" 2> "$TMP_DIR/broken-compact-index.err"; then
+  fail 'compact project index accepted invalid registry data'
+fi
+assert_not_contains "$TMP_DIR/broken-compact-index.out" $'project_id\tname\ttags\tstatus\tpurpose_brief'
 
 # A hub whose projects root holds only registered projects stays silent.
 QUIET_HUB="$TMP_DIR/quiet-hub"
