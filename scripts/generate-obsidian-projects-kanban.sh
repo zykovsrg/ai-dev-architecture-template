@@ -12,6 +12,20 @@ json_string() {
 }
 inside() { [[ "$1" == "$2" || "$1" == "$2"/* ]]; }
 physical_dir() { cd "$1" && pwd -P; }
+resolve_card() {
+  local raw="$1" parent canonical_parent root
+  case "$raw" in
+    /*) die "registry card path must be relative: $raw" ;;
+    ai/project-cards/*) ;;
+    *) die "registry card path must stay beneath ai/project-cards: $raw" ;;
+  esac
+  parent="$HUB/$(dirname "$raw")"
+  [ -d "$parent" ] && [ ! -L "$parent" ] || die "missing or unsafe card directory: $raw"
+  canonical_parent="$(physical_dir "$parent")"
+  root="$(physical_dir "$HUB/ai/project-cards")"
+  inside "$canonical_parent" "$root" || die "registry card path escapes ai/project-cards: $raw"
+  printf '%s/%s\n' "$canonical_parent" "$(basename "$raw")"
+}
 read_field() { sed -n "s/^$2: //p" "$1" | head -n 1; }
 file_state() { sed -n 's/^Status: //p' "$1" | head -n 1; }
 safe_due() {
@@ -104,8 +118,9 @@ for id in "${IDS[@]}"; do
   path="$(printf '%s\n' "$block" | sed -n 's/^Path: //p' | head -n 1)"
   card="$(printf '%s\n' "$block" | sed -n 's/^Card: //p' | head -n 1)"
   [ -n "$path" ] && [ -n "$card" ] || die "registry entry incomplete: $id"
-  is_absolute "$path" && is_absolute "$card" || die "registry path must be absolute: $id"
-  inside "$path" "$HUB/projects" && inside "$card" "$HUB/ai/project-cards" || die "registry path outside allowed root: $id"
+  is_absolute "$path" || die "registry project path must be absolute: $id"
+  inside "$path" "$HUB/projects" || die "registry project path outside allowed root: $id"
+  card="$(resolve_card "$card")"
   [ -d "$path" ] && [ ! -L "$path" ] && [ -f "$card" ] && [ ! -L "$card" ] || die "missing or symlinked registered source: $id"
   project_real="$(physical_dir "$path")"
   card_parent_real="$(physical_dir "$(dirname "$card")")"

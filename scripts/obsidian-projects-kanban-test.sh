@@ -39,7 +39,7 @@ cat >> "$HUB/ai/project-registry.md" <<EOF
 Name: AI Development Architecture
 Status: active
 Path: $ARCHITECTURE_PROJECT
-Card: $HUB/ai/project-cards/ai-dev-architecture.md
+Card: ai/project-cards/ai-dev-architecture.md
 EOF
 
 add_fixture() {
@@ -63,7 +63,7 @@ EOF
 Name: $name
 Status: $registry_status
 Path: $project
-Card: $HUB/ai/project-cards/$id.md
+Card: ai/project-cards/$id.md
 EOF
   printf '%s\n' "$id" >> "$SCOPE"
 }
