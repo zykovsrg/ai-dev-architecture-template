@@ -1,63 +1,102 @@
-# Task 3 report — compact project index
+# Task 3 Report: Updater safety and user documentation
 
 ## Implementation summary
 
-Task 3 adds one read-only discovery entry point:
-`scripts/read-compact-project-index.sh`.
-It performs an index-only quiet validation of the five compact metadata fields,
-then prints a deterministic TSV index sorted by `project_id` with exactly these columns:
-`project_id`, `name`, `tags`, `status`, `purpose_brief`.
+The standalone architecture updater now makes its knowledge boundary explicit:
+`knowledge/` remains outside both `ARCHITECTURE_FILES` and
+`CONTROLLED_MEMORY_FILES`, and every normal update reports that it does not
+enable knowledge in existing projects. A new smoke fixture represents a
+pre-knowledge project and proves that `--apply` neither creates `knowledge/`
+nor changes existing task memory.
 
-The smoke suite now covers the new compact index path and the two required
-negative sentinels:
-
-- a sentinel in `ai/current-task.md` must not appear in the compact index;
-- a sentinel in `Memory entry point` must not appear in the compact index.
-
-The routing spec now names this script as the only pre-confirmation project
-discovery interface and keeps full task or knowledge reads behind explicit
-project or confirmed-set approval.
+The user documentation now consistently explains that knowledge is optional,
+separate from `ai/project-context.md`, and deliberately captured rather than
+implicitly enabled by an update. It documents the five record statuses,
+`knowledge-capture`/`knowledge-review` confirmation gates, and the optional
+focused review offer from `task-finish`.
 
 ## Changed files
 
-- `scripts/read-compact-project-index.sh`
-- `scripts/hub-smoke-test.sh`
-- `docs/superpowers/specs/2026-08-23-routing-and-search-design.md`
+- `scripts/update-installed-architecture.sh`
+- `scripts/smoke-test.sh`
+- `docs/file-roles.md`
+- `docs/install.md`
+- `docs/update.md`
+- `docs/concepts.md`
+- `.superpowers/sdd/task-3-report.md`
 
-## Security properties
+## TDD evidence
 
-- Reads only registry and card metadata.
-- Does not call the full registry validator before index output; validates only
-  the compact metadata contract.
-- Emits only the five approved TSV fields.
-- Sorts by `project_id` for stable output.
-- Does not print project paths, `ai/current-task.md`, `knowledge/`, code, or
-  `Memory entry point`.
-- Exits non-zero when the registry is invalid.
+### RED
 
-## Tests
+The pre-knowledge fixture and its assertion for the required lifecycle message
+were added to `scripts/smoke-test.sh` before the updater output was added.
 
-Already run before the stop request:
+```text
+bash scripts/smoke-test.sh
+FAIL: expected 'Updating does not enable knowledge in existing projects.' in .../pre-knowledge-update.out
+```
 
-- `bash scripts/hub-smoke-test.sh` — passed.
-- `bash scripts/hub-smoke-test.sh` after the tab regression fix — passed.
-- Focused tab regression repro with a copied fixture whose registry and card
-  paths were rewritten to the copied root — passed; exit status was nonzero and
-  stdout contained only the header line.
-- `bash -n scripts/read-compact-project-index.sh scripts/hub-smoke-test.sh` —
-  passed.
-- `bash scripts/read-compact-project-index.sh /Users/zykovsrg/Documents/vibecode/_ai-hub | sed -n '1,5p'`
-  — showed the expected TSV header and real rows.
+The same fixture had already asserted that `knowledge/` was absent and that
+`ai/current-task.md` matched its pre-update copy. The failing message confirms
+the new lifecycle contract was not merely documented after the implementation.
 
-Also requested and now completed:
+### GREEN
 
-- `git diff --check` — pending this turn.
+After adding the explicit updater boundary comment and lifecycle output, the
+full smoke suite passed, including the new fixture.
+
+```text
+Smoke tests passed.
+Hub smoke tests passed.
+```
+
+## Fresh verification
+
+All commands below completed with exit code `0` after the final changes:
+
+- `bash scripts/check-consistency.sh`
+- `bash scripts/smoke-test.sh`
+- `bash -n scripts/update-installed-architecture.sh scripts/smoke-test.sh`
+- `git diff --check`
+
+`check-consistency` reported that all canonical lists are consistent and that
+the standalone updaters do not overwrite controlled memory.
 
 ## Concerns
 
-- The report file itself is not part of the three-file commit the user asked
-  for, so it will remain a working-tree change unless explicitly included later.
-- The compact index uses the existing registry contract, so any future registry
-  shape change will need a matching update in the validator and smoke fixtures.
-- The tab regression failure was caused by the copied smoke fixture still
-  pointing at the original root, not by the compact index output contract.
+No open concerns. Legacy standalone migration remains outside this change:
+the normal updater neither migrates nor enables knowledge in existing projects.
+
+## Reviewer P2 follow-up
+
+Both P2 findings from `task-3-review.md` were addressed within Task 3 scope.
+
+### RED
+
+Before the documentation update, the new smoke contract failed:
+
+```text
+bash scripts/smoke-test.sh
+FAIL: expected 'Existing-project knowledge enablement is available only through the hub's' in .../docs/file-roles.md
+```
+
+This confirms the documentation previously lacked the required positive route,
+rather than merely using imprecise wording. The same test change adds a second
+fixture containing `knowledge/research/updater-boundary.md`; it saves a
+byte-for-byte copy, runs the normal updater, and fails if the record changes.
+
+### GREEN
+
+All owned knowledge sections now state that existing-project enablement is only
+through the hub's `knowledge-enable` workflow after confirmation of the
+registered project, and that legacy standalone knowledge migration is out of
+scope. The existing-record fixture passed after `--apply`, alongside the
+pre-knowledge absent-directory fixture.
+
+Fresh verification after the fix:
+
+- `bash scripts/smoke-test.sh` — passed.
+- `bash scripts/check-consistency.sh && bash scripts/smoke-test.sh` — passed.
+- `bash -n scripts/update-installed-architecture.sh scripts/smoke-test.sh` — passed.
+- `git diff --check` — passed.
