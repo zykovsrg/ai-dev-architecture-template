@@ -253,16 +253,16 @@ validate_archiproject_metadata() {
   local canonical_card="$1" primary contribution related related_id seen_related
   local primary_count contribution_count related_count
 
-  primary_count="$(grep -Ec '^Primary archiproject: ' "$canonical_card" || true)"
-  contribution_count="$(grep -Ec '^Archiproject contribution: ' "$canonical_card" || true)"
-  related_count="$(grep -Ec '^Related archiprojects: ' "$canonical_card" || true)"
+  primary_count="$(grep -Ec '^primary_archiproject:' "$canonical_card" || true)"
+  contribution_count="$(grep -Ec '^archiproject_contribution:' "$canonical_card" || true)"
+  related_count="$(grep -Ec '^related_archiprojects:' "$canonical_card" || true)"
   [ "$primary_count" -eq 0 ] && [ "$contribution_count" -eq 0 ] && [ "$related_count" -eq 0 ] && return 0
   [ "$primary_count" -eq 1 ] && [ "$contribution_count" -eq 1 ] && [ "$related_count" -eq 1 ] \
     || die "archiproject fields must be supplied together for $current_id"
 
-  primary="$(sed -n 's/^Primary archiproject: //p' "$canonical_card")"
-  contribution="$(sed -n 's/^Archiproject contribution: //p' "$canonical_card")"
-  related="$(sed -n 's/^Related archiprojects: //p' "$canonical_card")"
+  primary="$(sed -n 's/^primary_archiproject: //p' "$canonical_card")"
+  contribution="$(sed -n 's/^archiproject_contribution: //p' "$canonical_card")"
+  related="$(sed -n 's/^related_archiprojects: //p' "$canonical_card")"
   [ -n "$primary" ] && [ -n "$contribution" ] && [ -n "$related" ] \
     || die "archiproject fields must be non-empty for $current_id"
   load_archiproject_registry

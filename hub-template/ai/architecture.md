@@ -58,8 +58,8 @@ configuration, and history. A project card must not contain copied task memory,
 source code, credentials, or an instruction that overrides the project itself.
 Project/task files remain canonical; project cards are metadata only and a link
 never grants a project read. A card may optionally use all three archiproject
-fields: `Primary archiproject:`, `Archiproject contribution:`, and `Related
-archiprojects:`. Use `none` where absent. Related archiproject links never add
+fields: `primary_archiproject:`, `archiproject_contribution:`, and
+`related_archiprojects:`. Use `none` where absent. Related archiproject links never add
 contribution. Waiting is task/subtask-only: do not place a project in Waiting
 while other work is actionable.
 

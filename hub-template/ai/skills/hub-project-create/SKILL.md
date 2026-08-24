@@ -91,9 +91,9 @@ Last updated: <YYYY-MM-DD>
 Purpose: <approved-purpose>
 Typical tasks: <approved-typical-tasks>
 Memory entry point: <canonical-path>/ai/current-task.md
-Primary archiproject: <archiproject-id|none>
-Archiproject contribution: <contribution|none>
-Related archiprojects: <archiproject-id list|none>
+primary_archiproject: <archiproject-id|none>
+archiproject_contribution: <contribution|none>
+related_archiprojects: <archiproject-id list|none>
 
 Registry entry:
 ## <project-id>

@@ -57,8 +57,8 @@ and `Memory entry point:`. `Project ID`, `Name`, `Type`, and `Status` must
 match the registry entry. The memory entry point must be an absolute path
 beneath the confirmed project's `ai/` directory; the validator must not read the memory entry point. `Boundaries:` and `Related
 projects:` are optional, compact fields. The optional archiproject fields are
-all-or-nothing: `Primary archiproject:`, `Archiproject contribution:`, and
-`Related archiprojects:`. Use `none` for all three where absent. Related
+all-or-nothing: `primary_archiproject:`, `archiproject_contribution:`, and
+`related_archiprojects:`. Use `none` for all three where absent. Related
 archiproject links never add contribution.
 
 ## Russian response template
