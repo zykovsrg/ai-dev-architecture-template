@@ -72,11 +72,11 @@ add_fixture "active-project" "Active project" "active" \
   $'Status: active\ntask:\n  due: 2026-08-31\n  subtasks:\n    - title: First structured action\n    - title: Second structured action\n    - title: Third structured action\n    - title: Fourth structured action\n    - title: Fifth structured action\n    - title: Sixth structured action\n    - title: Seventh structured action\n    - title: Eighth structured action' \
   $'Status: none' $'Status: none'
 add_fixture "ready-future-project" "Ready future project" "active" \
-  $'Status: none' $'Status: ready\n- [ ] Promote the ready task' $'Status: none'
+  $'Status: none' $'### FT-20260824-001 — Promote the ready task\n\nStatus: ready' $'Status: none'
 add_fixture "waiting-project" "Waiting project" "active" \
   $'Status: waiting\n- [ ] Waiting on external answer' $'Status: none' $'Status: none'
 add_fixture "paused-project" "Paused project" "active" \
-  $'Status: none' $'Status: none' $'Status: paused\n- [ ] Resume paused task'
+  $'Status: none' $'Status: none' $'### 2026-08-24 — Resume paused task\n\nStatus: paused'
 add_fixture "completed-project" "Completed project" "completed" \
   $'Status: completed\n- [x] Canonical completed task' $'Status: none' $'Status: none'
 add_fixture "archived-project" "Archived project" "archived" \
@@ -87,6 +87,26 @@ add_fixture "none-status-project" "None status project" "none" \
   $'Status: none' $'Status: none' $'Status: none'
 add_fixture "unknown-status-project" "Unknown status project" "mystery" \
   $'Status: active' $'Status: none' $'Status: none'
+add_fixture "empty-templates-active-project" "Active project with empty templates" "active" \
+  $'Status: active' \
+  $'# Future Tasks\n\n## Statuses\n\n```text\nidea / ready / blocked / promoted / done / dropped\n```\n\n### FT-YYYYMMDD-001 — Task title\n\nStatus: idea\n\n## Future tasks\n\nNo future tasks yet.' \
+  $'# Paused Tasks\n\n### YYYY-MM-DD — Task title\n\nStatus: paused\n\n## Paused tasks\n\nNo paused tasks yet.'
+add_fixture "ready-entry-project" "Project with ready future entry" "active" \
+  $'Status: none' \
+  $'### FT-20260824-001 — Promote this task\n\nStatus: ready' \
+  $'No paused tasks yet.'
+add_fixture "paused-entry-project" "Project with paused entry" "active" \
+  $'Status: none' \
+  $'No future tasks yet.' \
+  $'### 2026-08-24 — Resume this task\n\nStatus: paused'
+add_fixture "unknown-future-entry-project" "Project with unknown future entry" "active" \
+  $'Status: none' \
+  $'### FT-20260824-001 — Check this task\n\nStatus: mystery' \
+  $'No paused tasks yet.'
+add_fixture "unknown-paused-entry-project" "Project with unknown paused entry" "active" \
+  $'Status: none' \
+  $'No future tasks yet.' \
+  $'### 2026-08-24 — Check this task\n\nStatus: mystery'
 
 BOARD="$VAULT/Obsidian/AI-архитектура/Projects/_views/Projects-Kanban.md"
 MANIFEST="$VAULT/Obsidian/AI-архитектура/Projects/_views/Projects-Kanban.manifest.json"
@@ -123,6 +143,12 @@ assert_column archived-project Archived
 assert_column legacy-complete-project Incoming
 assert_column none-status-project Incoming
 assert_column unknown-status-project Incoming
+assert_column empty-templates-active-project Active
+assert_column ready-entry-project Planned
+assert_column paused-entry-project Paused
+assert_column unknown-future-entry-project Incoming
+assert_column unknown-paused-entry-project Incoming
+assert_count 5 'status: нужно проверить' "$TMP_DIR/preview.txt"
 assert_contains "$TMP_DIR/preview.txt" 'First structured action'
 assert_count 7 'structured action' "$TMP_DIR/preview.txt"
 assert_not_contains "$TMP_DIR/preview.txt" 'Eighth structured action'

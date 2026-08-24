@@ -27,7 +27,57 @@ resolve_card() {
   printf '%s/%s\n' "$canonical_parent" "$(basename "$raw")"
 }
 read_field() { sed -n "s/^$2: //p" "$1" | head -n 1; }
-file_state() { sed -n 's/^Status: //p' "$1" | head -n 1; }
+current_state() {
+  awk '/^## / { exit } /^Status: / { print substr($0, 9); exit }' "$1"
+}
+future_state() {
+  awk '
+    function finish_entry() {
+      if (!entry || state == "") return
+      if (state == "ready") ready = 1
+      else if (state != "idea" && state != "blocked" && state != "promoted" && state != "done" && state != "dropped") invalid = 1
+    }
+    /^### FT-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9]+[[:space:]]/ {
+      finish_entry(); entry = 1; seen = 1; state = ""; next
+    }
+    /^### / { finish_entry(); entry = 0; state = ""; next }
+    entry && /^Status: / {
+      value = substr($0, 9)
+      if (state == "") state = value
+      else if (state != value) invalid = 1
+    }
+    END {
+      finish_entry()
+      if (invalid) print "__invalid__"
+      else if (ready) print "ready"
+      else if (seen) print "none"
+    }
+  ' "$1"
+}
+paused_state() {
+  awk '
+    function finish_entry() {
+      if (!entry || state == "") return
+      if (state == "paused") paused = 1
+      else invalid = 1
+    }
+    /^### [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9][[:space:]]/ {
+      finish_entry(); entry = 1; seen = 1; state = ""; next
+    }
+    /^### / { finish_entry(); entry = 0; state = ""; next }
+    entry && /^Status: / {
+      value = substr($0, 9)
+      if (state == "") state = value
+      else if (state != value) invalid = 1
+    }
+    END {
+      finish_entry()
+      if (invalid) print "__invalid__"
+      else if (paused) print "paused"
+      else if (seen) print "none"
+    }
+  ' "$1"
+}
 safe_due() {
   sed -nE 's/^[[:space:]]*due:[[:space:]]*([0-9]{4}-[0-9]{2}-[0-9]{2})[[:space:]]*$/\1/p' "$@" |
     sort -u | head -n 1
@@ -134,18 +184,14 @@ for id in "${IDS[@]}"; do
   [ -n "$name" ] || name=$id
   [ -n "$purpose" ] || purpose='нет описания'
   registry_status="$(printf '%s\n' "$block" | sed -n 's/^Status: //p' | head -n 1)"
-  current="$(file_state "$path/ai/current-task.md")"
-  future="$(file_state "$path/ai/future-tasks.md")"
-  paused="$(file_state "$path/ai/paused-tasks.md")"
+  current="$(current_state "$path/ai/current-task.md")"
+  future="$(future_state "$path/ai/future-tasks.md")"
+  paused="$(paused_state "$path/ai/paused-tasks.md")"
   legacy=0
   case "$registry_status" in active|completed|archived) ;; *) legacy=1;; esac
-  for state in "$current" "$future" "$paused"; do
-    case "$state" in ''|complete|kanban|legacy) legacy=1;;
-      *) ;; esac
-  done
-  case "$current" in active|ready|in_progress|waiting|completed|none) ;; *) legacy=1;; esac
-  case "$future" in ready|none) ;; *) legacy=1;; esac
-  case "$paused" in paused|none) ;; *) legacy=1;; esac
+  case "$current" in ''|active|ready|in_progress|waiting|completed|done|review|blocked|paused|empty|none) ;; *) legacy=1;; esac
+  case "$future" in ''|ready|none) ;; *) legacy=1;; esac
+  case "$paused" in ''|paused|none) ;; *) legacy=1;; esac
   if [ "$registry_status" = archived ]; then column=Archived; status=archived
   elif [ "$legacy" -eq 1 ]; then column=Incoming; status='нужно проверить'
   elif [[ "$current" = active || "$current" = ready || "$current" = in_progress ]]; then column=Active; status=active
