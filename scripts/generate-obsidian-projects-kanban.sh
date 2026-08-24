@@ -84,14 +84,33 @@ safe_due() {
 }
 structured_actions() {
   awk '
-    /^task:[[:space:]]*$/ { in_task=1; next }
-    in_task && /^[^[:space:]]/ { in_task=0 }
-    in_task && /^  subtasks:[[:space:]]*$/ { in_subtasks=1; next }
-    in_subtasks && /^[^[:space:]]/ { in_subtasks=0 }
-    in_subtasks && /^[[:space:]]{4,}-?[[:space:]]*title:[[:space:]]*[^[:space:]].*$/ {
-      line=$0; sub(/^[[:space:]]*-[[:space:]]*title:[[:space:]]*/, "", line); print line
+    /^## (Next steps|Steps)[[:space:]]*$/ { numbered=1; next }
+    /^## Следующая по очереди[[:space:]]*$/ { next_text=1; next }
+    /^Next agent should check:[[:space:]]*$/ { agent_check=1; next }
+    /^## / { numbered=0; next_text=0; agent_check=0; next }
+    numbered && /^[0-9]+\.[[:space:]]+[^[:space:]].*$/ {
+      line=$0; sub(/^[0-9]+\.[[:space:]]+/, "", line); print line; next
     }
-  ' "$@" | sed 's/[[:space:]]*$//' | awk 'length && !seen[$0]++' | head -n 7
+    agent_check && /^-[[:space:]]+[^[:space:]].*$/ {
+      line=$0; sub(/^-[[:space:]]+/, "", line); print line; next
+    }
+    next_text && /^[^[:space:]].*$/ { print; next_text=0 }
+  ' "$@" | sed 's/[[:space:]]*$//' | awk 'length && !seen[$0]++'
+}
+ready_future_actions() {
+  awk '
+    function finish_entry() {
+      if (entry && state == "ready") print title
+    }
+    /^### FT-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9]+[[:space:]]/ {
+      finish_entry(); entry = 1; state = ""; title = $0
+      sub(/^### FT-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9]+[[:space:]]+[^[:space:]]+[[:space:]]*/, "", title)
+      next
+    }
+    /^### / { finish_entry(); entry = 0; state = ""; title = ""; next }
+    entry && /^Status: / { state = substr($0, 9) }
+    END { finish_entry() }
+  ' "$1" | sed 's/[[:space:]]*$//' | awk 'length && !seen[$0]++'
 }
 
 HUB='' SCOPE='' VAULT='' MODE='' CONFIRM=0
@@ -203,26 +222,37 @@ for id in "${IDS[@]}"; do
   fi
   due="$(safe_due "$path/ai/current-task.md" "$path/ai/future-tasks.md" "$path/ai/paused-tasks.md")"
   actions="$(structured_actions "$path/ai/current-task.md")"
+  future_actions=''
+  [ "$future" = ready ] && future_actions="$(ready_future_actions "$path/ai/future-tasks.md")"
+  if [ -n "$future_actions" ]; then
+    [ -z "$actions" ] || actions+=$'\n'
+    actions+="$future_actions"
+  fi
   PROJECT_PATHS+=("$path"); CARD_PATHS+=("$card"); NAMES+=("$name"); PURPOSES+=("$purpose")
   COLUMNS+=("$column"); STATUSES+=("$status"); DUES+=("$due"); ACTIONS+=("$actions")
   SOURCE_HASHES+=("$(sha256 "$card" "$path/ai/current-task.md" "$path/ai/future-tasks.md" "$path/ai/paused-tasks.md")")
 done
 
 BOARD_RENDER="$( {
-  printf '%s\n\n' '# Projects Kanban (generated)' '_Источник истины: проектные записи AI. Ручные изменения — proposal pending._'
+  printf '%s\n' '---' 'kanban-plugin: board' '---'
+  printf '\n%s\n\n' '# Projects Kanban (generated)' '_Источник истины: проектные записи AI. Ручные изменения — proposal pending._'
   for column in Incoming Planned Active Waiting Paused Completed Archived; do
     printf '\n## %s\n' "$column"
     for id in "${IDS[@]}"; do
       [ "$(field "$id" column)" = "$column" ] || continue
-      printf '\n- id: %s\n  name: %s\n  purpose: %s\n  status: %s\n' "$id" "$(field "$id" name)" "$(field "$id" purpose)" "$(field "$id" status)"
+      printf '\n- [ ] %s\n  - id: %s\n  - purpose: %s\n  - status: %s\n' "$(field "$id" name)" "$id" "$(field "$id" purpose)" "$(field "$id" status)"
       if [ "$column" != Archived ]; then
         due=''; actions=''
         for i in "${!IDS[@]}"; do [ "${IDS[$i]}" = "$id" ] && due="${DUES[$i]}" && actions="${ACTIONS[$i]}"; done
         [ -n "$due" ] || due='нет срока'
-        printf '  due: %s\n  actions:\n' "$due"
+        printf '  - due: %s\n  - actions:\n' "$due"
         count=0
         if [ -n "$actions" ]; then
-          while IFS= read -r action; do [ -n "$action" ] || continue; printf '    - %s\n' "$action"; count=$((count + 1)); done <<< "$actions"
+          while IFS= read -r action; do
+            [ -n "$action" ] || continue
+            [ "$count" -lt 7 ] || break
+            printf '    - %s\n' "$action"; count=$((count + 1))
+          done <<< "$actions"
         fi
         while [ "$count" -lt 3 ]; do printf '%s\n' '    - нет следующего действия'; count=$((count + 1)); done
       fi

@@ -18,7 +18,7 @@ assert_count() {
 }
 assert_column() {
   local id="$1" expected="$2" actual
-  actual="$(awk -v wanted="$id" '/^## / {column=substr($0, 4)} $0 == "- id: " wanted {print column; exit}' "$TMP_DIR/preview.txt")"
+  actual="$(awk -v wanted="$id" '/^## / {column=substr($0, 4)} $0 == "  - id: " wanted {print column; exit}' "$TMP_DIR/preview.txt")"
   [ "$actual" = "$expected" ] || fail "expected $id in $expected, got ${actual:-none}"
 }
 
@@ -69,7 +69,7 @@ EOF
 }
 
 add_fixture "active-project" "Active project" "active" \
-  $'Status: active\ntask:\n  due: 2026-08-31\n  subtasks:\n    - title: First structured action\n    - title: Second structured action\n    - title: Third structured action\n    - title: Fourth structured action\n    - title: Fifth structured action\n    - title: Sixth structured action\n    - title: Seventh structured action\n    - title: Eighth structured action' \
+  $'Status: active\n\n## Next steps\n\n1. First structured action\n2. Second structured action\n3. Third structured action\n4. Fourth structured action\n5. Fifth structured action\n6. Sixth structured action\n7. Seventh structured action\n8. Eighth structured action' \
   $'Status: none' $'Status: none'
 add_fixture "ready-future-project" "Ready future project" "active" \
   $'Status: none' $'### FT-20260824-001 — Promote the ready task\n\nStatus: ready' $'Status: none'
@@ -124,13 +124,15 @@ before_preview_tmp="$(find "$PREVIEW_TMP" -print | sort)"
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/preview.txt"
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/preview-repeat.txt"
 cmp -s "$TMP_DIR/preview.txt" "$TMP_DIR/preview-repeat.txt" || fail 'fixed-time preview is not deterministic'
-assert_count 1 'id: active-project' "$TMP_DIR/preview.txt"
-assert_count 1 'id: ready-future-project' "$TMP_DIR/preview.txt"
-assert_count 1 'id: waiting-project' "$TMP_DIR/preview.txt"
-assert_count 1 'id: paused-project' "$TMP_DIR/preview.txt"
-assert_count 1 'id: completed-project' "$TMP_DIR/preview.txt"
-assert_count 1 'id: archived-project' "$TMP_DIR/preview.txt"
-assert_count 1 'id: legacy-complete-project' "$TMP_DIR/preview.txt"
+assert_contains "$TMP_DIR/preview.txt" 'kanban-plugin: board'
+assert_count 1 '  - id: active-project' "$TMP_DIR/preview.txt"
+assert_count 1 '  - id: ready-future-project' "$TMP_DIR/preview.txt"
+assert_count 1 '  - id: waiting-project' "$TMP_DIR/preview.txt"
+assert_count 1 '  - id: paused-project' "$TMP_DIR/preview.txt"
+assert_count 1 '  - id: completed-project' "$TMP_DIR/preview.txt"
+assert_count 1 '  - id: archived-project' "$TMP_DIR/preview.txt"
+assert_count 1 '  - id: legacy-complete-project' "$TMP_DIR/preview.txt"
+assert_count 14 '- [ ] ' "$TMP_DIR/preview.txt"
 assert_contains "$TMP_DIR/preview.txt" 'legacy-complete-project'
 assert_contains "$TMP_DIR/preview.txt" 'Incoming'
 assert_contains "$TMP_DIR/preview.txt" 'нужно проверить'
@@ -152,7 +154,8 @@ assert_count 5 'status: нужно проверить' "$TMP_DIR/preview.txt"
 assert_contains "$TMP_DIR/preview.txt" 'First structured action'
 assert_count 7 'structured action' "$TMP_DIR/preview.txt"
 assert_not_contains "$TMP_DIR/preview.txt" 'Eighth structured action'
-assert_contains "$TMP_DIR/preview.txt" 'due: 2026-08-31'
+assert_contains "$TMP_DIR/preview.txt" 'due: нет срока'
+assert_contains "$TMP_DIR/preview.txt" 'Promote the ready task'
 assert_contains "$TMP_DIR/preview.txt" '## Incoming'
 assert_contains "$TMP_DIR/preview.txt" '## Planned'
 assert_contains "$TMP_DIR/preview.txt" '## Active'
@@ -206,7 +209,7 @@ assert_file "$MANIFEST"
 assert_not_contains "$MANIFEST" 'TASK-BODY-SENTINEL'
 assert_contains "$MANIFEST" '"format_version"'
 assert_contains "$MANIFEST" '"sources"'
-node -e 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"))' "$MANIFEST" || fail 'manifest must be valid JSON'
+/usr/bin/jq -e 'type == "object"' "$MANIFEST" >/dev/null || fail 'manifest must be valid JSON object'
 
 printf '\nmanual edit\n' >> "$BOARD"
 board_before="$(shasum -a 256 "$BOARD" | awk '{print $1}')"
