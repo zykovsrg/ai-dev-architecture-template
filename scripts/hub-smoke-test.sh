@@ -26,6 +26,37 @@ scaffold_project_memory() {
     printf '# %s\n' "$memory_file" > "$project_path/ai/$memory_file.md"
   done
 }
+archiproject_template_valid() {
+  local file="$1" text
+  text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
+
+  [[ "$text" == *'canonical hub-owned archiproject registry'* ]] &&
+    [[ "$text" == *'not a parallel task store'* ]] &&
+    [[ "$text" == *'id:'*'name:'*'status:'*'target:'*'unit:'*'due:'* ]] &&
+    [[ "$text" == *'due: YYYY-MM-DD or none'* ]] &&
+    [[ "$text" == *'## <archiproject-id>'*'```yaml'* ]]
+}
+archiproject_card_fields_valid() {
+  local file="$1" primary contribution related
+  primary="$(sed -n 's/^Primary archiproject: //p' "$file")"
+  contribution="$(sed -n 's/^Archiproject contribution: //p' "$file")"
+  related="$(sed -n 's/^Related archiprojects: //p' "$file")"
+
+  [ "$(printf '%s\n' "$primary" | wc -l | tr -d ' ')" -eq 1 ] &&
+    [ "$(printf '%s\n' "$contribution" | wc -l | tr -d ' ')" -eq 1 ] &&
+    [ "$(printf '%s\n' "$related" | wc -l | tr -d ' ')" -eq 1 ] &&
+    [ -n "$primary" ] && [ -n "$contribution" ] && [ -n "$related" ]
+}
+hub_work_model_contract_valid() {
+  local file="$1" text
+  text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
+
+  [[ "$text" == *'Project/task files remain canonical'* ]] &&
+    [[ "$text" == *'project cards are metadata only'* ]] &&
+    [[ "$text" == *'link never grants a project read'* ]] &&
+    [[ "$text" == *'Waiting is task/subtask-only'* ]] &&
+    [[ "$text" == *'other work is actionable'* ]]
+}
 generate_registry() {
   local hub="$1" root="$2" count="$3" i id
   printf '%s\n' '# Project Registry' > "$hub/ai/project-registry.md"
@@ -190,6 +221,10 @@ project_create_contract_valid() {
     [[ "$text" == *'create a private repository with that exact name'* ]] &&
     [[ "$text" == *'report `pending-sync`'* ]] &&
     [[ "$text" == *'never attach or overwrite an existing remote'* ]] &&
+    [[ "$text" == *'Primary archiproject: <archiproject-id|none>'* ]] &&
+    [[ "$text" == *'Archiproject contribution: <contribution|none>'* ]] &&
+    [[ "$text" == *'Related archiprojects: <archiproject-id list|none>'* ]] &&
+    [[ "$text" == *'Related archiproject links never add contribution'* ]] &&
     [[ "$text" == *'must not add application code, dependencies, services, AGENTS.md, CLAUDE.md, or shared skills'* ]]
 }
 project_create_knowledge_scaffold_valid() {
@@ -486,6 +521,80 @@ hub_entry_staged_allowlist_valid "$HUB_AGENTS" \
   || fail 'hub entry must match staged router reads: index, up to three cards, then related active signals'
 assert_contains "$HUB_AGENTS" 'ai/architecture.md'
 assert_not_contains "$HUB_AGENTS" 'hub-template/ai/architecture.md'
+
+ARCHIPROJECTS_TEMPLATE="$ROOT/hub-template/ai/archiprojects.md"
+assert_file "$ARCHIPROJECTS_TEMPLATE"
+archiproject_template_valid "$ARCHIPROJECTS_TEMPLATE" \
+  || fail 'archiproject template must define the canonical YAML registry schema'
+
+for work_model_file in \
+  "$HUB_AGENTS" \
+  "$HUB_CLAUDE" \
+  "$ROOT/hub-template/ai/architecture.md" \
+  "$ROOT/hub-template/ai/skills/hub-project-router/SKILL.md" \
+  "$ROOT/hub-template/ai/skills/hub-registry-check/SKILL.md" \
+  "$ROOT/docs/file-roles.md"; do
+  hub_work_model_contract_valid "$work_model_file" \
+    || fail "hub work-model contract missing: $work_model_file"
+done
+
+WORK_MODEL_HUB="$TMP_DIR/work-model-hub"
+mkdir -p "$WORK_MODEL_HUB/ai/project-cards" "$WORK_MODEL_HUB/projects/primary-project" \
+  "$WORK_MODEL_HUB/projects/none-project" "$WORK_MODEL_HUB/projects/legacy-project"
+for work_model_project in primary-project none-project legacy-project; do
+  scaffold_project_memory "$WORK_MODEL_HUB/projects/$work_model_project"
+done
+printf '%s\n' '# Allowed Roots' '' "- $WORK_MODEL_HUB/projects" > "$WORK_MODEL_HUB/ai/allowed-roots.md"
+printf '%s\n' '# Project Registry' '' \
+  '## primary-project' \
+  'Name: Primary contribution' \
+  'Type: work' \
+  'Status: active' \
+  "Path: $WORK_MODEL_HUB/projects/primary-project" \
+  'Tags: fixture' \
+  'Card: ai/project-cards/primary-project.md' '' \
+  '## none-project' \
+  'Name: No archiproject' \
+  'Type: work' \
+  'Status: active' \
+  "Path: $WORK_MODEL_HUB/projects/none-project" \
+  'Tags: fixture' \
+  'Card: ai/project-cards/none-project.md' '' \
+  '## legacy-project' \
+  'Name: Legacy card' \
+  'Type: work' \
+  'Status: active' \
+  "Path: $WORK_MODEL_HUB/projects/legacy-project" \
+  'Tags: fixture' \
+  'Card: ai/project-cards/legacy-project.md' > "$WORK_MODEL_HUB/ai/project-registry.md"
+printf '%s\n' '# Project Card' '' \
+  'Project ID: primary-project' 'Name: Primary contribution' 'Type: work' 'Status: active' \
+  'Last updated: 2026-08-24' 'Purpose: Smoke fixture.' 'Typical tasks: Exercise compatibility.' \
+  "Memory entry point: $WORK_MODEL_HUB/projects/primary-project/ai/current-task.md" \
+  'Primary archiproject: unified-assistant' 'Archiproject contribution: 25' \
+  'Related archiprojects: none' > "$WORK_MODEL_HUB/ai/project-cards/primary-project.md"
+printf '%s\n' '# Project Card' '' \
+  'Project ID: none-project' 'Name: No archiproject' 'Type: work' 'Status: active' \
+  'Last updated: 2026-08-24' 'Purpose: Smoke fixture.' 'Typical tasks: Exercise compatibility.' \
+  "Memory entry point: $WORK_MODEL_HUB/projects/none-project/ai/current-task.md" \
+  'Primary archiproject: none' 'Archiproject contribution: none' \
+  'Related archiprojects: none' > "$WORK_MODEL_HUB/ai/project-cards/none-project.md"
+printf '%s\n' '# Project Card' '' \
+  'Project ID: legacy-project' 'Name: Legacy card' 'Type: work' 'Status: active' \
+  'Last updated: 2026-08-24' 'Purpose: Smoke fixture.' 'Typical tasks: Exercise compatibility.' \
+  "Memory entry point: $WORK_MODEL_HUB/projects/legacy-project/ai/current-task.md" \
+  > "$WORK_MODEL_HUB/ai/project-cards/legacy-project.md"
+cp "$ARCHIPROJECTS_TEMPLATE" "$WORK_MODEL_HUB/ai/archiprojects.md"
+archiproject_card_fields_valid "$WORK_MODEL_HUB/ai/project-cards/primary-project.md" \
+  || fail 'primary archiproject fixture fields are invalid'
+archiproject_card_fields_valid "$WORK_MODEL_HUB/ai/project-cards/none-project.md" \
+  || fail 'none archiproject fixture fields are invalid'
+assert_not_contains "$WORK_MODEL_HUB/ai/project-cards/legacy-project.md" 'Primary archiproject:'
+bash "$ROOT/scripts/check-hub-registry.sh" "$WORK_MODEL_HUB" > "$TMP_DIR/work-model-registry.out"
+assert_contains "$TMP_DIR/work-model-registry.out" 'Registry check passed: 3 projects'
+
+bash "$ROOT/scripts/check-consistency.sh" > "$TMP_DIR/work-model-consistency.out"
+assert_contains "$TMP_DIR/work-model-consistency.out" 'All canonical lists are consistent.'
 
 portable_hub_install_contract
 

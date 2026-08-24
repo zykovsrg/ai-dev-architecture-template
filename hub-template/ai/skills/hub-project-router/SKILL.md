@@ -37,6 +37,11 @@ invalid, outside allowed roots, or has an unusable card, reject it safely and
 ask for a registered alternative. A remembered active project is not a
 confirmation in a new chat.
 
+Project/task files remain canonical; project cards are metadata only and a link
+never grants a project read. Waiting is task/subtask-only: do not place a
+project in Waiting while other work is actionable. Related archiproject links
+never add contribution.
+
 ## Required response shape
 
 Show `Mode: routing` and use one of these Russian templates. Replace only the

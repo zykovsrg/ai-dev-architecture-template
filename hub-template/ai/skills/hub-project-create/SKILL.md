@@ -91,6 +91,9 @@ Last updated: <YYYY-MM-DD>
 Purpose: <approved-purpose>
 Typical tasks: <approved-typical-tasks>
 Memory entry point: <canonical-path>/ai/current-task.md
+Primary archiproject: <archiproject-id|none>
+Archiproject contribution: <contribution|none>
+Related archiprojects: <archiproject-id list|none>
 
 Registry entry:
 ## <project-id>
@@ -134,8 +137,10 @@ The preview also explicitly excludes `ai/architecture.md`,
 4. Write the approved existing-schema card at
    `ai/project-cards/<project-id>.md` and the approved registry entry exactly
    as previewed. The card must retain all required fields and its
-   `Memory entry point: <canonical-path>/ai/current-task.md`. Do not read that
-   memory entry point while validating.
+   `Memory entry point: <canonical-path>/ai/current-task.md`. The three
+   optional archiproject fields are all-or-nothing; use `none` where absent.
+   Related archiproject links never add contribution. Do not read that memory
+   entry point while validating.
 5. Run `scripts/check-hub-registry.sh`. On a failure, stop and report the
    validator output. Do not update active-project selection or invoke a
    project workflow.

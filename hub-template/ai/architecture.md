@@ -49,12 +49,19 @@ Hub-owned files are the routing inventory:
 - `ai/project-registry.md` maps each project ID to its name, status, path,
   tags, and card.
 - `ai/project-cards/<id>.md` holds compact hub metadata for that ID.
+- `ai/archiprojects.md` is the canonical hub-owned archiproject registry.
 - `ai/active-project.md` is a convenience record, never a new-chat permission.
 - `ai/cross-project-signals.md` holds sanitized, explicitly scoped signals.
 
 Project-owned files are the selected project's code, memory, instructions,
 configuration, and history. A project card must not contain copied task memory,
 source code, credentials, or an instruction that overrides the project itself.
+Project/task files remain canonical; project cards are metadata only and a link
+never grants a project read. A card may optionally use all three archiproject
+fields: `Primary archiproject:`, `Archiproject contribution:`, and `Related
+archiprojects:`. Use `none` where absent. Related archiproject links never add
+contribution. Waiting is task/subtask-only: do not place a project in Waiting
+while other work is actionable.
 
 The registry is the authority for an ID, status, and exact path. The card is
 supporting metadata only. An absent, invalid, or unregistered card/path blocks
