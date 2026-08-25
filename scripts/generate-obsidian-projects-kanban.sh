@@ -221,12 +221,15 @@ for id in "${IDS[@]}"; do
   else column=Incoming; status=incoming
   fi
   due="$(safe_due "$path/ai/current-task.md" "$path/ai/future-tasks.md" "$path/ai/paused-tasks.md")"
-  actions="$(structured_actions "$path/ai/current-task.md")"
-  future_actions=''
-  [ "$future" = ready ] && future_actions="$(ready_future_actions "$path/ai/future-tasks.md")"
-  if [ -n "$future_actions" ]; then
-    [ -z "$actions" ] || actions+=$'\n'
-    actions+="$future_actions"
+  actions=''
+  if [ "$legacy" -eq 0 ] && [ "$registry_status" != archived ]; then
+    actions="$(structured_actions "$path/ai/current-task.md")"
+    future_actions=''
+    [ "$future" = ready ] && future_actions="$(ready_future_actions "$path/ai/future-tasks.md")"
+    if [ -n "$future_actions" ]; then
+      [ -z "$actions" ] || actions+=$'\n'
+      actions+="$future_actions"
+    fi
   fi
   PROJECT_PATHS+=("$path"); CARD_PATHS+=("$card"); NAMES+=("$name"); PURPOSES+=("$purpose")
   COLUMNS+=("$column"); STATUSES+=("$status"); DUES+=("$due"); ACTIONS+=("$actions")

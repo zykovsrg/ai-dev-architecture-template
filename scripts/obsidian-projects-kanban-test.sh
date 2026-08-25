@@ -82,7 +82,7 @@ add_fixture "completed-project" "Completed project" "completed" \
 add_fixture "archived-project" "Archived project" "archived" \
   $'Status: none' $'Status: none' $'Status: none'
 add_fixture "legacy-complete-project" "Legacy complete project" "active" \
-  $'Status: complete\n- [x] Legacy task must be reviewed\nTASK-BODY-SENTINEL' $'Status: none' $'Status: none'
+  $'Status: complete\n\n## Next steps\n\n1. Legacy action must stay hidden\nTASK-BODY-SENTINEL' $'Status: none' $'Status: none'
 add_fixture "none-status-project" "None status project" "none" \
   $'Status: none' $'Status: none' $'Status: none'
 add_fixture "unknown-status-project" "Unknown status project" "mystery" \
@@ -136,6 +136,7 @@ assert_count 14 '- [ ] ' "$TMP_DIR/preview.txt"
 assert_contains "$TMP_DIR/preview.txt" 'legacy-complete-project'
 assert_contains "$TMP_DIR/preview.txt" 'Incoming'
 assert_contains "$TMP_DIR/preview.txt" 'нужно проверить'
+assert_not_contains "$TMP_DIR/preview.txt" 'Legacy action must stay hidden'
 assert_column active-project Active
 assert_column ready-future-project Planned
 assert_column waiting-project Waiting
