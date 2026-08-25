@@ -25,10 +25,9 @@ assert_column() {
 HUB="$TMP_DIR/hub"
 PROJECTS="$HUB/projects"
 ARCHITECTURE_PROJECT="$PROJECTS/ai-dev-architecture"
-VAULT="$ARCHITECTURE_PROJECT/tmp/obsidian-vault-copy"
+VAULT="$ARCHITECTURE_PROJECT/obsidian-vault"
 SCOPE="$HUB/scope.txt"
-mkdir -p "$HUB/ai/project-cards" "$PROJECTS" \
-  "$VAULT/Obsidian/AI-архитектура/Projects/_views"
+mkdir -p "$HUB/ai/project-cards" "$PROJECTS" "$VAULT/Obsidian"
 
 printf '%s\n' '# Project Registry' > "$HUB/ai/project-registry.md"
 
@@ -135,8 +134,8 @@ add_fixture "ready-due-project" "Ready future due project" "active" \
   $'### FT-20260824-001 — Ready future action with due\n\nStatus: ready\ndue: 2026-09-06\n\n### FT-20260824-002 — Dropped future due must stay hidden\n\nStatus: dropped\ndue: 2026-09-07' \
   $'Status: none'
 
-BOARD="$VAULT/Obsidian/AI-архитектура/Projects/_views/Projects-Kanban.md"
-MANIFEST="$VAULT/Obsidian/AI-архитектура/Projects/_views/Projects-Kanban.manifest.json"
+BOARD="$VAULT/Obsidian/Projects-Kanban.md"
+MANIFEST="$VAULT/Obsidian/Projects-Kanban.manifest.json"
 
 # RED: this command is intentionally absent until Task 3 implements the generator.
 if [ ! -x "$GENERATOR" ]; then
@@ -235,9 +234,9 @@ expect_vault_failure() {
 }
 
 ORIGINAL_VAULT="$TMP_DIR/original-obsidian-vault"
-mkdir -p "$HUB/tmp/obsidian-vault-copy" "$PROJECTS/other-project/tmp/obsidian-vault-copy" "$ORIGINAL_VAULT"
-expect_vault_failure "$HUB/tmp/obsidian-vault-copy"
-expect_vault_failure "$PROJECTS/other-project/tmp/obsidian-vault-copy"
+mkdir -p "$HUB/obsidian-vault" "$PROJECTS/other-project/obsidian-vault" "$ORIGINAL_VAULT"
+expect_vault_failure "$HUB/obsidian-vault"
+expect_vault_failure "$PROJECTS/other-project/obsidian-vault"
 expect_vault_failure "$ORIGINAL_VAULT"
 
 expect_scope_failure() {
@@ -264,6 +263,7 @@ expect_write_failure
 assert_file "$BOARD"
 assert_file "$MANIFEST"
 [ "$(find "$VAULT" -type f | wc -l | tr -d ' ')" -eq 2 ] || fail 'write created files other than board and manifest'
+assert_not_exists "$VAULT/Obsidian/AI-архитектура/Projects/_views/Projects-Kanban.md"
 assert_not_contains "$MANIFEST" 'TASK-BODY-SENTINEL'
 assert_contains "$MANIFEST" '"format_version"'
 assert_contains "$MANIFEST" '"sources"'
@@ -288,8 +288,8 @@ assert_contains "$TMP_DIR/manual-edit.txt" 'proposal pending'
 [ "$board_before" = "$(shasum -a 256 "$BOARD" | awk '{print $1}')" ] || fail 'manual board edit was replaced'
 
 rm -f "$BOARD" "$MANIFEST"
-rmdir "$VAULT/Obsidian/AI-архитектура/Projects/_views"
-ln -s "$TMP_DIR" "$VAULT/Obsidian/AI-архитектура/Projects/_views"
+rmdir "$VAULT/Obsidian"
+ln -s "$TMP_DIR" "$VAULT/Obsidian"
 if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write >"$TMP_DIR/symlink-write.txt" 2>&1; then
   fail 'symlinked target directory must block write'
 fi
