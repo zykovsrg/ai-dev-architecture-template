@@ -82,6 +82,23 @@ safe_due() {
   sed -nE 's/^[[:space:]]*due:[[:space:]]*([0-9]{4}-[0-9]{2}-[0-9]{2})[[:space:]]*$/\1/p' "$@" |
     sort -u | head -n 1
 }
+ready_future_due() {
+  awk '
+    function finish_entry() {
+      if (entry && state == "ready" && due != "") print due
+    }
+    /^### FT-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9]+[[:space:]]/ {
+      finish_entry(); entry = 1; state = ""; due = ""; next
+    }
+    /^### / { finish_entry(); entry = 0; state = ""; due = ""; next }
+    entry && /^Status: / { state = substr($0, 9); next }
+    entry && /^[[:space:]]*due:[[:space:]]*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9][[:space:]]*$/ {
+      value = $0; sub(/^[[:space:]]*due:[[:space:]]*/, "", value); sub(/[[:space:]]*$/, "", value)
+      if (due == "") due = value
+    }
+    END { finish_entry() }
+  ' "$1" | sort -u | head -n 1
+}
 structured_actions() {
   awk '
     /^## (Next steps|Steps)[[:space:]]*$/ { numbered=1; next }
@@ -160,6 +177,18 @@ while IFS= read -r id; do
 done < <(sed '/^[[:space:]]*$/d' "$SCOPE" | sort)
 [ "${#IDS[@]}" -gt 0 ] || die 'scope is empty'
 if printf '%s\n' "${IDS[@]}" | uniq -d | grep -q .; then die 'duplicate project ID in scope'; fi
+if [ "$MODE" = write ]; then
+  REGISTRY_IDS=()
+  while IFS= read -r id; do
+    REGISTRY_IDS+=("$id")
+  done < <(sed -nE 's/^## ([a-z0-9][a-z0-9-]*)$/\1/p' "$REGISTRY" | sort)
+  [ "${#REGISTRY_IDS[@]}" -gt 0 ] || die 'registry is empty'
+  if printf '%s\n' "${REGISTRY_IDS[@]}" | uniq -d | grep -q .; then die 'duplicate project ID in registry'; fi
+  if [ "${#IDS[@]}" -ne "${#REGISTRY_IDS[@]}" ] || ! cmp -s \
+    <(printf '%s\n' "${IDS[@]}") <(printf '%s\n' "${REGISTRY_IDS[@]}"); then
+    die 'write scope must match all registered project IDs'
+  fi
+fi
 
 if [ "$MODE" = write ]; then
   WORK="$(mktemp -d "$VAULT/.obsidian-board.XXXXXX")"
@@ -212,24 +241,28 @@ for id in "${IDS[@]}"; do
   case "$future" in ''|ready|none) ;; *) legacy=1;; esac
   case "$paused" in ''|paused|none) ;; *) legacy=1;; esac
   if [ "$registry_status" = archived ]; then column=Archived; status=archived
+  elif [ "$registry_status" = completed ]; then column=Completed; status=completed
   elif [ "$legacy" -eq 1 ]; then column=Incoming; status='нужно проверить'
   elif [[ "$current" = active || "$current" = ready || "$current" = in_progress ]]; then column=Active; status=active
   elif [ "$current" = waiting ]; then column=Waiting; status=waiting
   elif [ "$paused" = paused ]; then column=Paused; status=paused
   elif [ "$future" = ready ]; then column=Planned; status=planned
-  elif [ "$registry_status" = completed ]; then column=Completed; status=completed
   else column=Incoming; status=incoming
   fi
-  due="$(safe_due "$path/ai/current-task.md" "$path/ai/future-tasks.md" "$path/ai/paused-tasks.md")"
   actions=''
-  if [ "$legacy" -eq 0 ] && [ "$registry_status" != archived ]; then
-    actions="$(structured_actions "$path/ai/current-task.md")"
+  due=''
+  if [ "$legacy" -eq 0 ] && [ "$registry_status" = active ]; then
+    if [[ "$current" = active || "$current" = ready || "$current" = in_progress ]]; then
+      actions="$(structured_actions "$path/ai/current-task.md")"
+      due="$(safe_due "$path/ai/current-task.md")"
+    fi
     future_actions=''
     [ "$future" = ready ] && future_actions="$(ready_future_actions "$path/ai/future-tasks.md")"
     if [ -n "$future_actions" ]; then
       [ -z "$actions" ] || actions+=$'\n'
       actions+="$future_actions"
     fi
+    [ -n "$due" ] || [ "$future" != ready ] || due="$(ready_future_due "$path/ai/future-tasks.md")"
   fi
   PROJECT_PATHS+=("$path"); CARD_PATHS+=("$card"); NAMES+=("$name"); PURPOSES+=("$purpose")
   COLUMNS+=("$column"); STATUSES+=("$status"); DUES+=("$due"); ACTIONS+=("$actions")

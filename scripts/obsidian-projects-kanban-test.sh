@@ -33,6 +33,19 @@ mkdir -p "$HUB/ai/project-cards" "$PROJECTS" \
 printf '%s\n' '# Project Registry' > "$HUB/ai/project-registry.md"
 
 mkdir -p "$ARCHITECTURE_PROJECT"
+mkdir -p "$ARCHITECTURE_PROJECT/ai"
+printf '%s\n' 'Status: none' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+printf '%s\n' 'Status: none' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+printf '%s\n' 'Status: none' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+cat > "$HUB/ai/project-cards/ai-dev-architecture.md" <<EOF
+# Project Card
+
+Project ID: ai-dev-architecture
+Name: AI Development Architecture
+Status: active
+Purpose: Synthetic fixture for the Obsidian board contract.
+EOF
+printf '%s\n' 'ai-dev-architecture' >> "$SCOPE"
 cat >> "$HUB/ai/project-registry.md" <<EOF
 
 ## ai-dev-architecture
@@ -74,13 +87,13 @@ add_fixture "active-project" "Active project" "active" \
 add_fixture "ready-future-project" "Ready future project" "active" \
   $'Status: none' $'### FT-20260824-001 — Promote the ready task\n\nStatus: ready' $'Status: none'
 add_fixture "waiting-project" "Waiting project" "active" \
-  $'Status: waiting\n- [ ] Waiting on external answer' $'Status: none' $'Status: none'
+  $'Status: waiting\ndue: 2026-08-27\n\n## Next steps\n\n1. Waiting action must stay hidden' $'Status: none' $'Status: none'
 add_fixture "paused-project" "Paused project" "active" \
-  $'Status: none' $'Status: none' $'### 2026-08-24 — Resume paused task\n\nStatus: paused'
+  $'Status: paused\ndue: 2026-08-28\n\n## Next steps\n\n1. Paused action must stay hidden' $'Status: none' $'### 2026-08-24 — Resume paused task\n\nStatus: paused'
 add_fixture "completed-project" "Completed project" "completed" \
-  $'Status: completed\n- [x] Canonical completed task' $'Status: none' $'Status: none'
+  $'Status: active\ndue: 2026-08-29\n\n## Next steps\n\n1. Completed action must stay hidden' $'Status: none' $'Status: none'
 add_fixture "archived-project" "Archived project" "archived" \
-  $'Status: none' $'Status: none' $'Status: none'
+  $'Status: active\ndue: 2026-08-30\n\n## Next steps\n\n1. Archived action must stay hidden' $'Status: none' $'Status: none'
 add_fixture "legacy-complete-project" "Legacy complete project" "active" \
   $'Status: complete\n\n## Next steps\n\n1. Legacy action must stay hidden\nTASK-BODY-SENTINEL' $'Status: none' $'Status: none'
 add_fixture "none-status-project" "None status project" "none" \
@@ -107,6 +120,20 @@ add_fixture "unknown-paused-entry-project" "Project with unknown paused entry" "
   $'Status: none' \
   $'No future tasks yet.' \
   $'### 2026-08-24 — Check this task\n\nStatus: mystery'
+add_fixture "current-ready-project" "Current ready project" "active" \
+  $'Status: ready\ndue: 2026-08-31\n\n## Next steps\n\n1. Current ready action' $'Status: none' $'Status: none'
+add_fixture "in-progress-project" "In progress project" "active" \
+  $'Status: in_progress\ndue: 2026-09-01\n\n## Next steps\n\n1. In progress action' $'Status: none' $'Status: none'
+add_fixture "done-project" "Done project" "active" \
+  $'Status: done\ndue: 2026-09-02\n\n## Next steps\n\n1. Done action must stay hidden' $'Status: none' $'Status: none'
+add_fixture "review-project" "Review project" "active" \
+  $'Status: review\ndue: 2026-09-03\n\n## Next steps\n\n1. Review action must stay hidden' $'Status: none' $'Status: none'
+add_fixture "blocked-project" "Blocked project" "active" \
+  $'Status: blocked\ndue: 2026-09-04\n\n## Next steps\n\n1. Blocked action must stay hidden' $'Status: none' $'Status: none'
+add_fixture "ready-due-project" "Ready future due project" "active" \
+  $'Status: none\ndue: 2026-09-05' \
+  $'### FT-20260824-001 — Ready future action with due\n\nStatus: ready\ndue: 2026-09-06\n\n### FT-20260824-002 — Dropped future due must stay hidden\n\nStatus: dropped\ndue: 2026-09-07' \
+  $'Status: none'
 
 BOARD="$VAULT/Obsidian/AI-архитектура/Projects/_views/Projects-Kanban.md"
 MANIFEST="$VAULT/Obsidian/AI-архитектура/Projects/_views/Projects-Kanban.manifest.json"
@@ -156,10 +183,37 @@ assert_column 'Project with ready future entry' Planned
 assert_column 'Project with paused entry' Paused
 assert_column 'Project with unknown future entry' Incoming
 assert_column 'Project with unknown paused entry' Incoming
+assert_column 'Current ready project' Active
+assert_column 'In progress project' Active
+assert_column 'Done project' Incoming
+assert_column 'Review project' Incoming
+assert_column 'Blocked project' Incoming
 assert_contains "$TMP_DIR/preview.txt" 'First structured action'
 assert_count 7 'structured action' "$TMP_DIR/preview.txt"
 assert_not_contains "$TMP_DIR/preview.txt" 'Eighth structured action'
 assert_contains "$TMP_DIR/preview.txt" 'Promote the ready task'
+assert_contains "$TMP_DIR/preview.txt" 'Current ready action'
+assert_contains "$TMP_DIR/preview.txt" 'In progress action'
+assert_contains "$TMP_DIR/preview.txt" 'Ready future action with due'
+assert_contains "$TMP_DIR/preview.txt" '  - 📅 2026-08-31'
+assert_contains "$TMP_DIR/preview.txt" '  - 📅 2026-09-01'
+assert_contains "$TMP_DIR/preview.txt" '  - 📅 2026-09-06'
+assert_not_contains "$TMP_DIR/preview.txt" 'Waiting action must stay hidden'
+assert_not_contains "$TMP_DIR/preview.txt" 'Paused action must stay hidden'
+assert_not_contains "$TMP_DIR/preview.txt" 'Completed action must stay hidden'
+assert_not_contains "$TMP_DIR/preview.txt" 'Archived action must stay hidden'
+assert_not_contains "$TMP_DIR/preview.txt" 'Done action must stay hidden'
+assert_not_contains "$TMP_DIR/preview.txt" 'Review action must stay hidden'
+assert_not_contains "$TMP_DIR/preview.txt" 'Blocked action must stay hidden'
+assert_not_contains "$TMP_DIR/preview.txt" '  - 📅 2026-08-27'
+assert_not_contains "$TMP_DIR/preview.txt" '  - 📅 2026-08-28'
+assert_not_contains "$TMP_DIR/preview.txt" '  - 📅 2026-08-29'
+assert_not_contains "$TMP_DIR/preview.txt" '  - 📅 2026-08-30'
+assert_not_contains "$TMP_DIR/preview.txt" '  - 📅 2026-09-02'
+assert_not_contains "$TMP_DIR/preview.txt" '  - 📅 2026-09-03'
+assert_not_contains "$TMP_DIR/preview.txt" '  - 📅 2026-09-04'
+assert_not_contains "$TMP_DIR/preview.txt" '  - 📅 2026-09-05'
+assert_not_contains "$TMP_DIR/preview.txt" '  - 📅 2026-09-07'
 assert_contains "$TMP_DIR/preview.txt" '## Incoming'
 assert_contains "$TMP_DIR/preview.txt" '## Planned'
 assert_contains "$TMP_DIR/preview.txt" '## Active'
@@ -214,6 +268,16 @@ assert_not_contains "$MANIFEST" 'TASK-BODY-SENTINEL'
 assert_contains "$MANIFEST" '"format_version"'
 assert_contains "$MANIFEST" '"sources"'
 /usr/bin/jq -e 'type == "object"' "$MANIFEST" >/dev/null || fail 'manifest must be valid JSON object'
+
+board_before_subset="$(shasum -a 256 "$BOARD" | awk '{print $1}')"
+manifest_before_subset="$(shasum -a 256 "$MANIFEST" | awk '{print $1}')"
+SUBSET_SCOPE="$HUB/write-subset-scope.txt"
+printf '%s\n' 'active-project' > "$SUBSET_SCOPE"
+if "$GENERATOR" --hub "$HUB" --scope "$SUBSET_SCOPE" --vault "$VAULT" --write --confirm-generated-write >"$TMP_DIR/subset-write.txt" 2>&1; then
+  fail 'write with a truncated registered scope must fail'
+fi
+[ "$board_before_subset" = "$(shasum -a 256 "$BOARD" | awk '{print $1}')" ] || fail 'truncated scope write replaced board'
+[ "$manifest_before_subset" = "$(shasum -a 256 "$MANIFEST" | awk '{print $1}')" ] || fail 'truncated scope write replaced manifest'
 
 printf '\nmanual edit\n' >> "$BOARD"
 board_before="$(shasum -a 256 "$BOARD" | awk '{print $1}')"
