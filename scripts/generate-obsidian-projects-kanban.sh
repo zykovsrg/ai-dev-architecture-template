@@ -129,6 +129,21 @@ ready_future_actions() {
     END { finish_entry() }
   ' "$1" | sed 's/[[:space:]]*$//' | awk 'length && !seen[$0]++'
 }
+idea_future_actions() {
+  awk '
+    function finish_entry() {
+      if (entry && state == "idea") print title
+    }
+    /^### FT-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9]+[[:space:]]/ {
+      finish_entry(); entry = 1; state = ""; title = $0
+      sub(/^### FT-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9]+[[:space:]]+[^[:space:]]+[[:space:]]*/, "", title)
+      next
+    }
+    /^### / { finish_entry(); entry = 0; state = ""; title = ""; next }
+    entry && /^Status: / { state = substr($0, 9) }
+    END { finish_entry() }
+  ' "$1" | sed 's/[[:space:]]*$//' | awk 'length && !seen[$0]++'
+}
 
 HUB='' SCOPE='' VAULT='' MODE='' CONFIRM=0
 while [ "$#" -gt 0 ]; do
@@ -194,7 +209,7 @@ if [ "$MODE" = write ]; then
   WORK="$(mktemp -d "$VAULT/.obsidian-board.XXXXXX")"
   trap 'rm -rf "$WORK"' EXIT
 fi
-PROJECT_PATHS=() CARD_PATHS=() NAMES=() PURPOSES=() COLUMNS=() STATUSES=() SOURCE_HASHES=() DUES=() ACTIONS=()
+PROJECT_PATHS=() CARD_PATHS=() NAMES=() PURPOSES=() COLUMNS=() STATUSES=() SOURCE_HASHES=() DUES=() ACTIONS=() IDEAS=()
 field() {
   local wanted="$1" key="$2" i
   for i in "${!IDS[@]}"; do
@@ -250,6 +265,7 @@ for id in "${IDS[@]}"; do
   else column=Incoming; status=incoming
   fi
   actions=''
+  ideas=''
   due=''
   if [ "$legacy" -eq 0 ] && [ "$registry_status" = active ]; then
     if [[ "$current" = active || "$current" = ready || "$current" = in_progress ]]; then
@@ -262,10 +278,11 @@ for id in "${IDS[@]}"; do
       [ -z "$actions" ] || actions+=$'\n'
       actions+="$future_actions"
     fi
+    ideas="$(idea_future_actions "$path/ai/future-tasks.md")"
     [ -n "$due" ] || [ "$future" != ready ] || due="$(ready_future_due "$path/ai/future-tasks.md")"
   fi
   PROJECT_PATHS+=("$path"); CARD_PATHS+=("$card"); NAMES+=("$name"); PURPOSES+=("$purpose")
-  COLUMNS+=("$column"); STATUSES+=("$status"); DUES+=("$due"); ACTIONS+=("$actions")
+  COLUMNS+=("$column"); STATUSES+=("$status"); DUES+=("$due"); ACTIONS+=("$actions"); IDEAS+=("$ideas")
   SOURCE_HASHES+=("$(sha256 "$card" "$path/ai/current-task.md" "$path/ai/future-tasks.md" "$path/ai/paused-tasks.md")")
 done
 
@@ -276,8 +293,8 @@ BOARD_RENDER="$( {
     for id in "${IDS[@]}"; do
       [ "$(field "$id" column)" = "$column" ] || continue
       printf '\n- [ ] %s\n' "$(field "$id" name)"
-      due=''; actions=''
-      for i in "${!IDS[@]}"; do [ "${IDS[$i]}" = "$id" ] && due="${DUES[$i]}" && actions="${ACTIONS[$i]}"; done
+      due=''; actions=''; ideas=''
+      for i in "${!IDS[@]}"; do [ "${IDS[$i]}" = "$id" ] && due="${DUES[$i]}" && actions="${ACTIONS[$i]}" && ideas="${IDEAS[$i]}"; done
       count=0
       while IFS= read -r action; do
         [ -n "$action" ] || continue
@@ -286,6 +303,13 @@ BOARD_RENDER="$( {
         count=$((count + 1))
       done <<< "$actions"
       [ -z "$due" ] || printf '  - 📅 %s\n' "$due"
+      if [ -n "$ideas" ]; then
+        printf '  - 💡 Идеи / backlog\n'
+        while IFS= read -r idea; do
+          [ -n "$idea" ] || continue
+          printf '    - [ ] %s\n' "$idea"
+        done <<< "$ideas"
+      fi
     done
   done
 } )"

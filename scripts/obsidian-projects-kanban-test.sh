@@ -82,7 +82,8 @@ EOF
 
 add_fixture "active-project" "Active project" "active" \
   $'Status: active\ndue: 2026-08-26\n\n## Next steps\n\n1. First structured action\n2. Second structured action\n3. Third structured action\n4. Fourth structured action\n5. Fifth structured action\n6. Sixth structured action\n7. Seventh structured action\n8. Eighth structured action' \
-  $'Status: none' $'Status: none'
+  $'### FT-20260826-001 — First future idea\n\nStatus: idea\n\n### FT-20260826-002 — Second future idea\n\nStatus: idea\n\n### FT-20260826-003 — Hidden blocked future\n\nStatus: blocked' \
+  $'Status: none'
 add_fixture "ready-future-project" "Ready future project" "active" \
   $'Status: none' $'### FT-20260824-001 — Promote the ready task\n\nStatus: ready' $'Status: none'
 add_fixture "waiting-project" "Waiting project" "active" \
@@ -158,6 +159,10 @@ assert_not_contains "$TMP_DIR/preview.txt" '  - id: active-project'
 assert_not_contains "$TMP_DIR/preview.txt" '  - purpose:'
 assert_not_contains "$TMP_DIR/preview.txt" '  - status:'
 assert_not_contains "$TMP_DIR/preview.txt" 'нет следующего действия'
+assert_contains "$TMP_DIR/preview.txt" '  - 💡 Идеи / backlog'
+assert_contains "$TMP_DIR/preview.txt" '    - [ ] First future idea'
+assert_contains "$TMP_DIR/preview.txt" '    - [ ] Second future idea'
+assert_not_contains "$TMP_DIR/preview.txt" 'Hidden blocked future'
 assert_contains "$TMP_DIR/preview.txt" '- [ ] Active project'
 assert_contains "$TMP_DIR/preview.txt" '- [ ] Ready future project'
 assert_contains "$TMP_DIR/preview.txt" '- [ ] Waiting project'

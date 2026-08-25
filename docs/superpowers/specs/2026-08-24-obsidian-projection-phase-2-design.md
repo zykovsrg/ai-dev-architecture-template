@@ -82,6 +82,9 @@ Each card contains only derived, read-only information:
 - nearest explicit due date, otherwise `нет срока`;
 - blocker and waiting summary only when structurally valid;
 - up to seven clearly derived next actions.
+- every valid future `idea` entry in a separate nested `💡 Идеи / backlog`
+  block. Ideas do not determine the project column; `blocked`, `promoted`,
+  `done`, and `dropped` entries remain hidden.
 
 If fewer than three safe actions exist, the remaining places explicitly say
 `нет следующего действия`. Archived cards show only name, purpose, and status.
