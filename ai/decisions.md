@@ -33,7 +33,9 @@ it has no other actionable work.
 
 The first Obsidian surface is one generated Kanban board with one card per
 project and embedded next actions. Its columns are Incoming, Planned, Active,
-Waiting, Paused, and Completed. Knowledge uses a mixed PARA-style structure:
+Waiting, Paused, Completed, and Archived. Archived means the registered project
+has canonical status `archived` and exposes no task actions. Knowledge uses a
+mixed PARA-style structure:
 project knowledge stays with its project; shared knowledge stays once in the
 common base, including shared meetings. Inbox is a fallback for ambiguous
 captures, not a mandatory stop.
