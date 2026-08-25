@@ -17,9 +17,9 @@ assert_count() {
   [ "$actual" -eq "$expected" ] || fail "expected $expected occurrences of '$needle' in $file, got $actual"
 }
 assert_column() {
-  local id="$1" expected="$2" actual
-  actual="$(awk -v wanted="$id" '/^## / {column=substr($0, 4)} $0 == "  - id: " wanted {print column; exit}' "$TMP_DIR/preview.txt")"
-  [ "$actual" = "$expected" ] || fail "expected $id in $expected, got ${actual:-none}"
+  local name="$1" expected="$2" actual
+  actual="$(awk -v wanted="$name" '/^## / {column=substr($0, 4)} $0 == "- [ ] " wanted {print column; exit}' "$TMP_DIR/preview.txt")"
+  [ "$actual" = "$expected" ] || fail "expected $name in $expected, got ${actual:-none}"
 }
 
 HUB="$TMP_DIR/hub"
@@ -69,7 +69,7 @@ EOF
 }
 
 add_fixture "active-project" "Active project" "active" \
-  $'Status: active\n\n## Next steps\n\n1. First structured action\n2. Second structured action\n3. Third structured action\n4. Fourth structured action\n5. Fifth structured action\n6. Sixth structured action\n7. Seventh structured action\n8. Eighth structured action' \
+  $'Status: active\ndue: 2026-08-26\n\n## Next steps\n\n1. First structured action\n2. Second structured action\n3. Third structured action\n4. Fourth structured action\n5. Fifth structured action\n6. Sixth structured action\n7. Seventh structured action\n8. Eighth structured action' \
   $'Status: none' $'Status: none'
 add_fixture "ready-future-project" "Ready future project" "active" \
   $'Status: none' $'### FT-20260824-001 — Promote the ready task\n\nStatus: ready' $'Status: none'
@@ -125,37 +125,40 @@ SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault 
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/preview-repeat.txt"
 cmp -s "$TMP_DIR/preview.txt" "$TMP_DIR/preview-repeat.txt" || fail 'fixed-time preview is not deterministic'
 assert_contains "$TMP_DIR/preview.txt" 'kanban-plugin: board'
-assert_count 1 '  - id: active-project' "$TMP_DIR/preview.txt"
-assert_count 1 '  - id: ready-future-project' "$TMP_DIR/preview.txt"
-assert_count 1 '  - id: waiting-project' "$TMP_DIR/preview.txt"
-assert_count 1 '  - id: paused-project' "$TMP_DIR/preview.txt"
-assert_count 1 '  - id: completed-project' "$TMP_DIR/preview.txt"
-assert_count 1 '  - id: archived-project' "$TMP_DIR/preview.txt"
-assert_count 1 '  - id: legacy-complete-project' "$TMP_DIR/preview.txt"
-assert_count 14 '- [ ] ' "$TMP_DIR/preview.txt"
+assert_not_contains "$TMP_DIR/preview.txt" '# Projects Kanban (generated)'
+assert_contains "$TMP_DIR/preview.txt" '- [ ] First structured action'
+assert_contains "$TMP_DIR/preview.txt" '  - 📅 2026-08-26'
+assert_not_contains "$TMP_DIR/preview.txt" '  - id: active-project'
+assert_not_contains "$TMP_DIR/preview.txt" '  - purpose:'
+assert_not_contains "$TMP_DIR/preview.txt" '  - status:'
+assert_not_contains "$TMP_DIR/preview.txt" 'нет следующего действия'
+assert_contains "$TMP_DIR/preview.txt" '- [ ] Active project'
+assert_contains "$TMP_DIR/preview.txt" '- [ ] Ready future project'
+assert_contains "$TMP_DIR/preview.txt" '- [ ] Waiting project'
+assert_contains "$TMP_DIR/preview.txt" '- [ ] Paused project'
+assert_contains "$TMP_DIR/preview.txt" '- [ ] Completed project'
+assert_contains "$TMP_DIR/preview.txt" '- [ ] Archived project'
+assert_contains "$TMP_DIR/preview.txt" '- [ ] Legacy complete project'
 assert_contains "$TMP_DIR/preview.txt" 'legacy-complete-project'
 assert_contains "$TMP_DIR/preview.txt" 'Incoming'
-assert_contains "$TMP_DIR/preview.txt" 'нужно проверить'
 assert_not_contains "$TMP_DIR/preview.txt" 'Legacy action must stay hidden'
-assert_column active-project Active
-assert_column ready-future-project Planned
-assert_column waiting-project Waiting
-assert_column paused-project Paused
-assert_column completed-project Completed
-assert_column archived-project Archived
-assert_column legacy-complete-project Incoming
-assert_column none-status-project Incoming
-assert_column unknown-status-project Incoming
-assert_column empty-templates-active-project Active
-assert_column ready-entry-project Planned
-assert_column paused-entry-project Paused
-assert_column unknown-future-entry-project Incoming
-assert_column unknown-paused-entry-project Incoming
-assert_count 5 'status: нужно проверить' "$TMP_DIR/preview.txt"
+assert_column 'Active project' Active
+assert_column 'Ready future project' Planned
+assert_column 'Waiting project' Waiting
+assert_column 'Paused project' Paused
+assert_column 'Completed project' Completed
+assert_column 'Archived project' Archived
+assert_column 'Legacy complete project' Incoming
+assert_column 'None status project' Incoming
+assert_column 'Unknown status project' Incoming
+assert_column 'Active project with empty templates' Active
+assert_column 'Project with ready future entry' Planned
+assert_column 'Project with paused entry' Paused
+assert_column 'Project with unknown future entry' Incoming
+assert_column 'Project with unknown paused entry' Incoming
 assert_contains "$TMP_DIR/preview.txt" 'First structured action'
 assert_count 7 'structured action' "$TMP_DIR/preview.txt"
 assert_not_contains "$TMP_DIR/preview.txt" 'Eighth structured action'
-assert_contains "$TMP_DIR/preview.txt" 'due: нет срока'
 assert_contains "$TMP_DIR/preview.txt" 'Promote the ready task'
 assert_contains "$TMP_DIR/preview.txt" '## Incoming'
 assert_contains "$TMP_DIR/preview.txt" '## Planned'

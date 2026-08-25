@@ -238,27 +238,21 @@ done
 
 BOARD_RENDER="$( {
   printf '%s\n' '---' 'kanban-plugin: board' '---'
-  printf '\n%s\n\n' '# Projects Kanban (generated)' '_Источник истины: проектные записи AI. Ручные изменения — proposal pending._'
   for column in Incoming Planned Active Waiting Paused Completed Archived; do
     printf '\n## %s\n' "$column"
     for id in "${IDS[@]}"; do
       [ "$(field "$id" column)" = "$column" ] || continue
-      printf '\n- [ ] %s\n  - id: %s\n  - purpose: %s\n  - status: %s\n' "$(field "$id" name)" "$id" "$(field "$id" purpose)" "$(field "$id" status)"
-      if [ "$column" != Archived ]; then
-        due=''; actions=''
-        for i in "${!IDS[@]}"; do [ "${IDS[$i]}" = "$id" ] && due="${DUES[$i]}" && actions="${ACTIONS[$i]}"; done
-        [ -n "$due" ] || due='нет срока'
-        printf '  - due: %s\n  - actions:\n' "$due"
-        count=0
-        if [ -n "$actions" ]; then
-          while IFS= read -r action; do
-            [ -n "$action" ] || continue
-            [ "$count" -lt 7 ] || break
-            printf '    - %s\n' "$action"; count=$((count + 1))
-          done <<< "$actions"
-        fi
-        while [ "$count" -lt 3 ]; do printf '%s\n' '    - нет следующего действия'; count=$((count + 1)); done
-      fi
+      printf '\n- [ ] %s\n' "$(field "$id" name)"
+      due=''; actions=''
+      for i in "${!IDS[@]}"; do [ "${IDS[$i]}" = "$id" ] && due="${DUES[$i]}" && actions="${ACTIONS[$i]}"; done
+      count=0
+      while IFS= read -r action; do
+        [ -n "$action" ] || continue
+        [ "$count" -lt 7 ] || break
+        printf '  - [ ] %s\n' "$action"
+        count=$((count + 1))
+      done <<< "$actions"
+      [ -z "$due" ] || printf '  - 📅 %s\n' "$due"
     done
   done
 } )"
