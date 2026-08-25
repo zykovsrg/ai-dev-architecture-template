@@ -168,9 +168,9 @@ architecture_real="$(physical_dir "$architecture_path")"
 inside "$architecture_real" "$HUB/projects" || die 'architecture project path escapes allowed root'
 [ -d "$VAULT" ] && [ ! -L "$VAULT" ] || die 'vault must be a non-symlink directory'
 VAULT="$(physical_dir "$VAULT")"
-EXPECTED_VAULT="$architecture_real/tmp/obsidian-vault-copy"
+EXPECTED_VAULT="$architecture_real/obsidian-vault"
 inside "$VAULT" "$architecture_real" || die 'vault must be inside the architecture project'
-[ "$VAULT" = "$EXPECTED_VAULT" ] || die 'vault must be the copied vault under ai-dev-architecture/tmp/obsidian-vault-copy'
+[ "$VAULT" = "$EXPECTED_VAULT" ] || die 'vault must be the local vault under ai-dev-architecture/obsidian-vault'
 IDS=()
 while IFS= read -r id; do
   IDS+=("$id")
@@ -296,7 +296,7 @@ MANIFEST_RENDER="$( {
   printf '{\n  "format_version": 1,\n  "generated_at": '
   json_string "$GENERATED_AT"
   printf ',\n  "target": '
-  json_string 'Obsidian/AI-архитектура/Projects/_views/Projects-Kanban.md'
+  json_string 'Obsidian/Projects-Kanban.md'
   printf ',\n  "board_sha256": '
   json_string "$BOARD_HASH"
   printf ',\n  "sources": [\n'
@@ -319,11 +319,11 @@ if [ "$MODE" = preview ]; then
   exit 0
 fi
 
-TARGET_DIR="$VAULT/Obsidian/AI-архитектура/Projects/_views"
+TARGET_DIR="$VAULT/Obsidian"
 TARGET_BOARD="$TARGET_DIR/Projects-Kanban.md"
 TARGET_MANIFEST="$TARGET_DIR/Projects-Kanban.manifest.json"
 [ -d "$TARGET_DIR" ] && [ ! -L "$TARGET_DIR" ] || die 'target directory missing or symlinked'
-for target_part in Obsidian Obsidian/AI-архитектура Obsidian/AI-архитектура/Projects Obsidian/AI-архитектура/Projects/_views; do
+for target_part in Obsidian; do
   [ ! -L "$VAULT/$target_part" ] || die 'target directory contains a symlink'
 done
 [ ! -L "$TARGET_BOARD" ] && [ ! -L "$TARGET_MANIFEST" ] || die 'generated targets must not be symlinks'

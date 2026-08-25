@@ -4,4 +4,5 @@
 # local scratch
 _source/
 tmp/
+obsidian-vault/
 .worktrees/

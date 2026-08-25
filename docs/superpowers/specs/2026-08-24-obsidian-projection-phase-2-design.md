@@ -34,21 +34,22 @@ One generated Markdown file is the chosen mechanism. It is rendered as a board
 by the already installed `obsidian-kanban` plugin; no new plugin or script gets
 direct access to project data.
 
-The future board location in the copied vault is:
+The board location in the permanent local vault copy is:
 
 ```text
-tmp/obsidian-vault-copy/Obsidian/AI-архитектура/Projects/_views/Projects-Kanban.md
+obsidian-vault/Obsidian/Projects-Kanban.md
 ```
 
 The adjacent manifest is:
 
 ```text
-tmp/obsidian-vault-copy/Obsidian/AI-архитектура/Projects/_views/Projects-Kanban.manifest.json
+obsidian-vault/Obsidian/Projects-Kanban.manifest.json
 ```
 
 The first write creates these two files once. A later update replaces these same
 two generated files only after a new preview and explicit write confirmation.
-It never creates duplicate boards.
+It never creates duplicate boards. `obsidian-vault/` is local-only and ignored
+by Git.
 
 ## Board columns and safe classification
 
