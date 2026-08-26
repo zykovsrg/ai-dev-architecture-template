@@ -3,6 +3,9 @@
 set -euo pipefail
 
 readonly NO_CHANGES='Read-only workflow: no changes were made.'
+# A recorder can still be transcribing after export.  Three status checks with a
+# one-second delay bound this read-only command and prevent a tight polling loop.
+readonly MAX_STATUS_POLLS=3
 
 fail() {
   printf 'ERROR: %s\n' "$*" >&2
@@ -15,6 +18,30 @@ require_absolute_path() {
 
 require_value() {
   [[ -n "$2" ]] || fail "$1 requires a value"
+}
+
+require_directory_not_symlink() {
+  [[ -d "$2" && ! -L "$2" ]] || fail "$1 must be a directory, not a symlink"
+}
+
+require_regular_not_symlink() {
+  [[ -f "$2" && ! -L "$2" ]] || fail "$1 must be a regular non-symlink file"
+}
+
+valid_date() {
+  local year=${1:0:4} month=${1:5:2} day=${1:8:2} month_number day_number days_in_month leap_year=0
+  month_number=$((10#$month))
+  day_number=$((10#$day))
+  ((month_number >= 1 && month_number <= 12 && day_number >= 1)) || return 1
+  if (( (10#$year % 4 == 0 && 10#$year % 100 != 0) || 10#$year % 400 == 0 )); then
+    leap_year=1
+  fi
+  case "$month_number" in
+    1|3|5|7|8|10|12) days_in_month=31 ;;
+    4|6|9|11) days_in_month=30 ;;
+    2) days_in_month=$((28 + leap_year)) ;;
+  esac
+  ((day_number <= days_in_month))
 }
 
 workflow=''
@@ -63,8 +90,10 @@ require_value '--scope' "$scope"
 require_absolute_path '--scope' "$scope"
 require_value '--date' "$date"
 [[ "$date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || fail '--date must be YYYY-MM-DD'
-[[ -d "$hub/projects" ]] || fail 'hub projects directory is missing'
-[[ -f "$scope" && ! -L "$scope" ]] || fail '--scope must be a regular non-symlink file'
+valid_date "$date" || fail '--date must be a real YYYY-MM-DD date'
+require_directory_not_symlink '--hub' "$hub"
+require_directory_not_symlink 'hub projects directory' "$hub/projects"
+require_regular_not_symlink '--scope' "$scope"
 
 scope_ids=()
 while IFS= read -r project_id || [[ -n "$project_id" ]]; do
@@ -74,12 +103,15 @@ done < "$scope"
 scope_summary=''
 for project_id in "${scope_ids[@]}"; do
   [[ "$project_id" =~ ^[a-z0-9][a-z0-9-]*$ ]] || fail "invalid project id in --scope: $project_id"
-  [[ -f "$hub/projects/$project_id/ai/project-card.md" ]] || fail "unregistered project in --scope: $project_id"
+  require_directory_not_symlink "project entry for $project_id" "$hub/projects/$project_id"
+  require_directory_not_symlink "project ai directory for $project_id" "$hub/projects/$project_id/ai"
+  require_regular_not_symlink "project card for $project_id" "$hub/projects/$project_id/ai/project-card.md"
   [[ ",$scope_summary," != *",$project_id,"* ]] || fail "duplicate project id in --scope: $project_id"
   scope_summary+="${scope_summary:+,}$project_id"
 done
 
 print_summary() {
+  printf '%s\n' "$NO_CHANGES"
   printf 'workflow: %s\n' "$workflow"
   printf 'date: %s\n' "$date"
   printf 'scope: %s\n' "$scope_summary"
@@ -89,7 +121,10 @@ read_scoped_metadata() {
   local project_id file
   for project_id in "${scope_ids[@]}"; do
     for file in project-card.md current-task.md future-tasks.md paused-tasks.md; do
-      [[ -f "$hub/projects/$project_id/ai/$file" ]] && sed -n '1p' "$hub/projects/$project_id/ai/$file" >/dev/null
+      if [[ -e "$hub/projects/$project_id/ai/$file" || -L "$hub/projects/$project_id/ai/$file" ]]; then
+        require_regular_not_symlink "$file for $project_id" "$hub/projects/$project_id/ai/$file"
+        sed -n '1p' "$hub/projects/$project_id/ai/$file" >/dev/null
+      fi
     done
   done
 }
@@ -125,32 +160,30 @@ capture() {
   ((capture_source_count == 1)) || fail 'capture requires exactly one source: --recorder-minutes N'
   if [[ -n "$capture_input" ]]; then
     require_absolute_path '--capture-input' "$capture_input"
-    [[ -f "$capture_input" && ! -L "$capture_input" ]] || fail '--capture-input must be a regular non-symlink file'
+    require_regular_not_symlink '--capture-input' "$capture_input"
     print_summary
     printf 'source_kind: capture-input\n'
     printf 'Semantic analysis: performed by hub-workflows.\n'
-    printf '%s\n' "$NO_CHANGES"
     return
   fi
   [[ "$recorder_minutes" =~ ^[0-9]+$ ]] || fail '--recorder-minutes must be an integer from 1 through 120'
   ((recorder_minutes >= 1 && recorder_minutes <= 120)) || fail '--recorder-minutes must be from 1 through 120'
 
-  local exported status job state transcript error_message
+  local exported status job state transcript error_message poll_count=0
   exported=$(rar export --minutes "$recorder_minutes" --json) || fail 'rar export failed'
   validate_job_json "$exported"
   job=$(jq -er '.job' <<<"$exported")
-  status=$(rar status "$job" --json) || fail 'rar status failed'
-  validate_job_json "$status" "$job"
-  state=$(jq -er '.state' <<<"$status")
+  while :; do
+    poll_count=$((poll_count + 1))
+    status=$(rar status "$job" --json) || fail 'rar status failed'
+    validate_job_json "$status" "$job"
+    state=$(jq -er '.state' <<<"$status")
+    [[ "$state" != pending ]] && break
+    ((poll_count < MAX_STATUS_POLLS)) || fail "recorder job $job remained pending after $MAX_STATUS_POLLS status checks"
+    sleep 1
+  done
 
-  print_summary
-  printf 'source_kind: recorder\n'
-  printf 'job: %s\n' "$job"
-  printf 'state: %s\n' "$state"
   case "$state" in
-    pending)
-      printf 'Pending recorder job: %s\n' "$job"
-      ;;
     failed)
       error_message=$(jq -er '.error | strings | select(length > 0)' <<<"$status") || fail 'failed recorder job omitted error'
       printf 'Recorder job %s failed: %s\n' "$job" "$error_message" >&2
@@ -159,11 +192,15 @@ capture() {
     done)
       transcript=$(jq -er '.transcript_path | strings | select(length > 0)' <<<"$status") || fail 'done recorder job omitted transcript_path'
       validate_transcript "$transcript"
-      printf 'transcript_path: %s\n' "$transcript"
-      printf 'Semantic analysis: performed by hub-workflows.\n'
       ;;
   esac
-  printf '%s\n' "$NO_CHANGES"
+  print_summary
+  printf 'source_kind: recorder\n'
+  printf 'job: %s\n' "$job"
+  printf 'state: %s\n' "$state"
+  [[ "$state" == done ]] || fail "unexpected recorder state: $state"
+  printf 'transcript_path: %s\n' "$transcript"
+  printf 'Semantic analysis: performed by hub-workflows.\n'
 }
 
 case "$workflow" in
@@ -172,6 +209,5 @@ case "$workflow" in
     ((capture_source_count == 0)) || fail 'plan and review accept no capture source'
     read_scoped_metadata
     print_summary
-    printf '%s\n' "$NO_CHANGES"
     ;;
 esac
