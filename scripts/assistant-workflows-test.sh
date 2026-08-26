@@ -157,6 +157,69 @@ if run_with_status '{not-json' capture --hub "$hub" --scope "$scope_file" --date
   exit 1
 fi
 
+expect_invalid_export_json() {
+  local export_json=$1 description=$2
+  if run_with_export "$export_json" capture --hub "$hub" --scope "$scope_file" --date 2026-08-26 --recorder-minutes 10 >/dev/null 2>&1; then
+    printf 'FAIL: accepted invalid export JSON: %s\n' "$description" >&2
+    exit 1
+  fi
+}
+
+expect_invalid_export_json \
+  '{"job":"job-1","state":"pending","transcript_path":null,"requested_minutes":10,"exported_seconds":0,"warnings":[]}' \
+  'missing audio_path'
+expect_invalid_export_json \
+  '{"job":"job-1","state":"pending","audio_path":null,"transcript_path":null,"requested_minutes":10,"exported_seconds":0,"warnings":[],"extra":true}' \
+  'extra key'
+expect_invalid_export_json \
+  '{"job":"job-1","state":"failed","audio_path":null,"transcript_path":null,"requested_minutes":10,"exported_seconds":0,"warnings":[]}' \
+  'unsupported state'
+expect_invalid_export_json \
+  '{"job":"job-1","state":"pending","audio_path":{},"transcript_path":null,"requested_minutes":10,"exported_seconds":0,"warnings":[]}' \
+  'wrong audio_path type'
+expect_invalid_export_json \
+  '{"job":"job-1","state":"pending","audio_path":null,"transcript_path":false,"requested_minutes":10,"exported_seconds":0,"warnings":[]}' \
+  'wrong transcript_path type'
+expect_invalid_export_json \
+  '{"job":"job-1","state":"pending","audio_path":null,"transcript_path":null,"requested_minutes":"10","exported_seconds":0,"warnings":[]}' \
+  'wrong requested_minutes type'
+expect_invalid_export_json \
+  '{"job":"job-1","state":"pending","audio_path":null,"transcript_path":null,"requested_minutes":9,"exported_seconds":0,"warnings":[]}' \
+  'requested_minutes mismatch'
+expect_invalid_export_json \
+  '{"job":"job-1","state":"pending","audio_path":null,"transcript_path":null,"requested_minutes":10,"exported_seconds":"0","warnings":[]}' \
+  'wrong exported_seconds type'
+expect_invalid_export_json \
+  '{"job":"job-1","state":"pending","audio_path":null,"transcript_path":null,"requested_minutes":10,"exported_seconds":0,"warnings":[1]}' \
+  'non-string warning'
+
+expect_invalid_status_json() {
+  local status_json=$1 description=$2
+  if run_with_status "$status_json" capture --hub "$hub" --scope "$scope_file" --date 2026-08-26 --recorder-minutes 10 >/dev/null 2>&1; then
+    printf 'FAIL: accepted invalid status JSON: %s\n' "$description" >&2
+    exit 1
+  fi
+}
+
+expect_invalid_status_json \
+  "{\"job\":\"job-1\",\"state\":\"done\",\"transcript_path\":\"$exports/done.txt\",\"error\":null}" \
+  'missing audio_path'
+expect_invalid_status_json \
+  "{\"job\":\"job-1\",\"state\":\"done\",\"audio_path\":null,\"transcript_path\":\"$exports/done.txt\"}" \
+  'missing error'
+expect_invalid_status_json \
+  "{\"job\":\"job-1\",\"state\":\"done\",\"audio_path\":null,\"transcript_path\":\"$exports/done.txt\",\"error\":null,\"extra\":true}" \
+  'extra key'
+expect_invalid_status_json \
+  "{\"job\":\"job-1\",\"state\":\"done\",\"audio_path\":1,\"transcript_path\":\"$exports/done.txt\",\"error\":null}" \
+  'wrong audio_path type'
+expect_invalid_status_json \
+  "{\"job\":\"job-1\",\"state\":\"done\",\"audio_path\":null,\"transcript_path\":\"$exports/done.txt\",\"error\":[]}" \
+  'wrong error type'
+expect_invalid_status_json \
+  "{\"job\":\"job-1\",\"state\":\"done\",\"audio_path\":null,\"transcript_path\":false,\"error\":null}" \
+  'wrong transcript_path type'
+
 printf '%s\n' 'external' > "$fixture/external.txt"
 external_json="{\"job\":\"job-1\",\"state\":\"done\",\"audio_path\":null,\"transcript_path\":\"$fixture/external.txt\",\"error\":null}"
 if run_with_status "$external_json" capture --hub "$hub" --scope "$scope_file" --date 2026-08-26 --recorder-minutes 10 >/dev/null 2>&1; then
@@ -191,11 +254,31 @@ fi
 [[ $(wc -l < "$fixture/sleep-log" | tr -d ' ') == 1 ]] || { printf 'FAIL: expected one bounded polling delay before failed\n' >&2; exit 1; }
 
 printf '%s\n%s\n%s\n' "$pending_json" "$pending_json" "$pending_json" > "$fixture/pending-timeout.jsonl"
-if run_with_status_sequence "$fixture/pending-timeout.jsonl" capture --hub "$hub" --scope "$scope_file" --date 2026-08-26 --recorder-minutes 10 >/dev/null 2>&1; then
-  printf 'FAIL: expected permanently pending recorder job to time out\n' >&2
+pending_output=$(run_with_status_sequence "$fixture/pending-timeout.jsonl" capture --hub "$hub" --scope "$scope_file" --date 2026-08-26 --recorder-minutes 10)
+expect_read_only_header "$pending_output"
+grep -Fx 'source_kind: recorder' <<<"$pending_output"
+grep -Fx 'job: job-1' <<<"$pending_output"
+grep -Fx 'state: pending' <<<"$pending_output"
+[[ "$pending_output" != *'transcript_path:'* ]] || { printf 'FAIL: pending output exposed a transcript path\n' >&2; exit 1; }
+[[ "$pending_output" != *'Semantic analysis:'* ]] || { printf 'FAIL: pending output claimed semantic analysis\n' >&2; exit 1; }
+[[ $(<"$fixture/status-count") == 3 ]] || { printf 'FAIL: expected bounded status polling\n' >&2; exit 1; }
+[[ $(wc -l < "$fixture/sleep-log" | tr -d ' ') == 2 ]] || { printf 'FAIL: expected two bounded polling delays\n' >&2; exit 1; }
+
+printf '%s\n%s\n' \
+  '{"job":"job-1","state":"pending","audio_path":null,"transcript_path":"unexpected.txt","error":null}' \
+  "{\"job\":\"job-1\",\"state\":\"done\",\"audio_path\":null,\"transcript_path\":\"$exports/done.txt\",\"error\":null}" > "$fixture/invalid-pending-transcript.jsonl"
+if run_with_status_sequence "$fixture/invalid-pending-transcript.jsonl" capture --hub "$hub" --scope "$scope_file" --date 2026-08-26 --recorder-minutes 10 >/dev/null 2>&1; then
+  printf 'FAIL: accepted pending status with transcript_path\n' >&2
   exit 1
 fi
-[[ $(<"$fixture/status-count") == 3 ]] || { printf 'FAIL: expected bounded status polling\n' >&2; exit 1; }
+
+printf '%s\n%s\n' \
+  '{"job":"job-1","state":"pending","audio_path":null,"transcript_path":null,"error":"unexpected"}' \
+  "{\"job\":\"job-1\",\"state\":\"done\",\"audio_path\":null,\"transcript_path\":\"$exports/done.txt\",\"error\":null}" > "$fixture/invalid-pending-error.jsonl"
+if run_with_status_sequence "$fixture/invalid-pending-error.jsonl" capture --hub "$hub" --scope "$scope_file" --date 2026-08-26 --recorder-minutes 10 >/dev/null 2>&1; then
+  printf 'FAIL: accepted pending status with error\n' >&2
+  exit 1
+fi
 
 ln -s "$hub" "$fixture/linked-hub"
 expect_fail day-plan --hub "$fixture/linked-hub" --scope "$scope_file" --date 2026-08-26

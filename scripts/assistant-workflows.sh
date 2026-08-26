@@ -3,8 +3,8 @@
 set -euo pipefail
 
 readonly NO_CHANGES='Read-only workflow: no changes were made.'
-# A recorder can still be transcribing after export.  Three status checks with a
-# one-second delay bound this read-only command and prevent a tight polling loop.
+# A recorder can still be transcribing after export. Three status checks with a
+# one-second delay bound this read-only command; a final pending state is safe.
 readonly MAX_STATUS_POLLS=3
 
 fail() {
@@ -144,16 +144,39 @@ read_scoped_metadata() {
   done
 }
 
-validate_job_json() {
-  local json=$1 expected_job=${2:-}
-  jq -er '
+validate_export_json() {
+  local json=$1 expected_minutes=$2
+  jq -er --argjson expected_minutes "$expected_minutes" '
     type == "object" and
+    (keys == ["audio_path", "exported_seconds", "job", "requested_minutes", "state", "transcript_path", "warnings"]) and
     (.job | type == "string" and length > 0) and
-    (.state | IN("pending", "done", "failed"))
+    (.state | IN("pending", "done")) and
+    (.audio_path == null or (.audio_path | type == "string" and length > 0)) and
+    (.transcript_path == null) and
+    (.requested_minutes | type == "number" and floor == . and . == $expected_minutes) and
+    (.exported_seconds | type == "number" and . >= 0) and
+    (.warnings | type == "array" and all(.[]; type == "string"))
   ' >/dev/null <<<"$json" || fail 'recorder returned invalid JSON'
-  if [[ -n "$expected_job" ]]; then
-    [[ "$(jq -er '.job' <<<"$json")" == "$expected_job" ]] || fail 'recorder status job does not match export job'
-  fi
+}
+
+validate_status_json() {
+  local json=$1 expected_job=$2
+  jq -er --arg expected_job "$expected_job" '
+    type == "object" and
+    (keys == ["audio_path", "error", "job", "state", "transcript_path"]) and
+    (.job | type == "string" and length > 0 and . == $expected_job) and
+    (.state | IN("pending", "done", "failed")) and
+    (.audio_path == null or (.audio_path | type == "string" and length > 0)) and
+    (.transcript_path == null or (.transcript_path | type == "string" and length > 0)) and
+    (.error == null or (.error | type == "string" and length > 0)) and
+    (if .state == "pending" then
+       .transcript_path == null and .error == null
+     elif .state == "done" then
+       .error == null
+     else
+       .transcript_path == null and (.error | type == "string" and length > 0)
+     end)
+  ' >/dev/null <<<"$json" || fail 'recorder returned invalid JSON'
 }
 
 validate_transcript() {
@@ -186,19 +209,26 @@ capture() {
 
   local exported status job state transcript error_message poll_count=0
   exported=$(rar export --minutes "$recorder_minutes" --json) || fail 'rar export failed'
-  validate_job_json "$exported"
+  validate_export_json "$exported" "$recorder_minutes"
   job=$(jq -er '.job' <<<"$exported")
   while :; do
     poll_count=$((poll_count + 1))
     status=$(rar status "$job" --json) || fail 'rar status failed'
-    validate_job_json "$status" "$job"
+    validate_status_json "$status" "$job"
     state=$(jq -er '.state' <<<"$status")
     [[ "$state" != pending ]] && break
-    ((poll_count < MAX_STATUS_POLLS)) || fail "recorder job $job remained pending after $MAX_STATUS_POLLS status checks"
+    ((poll_count < MAX_STATUS_POLLS)) || break
     sleep 1
   done
 
   case "$state" in
+    pending)
+      print_summary
+      printf 'source_kind: recorder\n'
+      printf 'job: %s\n' "$job"
+      printf 'state: pending\n'
+      return
+      ;;
     failed)
       error_message=$(jq -er '.error | strings | select(length > 0)' <<<"$status") || fail 'failed recorder job omitted error'
       printf 'Recorder job %s failed: %s\n' "$job" "$error_message" >&2
@@ -213,7 +243,6 @@ capture() {
   printf 'source_kind: recorder\n'
   printf 'job: %s\n' "$job"
   printf 'state: %s\n' "$state"
-  [[ "$state" == done ]] || fail "unexpected recorder state: $state"
   printf 'transcript_path: %s\n' "$transcript"
   printf 'Semantic analysis: performed by hub-workflows.\n'
 }
