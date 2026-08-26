@@ -66,7 +66,16 @@ hub_workflows_skill_contract_valid() {
     [[ "$text" == *'fresh exact diff'*'named proposal confirmation'* ]] &&
     [[ "$text" == *'unknown target'*'action: create_project'* ]] &&
     [[ "$text" == *'Never write or apply a proposal automatically'* ]] &&
-    [[ "$text" == *'Calendar MCP'*'vault migration'*'session audit'* ]]
+    [[ "$text" == *'Calendar MCP'*'vault migration'*'session audit'* ]] &&
+    [[ "$text" == *'## Сегодня: контекст'*'## Три главных действия'*'## Остальные действия'*'## Ожидания и follow-up'*'## Риски и сроки'*'## Календарь'*'## Нужны решения'* ]] &&
+    [[ "$text" == *'at most three ranked executable results'* ]] &&
+    [[ "$text" == *'Недоступен в этом этапе: Calendar не подключён.'* ]] &&
+    [[ "$text" == *'## Сделано'*'## Перенос'*'## Ожидания'*'## Follow-ups'*'## Завтрашний Calendar'*'## Три главных действия завтра'*'## Подтвердить'* ]] &&
+    [[ "$text" == *'## Архипроекты'*'### <archiproject-id> — <name>'*'#### Детали проектов'*'## Три результата недели'*'## Нужны решения'* ]] &&
+    [[ "$text" == *'exactly three proposed weekly results'* ]] &&
+    [[ "$text" == *'Project detail appears only for a dated risk, blocker, or waiting record'* ]] &&
+    [[ "$text" == *'ai/current-task.md'*'ai/future-tasks.md'*'ai/paused-tasks.md'*'ai/archiprojects.md'* ]] &&
+    [[ "$text" == *'Project cards supply identity and registered-path metadata only'* ]]
 }
 # Registered active projects must carry the full memory scaffold; fixtures too.
 scaffold_project_memory() {
