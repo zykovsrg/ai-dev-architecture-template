@@ -16,8 +16,19 @@ hub="$fixture/hub"
 exports="$fixture/home/Library/Application Support/rolling-audio-recorder/exports"
 scope_file="$fixture/scope.txt"
 mkdir -p "$mock_bin" "$hub/projects/fixture-a/ai" "$hub/projects/fixture-b/ai" "$exports"
+mkdir -p "$hub/ai" "$hub/projects/unregistered/ai"
+cat > "$hub/ai/project-registry.md" <<REGISTRY
+# Project Registry
+
+## fixture-a
+Path: $hub/projects/fixture-a
+
+## fixture-b
+Path: $hub/projects/fixture-b
+REGISTRY
 printf '%s\n' 'fixture-a' > "$hub/projects/fixture-a/ai/project-card.md"
 printf '%s\n' 'fixture-b' > "$hub/projects/fixture-b/ai/project-card.md"
+printf '%s\n' 'unregistered' > "$hub/projects/unregistered/ai/project-card.md"
 printf '%s\n' fixture-a fixture-b > "$scope_file"
 printf '%s\n' 'transcript' > "$exports/done.txt"
 printf '%s\n' 'Kind: task' > "$fixture/capture.txt"
@@ -126,6 +137,8 @@ expect_fail capture --hub "$hub" --scope "$scope_file" --date 2026-08-26 --recor
 expect_fail capture --hub "$hub" --scope "$scope_file" --date 2026-08-26 --recorder-minutes 10 --recorder-minutes 10
 expect_fail capture --hub "$hub" --scope "$scope_file" --date 2026-08-26 --recorder-minutes 10 --capture-input "$fixture/capture.txt"
 expect_fail capture --hub "$hub" --scope "$scope_file" --date 2026-02-29 --recorder-minutes 10
+printf '%s\n' unregistered > "$fixture/unregistered-scope.txt"
+expect_fail day-plan --hub "$hub" --scope "$fixture/unregistered-scope.txt" --date 2026-08-26
 
 capture_input_output=$(run capture --hub "$hub" --scope "$scope_file" --date 2026-08-26 --capture-input "$fixture/capture.txt")
 expect_read_only_header "$capture_input_output"

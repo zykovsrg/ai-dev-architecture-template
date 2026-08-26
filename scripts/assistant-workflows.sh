@@ -94,6 +94,18 @@ valid_date "$date" || fail '--date must be a real YYYY-MM-DD date'
 require_directory_not_symlink '--hub' "$hub"
 require_directory_not_symlink 'hub projects directory' "$hub/projects"
 require_regular_not_symlink '--scope' "$scope"
+registry="$hub/ai/project-registry.md"
+require_regular_not_symlink 'project registry' "$registry"
+
+registered_project_path() {
+  local project_id=$1
+  awk -v id="$project_id" '
+    $0 == "## " id { in_project=1; found=1; next }
+    in_project && /^## / { exit }
+    in_project && /^Path: / { sub(/^Path: /, ""); print; exit }
+    END { if (!found) exit 1 }
+  ' "$registry"
+}
 
 scope_ids=()
 while IFS= read -r project_id || [[ -n "$project_id" ]]; do
@@ -103,6 +115,9 @@ done < "$scope"
 scope_summary=''
 for project_id in "${scope_ids[@]}"; do
   [[ "$project_id" =~ ^[a-z0-9][a-z0-9-]*$ ]] || fail "invalid project id in --scope: $project_id"
+  registered_path=$(registered_project_path "$project_id") || fail "project is not registered: $project_id"
+  [[ "$registered_path" == "$hub/projects/$project_id" ]] ||
+    fail "registered path for $project_id must equal $hub/projects/$project_id"
   require_directory_not_symlink "project entry for $project_id" "$hub/projects/$project_id"
   require_directory_not_symlink "project ai directory for $project_id" "$hub/projects/$project_id/ai"
   require_regular_not_symlink "project card for $project_id" "$hub/projects/$project_id/ai/project-card.md"
