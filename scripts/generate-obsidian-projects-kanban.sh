@@ -17,6 +17,7 @@ current_task_id() {
   local file="$1" ids=()
   while IFS= read -r task_id; do ids+=("$task_id"); done < <(sed -n '/^## /q; /^Task ID: /s/^Task ID: //p' "$file")
   [ "${#ids[@]}" -eq 1 ] && [ -n "${ids[0]}" ] || die "renderable current task must have exactly one Task ID: $file"
+  ids[0]="$(printf '%s' "${ids[0]}" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
   [[ "${ids[0]}" =~ ^TASK-[0-9]{8}-[0-9]{3}$ ]] || die "invalid Task ID: $file"
   printf '%s' "${ids[0]}"
 }
@@ -38,7 +39,7 @@ future_records() {
 }
 paused_records() {
   awk '
-    function flush() { if (entry && state == "paused") { if (id_count != 1 || id == "") { printf "error: renderable paused task must have exactly one Task ID: %s\\n", FILENAME > "/dev/stderr"; invalid=1 } else if (id !~ /^TASK-[0-9]{8}-[0-9]{3}$/) { printf "error: invalid Task ID: %s\\n", FILENAME > "/dev/stderr"; invalid=1 } else print id "\t" title } }
+    function flush() { if (entry && state == "paused") { sub(/^[[:space:]]+/, "", id); sub(/[[:space:]]+$/, "", id); if (id_count != 1 || id == "") { printf "error: renderable paused task must have exactly one Task ID: %s\\n", FILENAME > "/dev/stderr"; invalid=1 } else if (id !~ /^TASK-[0-9]{8}-[0-9]{3}$/) { printf "error: invalid Task ID: %s\\n", FILENAME > "/dev/stderr"; invalid=1 } else print id "\t" title } }
     /^### [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9][[:space:]]/ { flush(); entry=1; state=""; id=""; id_count=0; title=$0; sub(/^### [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9][[:space:]]+[^[:space:]]+[[:space:]]*/, "", title); next }
     /^### / { flush(); entry=0; state=""; id=""; id_count=0; title=""; next }
     entry && /^Task ID: / { id=substr($0, 10); id_count++; next }

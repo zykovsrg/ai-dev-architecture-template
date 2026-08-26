@@ -85,6 +85,10 @@ assert_file "$TASKS"; assert_file "$OVERVIEW"; assert_file "$MANIFEST"
 /usr/bin/jq -e '.tasks | length == 8' "$MANIFEST" >/dev/null || fail 'manifest task count is invalid'
 current_sha="$(shasum -a 256 "$ARCHITECTURE_PROJECT/ai/current-task.md" | awk '{print $1}')"
 /usr/bin/jq -e --arg sha "$current_sha" '[.tasks[] | select(.task_id == "TASK-20260826-001") | .source_sha256] == [$sha]' "$MANIFEST" >/dev/null || fail 'manifest source hash is not the source file hash'
+future_sha="$(shasum -a 256 "$ARCHITECTURE_PROJECT/ai/future-tasks.md" | awk '{print $1}')"
+/usr/bin/jq -e --arg sha "$future_sha" '[.tasks[] | select(.task_id == "FT-20260826-001") | .source_sha256] == [$sha]' "$MANIFEST" >/dev/null || fail 'future task source hash is not the source file hash'
+paused_sha="$(shasum -a 256 "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" | awk '{print $1}')"
+/usr/bin/jq -e --arg sha "$paused_sha" '[.tasks[] | select(.task_id == "TASK-20260820-001") | .source_sha256] == [$sha]' "$MANIFEST" >/dev/null || fail 'paused task source hash is not the source file hash'
 
 sed -i '' 's/"format_version": 3/"format_version": 2/' "$MANIFEST"
 if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write > "$TMP_DIR/v2-manifest.txt" 2>&1; then fail 'v2 manifest did not block write'; fi
@@ -118,5 +122,29 @@ printf '%s\n' $'Status: active\nTask ID: TASK-20260826-001\n\n## Goal\n\nCurrent
 printf '%s\n' $'Status: waiting\nTask ID: TASK-20260826-001\n\n## Goal\n\nWaiting current task' > "$PROJECTS/waiting-project/ai/current-task.md"
 if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/duplicate-current-id.txt" 2>&1; then fail 'duplicate current ID did not block preview'; fi
 assert_contains "$TMP_DIR/duplicate-current-id.txt" 'duplicate task ID'
+printf '%s\n' $'Status: waiting\nTask ID: TASK-20260826-002\n\n## Goal\n\nWaiting current task' > "$PROJECTS/waiting-project/ai/current-task.md"
+
+printf '%s\n' $'Status: active\nTask ID:   TASK-20260826-001  \n\n## Goal\n\nCurrent architecture task' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+printf '%s\n' $'### 2026-08-20 — Paused task\n\nTask ID:   TASK-20260820-001  \n\nStatus: paused' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/external-whitespace.txt"
+assert_contains "$TMP_DIR/external-whitespace.txt" '- [ ] Current architecture task ^TASK-20260826-001'
+assert_contains "$TMP_DIR/external-whitespace.txt" '- [ ] Paused task ^TASK-20260820-001'
+assert_not_contains "$TMP_DIR/external-whitespace.txt" '^TASK-20260826-001  '
+
+printf '%s\n' $'### FT-20260826-001 — Duplicate future task\n\nStatus: idea' >> "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/duplicate-future-id.txt" 2>&1; then fail 'duplicate future ID did not block preview'; fi
+assert_contains "$TMP_DIR/duplicate-future-id.txt" 'duplicate task ID'
+
+printf '%s\n' $'### 2026-08-21 — Duplicate paused task\n\nTask ID: TASK-20260820-001\n\nStatus: paused' >> "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/duplicate-paused-id.txt" 2>&1; then fail 'duplicate paused ID did not block preview'; fi
+assert_contains "$TMP_DIR/duplicate-paused-id.txt" 'duplicate task ID'
+printf '%s\n' $'### 2026-08-20 — Paused task\n\nTask ID:   TASK-20260820-001  \n\nStatus: paused' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+
+sed -i '' 's/### FT-20260826-001 — Duplicate future task/### FT-20260826-1x — Invalid future task/' "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/invalid-future-heading.txt"
+assert_not_contains "$TMP_DIR/invalid-future-heading.txt" 'Invalid future task'
+printf '%s\n' $'### FT-20260826-7 — Single-digit future task\n\nStatus: idea' >> "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/strict-future-heading.txt"
+assert_contains "$TMP_DIR/strict-future-heading.txt" '- [ ] Single-digit future task ^FT-20260826-7'
 
 echo 'PASS: Obsidian task Kanban and project overview contract'

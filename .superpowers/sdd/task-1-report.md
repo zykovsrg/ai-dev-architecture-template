@@ -55,3 +55,16 @@
 - RED: после добавления проверок фактического количества задач и прямого `source_sha256` выполнено `bash scripts/obsidian-projects-kanban-test.sh`; тест остановился на `FAIL: manifest source hash is not the source file hash`.
 - GREEN: генератор теперь принимает для current/paused только `TASK-YYYYMMDD-NNN`, отклоняет пустые/некорректные/дублирующиеся ID и записывает SHA-256 содержимого исходного файла. `bash scripts/obsidian-projects-kanban-test.sh` завершился `PASS: Obsidian task Kanban and project overview contract`.
 - Дополнительно проверено: `bash -n scripts/generate-obsidian-projects-kanban.sh scripts/obsidian-projects-kanban-test.sh` и `git diff --check` завершились успешно.
+
+## Вторая волна ревью
+
+- RED: после добавления fixture с внешними пробелами вокруг current/paused `Task ID:` выполнено `bash scripts/obsidian-projects-kanban-test.sh`; генератор отклонил корректный ID с ошибкой `invalid Task ID`.
+- GREEN: current и paused ID теперь обрезают внешние пробелы перед строгой проверкой и рендерятся как чистые `TASK-YYYYMMDD-NNN`. Добавлены проверки прямых `source_sha256` для future и paused, дублей future/paused ID, а также строгого future heading: принимается только `FT-[0-9]{8}-[0-9]+` (включая однозначный суффикс), заголовок с буквами игнорируется.
+- Финальная проверка:
+
+  ```text
+  bash scripts/obsidian-projects-kanban-test.sh
+  PASS: Obsidian task Kanban and project overview contract
+  bash -n scripts/generate-obsidian-projects-kanban.sh scripts/obsidian-projects-kanban-test.sh
+  git diff --check
+  ```
