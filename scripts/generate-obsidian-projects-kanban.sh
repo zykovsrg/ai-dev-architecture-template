@@ -7,6 +7,7 @@ is_absolute() { [[ "$1" = /* ]]; }
 inside() { [[ "$1" == "$2" || "$1" == "$2"/* ]]; }
 physical_dir() { cd "$1" && pwd -P; }
 hash_text() { printf '%s' "$1" | shasum -a 256 | awk '{print $1}'; }
+hash_file() { shasum -a 256 "$1" | awk '{print $1}'; }
 hash_files() { shasum -a 256 "$@" | shasum -a 256 | awk '{print $1}'; }
 json_string() { local text="$1"; text=${text//\\/\\\\}; text=${text//\"/\\\"}; text=${text//$'\n'/\\n}; text=${text//$'\r'/}; printf '"%s"' "$text"; }
 read_field() { sed -n "s/^$2: //p" "$1" | head -n 1; }
@@ -16,6 +17,7 @@ current_task_id() {
   local file="$1" ids=()
   while IFS= read -r task_id; do ids+=("$task_id"); done < <(sed -n '/^## /q; /^Task ID: /s/^Task ID: //p' "$file")
   [ "${#ids[@]}" -eq 1 ] && [ -n "${ids[0]}" ] || die "renderable current task must have exactly one Task ID: $file"
+  [[ "${ids[0]}" =~ ^TASK-[0-9]{8}-[0-9]{3}$ ]] || die "invalid Task ID: $file"
   printf '%s' "${ids[0]}"
 }
 safe_due() { sed -nE 's/^[[:space:]]*due:[[:space:]]*([0-9]{4}-[0-9]{2}-[0-9]{2})[[:space:]]*$/\1/p' "$@" | sort -u | head -n 1; }
@@ -36,7 +38,7 @@ future_records() {
 }
 paused_records() {
   awk '
-    function flush() { if (entry && state == "paused") { if (id_count != 1 || id == "") { printf "error: renderable paused task must have exactly one Task ID: %s\\n", FILENAME > "/dev/stderr"; invalid=1 } else print id "\t" title } }
+    function flush() { if (entry && state == "paused") { if (id_count != 1 || id == "") { printf "error: renderable paused task must have exactly one Task ID: %s\\n", FILENAME > "/dev/stderr"; invalid=1 } else if (id !~ /^TASK-[0-9]{8}-[0-9]{3}$/) { printf "error: invalid Task ID: %s\\n", FILENAME > "/dev/stderr"; invalid=1 } else print id "\t" title } }
     /^### [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9][[:space:]]/ { flush(); entry=1; state=""; id=""; id_count=0; title=$0; sub(/^### [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9][[:space:]]+[^[:space:]]+[[:space:]]*/, "", title); next }
     /^### / { flush(); entry=0; state=""; id=""; id_count=0; title=""; next }
     entry && /^Task ID: / { id=substr($0, 10); id_count++; next }
@@ -108,22 +110,23 @@ for id in "${IDS[@]}"; do
   esac
   if [ -n "$current_column" ]; then
     current_task_id="$(current_task_id "$current_file")"
-    add_task "$current_task_id" "$current_column" "$title" "$name" "$id" "$due" "$current_done" "$current_file" "$(hash_files "$current_file")"
+    add_task "$current_task_id" "$current_column" "$title" "$name" "$id" "$due" "$current_done" "$current_file" "$(hash_file "$current_file")"
     overview_current="$title"
   fi
   while IFS=$'\t' read -r future_task_id future_status future_title future_due; do
     [ -n "$future_status" ] || continue
-    case "$future_status" in idea) add_task "$future_task_id" Ideas "$future_title" "$name" "$id" "$future_due" ' ' "$future_file" "$(hash_files "$future_file")";; ready) add_task "$future_task_id" Ready "$future_title" "$name" "$id" "$future_due" ' ' "$future_file" "$(hash_files "$future_file")";; blocked) add_task "$future_task_id" Blocked "$future_title" "$name" "$id" "$future_due" ' ' "$future_file" "$(hash_files "$future_file")";; esac
+    case "$future_status" in idea) add_task "$future_task_id" Ideas "$future_title" "$name" "$id" "$future_due" ' ' "$future_file" "$(hash_file "$future_file")";; ready) add_task "$future_task_id" Ready "$future_title" "$name" "$id" "$future_due" ' ' "$future_file" "$(hash_file "$future_file")";; blocked) add_task "$future_task_id" Blocked "$future_title" "$name" "$id" "$future_due" ' ' "$future_file" "$(hash_file "$future_file")";; esac
   done < <(future_records "$future_file")
   paused_output="$(paused_records "$paused_file")"
-  while IFS=$'\t' read -r paused_task_id paused_title; do [ -n "$paused_title" ] && add_task "$paused_task_id" Paused "$paused_title" "$name" "$id" '' ' ' "$paused_file" "$(hash_files "$paused_file")"; done <<< "$paused_output"
+  while IFS=$'\t' read -r paused_task_id paused_title; do [ -n "$paused_title" ] && add_task "$paused_task_id" Paused "$paused_title" "$name" "$id" '' ' ' "$paused_file" "$(hash_file "$paused_file")"; done <<< "$paused_output"
   ready_count="$(count_future_state "$future_file" ready)"; waiting_count=0; [ "$current" = waiting ] && waiting_count=1
   overview_due="$due"; [ -n "$overview_due" ] || overview_due="$(future_records "$future_file" | awk -F '\t' '$2 == "ready" && $4 != "" {print $4}' | sort | head -n 1)"; [ -n "$overview_due" ] || overview_due='—'
   OVERVIEW_ROWS+="| $(table_cell "$name") | $(table_cell "$registry_status") | $(table_cell "$overview_current") | $ready_count | $waiting_count | $overview_due |"$'\n'
   SOURCE_IDS+=("$id"); SOURCE_PATHS+=("$path"); SOURCE_CARDS+=("$card"); SOURCE_HASHES+=("$(hash_files "$card" "$current_file" "$future_file" "$paused_file")")
 done
 
-if printf '%s\n' "${TASK_IDS[@]}" | sort | uniq -d | grep -q .; then die 'duplicate task ID in renderable tasks'; fi
+duplicate_task_ids="$(printf '%s\n' "${TASK_IDS[@]}" | sort | uniq -d)"
+[ -z "$duplicate_task_ids" ] || die 'duplicate task ID in renderable tasks'
 TASKS_RENDER="$( { printf '%s\n' '---' 'kanban-plugin: board' '---'; for column in Ideas Ready Active Waiting Blocked Review Paused Done; do printf '\n## %s\n' "$column"; for i in "${!TASK_COLUMNS[@]}"; do [ "${TASK_COLUMNS[$i]}" = "$column" ] || continue; printf '\n- [%s] %s ^%s\n' "${TASK_DONE[$i]}" "${TASK_TITLES[$i]}" "${TASK_IDS[$i]}"; printf '  - project: %s\n' "${TASK_PROJECTS[$i]}"; [ -z "${TASK_DUES[$i]}" ] || printf '  - 📅 %s\n' "${TASK_DUES[$i]}"; done; done; } )"
 OVERVIEW_RENDER="$( { printf '%s\n' '# Projects Overview' '' '| Project | Status | Current task | Ready | Waiting | Due |' '| --- | --- | --- | ---: | ---: | --- |'; printf '%s' "$OVERVIEW_ROWS"; } )"
 TASKS_HASH="$(hash_text "$TASKS_RENDER")"; OVERVIEW_HASH="$(hash_text "$OVERVIEW_RENDER")"; GENERATED_AT="${SOURCE_DATE_EPOCH:-$(date -u +%s)}"

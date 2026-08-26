@@ -82,6 +82,9 @@ assert_not_exists "$TASKS"; assert_not_exists "$OVERVIEW"; assert_not_exists "$M
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write > "$TMP_DIR/write.txt"
 assert_file "$TASKS"; assert_file "$OVERVIEW"; assert_file "$MANIFEST"
 /usr/bin/jq -e '.format_version == 3 and (.views.tasks_kanban.target == "Obsidian/Tasks-Kanban.md") and (.views.projects_overview.target == "Obsidian/Projects-Overview.md") and ([.tasks[] | has("task_id") and has("project_id") and has("source_file") and has("source_sha256")] | all)' "$MANIFEST" >/dev/null || fail 'manifest contract is invalid'
+/usr/bin/jq -e '.tasks | length == 8' "$MANIFEST" >/dev/null || fail 'manifest task count is invalid'
+current_sha="$(shasum -a 256 "$ARCHITECTURE_PROJECT/ai/current-task.md" | awk '{print $1}')"
+/usr/bin/jq -e --arg sha "$current_sha" '[.tasks[] | select(.task_id == "TASK-20260826-001") | .source_sha256] == [$sha]' "$MANIFEST" >/dev/null || fail 'manifest source hash is not the source file hash'
 
 sed -i '' 's/"format_version": 3/"format_version": 2/' "$MANIFEST"
 if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write > "$TMP_DIR/v2-manifest.txt" 2>&1; then fail 'v2 manifest did not block write'; fi
@@ -101,5 +104,19 @@ assert_contains "$TMP_DIR/manual-overview.txt" 'proposal pending'
 printf '%s\n' $'### 2026-08-20 — Paused task\n\nStatus: paused' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
 if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/missing-paused-id.txt" 2>&1; then fail 'paused task without ID did not block preview'; fi
 assert_contains "$TMP_DIR/missing-paused-id.txt" 'renderable paused task must have exactly one Task ID'
+printf '%s\n' $'### 2026-08-20 — Paused task\n\nTask ID: TASK-20260820-001\n\nStatus: paused' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+
+printf '%s\n' $'Status: active\nTask ID: BAD ID\n\n## Goal\n\nCurrent architecture task' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/invalid-current-id.txt" 2>&1; then fail 'invalid current ID did not block preview'; fi
+assert_contains "$TMP_DIR/invalid-current-id.txt" 'invalid Task ID'
+
+printf '%s\n' $'Status: active\n\n## Goal\n\nCurrent architecture task' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/missing-current-id.txt" 2>&1; then fail 'missing current ID did not block preview'; fi
+assert_contains "$TMP_DIR/missing-current-id.txt" 'exactly one Task ID'
+
+printf '%s\n' $'Status: active\nTask ID: TASK-20260826-001\n\n## Goal\n\nCurrent architecture task' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+printf '%s\n' $'Status: waiting\nTask ID: TASK-20260826-001\n\n## Goal\n\nWaiting current task' > "$PROJECTS/waiting-project/ai/current-task.md"
+if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/duplicate-current-id.txt" 2>&1; then fail 'duplicate current ID did not block preview'; fi
+assert_contains "$TMP_DIR/duplicate-current-id.txt" 'duplicate task ID'
 
 echo 'PASS: Obsidian task Kanban and project overview contract'
