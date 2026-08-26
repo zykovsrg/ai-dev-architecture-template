@@ -90,6 +90,13 @@ future_sha="$(shasum -a 256 "$ARCHITECTURE_PROJECT/ai/future-tasks.md" | awk '{p
 paused_sha="$(shasum -a 256 "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" | awk '{print $1}')"
 /usr/bin/jq -e --arg sha "$paused_sha" '[.tasks[] | select(.task_id == "TASK-20260820-001") | .source_sha256] == [$sha]' "$MANIFEST" >/dev/null || fail 'paused task source hash is not the source file hash'
 
+printf '%s\n' $'Status: active\nTask ID: TASK-20260826-001\ndue: 2026-08-26\n\n## Goal\n\nRefreshed architecture task' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture > "$TMP_DIR/refresh.out"
+assert_contains "$TASKS" 'Refreshed architecture task'
+printf '\nmanual task edit\n' >> "$TASKS"
+if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture > "$TMP_DIR/refresh-manual-task.txt" 2>&1; then fail 'manual task-board edit did not block architecture refresh'; fi
+assert_contains "$TMP_DIR/refresh-manual-task.txt" 'proposal pending: manual task board edit detected'
+
 sed -i '' 's/"format_version": 3/"format_version": 2/' "$MANIFEST"
 if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write > "$TMP_DIR/v2-manifest.txt" 2>&1; then fail 'v2 manifest did not block write'; fi
 assert_contains "$TMP_DIR/v2-manifest.txt" 'manifest v2 requires a fresh confirmed rebuild'

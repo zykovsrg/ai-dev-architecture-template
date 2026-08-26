@@ -56,17 +56,19 @@ resolve_card() {
   printf '%s/%s\n' "$canonical_parent" "$(basename "$raw")"
 }
 
-HUB='' SCOPE='' VAULT='' MODE='' CONFIRM=0
+HUB='' SCOPE='' VAULT='' MODE='' CONFIRM=0 REFRESH_FROM_ARCHITECTURE=0
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --hub|--scope|--vault) [ "$#" -ge 2 ] || die "missing value for $1"; case "$1" in --hub) HUB=$2;; --scope) SCOPE=$2;; --vault) VAULT=$2;; esac; shift 2;;
     --preview|--write) [ -z "$MODE" ] || die 'choose exactly one of --preview or --write'; MODE=${1#--}; shift;;
     --confirm-generated-write) CONFIRM=1; shift;;
+    --refresh-from-architecture) REFRESH_FROM_ARCHITECTURE=1; shift;;
     *) die "unknown flag: $1";;
   esac
 done
 [ -n "$HUB" ] && [ -n "$SCOPE" ] && [ -n "$VAULT" ] && [ -n "$MODE" ] || die 'usage: --hub <absolute-path> --scope <id-file> --vault <local-vault> (--preview|--write)'
-[ "$MODE" = preview ] || [ "$CONFIRM" -eq 1 ] || die 'write requires --confirm-generated-write'
+[ "$REFRESH_FROM_ARCHITECTURE" -eq 0 ] || [ "$MODE" = write ] || die '--refresh-from-architecture requires --write'
+[ "$MODE" = preview ] || [ "$CONFIRM" -eq 1 ] || [ "$REFRESH_FROM_ARCHITECTURE" -eq 1 ] || die 'write requires --confirm-generated-write'
 is_absolute "$HUB" && is_absolute "$SCOPE" && is_absolute "$VAULT" || die 'hub, scope, and vault must be absolute paths'
 [ -d "$HUB" ] && [ ! -L "$HUB" ] || die 'hub must be a non-symlink directory'
 HUB="$(physical_dir "$HUB")"; [ -f "$SCOPE" ] && [ ! -L "$SCOPE" ] || die 'scope must be a regular non-symlink file'
