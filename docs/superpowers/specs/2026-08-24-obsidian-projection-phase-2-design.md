@@ -30,78 +30,64 @@ values are not automatically converted or treated as a canonical task state.
 
 ## Chosen mechanism
 
-One generated Markdown file is the chosen mechanism. It is rendered as a board
-by the already installed `obsidian-kanban` plugin; no new plugin or script gets
-direct access to project data.
+Two generated Markdown views are the chosen mechanism. `Tasks-Kanban.md` is
+rendered by the already installed `obsidian-kanban` plugin; `Projects-Overview.md`
+is a Markdown table. No new plugin or script gets direct access to project data.
 
-The board location in the permanent local vault copy is:
-
-```text
-obsidian-vault/Obsidian/Projects-Kanban.md
-```
-
-The adjacent manifest is:
+The paths in the permanent local vault copy are:
 
 ```text
-obsidian-vault/Obsidian/Projects-Kanban.manifest.json
+obsidian-vault/Obsidian/Tasks-Kanban.md
+obsidian-vault/Obsidian/Projects-Overview.md
+obsidian-vault/Obsidian/AI-Architecture.manifest.json
 ```
 
-The first write creates these two files once. A later update replaces these same
-two generated files only after a new preview and explicit write confirmation.
-It never creates duplicate boards. `obsidian-vault/` is local-only and ignored
-by Git.
+The first write creates these three files once. A later update replaces the same
+three generated files only after a new preview and explicit write confirmation.
+`obsidian-vault/` is local-only and ignored by Git.
 
-## Board columns and safe classification
+## Task board columns and safe classification
 
-The board has one card per registered project and seven columns:
+The task board has one card per safely parsed canonical task. Its columns are:
 
-1. `Incoming` — no safely chosen next work, or a legacy/unclear task record.
-2. `Planned` — no active work and a canonical ready future task exists.
-3. `Active` — a canonical current task or subtask is actionable.
-4. `Waiting` — canonical waiting exists and no other actionable work exists.
-5. `Paused` — work is intentionally paused and no active work overrides it.
-6. `Completed` — only a canonical completed project status may use this column.
-7. `Archived` — a registered project has status `archived`.
+1. `Ideas` — a future entry with status `idea`.
+2. `Ready` — a future or current task marked ready.
+3. `Active` — the current actionable task.
+4. `Waiting` — a task awaiting an external event.
+5. `Blocked` — a task with a recorded blocker.
+6. `Review` — a task awaiting review.
+7. `Paused` — an open paused-task record.
+8. `Done` — a canonical completed task.
 
-For a legacy or unclear task record, the card is placed in `Incoming` with the
-label `нужно проверить`. It shows no guessed next action. This preserves the
-meaning of the source file and prevents accidental task migration.
+Legacy or unclear records create no guessed card. `promoted`, `done`, and
+`dropped` future entries also do not appear as open task cards.
 
-Adding `Archived` is a user-approved extension to the previously documented
-six columns. Before implementation, the durable architecture decision that
-lists the columns must be updated through the separate `architecture-update`
-workflow and its confirmation gate.
+## Card and project-overview contents
 
-## Card contents
+Each task card contains only derived, read-only information: task title,
+parent project, status and explicit due date when present. Neither a legacy
+checkbox nor an old Kanban item becomes a task.
 
-Each card contains only derived, read-only information:
-
-- project name and short purpose from the project card;
-- computed board column and a short status;
-- primary archiproject and contribution only when present and valid;
-- nearest explicit due date, otherwise `нет срока`;
-- blocker and waiting summary only when structurally valid;
-- up to seven clearly derived next actions.
-
-If fewer than three safe actions exist, the remaining places explicitly say
-`нет следующего действия`. Archived cards show only name, purpose, and status.
-Neither a legacy checkbox nor an old Kanban item becomes a task.
+The project overview has one row per registered project: project name, project
+status, current task, ready count, waiting count and nearest explicit due date.
+It is a table rather than a second Kanban because project status and task
+status are different dimensions.
 
 ## Preview, write, and manual-edit flow
 
-1. The agent reads only the confirmed source scope and builds the board in
+1. The agent reads only the confirmed source scope and builds both views in
    memory.
 2. It shows the preview, exact source IDs, target paths, and warnings.
-3. It shows a write diff for the board and manifest.
-4. The user gives a new explicit confirmation for those exact two writes.
+3. It shows a write diff for both views and the shared manifest.
+4. The user gives a new explicit confirmation for those exact three writes.
 5. The agent writes the generated files and reports verification.
 
 The manifest stores only format version, generation time, source project IDs,
 source paths, and control hashes. It does not become a global copy of task or
 knowledge text.
 
-A manual card edit is a proposal signal, not synchronization. During a later
-confirmed update, the agent compares the board with the manifest, shows the
+A manual card or table edit is a proposal signal, not synchronization. During a
+later confirmed update, the agent compares both views with the manifest, shows the
 possible canonical change as a precise diff, and waits for separate approval.
 Until then, the architecture stays unchanged.
 
@@ -113,11 +99,11 @@ affected card and reason instead of guessing.
 
 Before any future write, verification must prove that:
 
-- one source project creates one card;
-- the same input rebuilds the same board without duplication;
-- archived projects use only `Archived`;
-- unclear records use `Incoming` with `нужно проверить`;
-- generated Markdown and manifest are the only files that change;
+- one safe source task creates one card;
+- the same input rebuilds both views without duplication;
+- every registered project creates one overview row;
+- unclear records create no guessed task card;
+- the two generated Markdown files and manifest are the only files that change;
 - manual edits create proposals and never change canonical tasks automatically.
 
 ## Later migration to the original vault

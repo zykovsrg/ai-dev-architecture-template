@@ -31,11 +31,14 @@ database. One project has at most one `primary_archiproject`; only
 Waiting belongs to a task or subtask; a project is shown as Waiting only when
 it has no other actionable work.
 
-The first Obsidian surface is one generated Kanban board with one card per
-project and embedded next actions. Its columns are Incoming, Planned, Active,
-Waiting, Paused, Completed, and Archived. Archived means the registered project
-has canonical status `archived` and exposes no task actions. Knowledge uses a
-mixed PARA-style structure:
+The first Obsidian surface has two generated views. `Tasks-Kanban.md` has one
+card per canonical task, with task-status columns Ideas, Ready, Active,
+Waiting, Blocked, Review, Paused, and Done. Each card names its parent project.
+`Projects-Overview.md` is a table with one row per project and derived
+current-task, ready, waiting, and due-date fields; it is not a Kanban. Both
+views share one manifest. A manual edit to either view blocks regeneration with
+`proposal pending`. Future `promoted`, `done`, and `dropped` entries do not
+create open task cards. Knowledge uses a mixed PARA-style structure:
 project knowledge stays with its project; shared knowledge stays once in the
 common base, including shared meetings. Inbox is a fallback for ambiguous
 captures, not a mandatory stop.
