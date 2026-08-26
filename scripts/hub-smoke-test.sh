@@ -43,10 +43,30 @@ assistant_workflow_source_valid() {
 
 hub_workflows_rule_valid() {
   local found=0 rule
-  for rule in "$ROOT/hub-template/AGENTS.md" "$ROOT/hub-template/CLAUDE.md" "$ROOT/hub-template/ai/architecture.md"; do
+  for rule in "$@"; do
     if grep -Fq '`hub-workflows`' "$rule"; then found=1; break; fi
   done
-  [ "$found" -eq 1 ] || fail 'hub rule must name literal `hub-workflows`'
+  [ "$found" -eq 1 ]
+}
+hub_workflows_skill_contract_valid() {
+  local file="$1" text
+  [ -f "$file" ] || return 1
+  text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
+
+  [[ "$text" == *'name: hub-workflows'* ]] &&
+    [[ "$text" == *'exactly one user-selected source'* ]] &&
+    [[ "$text" == *'rar export --minutes <1..120> --json'* ]] &&
+    [[ "$text" == *'rar status <job-id> --json'* ]] &&
+    [[ "$text" == *'metadata-only candidate search'* ]] &&
+    [[ "$text" == *'confirmed project or named confirmed set'* ]] &&
+    [[ "$text" == *'semantic analysis'* ]] &&
+    [[ "$text" == *'Kind: meeting'*'exactly one canonical meeting-record proposal'* ]] &&
+    [[ "$text" == *'Kind: task'*'no meeting-record proposal'* ]] &&
+    [[ "$text" == *'one proposal envelope per possible write'* ]] &&
+    [[ "$text" == *'fresh exact diff'*'named proposal confirmation'* ]] &&
+    [[ "$text" == *'unknown target'*'action: create_project'* ]] &&
+    [[ "$text" == *'Never write or apply a proposal automatically'* ]] &&
+    [[ "$text" == *'Calendar MCP'*'vault migration'*'session audit'* ]]
 }
 # Registered active projects must carry the full memory scaffold; fixtures too.
 scaffold_project_memory() {
@@ -821,13 +841,32 @@ assert_contains <(normalize_entry "$THIRD_ACTIVATION") \
 cmp -s <(normalize_entry "$HUB_AGENTS") <(normalize_entry "$HUB_CLAUDE") \
   || fail 'hub entry files differ beyond title and activation paragraph'
 
-for skill in hub-project-router hub-project-switch hub-project-register hub-project-create hub-project-migrate hub-registry-check hub-environment-check hub-task-intake hub-task-switch hub-task-finish hub-knowledge-enable hub-knowledge-capture hub-knowledge-review; do
+for skill in hub-project-router hub-project-switch hub-project-register hub-project-create hub-project-migrate hub-registry-check hub-environment-check hub-task-intake hub-task-switch hub-task-finish hub-knowledge-enable hub-knowledge-capture hub-knowledge-review hub-workflows; do
   file="$ROOT/hub-template/ai/skills/$skill/SKILL.md"
   assert_file "$file"
   assert_contains "$file" 'name:'
   assert_contains "$file" 'description:'
   assert_contains "$file" 'explicit confirmation'
 done
+
+HUB_WORKFLOWS_SKILL="$ROOT/hub-template/ai/skills/hub-workflows/SKILL.md"
+hub_workflows_skill_contract_valid "$HUB_WORKFLOWS_SKILL" \
+  || fail 'hub-workflows proposal-only contract is incomplete'
+
+HUB_WORKFLOWS_WITHOUT_NO_AUTO_WRITE="$TMP_DIR/hub-workflows-without-no-auto-write.md"
+sed '/Never write or apply a proposal automatically/d' "$HUB_WORKFLOWS_SKILL" \
+  > "$HUB_WORKFLOWS_WITHOUT_NO_AUTO_WRITE"
+assert_rejected hub_workflows_skill_contract_valid "$HUB_WORKFLOWS_WITHOUT_NO_AUTO_WRITE"
+
+HUB_WORKFLOWS_WITH_WRONG_NAME="$TMP_DIR/hub-workflows-with-wrong-name.md"
+sed 's/^name: hub-workflows$/name: workflows/' "$HUB_WORKFLOWS_SKILL" \
+  > "$HUB_WORKFLOWS_WITH_WRONG_NAME"
+assert_rejected hub_workflows_skill_contract_valid "$HUB_WORKFLOWS_WITH_WRONG_NAME"
+
+HUB_RULE_WITHOUT_WORKFLOWS_NAME="$TMP_DIR/hub-rule-without-workflows-name.md"
+sed 's/`hub-workflows`/`workflows`/g' "$ROOT/hub-template/AGENTS.md" \
+  > "$HUB_RULE_WITHOUT_WORKFLOWS_NAME"
+assert_rejected hub_workflows_rule_valid "$HUB_RULE_WITHOUT_WORKFLOWS_NAME"
 
 PROJECT_CREATE_SKILL="$ROOT/hub-template/ai/skills/hub-project-create/SKILL.md"
 project_create_contract_valid "$PROJECT_CREATE_SKILL" \
@@ -1644,6 +1683,7 @@ assert_file "$HUB_INSTALL/scripts/check-hub-registry.sh"
 assert_file "$HUB_INSTALL/projects/.gitkeep"
 assert_file "$HUB_INSTALL/ai/skills/hub-knowledge-capture/SKILL.md"
 assert_file "$HUB_INSTALL/ai/skills/hub-knowledge-review/SKILL.md"
+assert_file "$HUB_INSTALL/ai/skills/hub-workflows/SKILL.md"
 ARCHIPROJECTS_BASE="$TMP_DIR/archiprojects-base"
 cp -R "$HUB_INSTALL" "$ARCHIPROJECTS_BASE"
 PROJECT_ROOT="$HUB_INSTALL/projects"
@@ -1687,6 +1727,24 @@ git -C "$HUB_INSTALL" config user.name "Smoke Test"
 git -C "$HUB_INSTALL" add .
 git -C "$HUB_INSTALL" commit -m "test: install hub" >/dev/null
 
+# A stale hub upgrade installs the new protected skill without touching any
+# selected-project memory. Project memory is outside updater ownership.
+STALE_WORKFLOWS_HUB="$TMP_DIR/stale-workflows-hub"
+cp -R "$HUB_INSTALL" "$STALE_WORKFLOWS_HUB"
+STALE_PROJECT="$STALE_WORKFLOWS_HUB/projects/stale-project"
+scaffold_project_memory "$STALE_PROJECT"
+printf '%s\n' '# current-task' '' 'USER_PROJECT_MEMORY_MUST_SURVIVE' \
+  > "$STALE_PROJECT/ai/current-task.md"
+shasum "$STALE_PROJECT"/ai/*.md > "$TMP_DIR/stale-project-memory.before"
+rm "$STALE_WORKFLOWS_HUB/ai/skills/hub-workflows/SKILL.md"
+bash "$ROOT/scripts/update-installed-hub.sh" \
+  --hub "$STALE_WORKFLOWS_HUB" --source "$ROOT" --apply --allow-dirty \
+  > "$TMP_DIR/stale-workflows-update.out"
+assert_file "$STALE_WORKFLOWS_HUB/ai/skills/hub-workflows/SKILL.md"
+shasum "$STALE_PROJECT"/ai/*.md > "$TMP_DIR/stale-project-memory.after"
+cmp -s "$TMP_DIR/stale-project-memory.before" "$TMP_DIR/stale-project-memory.after" \
+  || fail 'stale hub workflow update changed selected-project memory'
+
 if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$ROOT/template" --dry-run > "$TMP_DIR/standalone-source.out" 2>&1; then
   fail 'hub updater accepted the standalone template as a hub source'
 fi
@@ -1721,6 +1779,17 @@ if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$
   fail 'hub updater accepted a source without the mandatory knowledge quality cycle'
 fi
 assert_contains "$TMP_DIR/incomplete-knowledge-source.out" 'missing mandatory hub skill: hub-knowledge-review'
+
+INCOMPLETE_WORKFLOWS_SOURCE="$TMP_DIR/incomplete-workflows-source"
+mkdir -p "$INCOMPLETE_WORKFLOWS_SOURCE"
+cp -R "$ROOT/hub-template" "$INCOMPLETE_WORKFLOWS_SOURCE/hub-template"
+mkdir -p "$INCOMPLETE_WORKFLOWS_SOURCE/scripts"
+cp "$ROOT/scripts/read-compact-project-index.sh" "$INCOMPLETE_WORKFLOWS_SOURCE/scripts/read-compact-project-index.sh"
+rm "$INCOMPLETE_WORKFLOWS_SOURCE/hub-template/ai/skills/hub-workflows/SKILL.md"
+if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$INCOMPLETE_WORKFLOWS_SOURCE" --dry-run > "$TMP_DIR/incomplete-workflows-source.out" 2>&1; then
+  fail 'hub updater accepted a source without hub-workflows'
+fi
+assert_contains "$TMP_DIR/incomplete-workflows-source.out" 'missing mandatory hub skill: hub-workflows'
 
 # Regression: --source must resolve against the caller's directory, not the hub.
 # Before this fix a relative --source silently resolved inside the hub, so the
@@ -1769,10 +1838,12 @@ rm "$HUB_INSTALL/ai/project-cards/.gitkeep"
 printf '%s\n' 'stale hub entry' > "$HUB_INSTALL/AGENTS.md"
 printf '%s\n' 'stale validator' > "$HUB_INSTALL/scripts/check-hub-registry.sh"
 printf '%s\n' 'stale compact index' > "$HUB_INSTALL/scripts/read-compact-project-index.sh"
+rm "$HUB_INSTALL/ai/skills/hub-workflows/SKILL.md"
 
 bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$ROOT" --dry-run > "$TMP_DIR/hub-dry-run.out"
 assert_contains "$TMP_DIR/hub-dry-run.out" '### AGENTS.md'
 assert_contains "$TMP_DIR/hub-dry-run.out" '### scripts/read-compact-project-index.sh'
+assert_contains "$TMP_DIR/hub-dry-run.out" '### ai/skills/hub-workflows/SKILL.md'
 assert_contains "$TMP_DIR/hub-dry-run.out" 'Would create missing hub memory file without overwriting hub memory: ai/archive/.gitkeep'
 assert_contains "$TMP_DIR/hub-dry-run.out" 'Would create missing hub memory file without overwriting hub memory: ai/project-cards/.gitkeep'
 assert_not_exists "$HUB_INSTALL/ai/archive/.gitkeep"
@@ -1873,6 +1944,7 @@ bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$ROO
 cmp -s "$ROOT/hub-template/AGENTS.md" "$HUB_INSTALL/AGENTS.md" || fail 'hub update did not replace protected entry file'
 cmp -s "$ROOT/scripts/check-hub-registry.sh" "$HUB_INSTALL/scripts/check-hub-registry.sh" || fail 'hub update did not replace protected validator'
 cmp -s "$ROOT/scripts/read-compact-project-index.sh" "$HUB_INSTALL/scripts/read-compact-project-index.sh" || fail 'hub update did not replace compact project index reader'
+cmp -s "$ROOT/hub-template/ai/skills/hub-workflows/SKILL.md" "$HUB_INSTALL/ai/skills/hub-workflows/SKILL.md" || fail 'hub update did not install hub-workflows'
 cmp -s "$TMP_DIR/allowed-roots.before" "$HUB_INSTALL/ai/allowed-roots.md" || fail 'hub update overwrote allowed roots'
 cmp -s "$TMP_DIR/registry.before" "$HUB_INSTALL/ai/project-registry.md" || fail 'hub update overwrote registry'
 cmp -s "$TMP_DIR/active.before" "$HUB_INSTALL/ai/active-project.md" || fail 'hub update overwrote active project'
@@ -2041,6 +2113,10 @@ assert_file "$DOTDOT_SIBLING_MARKER"
 assert_file "$DOTDOT_HUB/ai/architecture.md"
 
 assistant_workflow_source_valid "$ROOT/scripts/assistant-workflows.sh"
-hub_workflows_rule_valid
+hub_workflows_rule_valid \
+  "$ROOT/hub-template/AGENTS.md" \
+  "$ROOT/hub-template/CLAUDE.md" \
+  "$ROOT/hub-template/ai/architecture.md" \
+  || fail 'hub rule must name literal `hub-workflows`'
 
 echo "Hub smoke tests passed."

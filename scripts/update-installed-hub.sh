@@ -189,7 +189,7 @@ resolve_source_template() {
     die "--source resolves to the hub itself; pass the template repository path"
   fi
   [ -f "$SOURCE_COMPACT_INDEX" ] || die "Source template is missing mandatory script: scripts/read-compact-project-index.sh"
-  for mandatory_skill in hub-project-router hub-project-switch hub-project-register hub-registry-check hub-knowledge-capture hub-knowledge-review; do
+  for mandatory_skill in hub-project-router hub-project-switch hub-project-register hub-registry-check hub-knowledge-capture hub-knowledge-review hub-workflows; do
     [ -f "$SOURCE_TEMPLATE/ai/skills/$mandatory_skill/SKILL.md" ] \
       || die "Source template missing mandatory hub skill: $mandatory_skill"
   done

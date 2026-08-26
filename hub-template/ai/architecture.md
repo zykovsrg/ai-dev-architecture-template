@@ -1,6 +1,6 @@
 # Personal AI Hub Architecture
 
-Version: 1.7
+Version: 1.8
 
 ## Purpose
 
@@ -256,6 +256,45 @@ confirmed `hub-project-switch` between project groups before it resumes. It may
 refine an existing task only under the hub-owned `hub-task-intake` rules; a new task
 or task replacement must use the hub-owned `hub-task-switch` workflow, while
 closure uses the hub-owned `hub-task-finish` workflow.
+
+## Proposal-Only Plans, Reviews, And Capture
+
+Use the hub-owned `hub-workflows` skill for `day-plan`, `evening-review`,
+`weekly-review`, and `capture`. The skill performs semantic AI analysis, while
+the optional Bash adapter only validates mechanical scope, paths, and recorder
+JSON. Neither layer applies project, task, knowledge, waiting, deadline,
+Calendar, or vault changes.
+
+The fixed six-step contract is:
+
+1. Receive exactly one user-selected source: pasted text, a selected local
+   transcript or review file, a dictated task, or a requested Rolling Audio
+   Recorder period.
+2. For a recorder period, use only `rar export --minutes <1..120> --json` and
+   `rar status <job-id> --json`. Report pending or failed state without reading
+   any project data. A recorder export is the only source-side write.
+3. Run a metadata-only candidate search. Show candidate project IDs, exact
+   registered paths, and the intended purpose of the later read; do not read
+   candidate task memory, knowledge, or code.
+4. Wait for an explicitly confirmed project or named confirmed set. Only then
+   read canonical records in those projects' `ai/` directories and explicitly
+   selected project-local `knowledge/` paths.
+5. Perform structured semantic AI analysis for the requested plan, review, or
+   capture. Separate source facts, grounded decisions, action candidates,
+   project candidates, knowledge candidates, due-date ambiguity, waiting or
+   follow-up, and uncertainties without treating any inference as approval.
+6. After the analysis, emit one explicit per-file proposal envelope and exact
+   proposed diff or replacement block per possible write. For `Kind: meeting`,
+   the first proposal is exactly one canonical meeting-record file; dependent
+   proposals refer to it but remain independent. For `Kind: task`, propose no
+   meeting record. An unknown target remains only an `action: create_project`
+   proposal and is never created automatically. Any later application requires
+   a fresh exact diff and the user's confirmation naming that proposal;
+   confirmation of one proposal does not approve another.
+
+There is no apply mode, automatic write, Calendar MCP operation, vault
+migration, or session audit in this workflow. A generated proposal has no
+authority by itself and is not a durable queue item.
 
 ## Cross-Project Signals
 

@@ -8,7 +8,7 @@ ROOT="$(cd "${1:-$(dirname "$0")/..}" && pwd)"
 cd "$ROOT"
 
 assistant_workflow_guardrail_check() {
-  local file="scripts/assistant-workflows.sh" source rule found=0
+  local file="scripts/assistant-workflows.sh" skill="hub-template/ai/skills/hub-workflows/SKILL.md" source rule found=0
   if [ ! -f "$file" ]; then
     echo "MISSING [assistant workflow guardrails] — $file"
     return 1
@@ -29,6 +29,11 @@ assistant_workflow_guardrail_check() {
     if grep -Fq '`hub-workflows`' "$rule"; then found=1; break; fi
   done
   [ "$found" -eq 1 ] || { echo 'MISSING [assistant workflow guardrails] — literal `hub-workflows` hub rule'; return 1; }
+  [ -f "$skill" ] || { echo "MISSING [assistant workflow guardrails] — $skill"; return 1; }
+  grep -Fqx 'name: hub-workflows' "$skill" \
+    || { echo 'MISMATCH [assistant workflow guardrails] — hub-workflows skill name'; return 1; }
+  grep -Fq 'Never write or apply a proposal automatically' "$skill" \
+    || { echo 'MISMATCH [assistant workflow guardrails] — no-auto-write rule'; return 1; }
   echo 'OK [assistant workflow guardrails] — executable source and hub rule'
 }
 
@@ -150,7 +155,7 @@ fi
 hub_skill_ok=1
 hub_skill_count=0
 checked_hub_skills=""
-HUB_REQUIRED_SKILLS="hub-project-router hub-project-switch hub-project-register hub-project-create hub-project-migrate hub-registry-check hub-info-update hub-local-router-install hub-environment-check hub-task-intake hub-task-switch hub-task-finish hub-knowledge-enable hub-knowledge-capture hub-knowledge-review"
+HUB_REQUIRED_SKILLS="hub-project-router hub-project-switch hub-project-register hub-project-create hub-project-migrate hub-registry-check hub-info-update hub-local-router-install hub-environment-check hub-task-intake hub-task-switch hub-task-finish hub-knowledge-enable hub-knowledge-capture hub-knowledge-review hub-workflows"
 if [ ! -f hub-template/ai/architecture.md ]; then
   echo "MISSING [hub skill references] — hub architecture absent"
   fail=1
