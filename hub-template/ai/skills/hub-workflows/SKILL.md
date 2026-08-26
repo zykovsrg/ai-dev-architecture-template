@@ -49,13 +49,13 @@ an apply command or a persistent proposal queue.
    source or confirmed canonical records. Label inference and never treat it as
    approval.
 6. **Return exact proposals only after analysis.** Emit one proposal envelope
-   and one exact per-file diff or replacement block per possible write. Keep
-   proposals independent; if an exact allowed target file is not known, ask a
-   question instead of guessing or emitting an actionable proposal. Before any
-   later write, show a fresh exact diff for that proposal and wait for explicit
-   confirmation that repeats the named proposal ID and exact target. A named
-   proposal confirmation authorizes only that exact diff; any changed diff
-   needs new confirmation.
+   per possible write, followed by one exact per-file diff or replacement
+   block. Keep proposals independent; if an exact allowed target file is not
+   known, ask a question instead of guessing or emitting an actionable
+   proposal. Before any later write, show a fresh exact diff for that proposal
+   and wait for explicit confirmation that repeats the named proposal ID and
+   exact target. A named proposal confirmation authorizes only that exact diff;
+   any changed diff needs new confirmation.
 
 ## Capture rules
 
