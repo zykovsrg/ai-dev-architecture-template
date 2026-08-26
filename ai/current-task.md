@@ -14,15 +14,15 @@ Allowed stages: intake / spec / planning / implementation / review / task-finish
 
 ## Mode
 
-implementation
+implementation / review / task-finish / architecture-update
 
 ## Goal
 
-—
+No active task.
 
 ## Use Superpowers
 
-no
+yes / no
 
 ## Relevant files
 
@@ -30,14 +30,14 @@ unknown
 
 ## Done criteria
 
-- —
+- <observable result>
 
 ## Agent handoff
 
-Last agent: —
+Last agent:
 
-What changed: —
+What changed:
 
-Open risks: —
+Open risks:
 
-Next agent should check: —
+Next agent should check:

@@ -14,6 +14,12 @@
 
 ## Текущий changelog
 
+### 2026-08-26 — Proposal-only workflows и recorder capture
+
+- Change: Добавлены reusable `hub-workflows`, план дня, вечернее и недельное ревью, proposal-only capture, механические Bash guardrails и стабильный JSON-контракт `rar export/status`. Рабочий hub обновлён; изменения слиты в `main` проектов `ai-dev-architecture` и `rolling-audio-recorder`.
+- Impact: Агент может разбирать подтверждённые канонические `ai/`-данные, диктовку, саммари и расшифровки, включая период записи от 1 до 120 минут, но для любого изменения показывает отдельный точный diff и ждёт именованного подтверждения. Calendar, session audit и перенос vault не включены.
+- Manual checks: `bash scripts/check-consistency.sh`, `bash scripts/hub-smoke-test.sh`, `bash scripts/assistant-workflows-test.sh`; recorder `swift test` — 147/147 и release build. Изменения отправлены в GitHub.
+
 ### 2026-08-26 — Obsidian: Kanban задач и обзор проектов
 
 - Change: Создана локальная копия vault в `obsidian-vault/`; в ней сгенерированы отдельные `Tasks-Kanban.md` и `Projects-Overview.md` с общим manifest. Карточка Kanban теперь равна задаче, а не проекту. Старая экспериментальная пара `Projects-Kanban.*` удалена.
