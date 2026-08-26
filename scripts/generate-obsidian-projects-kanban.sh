@@ -12,14 +12,20 @@ json_string() { local text="$1"; text=${text//\\/\\\\}; text=${text//\"/\\\"}; t
 read_field() { sed -n "s/^$2: //p" "$1" | head -n 1; }
 current_state() { awk '/^## / { exit } /^Status: / { print substr($0, 9); exit }' "$1"; }
 current_title() { awk '/^## Goal[[:space:]]*$/ {goal=1; next} goal && /^## / {exit} goal && NF {print; exit}' "$1" | sed 's/[[:space:]]*$//'; }
+current_task_id() {
+  local file="$1" ids=()
+  while IFS= read -r task_id; do ids+=("$task_id"); done < <(sed -n '/^## /q; /^Task ID: /s/^Task ID: //p' "$file")
+  [ "${#ids[@]}" -eq 1 ] && [ -n "${ids[0]}" ] || die "renderable current task must have exactly one Task ID: $file"
+  printf '%s' "${ids[0]}"
+}
 safe_due() { sed -nE 's/^[[:space:]]*due:[[:space:]]*([0-9]{4}-[0-9]{2}-[0-9]{2})[[:space:]]*$/\1/p' "$@" | sort -u | head -n 1; }
 table_cell() { local text="$1"; text=${text//|/\\|}; text=${text//$'\n'/ }; printf '%s' "$text"; }
 
 future_records() {
   awk '
-    function flush() { if (entry && (state == "idea" || state == "ready" || state == "blocked")) print state "\t" title "\t" due }
+    function flush() { if (entry && (state == "idea" || state == "ready" || state == "blocked")) print id "\t" state "\t" title "\t" due }
     /^### FT-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9]+[[:space:]]/ {
-      flush(); entry=1; state=""; due=""; title=$0
+      flush(); entry=1; state=""; due=""; id=$2; title=$0
       sub(/^### FT-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9]+[[:space:]]+[^[:space:]]+[[:space:]]*/, "", title); next
     }
     /^### / { flush(); entry=0; state=""; due=""; title=""; next }
@@ -30,14 +36,15 @@ future_records() {
 }
 paused_records() {
   awk '
-    function flush() { if (entry && state == "paused") print title }
-    /^### [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9][[:space:]]/ { flush(); entry=1; state=""; title=$0; sub(/^### [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9][[:space:]]+[^[:space:]]+[[:space:]]*/, "", title); next }
-    /^### / { flush(); entry=0; state=""; title=""; next }
+    function flush() { if (entry && state == "paused") { if (id_count != 1 || id == "") { printf "error: renderable paused task must have exactly one Task ID: %s\\n", FILENAME > "/dev/stderr"; invalid=1 } else print id "\t" title } }
+    /^### [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9][[:space:]]/ { flush(); entry=1; state=""; id=""; id_count=0; title=$0; sub(/^### [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9][[:space:]]+[^[:space:]]+[[:space:]]*/, "", title); next }
+    /^### / { flush(); entry=0; state=""; id=""; id_count=0; title=""; next }
+    entry && /^Task ID: / { id=substr($0, 10); id_count++; next }
     entry && /^Status: / { state=substr($0, 9) }
-    END { flush() }
+    END { flush(); exit invalid }
   ' "$1" | sed 's/[[:space:]]*$//'
 }
-count_future_state() { future_records "$1" | awk -F '\t' -v wanted="$2" '$1 == wanted {count++} END {print count+0}'; }
+count_future_state() { future_records "$1" | awk -F '\t' -v wanted="$2" '$2 == wanted {count++} END {print count+0}'; }
 resolve_card() {
   local raw="$1" parent canonical_parent root
   case "$raw" in /*) die "registry card path must be relative: $raw";; ai/project-cards/*);; *) die "registry card path must stay beneath ai/project-cards: $raw";; esac
@@ -77,9 +84,11 @@ REGISTRY_IDS=(); while IFS= read -r id; do REGISTRY_IDS+=("$id"); done < <(sed -
 if printf '%s\n' "${REGISTRY_IDS[@]}" | uniq -d | grep -q .; then die 'duplicate project ID in registry'; fi
 if [ "$MODE" = write ] && ! cmp -s <(printf '%s\n' "${IDS[@]}") <(printf '%s\n' "${REGISTRY_IDS[@]}"); then die 'write scope must match all registered project IDs'; fi
 
-TASK_COLUMNS=() TASK_TITLES=() TASK_PROJECTS=() TASK_DUES=() TASK_DONE=()
+TASK_IDS=() TASK_COLUMNS=() TASK_TITLES=() TASK_PROJECTS=() TASK_PROJECT_IDS=() TASK_DUES=() TASK_DONE=() TASK_SOURCE_FILES=() TASK_SOURCE_HASHES=()
 SOURCE_IDS=() SOURCE_PATHS=() SOURCE_CARDS=() SOURCE_HASHES=(); OVERVIEW_ROWS=''
-add_task() { TASK_COLUMNS+=("$1"); TASK_TITLES+=("$2"); TASK_PROJECTS+=("$3"); TASK_DUES+=("$4"); TASK_DONE+=("$5"); }
+add_task() {
+  TASK_IDS+=("$1"); TASK_COLUMNS+=("$2"); TASK_TITLES+=("$3"); TASK_PROJECTS+=("$4"); TASK_PROJECT_IDS+=("$5"); TASK_DUES+=("$6"); TASK_DONE+=("$7"); TASK_SOURCE_FILES+=("$8"); TASK_SOURCE_HASHES+=("$9")
+}
 
 for id in "${IDS[@]}"; do
   [[ "$id" =~ ^[a-z0-9][a-z0-9-]*$ ]] || die "invalid project ID: $id"
@@ -93,36 +102,41 @@ for id in "${IDS[@]}"; do
   for source in "$current_file" "$future_file" "$paused_file"; do [ -f "$source" ] && [ ! -L "$source" ] || die "missing or symlinked allowed task file: $id"; done
   name="$(read_field "$card" Name)"; [ -n "$name" ] || name=$id
   current="$(current_state "$current_file")"; title="$(current_title "$current_file")"; [ -n "$title" ] || title='Current task'; due="$(safe_due "$current_file")"; overview_current='—'
+  current_column='' current_done=' '
   case "$current" in
-    active) add_task Active "$title" "$name" "$due" ' '; overview_current="$title";;
-    ready|in_progress) add_task Ready "$title" "$name" "$due" ' '; overview_current="$title";;
-    waiting) add_task Waiting "$title" "$name" "$due" ' '; overview_current="$title";;
-    blocked) add_task Blocked "$title" "$name" "$due" ' '; overview_current="$title";;
-    review) add_task Review "$title" "$name" "$due" ' '; overview_current="$title";;
-    paused) add_task Paused "$title" "$name" "$due" ' '; overview_current="$title";;
-    done|completed) add_task Done "$title" "$name" "$due" x; overview_current="$title";;
+    active) current_column=Active;; ready|in_progress) current_column=Ready;; waiting) current_column=Waiting;; blocked) current_column=Blocked;; review) current_column=Review;; paused) current_column=Paused;; done|completed) current_column=Done; current_done=x;;
   esac
-  while IFS=$'\t' read -r future_status future_title future_due; do
+  if [ -n "$current_column" ]; then
+    current_task_id="$(current_task_id "$current_file")"
+    add_task "$current_task_id" "$current_column" "$title" "$name" "$id" "$due" "$current_done" "$current_file" "$(hash_files "$current_file")"
+    overview_current="$title"
+  fi
+  while IFS=$'\t' read -r future_task_id future_status future_title future_due; do
     [ -n "$future_status" ] || continue
-    case "$future_status" in idea) add_task Ideas "$future_title" "$name" "$future_due" ' ';; ready) add_task Ready "$future_title" "$name" "$future_due" ' ';; blocked) add_task Blocked "$future_title" "$name" "$future_due" ' ';; esac
+    case "$future_status" in idea) add_task "$future_task_id" Ideas "$future_title" "$name" "$id" "$future_due" ' ' "$future_file" "$(hash_files "$future_file")";; ready) add_task "$future_task_id" Ready "$future_title" "$name" "$id" "$future_due" ' ' "$future_file" "$(hash_files "$future_file")";; blocked) add_task "$future_task_id" Blocked "$future_title" "$name" "$id" "$future_due" ' ' "$future_file" "$(hash_files "$future_file")";; esac
   done < <(future_records "$future_file")
-  while IFS= read -r paused_title; do [ -n "$paused_title" ] && add_task Paused "$paused_title" "$name" '' ' '; done < <(paused_records "$paused_file")
+  paused_output="$(paused_records "$paused_file")"
+  while IFS=$'\t' read -r paused_task_id paused_title; do [ -n "$paused_title" ] && add_task "$paused_task_id" Paused "$paused_title" "$name" "$id" '' ' ' "$paused_file" "$(hash_files "$paused_file")"; done <<< "$paused_output"
   ready_count="$(count_future_state "$future_file" ready)"; waiting_count=0; [ "$current" = waiting ] && waiting_count=1
-  overview_due="$due"; [ -n "$overview_due" ] || overview_due="$(future_records "$future_file" | awk -F '\t' '$1 == "ready" && $3 != "" {print $3}' | sort | head -n 1)"; [ -n "$overview_due" ] || overview_due='—'
+  overview_due="$due"; [ -n "$overview_due" ] || overview_due="$(future_records "$future_file" | awk -F '\t' '$2 == "ready" && $4 != "" {print $4}' | sort | head -n 1)"; [ -n "$overview_due" ] || overview_due='—'
   OVERVIEW_ROWS+="| $(table_cell "$name") | $(table_cell "$registry_status") | $(table_cell "$overview_current") | $ready_count | $waiting_count | $overview_due |"$'\n'
   SOURCE_IDS+=("$id"); SOURCE_PATHS+=("$path"); SOURCE_CARDS+=("$card"); SOURCE_HASHES+=("$(hash_files "$card" "$current_file" "$future_file" "$paused_file")")
 done
 
-TASKS_RENDER="$( { printf '%s\n' '---' 'kanban-plugin: board' '---'; for column in Ideas Ready Active Waiting Blocked Review Paused Done; do printf '\n## %s\n' "$column"; for i in "${!TASK_COLUMNS[@]}"; do [ "${TASK_COLUMNS[$i]}" = "$column" ] || continue; printf '\n- [%s] %s\n' "${TASK_DONE[$i]}" "${TASK_TITLES[$i]}"; printf '  - project: %s\n' "${TASK_PROJECTS[$i]}"; [ -z "${TASK_DUES[$i]}" ] || printf '  - 📅 %s\n' "${TASK_DUES[$i]}"; done; done; } )"
+if printf '%s\n' "${TASK_IDS[@]}" | sort | uniq -d | grep -q .; then die 'duplicate task ID in renderable tasks'; fi
+TASKS_RENDER="$( { printf '%s\n' '---' 'kanban-plugin: board' '---'; for column in Ideas Ready Active Waiting Blocked Review Paused Done; do printf '\n## %s\n' "$column"; for i in "${!TASK_COLUMNS[@]}"; do [ "${TASK_COLUMNS[$i]}" = "$column" ] || continue; printf '\n- [%s] %s ^%s\n' "${TASK_DONE[$i]}" "${TASK_TITLES[$i]}" "${TASK_IDS[$i]}"; printf '  - project: %s\n' "${TASK_PROJECTS[$i]}"; [ -z "${TASK_DUES[$i]}" ] || printf '  - 📅 %s\n' "${TASK_DUES[$i]}"; done; done; } )"
 OVERVIEW_RENDER="$( { printf '%s\n' '# Projects Overview' '' '| Project | Status | Current task | Ready | Waiting | Due |' '| --- | --- | --- | ---: | ---: | --- |'; printf '%s' "$OVERVIEW_ROWS"; } )"
 TASKS_HASH="$(hash_text "$TASKS_RENDER")"; OVERVIEW_HASH="$(hash_text "$OVERVIEW_RENDER")"; GENERATED_AT="${SOURCE_DATE_EPOCH:-$(date -u +%s)}"
-MANIFEST_RENDER="$( { printf '{\n  "format_version": 2,\n  "generated_at": '; json_string "$GENERATED_AT"; printf ',\n  "views": {\n    "tasks_kanban": {"target": "Obsidian/Tasks-Kanban.md", "sha256": '; json_string "$TASKS_HASH"; printf '},\n    "projects_overview": {"target": "Obsidian/Projects-Overview.md", "sha256": '; json_string "$OVERVIEW_HASH"; printf '}\n  },\n  "sources": [\n'; comma=''; for i in "${!SOURCE_IDS[@]}"; do printf '%s    {"id": ' "$comma"; json_string "${SOURCE_IDS[$i]}"; printf ', "registered_path": '; json_string "${SOURCE_PATHS[$i]}"; printf ', "card_path": '; json_string "${SOURCE_CARDS[$i]}"; printf ', "sha256": '; json_string "${SOURCE_HASHES[$i]}"; printf '}'; comma=$',\n'; done; printf '\n  ]\n}\n'; } )"
+TASK_ENTRIES="$( { comma=''; for i in "${!TASK_IDS[@]}"; do printf '%s    {"task_id": ' "$comma"; json_string "${TASK_IDS[$i]}"; printf ', "project_id": '; json_string "${TASK_PROJECT_IDS[$i]}"; printf ', "source_file": '; json_string "${TASK_SOURCE_FILES[$i]}"; printf ', "source_sha256": '; json_string "${TASK_SOURCE_HASHES[$i]}"; printf '}'; comma=$',\n'; done; } )"
+MANIFEST_RENDER="$( { printf '{\n  "format_version": 3,\n  "generated_at": '; json_string "$GENERATED_AT"; printf ',\n  "views": {\n    "tasks_kanban": {"target": "Obsidian/Tasks-Kanban.md", "sha256": '; json_string "$TASKS_HASH"; printf '},\n    "projects_overview": {"target": "Obsidian/Projects-Overview.md", "sha256": '; json_string "$OVERVIEW_HASH"; printf '}\n  },\n  "tasks": [\n%s\n  ],\n  "sources": [\n' "$TASK_ENTRIES"; comma=''; for i in "${!SOURCE_IDS[@]}"; do printf '%s    {"id": ' "$comma"; json_string "${SOURCE_IDS[$i]}"; printf ', "registered_path": '; json_string "${SOURCE_PATHS[$i]}"; printf ', "card_path": '; json_string "${SOURCE_CARDS[$i]}"; printf ', "sha256": '; json_string "${SOURCE_HASHES[$i]}"; printf '}'; comma=$',\n'; done; printf '\n  ]\n}\n'; } )"
 
 if [ "$MODE" = preview ]; then printf '%s\n--- projects overview ---\n%s\n--- manifest ---\n%s' "$TASKS_RENDER" "$OVERVIEW_RENDER" "$MANIFEST_RENDER"; exit 0; fi
 TARGET_DIR="$VAULT/Obsidian"; TARGET_TASKS="$TARGET_DIR/Tasks-Kanban.md"; TARGET_OVERVIEW="$TARGET_DIR/Projects-Overview.md"; TARGET_MANIFEST="$TARGET_DIR/AI-Architecture.manifest.json"
 [ -d "$TARGET_DIR" ] && [ ! -L "$TARGET_DIR" ] || die 'target directory missing or symlinked'; [ ! -L "$TARGET_TASKS" ] && [ ! -L "$TARGET_OVERVIEW" ] && [ ! -L "$TARGET_MANIFEST" ] || die 'generated targets must not be symlinks'
 if [ -e "$TARGET_TASKS" ] || [ -e "$TARGET_OVERVIEW" ] || [ -e "$TARGET_MANIFEST" ]; then
   [ -f "$TARGET_TASKS" ] && [ -f "$TARGET_OVERVIEW" ] && [ -f "$TARGET_MANIFEST" ] || die 'proposal pending: generated view set is incomplete'
+  manifest_format="$(sed -n 's/^  "format_version": \([0-9][0-9]*\),$/\1/p' "$TARGET_MANIFEST")"
+  [ "$manifest_format" = 3 ] || { [ "$manifest_format" = 2 ] && die 'proposal pending: manifest v2 requires a fresh confirmed rebuild'; die 'proposal pending: generated manifest is invalid'; }
   recorded_tasks="$(sed -n 's/^    "tasks_kanban": {"target": "Obsidian\/Tasks-Kanban.md", "sha256": "\([0-9a-f]*\)"},$/\1/p' "$TARGET_MANIFEST")"; recorded_overview="$(sed -n 's/^    "projects_overview": {"target": "Obsidian\/Projects-Overview.md", "sha256": "\([0-9a-f]*\)"}$/\1/p' "$TARGET_MANIFEST")"
   [ -n "$recorded_tasks" ] && [ -n "$recorded_overview" ] || die 'proposal pending: generated manifest is invalid'
   [ "$recorded_tasks" = "$(shasum -a 256 "$TARGET_TASKS" | awk '{print $1}')" ] || die 'proposal pending: manual task board edit detected'; [ "$recorded_overview" = "$(shasum -a 256 "$TARGET_OVERVIEW" | awk '{print $1}')" ] || die 'proposal pending: manual project overview edit detected'

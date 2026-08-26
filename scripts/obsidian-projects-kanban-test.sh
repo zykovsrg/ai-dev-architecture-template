@@ -49,15 +49,15 @@ EOF
 }
 
 add_project "ai-dev-architecture" "Architecture project" "active" \
-  $'Status: active\ndue: 2026-08-26\n\n## Goal\n\nCurrent architecture task' \
+  $'Status: active\nTask ID: TASK-20260826-001\ndue: 2026-08-26\n\n## Goal\n\nCurrent architecture task' \
   $'### FT-20260826-001 — Idea task\n\nStatus: idea\n\n### FT-20260826-002 — Ready task\n\nStatus: ready\ndue: 2026-08-28\n\n### FT-20260826-003 — Blocked task\n\nStatus: blocked\n\n### FT-20260826-004 — Promoted task\n\nStatus: promoted\n\n### FT-20260826-005 — Dropped task\n\nStatus: dropped\n\n### FT-20260826-006 — Completed future task\n\nStatus: done' \
-  $'### 2026-08-20 — Paused task\n\nStatus: paused'
+  $'### 2026-08-20 — Paused task\n\nTask ID: TASK-20260820-001\n\nStatus: paused'
 add_project "waiting-project" "Waiting project" "active" \
-  $'Status: waiting\n\n## Goal\n\nWaiting current task' $'No future tasks.' $'No paused tasks.'
+  $'Status: waiting\nTask ID: TASK-20260826-002\n\n## Goal\n\nWaiting current task' $'No future tasks.' $'No paused tasks.'
 add_project "review-project" "Review project" "active" \
-  $'Status: review\n\n## Goal\n\nReview current task' $'No future tasks.' $'No paused tasks.'
+  $'Status: review\nTask ID: TASK-20260826-003\n\n## Goal\n\nReview current task' $'No future tasks.' $'No paused tasks.'
 add_project "done-project" "Done project" "completed" \
-  $'Status: done\n\n## Goal\n\nDone current task' $'No future tasks.' $'No paused tasks.'
+  $'Status: done\nTask ID: TASK-20260826-004\n\n## Goal\n\nDone current task' $'No future tasks.' $'No paused tasks.'
 
 before_files="$(find "$VAULT" -type f -print | sort)"
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/preview.txt"
@@ -65,6 +65,9 @@ SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault 
 for column in Ideas Ready Active Waiting Blocked Review Paused Done; do assert_contains "$TMP_DIR/preview.txt" "## $column"; done
 for title in 'Idea task' 'Ready task' 'Current architecture task' 'Waiting current task' 'Blocked task' 'Review current task' 'Paused task' 'Done current task'; do assert_contains "$TMP_DIR/preview.txt" "$title"; done
 assert_contains "$TMP_DIR/preview.txt" '  - project: Architecture project'
+assert_contains "$TMP_DIR/preview.txt" '- [ ] Current architecture task ^TASK-20260826-001'
+assert_contains "$TMP_DIR/preview.txt" '- [ ] Idea task ^FT-20260826-001'
+assert_contains "$TMP_DIR/preview.txt" '- [ ] Paused task ^TASK-20260820-001'
 assert_not_contains "$TMP_DIR/preview.txt" 'Promoted task'
 assert_not_contains "$TMP_DIR/preview.txt" 'Dropped task'
 assert_not_contains "$TMP_DIR/preview.txt" 'Completed future task'
@@ -72,13 +75,19 @@ assert_contains "$TMP_DIR/preview.txt" '--- projects overview ---'
 assert_contains "$TMP_DIR/preview.txt" '| Project | Status | Current task | Ready | Waiting | Due |'
 assert_contains "$TMP_DIR/preview.txt" '| Architecture project | active | Current architecture task | 1 | 0 | 2026-08-26 |'
 assert_contains "$TMP_DIR/preview.txt" '| Waiting project | active | Waiting current task | 0 | 1 | — |'
-assert_contains "$TMP_DIR/preview.txt" '"format_version": 2'
+assert_contains "$TMP_DIR/preview.txt" '"format_version": 3'
 
 if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write > "$TMP_DIR/no-confirm.txt" 2>&1; then fail 'write without confirmation succeeded'; fi
 assert_not_exists "$TASKS"; assert_not_exists "$OVERVIEW"; assert_not_exists "$MANIFEST"
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write > "$TMP_DIR/write.txt"
 assert_file "$TASKS"; assert_file "$OVERVIEW"; assert_file "$MANIFEST"
-/usr/bin/jq -e '.format_version == 2 and (.views.tasks_kanban.target == "Obsidian/Tasks-Kanban.md") and (.views.projects_overview.target == "Obsidian/Projects-Overview.md")' "$MANIFEST" >/dev/null || fail 'manifest contract is invalid'
+/usr/bin/jq -e '.format_version == 3 and (.views.tasks_kanban.target == "Obsidian/Tasks-Kanban.md") and (.views.projects_overview.target == "Obsidian/Projects-Overview.md") and ([.tasks[] | has("task_id") and has("project_id") and has("source_file") and has("source_sha256")] | all)' "$MANIFEST" >/dev/null || fail 'manifest contract is invalid'
+
+sed -i '' 's/"format_version": 3/"format_version": 2/' "$MANIFEST"
+if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write > "$TMP_DIR/v2-manifest.txt" 2>&1; then fail 'v2 manifest did not block write'; fi
+assert_contains "$TMP_DIR/v2-manifest.txt" 'manifest v2 requires a fresh confirmed rebuild'
+rm -f "$TASKS" "$OVERVIEW" "$MANIFEST"
+SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write >/dev/null
 
 printf '\nmanual task edit\n' >> "$TASKS"
 if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write > "$TMP_DIR/manual-task.txt" 2>&1; then fail 'manual task-board edit did not block write'; fi
@@ -88,5 +97,9 @@ SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault 
 printf '\nmanual overview edit\n' >> "$OVERVIEW"
 if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write > "$TMP_DIR/manual-overview.txt" 2>&1; then fail 'manual overview edit did not block write'; fi
 assert_contains "$TMP_DIR/manual-overview.txt" 'proposal pending'
+
+printf '%s\n' $'### 2026-08-20 — Paused task\n\nStatus: paused' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/missing-paused-id.txt" 2>&1; then fail 'paused task without ID did not block preview'; fi
+assert_contains "$TMP_DIR/missing-paused-id.txt" 'renderable paused task must have exactly one Task ID'
 
 echo 'PASS: Obsidian task Kanban and project overview contract'
