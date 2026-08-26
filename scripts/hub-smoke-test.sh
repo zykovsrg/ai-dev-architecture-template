@@ -18,6 +18,36 @@ assert_forbidden_reads_absent() {
       || fail "trace entered forbidden project content: $forbidden_path"
   done
 }
+
+# The proposal-only assistant entrypoint is executable policy, not prose. Keep
+# this check deliberately narrow: inspect only non-comment source lines so
+# examples/documentation mentioning unsafe operations do not trigger it.
+assistant_workflow_source_valid() {
+  local file="$1" source
+  assert_file "$file"
+  source="$(awk ' /^[[:space:]]*#/ { next } { sub(/[[:space:]]+#.*/, ""); print } ' "$file")"
+  grep -Fq 'rar export --minutes' <<<"$source" || fail 'assistant workflow must call rar export --minutes'
+  grep -Fq -- '--json' <<<"$source" || fail 'assistant workflow must request JSON output'
+  grep -Fq 'rar status' <<<"$source" || fail 'assistant workflow must call rar status'
+  grep -Fq "Read-only workflow: no changes were made." <<<"$source" || fail 'assistant workflow must preserve exact no-changes line'
+
+  # The only allowed mentions of write/apply are the argument guard itself.
+  if grep -E '(^|[[:space:]])(calendar[ -]?mcp|obsidian-vault|rar[[:space:]]+(pause|resume|install))([[:space:]]|$)' \
+      <<<"$source" >/dev/null; then
+    fail 'assistant workflow contains a forbidden executable path'
+  fi
+  while IFS= read -r line; do
+    [[ "$line" == *'--write|--apply)'* ]] || fail 'assistant workflow contains an executable --write/--apply path'
+  done < <(grep -E '(^|[[:space:]])(--write|--apply)([[:space:]]|$)' <<<"$source" || true)
+}
+
+hub_workflows_rule_valid() {
+  local found=0 rule
+  for rule in "$ROOT/hub-template/AGENTS.md" "$ROOT/hub-template/CLAUDE.md" "$ROOT/hub-template/ai/architecture.md"; do
+    if grep -Fq '`hub-workflows`' "$rule"; then found=1; break; fi
+  done
+  [ "$found" -eq 1 ] || fail 'hub rule must name literal `hub-workflows`'
+}
 # Registered active projects must carry the full memory scaffold; fixtures too.
 scaffold_project_memory() {
   local project_path="$1" memory_file
@@ -2009,5 +2039,8 @@ fi
 assert_contains "$TMP_DIR/dotdot.out" 'superseded path must be hub-relative without traversal'
 assert_file "$DOTDOT_SIBLING_MARKER"
 assert_file "$DOTDOT_HUB/ai/architecture.md"
+
+assistant_workflow_source_valid "$ROOT/scripts/assistant-workflows.sh"
+hub_workflows_rule_valid
 
 echo "Hub smoke tests passed."
