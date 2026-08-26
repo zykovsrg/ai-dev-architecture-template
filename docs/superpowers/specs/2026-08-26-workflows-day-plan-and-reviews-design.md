@@ -12,8 +12,9 @@ record, note, knowledge record, Obsidian file, or Calendar event themselves.
 
 The implementation adds one Bash command and one disposable-fixture test suite.
 It follows the existing safe projection pattern: absolute paths, registered
-project IDs, non-symlink sources, a declared scope file, and no dependencies
-beyond standard macOS command-line tools.
+project IDs, non-symlink sources, a declared scope file, and a machine-readable
+Rolling Audio Recorder contract. Workflow parsing uses `jq`, which is already
+used by the repository's shell-contract tests.
 
 Included:
 
@@ -38,6 +39,36 @@ Rolling Audio Recorder audio export and transcription are a separate local
 source operation, not an architecture write. The user's direct capture request
 authorizes that one source operation; the resulting transcript still has no
 authority to change any project or knowledge file.
+
+## Rolling Audio Recorder JSON Contract
+
+Modify `rolling-audio-recorder` so these commands accept a `--json` flag:
+
+```text
+rar export --minutes <1..120> --json
+rar status <job-id> --json
+```
+
+On a successful export, `rar export --json` writes exactly one JSON object to
+standard output and no human-readable warnings. Its keys are `job`, `state`,
+`audio_path`, `transcript_path`, `requested_minutes`, `exported_seconds`, and
+`warnings`. `state` is `pending` when transcription was launched and `done`
+only when `--no-transcribe` was explicitly requested by a human. `warnings` is
+always an array of strings, including an empty array.
+
+`rar status <job-id> --json` also writes exactly one JSON object and no other
+standard-output text. Its keys are `job`, `state`, `audio_path`,
+`transcript_path`, and `error`. `state` is exactly `pending`, `done`, or
+`failed`; `error` is JSON `null` unless `state` is `failed`; and
+`transcript_path` is JSON `null` when no transcription file is available. Both
+commands retain their current exit statuses and preserve the existing
+human-readable output when `--json` is absent. Errors still go to standard
+error and do not produce a partial JSON object.
+
+The recorder change includes Swift unit tests for the two JSON shapes, empty
+warnings, pending/done/failed states, paths with spaces, and unchanged default
+human-readable output. It does not add network access, Calendar access, a
+daemon change, or a new persistence store.
 
 ## Command Contract
 
@@ -79,9 +110,9 @@ an unsafe capture/review input file. It reads only each scoped project's card pl
 review may additionally read the hub's canonical `ai/archiprojects.md`.
 
 For `--recorder-minutes`, the command invokes the already installed
-`rar export --minutes <N>`, parses only the returned job ID, then polls
-`rar status <job>` until `state: done` or `state: failed`. On success it reads
-only the `transcript:` path returned by `rar status`; the path must be a regular
+`rar export --minutes <N> --json`, reads its `job` and `state` with `jq`, then
+polls `rar status <job> --json` until `state` is `done` or `failed`. On success
+it reads only `transcript_path` from the JSON object; the path must be a regular
 non-symlink `.txt` file under
 `~/Library/Application Support/rolling-audio-recorder/exports/`. A pending job
 is reported with its ID and no architecture proposal. A failed job is reported
@@ -215,12 +246,13 @@ cover:
 
 `scripts/hub-smoke-test.sh` gains static checks proving the workflow command
 contains no architecture write mode, Calendar invocation, or Obsidian target,
-permits only the documented `rar export` and `rar status` source calls, and
+permits only the documented JSON `rar export` and `rar status` source calls, and
 that the focused test is registered or runnable from the documented command.
 
 ## Rollback
 
 Reverting the workflow command, test script, and smoke-test contract removes
 the feature. No canonical project, task, knowledge file, vault file, Calendar
-event, or external account needs restoration. A recorder export may remain as
-the user's local source artifact; the integration never deletes it.
+event, or external account needs restoration. The recorder's `--json` flag can
+be reverted independently; a recorder export may remain as the user's local
+source artifact, and the integration never deletes it.
