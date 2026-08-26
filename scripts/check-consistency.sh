@@ -7,6 +7,36 @@ set -euo pipefail
 ROOT="$(cd "${1:-$(dirname "$0")/..}" && pwd)"
 cd "$ROOT"
 
+assistant_workflow_guardrail_check() {
+  local file="scripts/assistant-workflows.sh" skill="hub-template/ai/skills/hub-workflows/SKILL.md" source rule found=0
+  if [ ! -f "$file" ]; then
+    echo "MISSING [assistant workflow guardrails] — $file"
+    return 1
+  fi
+  source="$(awk ' /^[[:space:]]*#/ { next } { sub(/[[:space:]]+#.*/, ""); print } ' "$file")"
+  grep -Fq 'rar export --minutes' <<<"$source" || { echo 'MISSING [assistant workflow guardrails] — rar export --minutes'; return 1; }
+  grep -Fq -- '--json' <<<"$source" || { echo 'MISSING [assistant workflow guardrails] — --json'; return 1; }
+  grep -Fq 'rar status' <<<"$source" || { echo 'MISSING [assistant workflow guardrails] — rar status'; return 1; }
+  grep -Fq 'Read-only workflow: no changes were made.' <<<"$source" || { echo 'MISMATCH [assistant workflow guardrails] — exact no-changes line'; return 1; }
+  if grep -E '(^|[[:space:]])(calendar[ -]?mcp|obsidian-vault|rar[[:space:]]+(pause|resume|install))([[:space:]]|$)' <<<"$source" >/dev/null; then
+    echo 'MISMATCH [assistant workflow guardrails] — forbidden executable path'
+    return 1
+  fi
+  while IFS= read -r line; do
+    case "$line" in *'--write|--apply)'*) ;; *) echo 'MISMATCH [assistant workflow guardrails] — executable --write/--apply path'; return 1 ;; esac
+  done < <(grep -E '(^|[[:space:]])(--write|--apply)([[:space:]]|$)' <<<"$source" || true)
+  for rule in hub-template/AGENTS.md hub-template/CLAUDE.md hub-template/ai/architecture.md; do
+    if grep -Fq '`hub-workflows`' "$rule"; then found=1; break; fi
+  done
+  [ "$found" -eq 1 ] || { echo 'MISSING [assistant workflow guardrails] — literal `hub-workflows` hub rule'; return 1; }
+  [ -f "$skill" ] || { echo "MISSING [assistant workflow guardrails] — $skill"; return 1; }
+  grep -Fqx 'name: hub-workflows' "$skill" \
+    || { echo 'MISMATCH [assistant workflow guardrails] — hub-workflows skill name'; return 1; }
+  grep -Fq 'Never write or apply a proposal automatically' "$skill" \
+    || { echo 'MISMATCH [assistant workflow guardrails] — no-auto-write rule'; return 1; }
+  echo 'OK [assistant workflow guardrails] — executable source and hub rule'
+}
+
 MARKERS="canon:protected-files canon:controlled-memory"
 fail=0
 
@@ -125,7 +155,7 @@ fi
 hub_skill_ok=1
 hub_skill_count=0
 checked_hub_skills=""
-HUB_REQUIRED_SKILLS="hub-project-router hub-project-switch hub-project-register hub-project-create hub-project-migrate hub-registry-check hub-info-update hub-local-router-install hub-environment-check hub-task-intake hub-task-switch hub-task-finish hub-knowledge-enable hub-knowledge-capture hub-knowledge-review"
+HUB_REQUIRED_SKILLS="hub-project-router hub-project-switch hub-project-register hub-project-create hub-project-migrate hub-registry-check hub-info-update hub-local-router-install hub-environment-check hub-task-intake hub-task-switch hub-task-finish hub-knowledge-enable hub-knowledge-capture hub-knowledge-review hub-workflows"
 if [ ! -f hub-template/ai/architecture.md ]; then
   echo "MISSING [hub skill references] — hub architecture absent"
   fail=1
@@ -263,6 +293,8 @@ for updater in scripts/update-installed-architecture.sh scripts/update-installed
 done
 [ "$standalone_boundaries_ok" -eq 0 ] \
   || echo "OK [standalone memory updater boundaries] — neither updater overwrites controlled memory"
+
+assistant_workflow_guardrail_check || fail=1
 
 if [ "$fail" -ne 0 ]; then
   echo ""

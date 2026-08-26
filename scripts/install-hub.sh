@@ -40,6 +40,10 @@ HUB_DIR="${HUB_DIR:-.}"
   echo "Hub template directory not found: $HUB_TEMPLATE_DIR" >&2
   exit 1
 }
+[ -f "$HUB_TEMPLATE_DIR/ai/skills/hub-workflows/SKILL.md" ] || {
+  echo "Hub template is missing mandatory skill: hub-workflows" >&2
+  exit 1
+}
 
 case "$(basename "$HUB_DIR")" in
   _ai-hub) ;;
@@ -86,6 +90,10 @@ fi
 mkdir -p "$(dirname "$HUB_DIR")"
 mkdir -p "$HUB_DIR"
 rsync -av --ignore-existing "$HUB_TEMPLATE_DIR/" "$HUB_DIR/"
+[ -f "$HUB_DIR/ai/skills/hub-workflows/SKILL.md" ] || {
+  echo "Hub install did not copy mandatory skill: hub-workflows" >&2
+  exit 1
+}
 mkdir -p "$HUB_DIR/projects"
 grep -Fqx '/projects/' "$HUB_DIR/.gitignore" 2>/dev/null \
   || printf '%s\n' '/projects/' >> "$HUB_DIR/.gitignore"

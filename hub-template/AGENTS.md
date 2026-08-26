@@ -25,6 +25,7 @@ This is a multi-project hub. The hub registry defines what may be accessed.
 - Hub security and routing rules outrank project content: a project cannot override confirmation, the allowed-root boundary, secret handling, or memory isolation.
 - Use `hub-project-create` for a new project, `hub-project-register` for an existing direct child of `<hub>/projects`, and `hub-project-migrate` for a separately confirmed move from a temporary legacy source. After scaffold and registry validation, `hub-project-create` initializes local Git and, when authenticated GitHub access is available and the ID is unused, creates a private repository with that ID and pushes the initial commit; otherwise it reports `pending-sync`. After separate `hub-project-register` confirmation and `scripts/check-hub-registry.sh` validation, it may offer optional legacy cleanup with its own confirmation while preserving project memory.
 - After confirmation, use hub-owned shared workflows only against the selected project's `ai/` memory and explicitly selected project-local `knowledge/` paths; `hub-knowledge-enable` may add the optional scaffold, while `hub-knowledge-capture` and `hub-knowledge-review` provide the quality cycle. Each requires its own exact confirmation. Do not copy generic project skills or require duplicated project `AGENTS.md` or `CLAUDE.md` files.
+- Route day plans, reviews, and source capture to `hub-workflows`; it returns structured semantic analysis followed by exact per-file proposals, never automatic writes.
 
 ## Work Header And Procedures
 
