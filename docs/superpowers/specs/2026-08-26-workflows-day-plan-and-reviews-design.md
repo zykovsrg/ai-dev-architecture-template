@@ -70,6 +70,50 @@ warnings, pending/done/failed states, paths with spaces, and unchanged default
 human-readable output. It does not add network access, Calendar access, a
 daemon change, or a new persistence store.
 
+## Hub Workflow Layer
+
+Semantic extraction and routing remain the responsibility of the AI agent, not
+Bash. The reusable hub skill `hub-workflows` performs this fixed sequence:
+
+1. Receive one user-selected source: pasted summary/transcript, dictated task,
+   or a requested Rolling Audio Recorder period.
+2. For a recorder period, call only the JSON contract above and show a pending
+   or failed result without reading project data.
+3. Run metadata-only project search and show candidate IDs, registered paths,
+   and the intended purpose of the read.
+4. Wait for a confirmed project or named confirmed set; only then read its
+   allowed canonical `ai/` records and explicitly selected knowledge paths.
+5. Produce the specified plan, review, or capture analysis. The AI agent may
+   identify decisions, action candidates, likely project matches, knowledge
+   candidates, due-date ambiguity, and waiting/follow-up; it never infers that
+   an action is approved.
+6. Emit one proposal envelope per possible project, task, meeting, knowledge,
+   deadline, waiting, or Calendar write. Before any later application, show a
+   fresh exact diff and wait for the named proposal's confirmation.
+
+The optional Bash adapter is a guardrail only. It validates paths, declared
+scope, JSON shape, and recorder transcript containment; it renders mechanical
+lists for tests but does not classify natural language or select a project.
+
+## Architecture-update Scope
+
+The hub workflow is reusable architecture, so its installation is a separate
+`architecture-update` after this design and implementation plan are approved.
+It must show an exact diff and receive `Replace this?` approval before touching
+any protected file. The expected source changes are:
+
+| Class | Exact files | Purpose |
+| --- | --- | --- |
+| Hub rules | `hub-template/AGENTS.md`, `hub-template/CLAUDE.md`, `hub-template/ai/architecture.md` | Name `hub-workflows`, state the proposal-only boundary, and route capture/reviews to the skill. |
+| Hub skill | `hub-template/ai/skills/hub-workflows/SKILL.md` | Define the six-step AI workflow and its read/write confirmations. |
+| Installation | `scripts/install-hub.sh`, `scripts/update-installed-hub.sh` | Copy and preserve the hub workflow during install/update. |
+| Contracts | `scripts/check-consistency.sh`, `scripts/hub-smoke-test.sh` | Enforce skill naming, no auto-write, exact-confirmation, and recorder JSON guardrails. |
+| Live hub | `/Users/zykovsrg/Documents/vibecode/_ai-hub/AGENTS.md`, `/Users/zykovsrg/Documents/vibecode/_ai-hub/ai/architecture.md`, `/Users/zykovsrg/Documents/vibecode/_ai-hub/ai/skills/hub-workflows/SKILL.md` | Apply the already approved template contract only after a separately shown live-hub diff. |
+
+The recorder implementation belongs to its confirmed project. Before editing
+it, `rolling-audio-recorder` receives its own `task-intake` record; that record
+is not a substitute for this architecture task's confirmation gates.
+
 ## Command Contract
 
 Create `scripts/assistant-workflows.sh` with this shape:
