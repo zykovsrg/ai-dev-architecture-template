@@ -69,7 +69,7 @@ while [ "$#" -gt 0 ]; do
 done
 [ -n "$HUB" ] && [ -n "$SCOPE" ] && [ -n "$VAULT" ] && [ -n "$MODE" ] || die 'usage: --hub <absolute-path> --scope <id-file> --vault <local-vault> (--preview|--write)'
 [ "$REFRESH_FROM_ARCHITECTURE" -eq 0 ] || [ "$MODE" = write ] || die '--refresh-from-architecture requires --write'
-[ "$REPLACE_CONFIRMED_BOARD" -eq 0 ] || { [ "$MODE" = write ] && [ "$REFRESH_FROM_ARCHITECTURE" -eq 1 ]; } || die '--replace-confirmed-board requires --write --refresh-from-architecture'
+[ "$REPLACE_CONFIRMED_BOARD" -eq 0 ] || { [ "$MODE" = write ] && [ "$REFRESH_FROM_ARCHITECTURE" -eq 1 ] && [ "$CONFIRM" -eq 1 ]; } || die '--replace-confirmed-board requires --write --refresh-from-architecture --confirm-generated-write'
 [ "$MODE" = preview ] || [ "$CONFIRM" -eq 1 ] || [ "$REFRESH_FROM_ARCHITECTURE" -eq 1 ] || die 'write requires --confirm-generated-write'
 is_absolute "$HUB" && is_absolute "$SCOPE" && is_absolute "$VAULT" || die 'hub, scope, and vault must be absolute paths'
 [ -d "$HUB" ] && [ ! -L "$HUB" ] || die 'hub must be a non-symlink directory'

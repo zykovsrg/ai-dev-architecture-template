@@ -38,6 +38,14 @@ changed.
    The cause was copying the `FT-*` ID into current-task. Promotion now creates
    a valid `TASK-*` ID and retains the source record as `promoted`; the test
    then passed.
+3. Added a direct generator-bypass regression test. **RED:**
+   `FAIL: unconfirmed board replacement succeeded`. **GREEN:** replacement now
+   requires `--confirm-generated-write`, and `apply` passes that flag only
+   after proposal hash and stale-state checks.
+4. Added one combined rename + due + Active-promotion fixture. **RED:** the
+   generated current task retained the old title. **GREEN:** promotion reads
+   the staged temporary future record, so the new current task keeps the new
+   title; its due update is redirected to that current record.
 
 ## Fresh verification
 

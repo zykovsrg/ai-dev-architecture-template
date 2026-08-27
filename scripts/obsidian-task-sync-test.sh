@@ -171,7 +171,7 @@ assert_file "$PROPOSAL"
 assert_contains "$TMP_DIR/stale-board-apply.out" 'proposal is stale: board changed'
 assert_equal "$(cat "$TMP_DIR/stale-board-before.txt")" "$(source_hashes)" 'stale board apply changed canonical files'
 rm -f "$PROPOSAL"
-SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture --replace-confirmed-board >/dev/null
+SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture --replace-confirmed-board --confirm-generated-write >/dev/null
 
 # Applying a due-date change rewrites only the named future record and view.
 perl -0pi -e 's/📅 2026-08-28/📅 2026-09-01/' "$TASKS"
@@ -181,16 +181,21 @@ assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" 'due: 2026-09-01'
 assert_contains "$TASKS" '📅 2026-09-01'
 assert_not_exists "$PROPOSAL"
 
-# Promoting a future task creates a new active current task and pauses the old one.
+# A single proposal may rename, reschedule, and promote a future task. Promotion
+# must consume the staged source record and carry the changed values into current.
 perl -0pi -e 's{(## Ideas\n\n)- \[ \] Renamed idea \^FT-20260826-001\n  - project: Architecture project\n\n}{$1}' "$TASKS"
-perl -0pi -e 's{(## Active\n)}{$1\n- [ ] Renamed idea ^FT-20260826-001\n  - project: Architecture project\n} ' "$TASKS"
-scan > "$TMP_DIR/promote-scan.out"
-apply > "$TMP_DIR/promote-apply.out"
+perl -0pi -e 's{(## Active\n)}{$1\n- [ ] Promoted renamed idea ^FT-20260826-001\n  - project: Architecture project\n  - 📅 2026-09-03\n} ' "$TASKS"
+scan > "$TMP_DIR/combined-promote-scan.out"
+assert_contains "$PROPOSAL" '"operation": "rename"'
+assert_contains "$PROPOSAL" '"operation": "set_due"'
+assert_contains "$PROPOSAL" '"operation": "set_status"'
+apply > "$TMP_DIR/combined-promote-apply.out"
 grep -Eq '^Task ID: TASK-[0-9]{8}-[0-9]{3}$' "$ARCHITECTURE_PROJECT/ai/current-task.md" || fail 'promoted current task did not receive a TASK ID'
-assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Renamed idea'
+assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Promoted renamed idea'
+assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'due: 2026-09-03'
 assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" 'Task ID: TASK-20260826-001'
 assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" 'Status: promoted'
-assert_contains "$TASKS" 'Renamed idea ^TASK-'
+assert_contains "$TASKS" 'Promoted renamed idea ^TASK-'
 assert_not_exists "$PROPOSAL"
 
 # A valid unblocked card is appended to the project's canonical future tasks.

@@ -108,8 +108,8 @@ project_index_for_name() {
 
 KNOWN_IDS=() KNOWN_COLUMNS=() KNOWN_TITLES=() KNOWN_PROJECTS=() KNOWN_PROJECT_IDS=() KNOWN_DUES=() KNOWN_SOURCES=() KNOWN_SHAS=() KNOWN_STATUSES=()
 source_record() {
-  local source="$1" wanted_id="$2" base result id status title due count
-  base="$(basename "$source")"
+  local source="$1" wanted_id="$2" record_source="${3:-$1}" base result id status title due count
+  base="$(basename "$record_source")"
   case "$base" in
     current-task.md)
       id="$(sed -n '/^## /q; /^Task ID: /s/^Task ID: //p' "$source" | head -n 1)"; id="$(trim "$id")"
@@ -331,6 +331,17 @@ known_source_for() {
   printf '%s' "${KNOWN_SOURCES[$index]}"
 }
 
+PROMOTED_TASK_IDS=() PROMOTED_CURRENT_SOURCES=()
+promoted_current_source_for() {
+  local task_id="$1" i
+  for i in "${!PROMOTED_TASK_IDS[@]}"; do
+    [ "${PROMOTED_TASK_IDS[$i]}" = "$task_id" ] || continue
+    printf '%s' "${PROMOTED_CURRENT_SOURCES[$i]}"
+    return 0
+  done
+  return 1
+}
+
 rename_record() {
   local source="$1" task_id="$2" title="$3" temp base
   temp="$(temp_for_source "$source")"; base="$(basename "$source")"
@@ -386,12 +397,13 @@ promote_to_active() {
     [[ "$old_id" =~ ^TASK-[0-9]{8}-[0-9]{3}$ ]] && [ -n "$old_title" ] || die "invalid active current task: $current"
     printf '\n### %s — %s\n\nTask ID: %s\n\nStatus: paused\n' "$(date -u +%F)" "$old_title" "$old_id" >> "$paused_temp"
   fi
-  record="$(source_record "$source" "$task_id")" || die "invalid promoted source record: $source"
+  record="$(source_record "$(temp_for_source "$source")" "$task_id" "$source")" || die "invalid promoted source record: $source"
   IFS=$'\t' read -r _ title due <<< "$record"
   new_task_id="$(next_task_id)"
   mark_record_promoted "$source" "$task_id"
   printf 'Status: active\nTask ID: %s\n\n## Goal\n\n%s\n' "$new_task_id" "$title" > "$current_temp"
   [ -z "$due" ] || printf '\ndue: %s\n' "$due" >> "$current_temp"
+  PROMOTED_TASK_IDS+=("$task_id"); PROMOTED_CURRENT_SOURCES+=("$current")
 }
 
 set_status_record() {
@@ -427,7 +439,7 @@ apply_operations_to_temporary_files() {
     type="$(printf '%s' "$operation" | /usr/bin/jq -r '.operation')"
     case "$type" in
       rename) task_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.task_id')"; to="$(printf '%s' "$operation" | /usr/bin/jq -r '.to')"; [ -n "$to" ] || die 'rename title is empty'; source="$(known_source_for "$task_id")"; rename_record "$source" "$task_id" "$to";;
-      set_due) task_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.task_id')"; due="$(printf '%s' "$operation" | /usr/bin/jq -r '.to')"; [ -z "$due" ] || [[ "$due" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || die 'invalid due date'; source="$(known_source_for "$task_id")"; set_due_record "$source" "$task_id" "$due";;
+      set_due) task_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.task_id')"; due="$(printf '%s' "$operation" | /usr/bin/jq -r '.to')"; [ -z "$due" ] || [[ "$due" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || die 'invalid due date'; if source="$(promoted_current_source_for "$task_id")"; then :; else source="$(known_source_for "$task_id")"; fi; set_due_record "$source" "$task_id" "$due";;
       set_status) task_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.task_id')"; to="$(printf '%s' "$operation" | /usr/bin/jq -r '.to')"; source="$(known_source_for "$task_id")"; set_status_record "$source" "$task_id" "$to";;
       create_future) project_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.project_id')"; title="$(printf '%s' "$operation" | /usr/bin/jq -r '.title')"; to="$(printf '%s' "$operation" | /usr/bin/jq -r '.status')"; due="$(printf '%s' "$operation" | /usr/bin/jq -r '.due')"; [ -n "$title" ] || die 'future task title is empty'; create_future_record "$project_id" "$title" "$to" "$due";;
       *) die "unsupported proposal operation: $type";;
@@ -458,7 +470,7 @@ apply() {
   apply_operations_to_temporary_files; validate_temporary_records; replace_named_source_files
   GENERATOR="$(cd "$(dirname "$0")" && pwd -P)/generate-obsidian-projects-kanban.sh"
   [ -f "$GENERATOR" ] && [ ! -L "$GENERATOR" ] || die 'missing or unsafe generator'
-  "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture --replace-confirmed-board
+  "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture --replace-confirmed-board --confirm-generated-write
   rm -f -- "$PROPOSAL"; trap - EXIT
 }
 
