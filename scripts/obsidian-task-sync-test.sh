@@ -684,4 +684,18 @@ for goal_shape in trailing-heading-space no-blank-line; do
   assert_not_exists "$PROPOSAL"
 done
 
+# The readers accept all non-CR whitespace after the Goal heading. Rename must
+# use the same contract, including vertical tab and form feed.
+for goal_space in $'\v' $'\f'; do
+  printf 'Status: active\nTask ID: TASK-20260827-961\n\n## Goal%s\n\nWhitespace goal\n' "$goal_space" > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+  printf '%s\n' 'No future tasks.' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+  printf '%s\n' 'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+  refresh_board
+  perl -0pi -e 's/Whitespace goal \^TASK-20260827-961/Renamed whitespace goal ^TASK-20260827-961/' "$TASKS"
+  scan > "$TMP_DIR/goal-whitespace-scan.out"
+  apply > "$TMP_DIR/goal-whitespace-apply.out"
+  assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Renamed whitespace goal'
+  assert_not_exists "$PROPOSAL"
+done
+
 printf 'PASS: Obsidian confirmed task sync contract\n'

@@ -420,7 +420,7 @@ rename_record() {
   # Every branch must rewrite exactly one record. A silent no-op would report a
   # successful apply and then let the rebuild discard the confirmed edit.
   case "$base" in
-    current-task.md) NEW_TITLE="$title" perl -0pi -e 'die "rename matched no goal line\n" unless s{(^## Goal[ \t]*\n\n*)[^\n]*}{$1 . $ENV{NEW_TITLE}}me == 1' "$temp";;
+    current-task.md) NEW_TITLE="$title" perl -0pi -e 'die "rename matched no goal line\n" unless s{(^## Goal[^\S\r\n]*\n\n*)[^\n]*}{$1 . $ENV{NEW_TITLE}}me == 1' "$temp";;
     future-tasks.md) TASK_ID="$task_id" NEW_TITLE="$title" perl -0pi -e 'die "rename matched no future record\n" unless s{^### \Q$ENV{TASK_ID}\E [^\n]*}{"### $ENV{TASK_ID} — $ENV{NEW_TITLE}"}me == 1' "$temp";;
     paused-tasks.md) TASK_ID="$task_id" NEW_TITLE="$title" perl -0pi -e 'die "rename matched no paused record\n" unless s{(^### [0-9]{4}-[0-9]{2}-[0-9]{2} — )[^\n]*(\n(?:(?!^### ).)*?^Task ID: \Q$ENV{TASK_ID}\E$)}{$1 . $ENV{NEW_TITLE} . $2}mse == 1' "$temp";;
   esac || die "cannot rewrite the title of $task_id in $source"
