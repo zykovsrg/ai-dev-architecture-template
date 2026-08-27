@@ -35,5 +35,20 @@ SYNC="$SCRIPT_DIR/obsidian-task-sync.sh"
 [ -f "$SYNC" ] && [ ! -L "$SYNC" ] || die 'missing or unsafe task sync command'
 
 require_safe_vault
-[ -e "$RUNTIME/refresh.lock" ] && exit 0
+if [ ! -e "$RUNTIME" ] && [ ! -L "$RUNTIME" ]; then mkdir "$RUNTIME" 2>/dev/null || true; fi
+[ -d "$RUNTIME" ] && [ ! -L "$RUNTIME" ] || die 'runtime directory is unsafe'
+
+# The generator and watcher share one atomic directory lock. A plain check is
+# not enough: the generator could create the lock after the check and replace
+# the board while scan is still building its proposal.
+REFRESH_LOCK="$RUNTIME/refresh.lock"
+if ! mkdir "$REFRESH_LOCK" 2>/dev/null; then
+  [ -d "$REFRESH_LOCK" ] && [ ! -L "$REFRESH_LOCK" ] && exit 0
+  die 'refresh lock is unsafe'
+fi
+cleanup_watch_lock() { rmdir "$REFRESH_LOCK" 2>/dev/null || true; }
+trap cleanup_watch_lock EXIT
+
 "$SYNC" scan --hub "$HUB" --scope "$SCOPE" --vault "$VAULT"
+cleanup_watch_lock
+trap - EXIT
