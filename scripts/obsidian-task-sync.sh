@@ -100,7 +100,7 @@ scope_contains() {
 }
 
 project_index_for_name() {
-  local wanted="$1" i matches=() 
+  local wanted="$1" i matches=()
   for i in "${!PROJECT_NAMES[@]}"; do [ "${PROJECT_NAMES[$i]}" = "$wanted" ] && matches+=("$i"); done
   [ "${#matches[@]}" -eq 1 ] || return 1
   printf '%s' "${matches[0]}"
