@@ -14,6 +14,12 @@
 
 ## Текущий changelog
 
+### 2026-08-27 — Уникальные ключи карточек Obsidian
+
+- Change: Карточка Kanban теперь определяется парой «проект + номер задачи». Якоря имеют вид `^<project-id>--<task-id>`; одинаковые исторические `FT-` номера в разных проектах допустимы, а дубликат внутри одного проекта по-прежнему блокирует генерацию. Сканер и подтверждённое применение используют тот же ключ.
+- Impact: Общая доска собирается для всех зарегистрированных проектов без ложной ошибки о дубликате и сохраняет однозначную связь карточки с канонической задачей.
+- Manual checks: `bash scripts/obsidian-projects-kanban-test.sh`, `bash scripts/obsidian-task-sync-test.sh`, `bash scripts/obsidian-task-sync-watch-test.sh`, `bash scripts/check-consistency.sh`; пять мутационных проверок пойманы тестами. Пересобраны `Tasks-Kanban.md`, `Projects-Overview.md` и manifest v3; SHA проекций совпали с manifest.
+
 ### 2026-08-26 — Proposal-only workflows и recorder capture
 
 - Change: Добавлены reusable `hub-workflows`, план дня, вечернее и недельное ревью, proposal-only capture, механические Bash guardrails и стабильный JSON-контракт `rar export/status`. Рабочий hub обновлён; изменения слиты в `main` проектов `ai-dev-architecture` и `rolling-audio-recorder`.

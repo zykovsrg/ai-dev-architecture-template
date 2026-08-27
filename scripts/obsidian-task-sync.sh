@@ -12,6 +12,14 @@ task_id_is_readable_for_project() {
   local task_id="$1" project_id="$2"
   [[ "$task_id" =~ ^TASK-[0-9]{8}-[0-9]{3}$ || "$task_id" =~ ^FT-[0-9]{8}-[0-9]+$ || "$task_id" =~ ^TASK-${project_id}-[0-9]{8}-[0-9]{3}$ ]]
 }
+# A task ID is unique inside its own project, not across the hub, so a card is
+# identified by the project and the task ID together. The board anchor carries
+# the pair because anchors must be unique inside the single board file. A
+# project ID never contains the separator, so the first one splits the key.
+card_key() { printf '%s--%s' "$1" "$2"; }
+card_key_project() { printf '%s' "${1%%--*}"; }
+card_key_task() { printf '%s' "${1#*--}"; }
+card_key_is_wellformed() { [[ "$1" == *--* ]] && [ -n "$(card_key_project "$1")" ] && [ -n "$(card_key_task "$1")" ]; }
 
 HUB='' SCOPE='' VAULT='' COMMAND='' CONFIRM_PROPOSAL=''
 while [ "$#" -gt 0 ]; do
@@ -166,11 +174,19 @@ load_known_cards() {
   [ "${#KNOWN_IDS[@]}" -gt 0 ] || die 'manifest contains no tasks'
 }
 
-BOARD_COLUMNS=() BOARD_IDS=() BOARD_TITLES=() BOARD_PROJECTS=() BOARD_DUES=() BOARD_DONE=() BOARD_ERRORS=()
+BOARD_COLUMNS=() BOARD_IDS=() BOARD_PROJECT_IDS=() BOARD_TITLES=() BOARD_PROJECTS=() BOARD_DUES=() BOARD_DONE=() BOARD_ERRORS=()
 parse_cards() {
-  local row column id title project due done_mark extra
-  while IFS=$'\034' read -r column id title project due done_mark extra; do
-    BOARD_COLUMNS+=("$column"); BOARD_IDS+=("$id"); BOARD_TITLES+=("$title"); BOARD_PROJECTS+=("$project"); BOARD_DUES+=("$due"); BOARD_DONE+=("$done_mark")
+  local row column key id project_id title project due done_mark extra
+  while IFS=$'\034' read -r column key title project due done_mark extra; do
+    id=''; project_id=''
+    if [ -n "$key" ]; then
+      if card_key_is_wellformed "$key"; then
+        project_id="$(card_key_project "$key")"; id="$(card_key_task "$key")"
+      else
+        BOARD_ERRORS+=("card anchor is not a project and task ID pair: $key")
+      fi
+    fi
+    BOARD_COLUMNS+=("$column"); BOARD_IDS+=("$id"); BOARD_PROJECT_IDS+=("$project_id"); BOARD_TITLES+=("$title"); BOARD_PROJECTS+=("$project"); BOARD_DUES+=("$due"); BOARD_DONE+=("$done_mark")
     valid_column "$column" || BOARD_ERRORS+=("unknown column: $column")
     [ -n "$title" ] || BOARD_ERRORS+=("card title is empty in column: $column")
     [ -z "$due" ] || [[ "$due" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || BOARD_ERRORS+=("invalid due date for card: $title")
@@ -194,9 +210,9 @@ parse_cards() {
 }
 
 known_index() {
-  local wanted="$1" i found=''
+  local wanted_project="$1" wanted="$2" i found=''
   for i in "${!KNOWN_IDS[@]}"; do
-    [ "${KNOWN_IDS[$i]}" = "$wanted" ] || continue
+    [ "${KNOWN_IDS[$i]}" = "$wanted" ] && [ "${KNOWN_PROJECT_IDS[$i]}" = "$wanted_project" ] || continue
     [ -z "$found" ] || return 2
     found="$i"
   done
@@ -304,18 +320,20 @@ find_known_title_project() {
 }
 
 diff_cards() {
-  local i id known title project due column count project_index status future_source new_task_id j k active_count future_active_count duplicate_project known_base new_status expected_done
+  local i id board_project_id known title project due column count project_index status future_source new_task_id j k active_count future_active_count duplicate_project known_base new_status expected_done
   for i in "${!KNOWN_IDS[@]}"; do
     count=0
-    for id in "${BOARD_IDS[@]}"; do [ "$id" = "${KNOWN_IDS[$i]}" ] && count=$((count + 1)); done
-    [ "$count" -eq 1 ] || BLOCK_REASONS+=("missing or duplicate known task ID: ${KNOWN_IDS[$i]}")
+    for j in "${!BOARD_IDS[@]}"; do
+      [ "${BOARD_IDS[$j]}" = "${KNOWN_IDS[$i]}" ] && [ "${BOARD_PROJECT_IDS[$j]}" = "${KNOWN_PROJECT_IDS[$i]}" ] && count=$((count + 1))
+    done
+    [ "$count" -eq 1 ] || BLOCK_REASONS+=("missing or duplicate known task ID: $(card_key "${KNOWN_PROJECT_IDS[$i]}" "${KNOWN_IDS[$i]}")")
   done
   for i in "${!BOARD_IDS[@]}"; do
-    id="${BOARD_IDS[$i]}"; title="${BOARD_TITLES[$i]}"; project="${BOARD_PROJECTS[$i]}"; due="${BOARD_DUES[$i]}"; column="${BOARD_COLUMNS[$i]}"
+    id="${BOARD_IDS[$i]}"; board_project_id="${BOARD_PROJECT_IDS[$i]}"; title="${BOARD_TITLES[$i]}"; project="${BOARD_PROJECTS[$i]}"; due="${BOARD_DUES[$i]}"; column="${BOARD_COLUMNS[$i]}"
     [ -z "$id" ] || {
-      known=''; if known="$(known_index "$id")"; then
+      known=''; if known="$(known_index "$board_project_id" "$id")"; then
         [ "$project" = "${KNOWN_PROJECTS[$known]}" ] || BLOCK_REASONS+=("known task project changed or missing: $id")
-        [ "$title" = "${KNOWN_TITLES[$known]}" ] || add_operation "$(/usr/bin/jq -cn --arg id "$id" --arg from "${KNOWN_TITLES[$known]}" --arg to "$title" '{operation:"rename", task_id:$id, from:$from, to:$to}')"
+        [ "$title" = "${KNOWN_TITLES[$known]}" ] || add_operation "$(/usr/bin/jq -cn --arg id "$id" --arg project_id "$board_project_id" --arg from "${KNOWN_TITLES[$known]}" --arg to "$title" '{operation:"rename", task_id:$id, project_id:$project_id, from:$from, to:$to}')"
         known_base="$(basename "${KNOWN_SOURCES[$known]}")"
         if [ "${KNOWN_COLUMNS[$known]}" = Done ]; then expected_done=x; else expected_done=' '; fi
         [ "${BOARD_DONE[$i]}" = "$expected_done" ] || BLOCK_REASONS+=("card checkbox does not match its canonical state: $id")
@@ -326,7 +344,7 @@ diff_cards() {
               add_operation "$(promotion_operation_json "$known" "$title" "$due")"
               add_promotion_replacement_sources "$known"
             else
-              add_operation "$(/usr/bin/jq -cn --arg id "$id" --arg from "${KNOWN_STATUSES[$known]}" --arg to "$new_status" '{operation:"set_status", task_id:$id, from:$from, to:$to}')"
+              add_operation "$(/usr/bin/jq -cn --arg id "$id" --arg project_id "$board_project_id" --arg from "${KNOWN_STATUSES[$known]}" --arg to "$new_status" '{operation:"set_status", task_id:$id, project_id:$project_id, from:$from, to:$to}')"
             fi
           else
             BLOCK_REASONS+=("unsupported status transition for $(record_kind "$known_base") task: $id to column $column")
@@ -336,7 +354,7 @@ diff_cards() {
           if [ "$known_base" = paused-tasks.md ] && [ -n "$due" ]; then
             BLOCK_REASONS+=("due dates are not supported for paused task: $id")
           else
-            add_operation "$(/usr/bin/jq -cn --arg id "$id" --arg from "${KNOWN_DUES[$known]}" --arg to "$due" '{operation:"set_due", task_id:$id, from:$from, to:$to}')"
+            add_operation "$(/usr/bin/jq -cn --arg id "$id" --arg project_id "$board_project_id" --arg from "${KNOWN_DUES[$known]}" --arg to "$due" '{operation:"set_due", task_id:$id, project_id:$project_id, from:$from, to:$to}')"
           fi
         fi
         add_affected_source "${KNOWN_SOURCES[$known]}" "${KNOWN_SHAS[$known]}"
@@ -495,16 +513,16 @@ verify_every_affected_source_hash() {
 }
 
 known_source_for() {
-  local task_id="$1" index
-  index="$(known_index "$task_id")" || die "proposal has unknown task ID: $task_id"
+  local project_id="$1" task_id="$2" index
+  index="$(known_index "$project_id" "$task_id")" || die "proposal has unknown task ID: $(card_key "$project_id" "$task_id")"
   printf '%s' "${KNOWN_SOURCES[$index]}"
 }
 
 PROMOTED_TASK_IDS=() PROMOTED_CURRENT_SOURCES=()
 promoted_current_source_for() {
-  local task_id="$1" i
+  local key="$1" i
   for i in "${!PROMOTED_TASK_IDS[@]}"; do
-    [ "${PROMOTED_TASK_IDS[$i]}" = "$task_id" ] || continue
+    [ "${PROMOTED_TASK_IDS[$i]}" = "$key" ] || continue
     printf '%s' "${PROMOTED_CURRENT_SOURCES[$i]}"
     return 0
   done
@@ -571,8 +589,8 @@ preserve_replaced_current_record() {
 }
 
 promote_to_active() {
-  local source="$1" task_id="$2" operation="$3" index project_id project_index current paused current_temp paused_temp old_status title due record target_title target_due expected_operation
-  index="$(known_index "$task_id")" || die "proposal has unknown task ID: $task_id"
+  local source="$1" board_project_id="$2" task_id="$3" operation="$4" index project_id project_index current paused current_temp paused_temp old_status title due record target_title target_due expected_operation
+  index="$(known_index "$board_project_id" "$task_id")" || die "proposal has unknown task ID: $(card_key "$board_project_id" "$task_id")"
   target_title="$(printf '%s' "$operation" | /usr/bin/jq -er '.promoted_task.title')" || die 'promotion operation has no target title'
   target_due="$(printf '%s' "$operation" | /usr/bin/jq -er '.promoted_task.due')" || die 'promotion operation has no target due field'
   expected_operation="$(promotion_operation_json "$index" "$target_title" "$target_due")"
@@ -590,7 +608,7 @@ promote_to_active() {
   mark_record_promoted "$source" "$task_id"
   printf 'Status: active\nTask ID: %s\n\n## Goal\n\n%s\n' "$task_id" "$title" > "$current_temp"
   [ -z "$due" ] || printf '\ndue: %s\n' "$due" >> "$current_temp"
-  PROMOTED_TASK_IDS+=("$task_id"); PROMOTED_CURRENT_SOURCES+=("$current")
+  PROMOTED_TASK_IDS+=("$(card_key "$project_id" "$task_id")"); PROMOTED_CURRENT_SOURCES+=("$current")
 }
 
 set_status_record() {
@@ -619,15 +637,23 @@ create_future_record() {
   [ -z "$due" ] || printf 'due: %s\n' "$due" >> "$temp"
 }
 
+# Every operation names the project it belongs to, because a task ID alone no
+# longer identifies one canonical record across the hub.
+operation_project_id() {
+  local project_id
+  project_id="$(printf '%s' "$1" | /usr/bin/jq -r '.project_id // empty')"
+  [ -n "$project_id" ] || die 'proposal operation has no project ID'
+  printf '%s' "$project_id"
+}
 apply_operations_to_temporary_files() {
   local operation type task_id source to project_id title due
   while IFS= read -r operation; do
     type="$(printf '%s' "$operation" | /usr/bin/jq -r '.operation')"
     case "$type" in
-      rename) task_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.task_id')"; to="$(printf '%s' "$operation" | /usr/bin/jq -r '.to')"; [ -n "$to" ] || die 'rename title is empty'; source="$(known_source_for "$task_id")"; rename_record "$source" "$task_id" "$to";;
-      set_due) task_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.task_id')"; due="$(printf '%s' "$operation" | /usr/bin/jq -r '.to')"; [ -z "$due" ] || [[ "$due" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || die 'invalid due date'; if source="$(promoted_current_source_for "$task_id")"; then :; else source="$(known_source_for "$task_id")"; fi; set_due_record "$source" "$task_id" "$due";;
-      set_status) task_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.task_id')"; to="$(printf '%s' "$operation" | /usr/bin/jq -r '.to')"; source="$(known_source_for "$task_id")"; set_status_record "$source" "$task_id" "$to";;
-      promote_to_current) task_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.task_id')"; source="$(known_source_for "$task_id")"; promote_to_active "$source" "$task_id" "$operation";;
+      rename) task_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.task_id')"; project_id="$(operation_project_id "$operation")"; to="$(printf '%s' "$operation" | /usr/bin/jq -r '.to')"; [ -n "$to" ] || die 'rename title is empty'; source="$(known_source_for "$project_id" "$task_id")"; rename_record "$source" "$task_id" "$to";;
+      set_due) task_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.task_id')"; project_id="$(operation_project_id "$operation")"; due="$(printf '%s' "$operation" | /usr/bin/jq -r '.to')"; [ -z "$due" ] || [[ "$due" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || die 'invalid due date'; if source="$(promoted_current_source_for "$(card_key "$project_id" "$task_id")")"; then :; else source="$(known_source_for "$project_id" "$task_id")"; fi; set_due_record "$source" "$task_id" "$due";;
+      set_status) task_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.task_id')"; project_id="$(operation_project_id "$operation")"; to="$(printf '%s' "$operation" | /usr/bin/jq -r '.to')"; source="$(known_source_for "$project_id" "$task_id")"; set_status_record "$source" "$task_id" "$to";;
+      promote_to_current) task_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.task_id')"; project_id="$(operation_project_id "$operation")"; source="$(known_source_for "$project_id" "$task_id")"; promote_to_active "$source" "$project_id" "$task_id" "$operation";;
       create_future) task_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.task_id')"; project_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.project_id')"; title="$(printf '%s' "$operation" | /usr/bin/jq -r '.title')"; to="$(printf '%s' "$operation" | /usr/bin/jq -r '.status')"; due="$(printf '%s' "$operation" | /usr/bin/jq -r '.due')"; [ -n "$title" ] || die 'future task title is empty'; create_future_record "$task_id" "$project_id" "$title" "$to" "$due";;
       *) die "unsupported proposal operation: $type";;
     esac

@@ -2,6 +2,8 @@
 
 Status: empty
 
+Task ID: TASK-YYYYMMDD-NNN
+
 Allowed statuses: empty / active / review / blocked / done / paused
 
 Note: `paused` is a transient status used only while `task-switch` is moving this
@@ -18,11 +20,11 @@ implementation / review / task-finish / architecture-update
 
 ## Goal
 
-No active task.
+Что нужно изменить.
 
 ## Use Superpowers
 
-yes / no
+no
 
 ## Relevant files
 
@@ -30,7 +32,7 @@ unknown
 
 ## Done criteria
 
-- <observable result>
+- Как понять, что задача завершена.
 
 ## Agent handoff
 

@@ -11,6 +11,10 @@ hash_file() { shasum -a 256 "$1" | awk '{print $1}'; }
 hash_files() { shasum -a 256 "$@" | shasum -a 256 | awk '{print $1}'; }
 json_string() { local text="$1"; text=${text//\\/\\\\}; text=${text//\"/\\\"}; text=${text//$'\n'/\\n}; text=${text//$'\r'/}; printf '"%s"' "$text"; }
 read_field() { sed -n "s/^$2: //p" "$1" | head -n 1; }
+# The board anchor must be unique inside one file, and a task ID is only unique
+# inside its own project, so the anchor carries both. A project ID may not
+# contain the separator, otherwise the anchor could not be split back apart.
+card_key() { printf '%s--%s' "$1" "$2"; }
 current_state() { awk '/^## / { exit } /^Status: / { print substr($0, 9); exit }' "$1"; }
 current_title() { awk '/^## Goal[[:space:]]*$/ {goal=1; next} goal && /^## / {exit} goal && NF {print; exit}' "$1" | sed 's/[[:space:]]*$//'; }
 validate_task_source() { LC_ALL=C grep -q $'\r' "$1" && die "task source must not contain a carriage return: $1" || true; }
@@ -112,6 +116,7 @@ add_task() {
 
 for id in "${IDS[@]}"; do
   [[ "$id" =~ ^[a-z0-9][a-z0-9-]*$ ]] || die "invalid project ID: $id"
+  [[ "$id" != *--* ]] || die "project ID must not contain the card key separator: $id"
   [ "$(grep -Ec "^## ${id}$" "$REGISTRY" || true)" -eq 1 ] || die "unregistered or duplicate project ID: $id"
   block="$(awk -v heading="## $id" '$0 == heading {found=1; next} found && /^## / {exit} found {print}' "$REGISTRY")"
   path="$(printf '%s\n' "$block" | sed -n 's/^Path: //p' | head -n 1)"; raw_card="$(printf '%s\n' "$block" | sed -n 's/^Card: //p' | head -n 1)"; registry_status="$(printf '%s\n' "$block" | sed -n 's/^Status: //p' | head -n 1)"
@@ -146,9 +151,16 @@ for id in "${IDS[@]}"; do
   SOURCE_IDS+=("$id"); SOURCE_PATHS+=("$path"); SOURCE_CARDS+=("$card"); SOURCE_HASHES+=("$(hash_files "$card" "$current_file" "$future_file" "$paused_file")")
 done
 
-duplicate_task_ids="$(printf '%s\n' "${TASK_IDS[@]}" | sort | uniq -d)"
-[ -z "$duplicate_task_ids" ] || die 'duplicate task ID in renderable tasks'
-TASKS_RENDER="$( { printf '%s\n' '---' 'kanban-plugin: board' '---'; for column in Ideas Ready Active Waiting Blocked Review Paused Done; do printf '\n## %s\n' "$column"; for i in "${!TASK_COLUMNS[@]}"; do [ "${TASK_COLUMNS[$i]}" = "$column" ] || continue; printf '\n- [%s] %s ^%s\n' "${TASK_DONE[$i]}" "${TASK_TITLES[$i]}" "${TASK_IDS[$i]}"; printf '  - project: %s\n' "${TASK_PROJECTS[$i]}"; [ -z "${TASK_DUES[$i]}" ] || printf '  - 📅 %s\n' "${TASK_DUES[$i]}"; done; done; } )"
+# A task ID identifies a task inside its own project. Legacy FT numbers were
+# allocated per project and know nothing about their neighbours, so the same
+# number in two projects is normal data. The card key is the pair, which is
+# also what keeps every anchor unique inside the single board file.
+TASK_KEYS=(); for i in "${!TASK_IDS[@]}"; do TASK_KEYS+=("$(card_key "${TASK_PROJECT_IDS[$i]}" "${TASK_IDS[$i]}")"); done
+if [ "${#TASK_KEYS[@]}" -gt 0 ]; then
+  duplicate_task_keys="$(printf '%s\n' "${TASK_KEYS[@]}" | sort | uniq -d)"
+  [ -z "$duplicate_task_keys" ] || die 'duplicate task ID in renderable tasks'
+fi
+TASKS_RENDER="$( { printf '%s\n' '---' 'kanban-plugin: board' '---'; for column in Ideas Ready Active Waiting Blocked Review Paused Done; do printf '\n## %s\n' "$column"; for i in "${!TASK_COLUMNS[@]}"; do [ "${TASK_COLUMNS[$i]}" = "$column" ] || continue; printf '\n- [%s] %s ^%s\n' "${TASK_DONE[$i]}" "${TASK_TITLES[$i]}" "${TASK_KEYS[$i]}"; printf '  - project: %s\n' "${TASK_PROJECTS[$i]}"; [ -z "${TASK_DUES[$i]}" ] || printf '  - 📅 %s\n' "${TASK_DUES[$i]}"; done; done; } )"
 OVERVIEW_RENDER="$( { printf '%s\n' '# Projects Overview' '' '| Project | Status | Current task | Ready | Waiting | Due |' '| --- | --- | --- | ---: | ---: | --- |'; printf '%s' "$OVERVIEW_ROWS"; } )"
 TASKS_HASH="$(hash_text "$TASKS_RENDER")"; OVERVIEW_HASH="$(hash_text "$OVERVIEW_RENDER")"; GENERATED_AT="${SOURCE_DATE_EPOCH:-$(date -u +%s)}"
 TASK_ENTRIES="$( { comma=''; for i in "${!TASK_IDS[@]}"; do printf '%s    {"task_id": ' "$comma"; json_string "${TASK_IDS[$i]}"; printf ', "project_id": '; json_string "${TASK_PROJECT_IDS[$i]}"; printf ', "source_file": '; json_string "${TASK_SOURCE_FILES[$i]}"; printf ', "source_sha256": '; json_string "${TASK_SOURCE_HASHES[$i]}"; printf '}'; comma=$',\n'; done; } )"

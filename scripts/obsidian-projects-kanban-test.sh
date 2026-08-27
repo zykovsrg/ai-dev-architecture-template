@@ -65,9 +65,9 @@ SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault 
 for column in Ideas Ready Active Waiting Blocked Review Paused Done; do assert_contains "$TMP_DIR/preview.txt" "## $column"; done
 for title in 'Idea task' 'Ready task' 'Current architecture task' 'Waiting current task' 'Blocked task' 'Review current task' 'Paused task' 'Done current task'; do assert_contains "$TMP_DIR/preview.txt" "$title"; done
 assert_contains "$TMP_DIR/preview.txt" '  - project: Architecture project'
-assert_contains "$TMP_DIR/preview.txt" '- [ ] Current architecture task ^TASK-20260826-001'
-assert_contains "$TMP_DIR/preview.txt" '- [ ] Idea task ^FT-20260826-001'
-assert_contains "$TMP_DIR/preview.txt" '- [ ] Paused task ^TASK-20260820-001'
+assert_contains "$TMP_DIR/preview.txt" '- [ ] Current architecture task ^ai-dev-architecture--TASK-20260826-001'
+assert_contains "$TMP_DIR/preview.txt" '- [ ] Idea task ^ai-dev-architecture--FT-20260826-001'
+assert_contains "$TMP_DIR/preview.txt" '- [ ] Paused task ^ai-dev-architecture--TASK-20260820-001'
 assert_not_contains "$TMP_DIR/preview.txt" 'Promoted task'
 assert_not_contains "$TMP_DIR/preview.txt" 'Dropped task'
 assert_not_contains "$TMP_DIR/preview.txt" 'Completed future task'
@@ -139,6 +139,7 @@ assert_file "$PROPOSAL"
   (.operations == [{
     "operation": "rename",
     "task_id": "TASK-20260826-001",
+    "project_id": "ai-dev-architecture",
     "from": "Transactional architecture task",
     "to": "Manual Obsidian title"
   }]) and
@@ -182,17 +183,20 @@ if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP
 assert_contains "$TMP_DIR/missing-current-id.txt" 'exactly one Task ID'
 
 printf '%s\n' $'Status: active\nTask ID: TASK-20260826-001\n\n## Goal\n\nCurrent architecture task' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+# The same current-task number in two projects is legal: each project numbers
+# its own tasks. The card key keeps the two cards apart.
 printf '%s\n' $'Status: waiting\nTask ID: TASK-20260826-001\n\n## Goal\n\nWaiting current task' > "$PROJECTS/waiting-project/ai/current-task.md"
-if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/duplicate-current-id.txt" 2>&1; then fail 'duplicate current ID did not block preview'; fi
-assert_contains "$TMP_DIR/duplicate-current-id.txt" 'duplicate task ID'
+SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/shared-current-id.txt"
+assert_contains "$TMP_DIR/shared-current-id.txt" '- [ ] Current architecture task ^ai-dev-architecture--TASK-20260826-001'
+assert_contains "$TMP_DIR/shared-current-id.txt" '- [ ] Waiting current task ^waiting-project--TASK-20260826-001'
 printf '%s\n' $'Status: waiting\nTask ID: TASK-20260826-002\n\n## Goal\n\nWaiting current task' > "$PROJECTS/waiting-project/ai/current-task.md"
 
 printf '%s\n' $'Status: active\nTask ID:   TASK-20260826-001  \n\n## Goal\n\nCurrent architecture task' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
 printf '%s\n' $'### 2026-08-20 — Paused task\n\nTask ID:   TASK-20260820-001  \n\nStatus: paused' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/external-whitespace.txt"
-assert_contains "$TMP_DIR/external-whitespace.txt" '- [ ] Current architecture task ^TASK-20260826-001'
-assert_contains "$TMP_DIR/external-whitespace.txt" '- [ ] Paused task ^TASK-20260820-001'
-assert_not_contains "$TMP_DIR/external-whitespace.txt" '^TASK-20260826-001  '
+assert_contains "$TMP_DIR/external-whitespace.txt" '- [ ] Current architecture task ^ai-dev-architecture--TASK-20260826-001'
+assert_contains "$TMP_DIR/external-whitespace.txt" '- [ ] Paused task ^ai-dev-architecture--TASK-20260820-001'
+assert_not_contains "$TMP_DIR/external-whitespace.txt" '^ai-dev-architecture--TASK-20260826-001  '
 
 printf '%s\n' $'### FT-20260826-001 — Duplicate future task\n\nStatus: idea' >> "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
 if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/duplicate-future-id.txt" 2>&1; then fail 'duplicate future ID did not block preview'; fi
@@ -208,7 +212,7 @@ SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault 
 assert_not_contains "$TMP_DIR/invalid-future-heading.txt" 'Invalid future task'
 printf '%s\n' $'### FT-20260826-7 — Single-digit future task\n\nStatus: idea' >> "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/strict-future-heading.txt"
-assert_contains "$TMP_DIR/strict-future-heading.txt" '- [ ] Single-digit future task ^FT-20260826-7'
+assert_contains "$TMP_DIR/strict-future-heading.txt" '- [ ] Single-digit future task ^ai-dev-architecture--FT-20260826-7'
 
 # New records use a project namespace. Two projects may allocate the same UTC
 # date and sequence without colliding, while legacy TASK/FT IDs stay readable.
@@ -217,15 +221,35 @@ printf '%s\n' $'### TASK-ai-dev-architecture-20260826-002 — Namespaced future 
 printf '%s\n' $'### 2026-08-20 — Namespaced paused task\n\nTask ID: TASK-ai-dev-architecture-20260826-003\n\nStatus: paused' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
 printf '%s\n' $'Status: waiting\nTask ID: TASK-waiting-project-20260826-001\n\n## Goal\n\nNamespaced waiting task' > "$PROJECTS/waiting-project/ai/current-task.md"
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/namespaced-ids.txt"
-assert_contains "$TMP_DIR/namespaced-ids.txt" 'Namespaced current task ^TASK-ai-dev-architecture-20260826-001'
-assert_contains "$TMP_DIR/namespaced-ids.txt" 'Namespaced future task ^TASK-ai-dev-architecture-20260826-002'
-assert_contains "$TMP_DIR/namespaced-ids.txt" 'Namespaced paused task ^TASK-ai-dev-architecture-20260826-003'
-assert_contains "$TMP_DIR/namespaced-ids.txt" 'Namespaced waiting task ^TASK-waiting-project-20260826-001'
+assert_contains "$TMP_DIR/namespaced-ids.txt" 'Namespaced current task ^ai-dev-architecture--TASK-ai-dev-architecture-20260826-001'
+assert_contains "$TMP_DIR/namespaced-ids.txt" 'Namespaced future task ^ai-dev-architecture--TASK-ai-dev-architecture-20260826-002'
+assert_contains "$TMP_DIR/namespaced-ids.txt" 'Namespaced paused task ^ai-dev-architecture--TASK-ai-dev-architecture-20260826-003'
+assert_contains "$TMP_DIR/namespaced-ids.txt" 'Namespaced waiting task ^waiting-project--TASK-waiting-project-20260826-001'
 
 printf '%s\n' $'Status: active\nTask ID: TASK-waiting-project-20260826-004\n\n## Goal\n\nForeign namespace task' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
 if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/foreign-namespace.txt" 2>&1; then
   fail 'generator accepted a new Task ID from another project namespace'
 fi
 assert_contains "$TMP_DIR/foreign-namespace.txt" 'invalid Task ID for project'
+
+# A task ID identifies a task inside its own project, never across the hub.
+# Legacy FT numbers were allocated per project and know nothing about their
+# neighbours, so the same number in two projects is normal data, not an error.
+# The card key is the project and the task ID together, which is also what
+# keeps every board anchor unique inside the single Tasks-Kanban.md file.
+printf '%s\n' $'Status: active\nTask ID: TASK-ai-dev-architecture-20260826-001\n\n## Goal\n\nNamespaced current task' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+printf '%s\n' $'### FT-20260826-050 — Shared number here\n\nStatus: idea' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+printf '%s\n' $'### FT-20260826-050 — Shared number there\n\nStatus: idea' > "$PROJECTS/waiting-project/ai/future-tasks.md"
+SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/shared-number.txt"
+assert_contains "$TMP_DIR/shared-number.txt" '- [ ] Shared number here ^ai-dev-architecture--FT-20260826-050'
+assert_contains "$TMP_DIR/shared-number.txt" '- [ ] Shared number there ^waiting-project--FT-20260826-050'
+
+# The same number twice inside one project is still a real collision.
+printf '%s\n' $'### FT-20260826-050 — Shared number here\n\nStatus: idea\n\n### FT-20260826-050 — Same number again\n\nStatus: idea' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/same-project-duplicate.txt" 2>&1; then
+  fail 'duplicate task ID inside one project did not block preview'
+fi
+assert_contains "$TMP_DIR/same-project-duplicate.txt" 'duplicate task ID'
+printf '%s\n' $'No future tasks.' > "$PROJECTS/waiting-project/ai/future-tasks.md"
 
 echo 'PASS: Obsidian task Kanban and project overview contract'
