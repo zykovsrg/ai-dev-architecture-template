@@ -1,22 +1,64 @@
-# Task 4 report — preserve the registry in installers and updaters
+# Task 4 report — confirmed Obsidian task proposals
 
-## Что сделано
+## Scope
 
-- Добавил проверку, что свежая установка хаба создаёт `ai/archiprojects.md`.
-- Добавил проверку, что updater:
-  - не трогает уже существующий `ai/archiprojects.md` с `USER_ARCHIPROJECT_MUST_SURVIVE`;
-  - восстанавливает `ai/archiprojects.md`, если файла нет.
-- Обновил только логику копирования отсутствующих файлов в `scripts/update-installed-hub.sh`.
+Implemented only Task 4: confirmed `apply`, stale-proposal guards, staged
+canonical writes, and the minimal generator escape hatch needed to regenerate
+the confirmed board. Task 5 watcher, templates, and documentation were not
+changed.
 
-## Изменённые файлы
+## Delivered
 
-- `scripts/hub-smoke-test.sh`
-- `scripts/update-installed-hub.sh`
+- `obsidian-task-sync.sh apply --hub ... --scope ... --vault ... --confirm-proposal SHA256`
+  is the only reverse writer.
+- Apply accepts only a ready, structurally valid proposal whose supplied SHA-256
+  equals the proposal's canonical payload hash.
+- Board, manifest, and every affected canonical source are checked before any
+  source replacement. A stale proposal is retained and the sources remain
+  unchanged.
+- Operations are written to same-directory temporary files, validated, then
+  atomically renamed one file at a time. Supported operations are rename, due
+  date, future task creation, and supported status moves.
+- Promotion creates a fresh `TASK-YYYYMMDD-NNN` current-task ID, marks the
+  future record `promoted`, and pauses the replaced active current task.
+- Successful apply regenerates the three generated views and removes the
+  proposal.
+- Generator flag `--replace-confirmed-board` bypasses only the task-board hash
+  check and is rejected unless combined with `--write --refresh-from-architecture`.
 
-## Проверка
+## TDD evidence
 
-- `bash scripts/hub-smoke-test.sh` — passed.
+1. Added tests for wrong confirmation and explicit stale-source error. The first
+   run failed because `load_known_cards` reported a manifest mismatch before the
+   stale-proposal check. Reordered apply so affected source hashes are checked
+   first; the test then passed.
+2. Added apply coverage for due dates, promotion, and new future cards. The
+   first promotion run failed with:
+   `error: invalid temporary current task: .../current-task.md`.
+   The cause was copying the `FT-*` ID into current-task. Promotion now creates
+   a valid `TASK-*` ID and retains the source record as `promoted`; the test
+   then passed.
 
-## Итог
+## Fresh verification
 
-Registry-файл теперь создаётся при установке и может быть восстановлен updater'ом только если его нет. Уже существующий файл не перезаписывается.
+```text
+$ bash scripts/obsidian-task-sync-test.sh
+PASS: Obsidian confirmed task sync contract
+
+$ bash scripts/obsidian-projects-kanban-test.sh
+PASS: Obsidian task Kanban and project overview contract
+
+$ bash -n scripts/*.sh
+exit 0
+
+$ git diff --check
+exit 0
+```
+
+## Concerns
+
+- All canonical files are fully staged and validated before the first rename.
+  Each replacement is atomic within its directory, but POSIX has no atomic
+  multi-file rename. A process crash during the short rename loop could leave
+  a mixed set; the specified Task 4 contract does not include crash-recovery
+  journaling.

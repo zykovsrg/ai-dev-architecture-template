@@ -57,6 +57,11 @@ reset_board() {
 }
 source_hashes() { find "$PROJECTS" -path '*/ai/*.md' -type f -exec shasum -a 256 {} + | sort; }
 scan() { "$SYNC" scan --hub "$HUB" --scope "$SCOPE" --vault "$VAULT"; }
+apply() {
+  local proposal_hash
+  proposal_hash="$(/usr/bin/jq -r '.proposal_sha256' "$PROPOSAL")"
+  "$SYNC" apply --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --confirm-proposal "$proposal_hash"
+}
 assert_sources_unchanged() { assert_equal "$(cat "$TMP_DIR/source-before.txt")" "$(source_hashes)" 'scanner changed canonical source files'; }
 run_and_check() {
   source_hashes > "$TMP_DIR/source-before.txt"
@@ -126,5 +131,81 @@ assert_blocked "cat >> \"$TASKS\" <<'EOF'
 - [ ] Unknown project task
   - project: Unknown project
 EOF"
+
+# Apply is the sole reverse writer and needs the exact fresh proposal hash.
+reset_board
+perl -0pi -e 's/Idea task \^FT-20260826-001/Renamed idea \^FT-20260826-001/' "$TASKS"
+scan > "$TMP_DIR/apply-scan.out"
+source_hashes > "$TMP_DIR/wrong-confirm-before.txt"
+if "$SYNC" apply --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --confirm-proposal "$(printf '0%.0s' {1..64})" > "$TMP_DIR/wrong-confirm.out" 2>&1; then fail 'apply accepted a different proposal hash'; fi
+assert_file "$PROPOSAL"
+assert_contains "$TMP_DIR/wrong-confirm.out" 'confirmation does not match proposal'
+assert_equal "$(cat "$TMP_DIR/wrong-confirm-before.txt")" "$(source_hashes)" 'wrong confirmation changed canonical files'
+apply > "$TMP_DIR/apply.out"
+assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" 'Renamed idea'
+assert_contains "$TASKS" 'Renamed idea ^FT-20260826-001'
+assert_not_exists "$PROPOSAL"
+
+# A source edit after scan makes the proposal stale and keeps both source and proposal.
+SOURCE_BACKUP="$TMP_DIR/future-before-stale.md"
+cp "$ARCHITECTURE_PROJECT/ai/future-tasks.md" "$SOURCE_BACKUP"
+reset_board
+perl -0pi -e 's/Renamed idea \^FT-20260826-001/Stale source edit ^FT-20260826-001/' "$TASKS"
+scan > "$TMP_DIR/stale-source-scan.out"
+printf '\nManual canonical change\n' >> "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+source_hashes > "$TMP_DIR/stale-source-before.txt"
+if apply > "$TMP_DIR/stale-source-apply.out" 2>&1; then fail 'stale source proposal applied'; fi
+assert_file "$PROPOSAL"
+assert_contains "$TMP_DIR/stale-source-apply.out" 'proposal is stale: canonical source changed'
+assert_equal "$(cat "$TMP_DIR/stale-source-before.txt")" "$(source_hashes)" 'stale source apply changed canonical files'
+cp "$SOURCE_BACKUP" "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+
+# A board edit after scan makes the proposal stale and keeps the proposal.
+reset_board
+perl -0pi -e 's/Renamed idea \^FT-20260826-001/Stale board edit ^FT-20260826-001/' "$TASKS"
+scan > "$TMP_DIR/stale-board-scan.out"
+printf '\nManual board change after scan\n' >> "$TASKS"
+source_hashes > "$TMP_DIR/stale-board-before.txt"
+if apply > "$TMP_DIR/stale-board-apply.out" 2>&1; then fail 'stale board proposal applied'; fi
+assert_file "$PROPOSAL"
+assert_contains "$TMP_DIR/stale-board-apply.out" 'proposal is stale: board changed'
+assert_equal "$(cat "$TMP_DIR/stale-board-before.txt")" "$(source_hashes)" 'stale board apply changed canonical files'
+rm -f "$PROPOSAL"
+SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture --replace-confirmed-board >/dev/null
+
+# Applying a due-date change rewrites only the named future record and view.
+perl -0pi -e 's/📅 2026-08-28/📅 2026-09-01/' "$TASKS"
+scan > "$TMP_DIR/due-scan.out"
+apply > "$TMP_DIR/due-apply.out"
+assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" 'due: 2026-09-01'
+assert_contains "$TASKS" '📅 2026-09-01'
+assert_not_exists "$PROPOSAL"
+
+# Promoting a future task creates a new active current task and pauses the old one.
+perl -0pi -e 's{(## Ideas\n\n)- \[ \] Renamed idea \^FT-20260826-001\n  - project: Architecture project\n\n}{$1}' "$TASKS"
+perl -0pi -e 's{(## Active\n)}{$1\n- [ ] Renamed idea ^FT-20260826-001\n  - project: Architecture project\n} ' "$TASKS"
+scan > "$TMP_DIR/promote-scan.out"
+apply > "$TMP_DIR/promote-apply.out"
+grep -Eq '^Task ID: TASK-[0-9]{8}-[0-9]{3}$' "$ARCHITECTURE_PROJECT/ai/current-task.md" || fail 'promoted current task did not receive a TASK ID'
+assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Renamed idea'
+assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" 'Task ID: TASK-20260826-001'
+assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" 'Status: promoted'
+assert_contains "$TASKS" 'Renamed idea ^TASK-'
+assert_not_exists "$PROPOSAL"
+
+# A valid unblocked card is appended to the project's canonical future tasks.
+cat >> "$TASKS" <<'EOF'
+
+## Ideas
+
+- [ ] Applied new future task
+  - project: Extra project
+  - 📅 2026-09-02
+EOF
+scan > "$TMP_DIR/create-scan.out"
+apply > "$TMP_DIR/create-apply.out"
+assert_contains "$EXTRA_PROJECT/ai/future-tasks.md" 'Applied new future task'
+assert_contains "$TASKS" 'Applied new future task'
+assert_not_exists "$PROPOSAL"
 
 printf 'PASS: Obsidian confirmed task sync contract\n'

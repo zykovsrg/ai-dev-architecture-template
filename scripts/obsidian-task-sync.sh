@@ -9,15 +9,16 @@ physical_dir() { cd "$1" && pwd -P; }
 hash_file() { shasum -a 256 "$1" | awk '{print $1}'; }
 trim() { sed 's/^[[:space:]]*//; s/[[:space:]]*$//' <<< "$1"; }
 
-HUB='' SCOPE='' VAULT='' COMMAND=''
+HUB='' SCOPE='' VAULT='' COMMAND='' CONFIRM_PROPOSAL=''
 while [ "$#" -gt 0 ]; do
   case "$1" in
-    scan|status|dismiss) [ -z "$COMMAND" ] || die 'choose one command'; COMMAND="$1"; shift;;
+    scan|status|dismiss|apply) [ -z "$COMMAND" ] || die 'choose one command'; COMMAND="$1"; shift;;
     --hub|--scope|--vault) [ "$#" -ge 2 ] || die "missing value for $1"; case "$1" in --hub) HUB=$2;; --scope) SCOPE=$2;; --vault) VAULT=$2;; esac; shift 2;;
+    --confirm-proposal) [ "$#" -ge 2 ] || die 'missing value for --confirm-proposal'; CONFIRM_PROPOSAL=$2; shift 2;;
     *) die "unknown argument: $1";;
   esac
 done
-[ -n "$COMMAND" ] || die 'usage: scan --hub <absolute-path> --scope <absolute-path> --vault <absolute-path> | status --vault <absolute-path> | dismiss --vault <absolute-path>'
+[ -n "$COMMAND" ] || die 'usage: scan --hub <absolute-path> --scope <absolute-path> --vault <absolute-path> | apply --hub <absolute-path> --scope <absolute-path> --vault <absolute-path> --confirm-proposal <sha256> | status --vault <absolute-path> | dismiss --vault <absolute-path>'
 
 require_safe_vault() {
   [ -n "$VAULT" ] && is_absolute "$VAULT" || die 'vault must be an absolute path'
@@ -44,7 +45,7 @@ require_safe_paths() {
   [ -f "$MANIFEST" ] && [ ! -L "$MANIFEST" ] || die 'missing or unsafe manifest'
   [ -f "$HUB/ai/project-registry.md" ] && [ ! -L "$HUB/ai/project-registry.md" ] || die 'missing or unsafe project registry'
   /usr/bin/jq -e '.format_version == 3 and (.tasks | type == "array")' "$MANIFEST" >/dev/null || die 'manifest must be format version 3'
-  [ ! -e "$PROPOSAL" ] || die 'pending proposal exists; dismiss it before scanning again'
+  [ "$COMMAND" != scan ] || [ ! -e "$PROPOSAL" ] || die 'pending proposal exists; dismiss it before scanning again'
 }
 
 column_to_status() {
@@ -261,8 +262,209 @@ scan() { require_safe_paths; load_projects; load_scope_and_validate_vault; load_
 status() { require_safe_vault; [ -f "$PROPOSAL" ] || die 'no pending proposal'; /usr/bin/jq -e . "$PROPOSAL"; }
 dismiss() { require_safe_vault; rm -f -- "$PROPOSAL"; }
 
+APPLY_TARGETS=() APPLY_TEMPS=()
+cleanup_apply_temps() { local file; for file in "${APPLY_TEMPS[@]:-}"; do [ -z "$file" ] || rm -f -- "$file"; done; }
+
+source_is_safe_task_file() {
+  local source="$1" base
+  [ -f "$source" ] && [ ! -L "$source" ] || return 1
+  inside "$source" "$HUB/projects" || return 1
+  base="$(basename "$source")"
+  case "$base" in current-task.md|future-tasks.md|paused-tasks.md) return 0;; *) return 1;; esac
+}
+
+stage_source() {
+  local source="$1" i temp
+  for i in "${!APPLY_TARGETS[@]}"; do [ "${APPLY_TARGETS[$i]}" = "$source" ] && return 0; done
+  source_is_safe_task_file "$source" || die "unsafe proposal source: $source"
+  temp="$(mktemp "$(dirname "$source")/.$(basename "$source").apply.XXXXXX")"
+  cp "$source" "$temp"
+  APPLY_TARGETS+=("$source"); APPLY_TEMPS+=("$temp")
+}
+
+temp_for_source() {
+  local source="$1" i
+  for i in "${!APPLY_TARGETS[@]}"; do [ "${APPLY_TARGETS[$i]}" = "$source" ] && { printf '%s' "${APPLY_TEMPS[$i]}"; return 0; }; done
+  die "proposal source was not staged: $source"
+}
+
+proposal_payload() {
+  /usr/bin/jq -n \
+    --arg state "$(/usr/bin/jq -r '.state' "$PROPOSAL")" \
+    --arg board_sha256 "$(/usr/bin/jq -r '.board_sha256' "$PROPOSAL")" \
+    --arg manifest_sha256 "$(/usr/bin/jq -r '.manifest_sha256' "$PROPOSAL")" \
+    --argjson affected_sources "$(/usr/bin/jq -c '.affected_sources' "$PROPOSAL")" \
+    --argjson operations "$(/usr/bin/jq -c '.operations' "$PROPOSAL")" \
+    --argjson blocked_reasons "$(/usr/bin/jq -c '.blocked_reasons' "$PROPOSAL")" \
+    '{state:$state, board_sha256:$board_sha256, manifest_sha256:$manifest_sha256, affected_sources:$affected_sources, operations:$operations, blocked_reasons:$blocked_reasons}'
+}
+
+load_proposal() {
+  [ -f "$PROPOSAL" ] || die 'no pending proposal'
+  /usr/bin/jq -e '
+    .state == "ready" and
+    (.proposal_sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
+    (.board_sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
+    (.manifest_sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
+    (.affected_sources | type == "array") and
+    (.operations | type == "array") and
+    (.blocked_reasons | type == "array")' "$PROPOSAL" >/dev/null || die 'proposal is blocked or malformed'
+  PROPOSAL_SHA="$(/usr/bin/jq -r '.proposal_sha256' "$PROPOSAL")"
+  [ "$CONFIRM_PROPOSAL" = "$PROPOSAL_SHA" ] || die 'confirmation does not match proposal'
+  [ "$(printf '%s' "$(proposal_payload)" | shasum -a 256 | awk '{print $1}')" = "$PROPOSAL_SHA" ] || die 'proposal hash is invalid'
+}
+
+verify_board_hash() { [ "$(hash_file "$TASKS")" = "$(/usr/bin/jq -r '.board_sha256' "$PROPOSAL")" ] || die 'proposal is stale: board changed'; }
+verify_manifest_hash() { [ "$(hash_file "$MANIFEST")" = "$(/usr/bin/jq -r '.manifest_sha256' "$PROPOSAL")" ] || die 'proposal is stale: manifest changed'; }
+verify_every_affected_source_hash() {
+  local source expected
+  while IFS=$'\t' read -r source expected; do
+    source_is_safe_task_file "$source" || die "unsafe proposal source: $source"
+    [ "$(hash_file "$source")" = "$expected" ] || die "proposal is stale: canonical source changed: $source"
+    stage_source "$source"
+  done < <(/usr/bin/jq -r '.affected_sources[] | [.source_file, .source_sha256] | @tsv' "$PROPOSAL")
+}
+
+known_source_for() {
+  local task_id="$1" index
+  index="$(known_index "$task_id")" || die "proposal has unknown task ID: $task_id"
+  printf '%s' "${KNOWN_SOURCES[$index]}"
+}
+
+rename_record() {
+  local source="$1" task_id="$2" title="$3" temp base
+  temp="$(temp_for_source "$source")"; base="$(basename "$source")"
+  case "$base" in
+    current-task.md) NEW_TITLE="$title" perl -0pi -e 's{(^## Goal\n\n)[^\n]*}{$1 . $ENV{NEW_TITLE}}me' "$temp";;
+    future-tasks.md) TASK_ID="$task_id" NEW_TITLE="$title" perl -0pi -e 's{^### \Q$ENV{TASK_ID}\E [^\n]*}{"### $ENV{TASK_ID} — $ENV{NEW_TITLE}"}me' "$temp";;
+    paused-tasks.md) TASK_ID="$task_id" NEW_TITLE="$title" perl -0pi -e 's{(^### [^\n]* — )[^\n]*(\n\nTask ID: \Q$ENV{TASK_ID}\E\n)}{$1 . $ENV{NEW_TITLE} . $2}me' "$temp";;
+  esac
+}
+
+set_due_record() {
+  local source="$1" task_id="$2" due="$3" temp base
+  temp="$(temp_for_source "$source")"; base="$(basename "$source")"
+  case "$base" in
+    current-task.md)
+      DUE="$due" perl -0pi -e 's/^[ \t]*due:[^\n]*(?:\n|\z)//mg; $_ .= "\n" if $ENV{DUE} ne q{} && $_ !~ /\n\z/; $_ .= "due: $ENV{DUE}\n" if $ENV{DUE} ne q{}' "$temp";;
+    future-tasks.md)
+      TASK_ID="$task_id" DUE="$due" perl -0pi -e 's{(^### \Q$ENV{TASK_ID}\E [^\n]*\n)(.*?)(?=^### |\z)}{my ($head, $body) = ($1, $2); $body =~ s/^[ \t]*due:[^\n]*(?:\n|\z)//mg; $body .= "\n" if length($body) && $body !~ /\n\z/; $body .= "due: $ENV{DUE}\n" if $ENV{DUE} ne q{}; $head . $body}mges' "$temp";;
+    paused-tasks.md) [ -z "$due" ] || die "due dates are not supported for paused task: $task_id";;
+  esac
+}
+
+mark_record_promoted() {
+  local source="$1" task_id="$2" temp base
+  temp="$(temp_for_source "$source")"; base="$(basename "$source")"
+  case "$base" in
+    future-tasks.md) TASK_ID="$task_id" perl -0pi -e 's{(^### \Q$ENV{TASK_ID}\E [^\n]*\n.*?^Status: )[^\n]*}{$1 . "promoted"}mse' "$temp";;
+    paused-tasks.md) die "cannot promote a paused task: $task_id";;
+    *) die "cannot promote current task: $task_id";;
+  esac
+}
+
+next_task_id() {
+  local date_part max id
+  date_part="$(date -u +%Y%m%d)"; max=0
+  while IFS= read -r id; do [ "$id" -gt "$max" ] && max="$id"; done < <(grep -hE "^Task ID: TASK-${date_part}-[0-9]{3}$" "$HUB"/projects/*/ai/current-task.md "$HUB"/projects/*/ai/paused-tasks.md 2>/dev/null | sed "s/^Task ID: TASK-${date_part}-//")
+  printf 'TASK-%s-%03d' "$date_part" "$((10#$max + 1))"
+}
+
+promote_to_active() {
+  local source="$1" task_id="$2" index project_id project_index current paused current_temp paused_temp old_id old_title old_status title due record new_task_id
+  index="$(known_index "$task_id")" || die "proposal has unknown task ID: $task_id"
+  project_id="${KNOWN_PROJECT_IDS[$index]}"; project_index=''
+  for i in "${!PROJECT_IDS[@]}"; do [ "${PROJECT_IDS[$i]}" = "$project_id" ] && project_index="$i"; done
+  [ -n "$project_index" ] || die "unknown project for task: $task_id"
+  current="${PROJECT_PATHS[$project_index]}/ai/current-task.md"; paused="${PROJECT_PATHS[$project_index]}/ai/paused-tasks.md"
+  stage_source "$current"; stage_source "$paused"
+  current_temp="$(temp_for_source "$current")"; paused_temp="$(temp_for_source "$paused")"
+  old_status="$(awk '/^## / {exit} /^Status: / {print substr($0, 9); exit}' "$current_temp")"
+  if [ "$old_status" = active ]; then
+    old_id="$(sed -n '/^## /q; /^Task ID: /s/^Task ID: //p' "$current_temp" | head -n 1)"
+    old_title="$(awk '/^## Goal[[:space:]]*$/ {goal=1; next} goal && /^## / {exit} goal && NF {print; exit}' "$current_temp")"
+    [[ "$old_id" =~ ^TASK-[0-9]{8}-[0-9]{3}$ ]] && [ -n "$old_title" ] || die "invalid active current task: $current"
+    printf '\n### %s — %s\n\nTask ID: %s\n\nStatus: paused\n' "$(date -u +%F)" "$old_title" "$old_id" >> "$paused_temp"
+  fi
+  record="$(source_record "$source" "$task_id")" || die "invalid promoted source record: $source"
+  IFS=$'\t' read -r _ title due <<< "$record"
+  new_task_id="$(next_task_id)"
+  mark_record_promoted "$source" "$task_id"
+  printf 'Status: active\nTask ID: %s\n\n## Goal\n\n%s\n' "$new_task_id" "$title" > "$current_temp"
+  [ -z "$due" ] || printf '\ndue: %s\n' "$due" >> "$current_temp"
+}
+
+set_status_record() {
+  local source="$1" task_id="$2" status="$3" temp base
+  status_to_column "$status" >/dev/null || die "unsupported status: $status"
+  temp="$(temp_for_source "$source")"; base="$(basename "$source")"
+  [ "$status" != active ] || { [ "$base" = current-task.md ] || { promote_to_active "$source" "$task_id"; return; }; }
+  case "$base" in
+    current-task.md) STATUS="$status" perl -0pi -e 's/^Status: [^\n]*/"Status: $ENV{STATUS}"/me' "$temp";;
+    future-tasks.md)
+      case "$status" in idea|ready|blocked) ;; *) die "unsupported status transition from future task: $status";; esac
+      TASK_ID="$task_id" STATUS="$status" perl -0pi -e 's{(^### \Q$ENV{TASK_ID}\E [^\n]*\n.*?^Status: )[^\n]*}{$1 . $ENV{STATUS}}mse' "$temp";;
+    paused-tasks.md) [ "$status" = paused ] || die "unsupported status transition from paused task: $status";;
+  esac
+}
+
+create_future_record() {
+  local project_id="$1" title="$2" status="$3" due="$4" i source temp date_part max next id
+  case "$status" in idea|ready|blocked) ;; *) die "unsupported future status: $status";; esac
+  source=''; for i in "${!PROJECT_IDS[@]}"; do [ "${PROJECT_IDS[$i]}" = "$project_id" ] && source="${PROJECT_PATHS[$i]}/ai/future-tasks.md"; done
+  [ -n "$source" ] || die "unknown project ID in proposal: $project_id"
+  temp="$(temp_for_source "$source")"
+  date_part="$(date -u +%Y%m%d)"; max=0
+  while IFS= read -r id; do [ "$id" -gt "$max" ] && max="$id"; done < <(grep -hEo "^### FT-${date_part}-[0-9]+" "$HUB"/projects/*/ai/future-tasks.md 2>/dev/null | sed "s/^### FT-${date_part}-//")
+  printf -v next '%03d' "$((10#$max + 1))"
+  printf '\n### FT-%s-%s — %s\n\nStatus: %s\n' "$date_part" "$next" "$title" "$status" >> "$temp"
+  [ -z "$due" ] || printf 'due: %s\n' "$due" >> "$temp"
+}
+
+apply_operations_to_temporary_files() {
+  local operation type task_id source to project_id title due
+  while IFS= read -r operation; do
+    type="$(printf '%s' "$operation" | /usr/bin/jq -r '.operation')"
+    case "$type" in
+      rename) task_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.task_id')"; to="$(printf '%s' "$operation" | /usr/bin/jq -r '.to')"; [ -n "$to" ] || die 'rename title is empty'; source="$(known_source_for "$task_id")"; rename_record "$source" "$task_id" "$to";;
+      set_due) task_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.task_id')"; due="$(printf '%s' "$operation" | /usr/bin/jq -r '.to')"; [ -z "$due" ] || [[ "$due" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || die 'invalid due date'; source="$(known_source_for "$task_id")"; set_due_record "$source" "$task_id" "$due";;
+      set_status) task_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.task_id')"; to="$(printf '%s' "$operation" | /usr/bin/jq -r '.to')"; source="$(known_source_for "$task_id")"; set_status_record "$source" "$task_id" "$to";;
+      create_future) project_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.project_id')"; title="$(printf '%s' "$operation" | /usr/bin/jq -r '.title')"; to="$(printf '%s' "$operation" | /usr/bin/jq -r '.status')"; due="$(printf '%s' "$operation" | /usr/bin/jq -r '.due')"; [ -n "$title" ] || die 'future task title is empty'; create_future_record "$project_id" "$title" "$to" "$due";;
+      *) die "unsupported proposal operation: $type";;
+    esac
+  done < <(/usr/bin/jq -c '.operations[]' "$PROPOSAL")
+}
+
+validate_temporary_records() {
+  local i target temp
+  for i in "${!APPLY_TARGETS[@]}"; do
+    target="${APPLY_TARGETS[$i]}"; temp="${APPLY_TEMPS[$i]}"
+    case "$(basename "$target")" in
+      current-task.md) grep -Eq '^Status: (active|ready|in_progress|waiting|blocked|review|paused|done|completed)$' "$temp" && grep -Eq '^Task ID: TASK-[0-9]{8}-[0-9]{3}$' "$temp" || die "invalid temporary current task: $target";;
+      future-tasks.md) ! grep -Eq '^### FT-[^ ]+ — $' "$temp" || die "invalid temporary future task: $target";;
+      paused-tasks.md) ! grep -Eq '^### [0-9]{4}-[0-9]{2}-[0-9]{2} — $' "$temp" || die "invalid temporary paused task: $target";;
+    esac
+  done
+}
+
+replace_named_source_files() {
+  local i
+  for i in "${!APPLY_TARGETS[@]}"; do mv -f -- "${APPLY_TEMPS[$i]}" "${APPLY_TARGETS[$i]}"; APPLY_TEMPS[$i]=''; done
+}
+
+apply() {
+  require_safe_paths; load_proposal; verify_board_hash; verify_manifest_hash; load_projects; load_scope_and_validate_vault; verify_every_affected_source_hash; load_known_cards
+  trap cleanup_apply_temps EXIT
+  apply_operations_to_temporary_files; validate_temporary_records; replace_named_source_files
+  GENERATOR="$(cd "$(dirname "$0")" && pwd -P)/generate-obsidian-projects-kanban.sh"
+  [ -f "$GENERATOR" ] && [ ! -L "$GENERATOR" ] || die 'missing or unsafe generator'
+  "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture --replace-confirmed-board
+  rm -f -- "$PROPOSAL"; trap - EXIT
+}
+
 case "$COMMAND" in
   scan) scan;;
+  apply) [ -n "$CONFIRM_PROPOSAL" ] || die 'apply requires --confirm-proposal'; apply;;
   status) [ -z "$HUB$SCOPE" ] || die 'status accepts only --vault'; status;;
-  dismiss) [ -z "$HUB$SCOPE" ] || die 'dismiss accepts only --vault'; dismiss;;
+  dismiss) [ -z "$HUB$SCOPE$CONFIRM_PROPOSAL" ] || die 'dismiss accepts only --vault'; dismiss;;
 esac

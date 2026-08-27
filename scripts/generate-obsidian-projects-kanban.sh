@@ -56,18 +56,20 @@ resolve_card() {
   printf '%s/%s\n' "$canonical_parent" "$(basename "$raw")"
 }
 
-HUB='' SCOPE='' VAULT='' MODE='' CONFIRM=0 REFRESH_FROM_ARCHITECTURE=0
+HUB='' SCOPE='' VAULT='' MODE='' CONFIRM=0 REFRESH_FROM_ARCHITECTURE=0 REPLACE_CONFIRMED_BOARD=0
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --hub|--scope|--vault) [ "$#" -ge 2 ] || die "missing value for $1"; case "$1" in --hub) HUB=$2;; --scope) SCOPE=$2;; --vault) VAULT=$2;; esac; shift 2;;
     --preview|--write) [ -z "$MODE" ] || die 'choose exactly one of --preview or --write'; MODE=${1#--}; shift;;
     --confirm-generated-write) CONFIRM=1; shift;;
     --refresh-from-architecture) REFRESH_FROM_ARCHITECTURE=1; shift;;
+    --replace-confirmed-board) REPLACE_CONFIRMED_BOARD=1; shift;;
     *) die "unknown flag: $1";;
   esac
 done
 [ -n "$HUB" ] && [ -n "$SCOPE" ] && [ -n "$VAULT" ] && [ -n "$MODE" ] || die 'usage: --hub <absolute-path> --scope <id-file> --vault <local-vault> (--preview|--write)'
 [ "$REFRESH_FROM_ARCHITECTURE" -eq 0 ] || [ "$MODE" = write ] || die '--refresh-from-architecture requires --write'
+[ "$REPLACE_CONFIRMED_BOARD" -eq 0 ] || { [ "$MODE" = write ] && [ "$REFRESH_FROM_ARCHITECTURE" -eq 1 ]; } || die '--replace-confirmed-board requires --write --refresh-from-architecture'
 [ "$MODE" = preview ] || [ "$CONFIRM" -eq 1 ] || [ "$REFRESH_FROM_ARCHITECTURE" -eq 1 ] || die 'write requires --confirm-generated-write'
 is_absolute "$HUB" && is_absolute "$SCOPE" && is_absolute "$VAULT" || die 'hub, scope, and vault must be absolute paths'
 [ -d "$HUB" ] && [ ! -L "$HUB" ] || die 'hub must be a non-symlink directory'
@@ -145,7 +147,8 @@ if [ -e "$TARGET_TASKS" ] || [ -e "$TARGET_OVERVIEW" ] || [ -e "$TARGET_MANIFEST
   [ "$manifest_format" = 3 ] || { [ "$manifest_format" = 2 ] && die 'proposal pending: manifest v2 requires a fresh confirmed rebuild'; die 'proposal pending: generated manifest is invalid'; }
   recorded_tasks="$(sed -n 's/^    "tasks_kanban": {"target": "Obsidian\/Tasks-Kanban.md", "sha256": "\([0-9a-f]*\)"},$/\1/p' "$TARGET_MANIFEST")"; recorded_overview="$(sed -n 's/^    "projects_overview": {"target": "Obsidian\/Projects-Overview.md", "sha256": "\([0-9a-f]*\)"}$/\1/p' "$TARGET_MANIFEST")"
   [ -n "$recorded_tasks" ] && [ -n "$recorded_overview" ] || die 'proposal pending: generated manifest is invalid'
-  [ "$recorded_tasks" = "$(shasum -a 256 "$TARGET_TASKS" | awk '{print $1}')" ] || die 'proposal pending: manual task board edit detected'; [ "$recorded_overview" = "$(shasum -a 256 "$TARGET_OVERVIEW" | awk '{print $1}')" ] || die 'proposal pending: manual project overview edit detected'
+  [ "$REPLACE_CONFIRMED_BOARD" -eq 1 ] || [ "$recorded_tasks" = "$(shasum -a 256 "$TARGET_TASKS" | awk '{print $1}')" ] || die 'proposal pending: manual task board edit detected'
+  [ "$recorded_overview" = "$(shasum -a 256 "$TARGET_OVERVIEW" | awk '{print $1}')" ] || die 'proposal pending: manual project overview edit detected'
 fi
 tmp_tasks="$(mktemp "$TARGET_DIR/.Tasks-Kanban.md.XXXXXX")"; tmp_overview="$(mktemp "$TARGET_DIR/.Projects-Overview.md.XXXXXX")"; tmp_manifest="$(mktemp "$TARGET_DIR/.AI-Architecture.manifest.json.XXXXXX")"; trap 'rm -f "$tmp_tasks" "$tmp_overview" "$tmp_manifest"' EXIT
 printf '%s' "$TASKS_RENDER" > "$tmp_tasks"; printf '%s' "$OVERVIEW_RENDER" > "$tmp_overview"; printf '%s' "$MANIFEST_RENDER" > "$tmp_manifest"

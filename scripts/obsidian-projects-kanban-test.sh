@@ -106,6 +106,8 @@ SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault 
 printf '\nmanual task edit\n' >> "$TASKS"
 if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write > "$TMP_DIR/manual-task.txt" 2>&1; then fail 'manual task-board edit did not block write'; fi
 assert_contains "$TMP_DIR/manual-task.txt" 'proposal pending'
+if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write --replace-confirmed-board > "$TMP_DIR/unguarded-replace.txt" 2>&1; then fail 'unguarded board replacement succeeded'; fi
+assert_contains "$TMP_DIR/unguarded-replace.txt" '--replace-confirmed-board requires --write --refresh-from-architecture'
 rm -f "$TASKS" "$OVERVIEW" "$MANIFEST"
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write >/dev/null
 printf '\nmanual overview edit\n' >> "$OVERVIEW"
