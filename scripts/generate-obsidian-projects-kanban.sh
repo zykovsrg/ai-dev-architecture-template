@@ -146,6 +146,38 @@ MANIFEST_RENDER="$( { printf '{\n  "format_version": 3,\n  "generated_at": '; js
 if [ "$MODE" = preview ]; then printf '%s\n--- projects overview ---\n%s\n--- manifest ---\n%s' "$TASKS_RENDER" "$OVERVIEW_RENDER" "$MANIFEST_RENDER"; exit 0; fi
 TARGET_DIR="$VAULT/Obsidian"; TARGET_TASKS="$TARGET_DIR/Tasks-Kanban.md"; TARGET_OVERVIEW="$TARGET_DIR/Projects-Overview.md"; TARGET_MANIFEST="$TARGET_DIR/AI-Architecture.manifest.json"
 [ -d "$TARGET_DIR" ] && [ ! -L "$TARGET_DIR" ] || die 'target directory missing or symlinked'; [ ! -L "$TARGET_TASKS" ] && [ ! -L "$TARGET_OVERVIEW" ] && [ ! -L "$TARGET_MANIFEST" ] || die 'generated targets must not be symlinks'
+transaction_dir="$TARGET_DIR/.AI-Architecture.generated-write.transaction"
+clear_generated_transaction() {
+  rm -f "$transaction_dir/Tasks-Kanban.md" "$transaction_dir/Projects-Overview.md" "$transaction_dir/AI-Architecture.manifest.json" \
+    "$transaction_dir/original-set-present" "$transaction_dir/original-set-absent" "$transaction_dir/prepared" || return 1
+  rmdir "$transaction_dir"
+}
+recover_generated_transaction() {
+  local mode_count=0
+  [ -d "$transaction_dir" ] && [ ! -L "$transaction_dir" ] || return 1
+  if [ ! -e "$transaction_dir/prepared" ]; then
+    clear_generated_transaction
+    return
+  fi
+  [ -f "$transaction_dir/prepared" ] && [ ! -L "$transaction_dir/prepared" ] || return 1
+  [ -f "$transaction_dir/original-set-present" ] && [ ! -L "$transaction_dir/original-set-present" ] && mode_count=$((mode_count + 1))
+  [ -f "$transaction_dir/original-set-absent" ] && [ ! -L "$transaction_dir/original-set-absent" ] && mode_count=$((mode_count + 1))
+  [ "$mode_count" -eq 1 ] || return 1
+  if [ -f "$transaction_dir/original-set-present" ]; then
+    for backup in Tasks-Kanban.md Projects-Overview.md AI-Architecture.manifest.json; do
+      [ -f "$transaction_dir/$backup" ] && [ ! -L "$transaction_dir/$backup" ] || return 1
+    done
+    cp -p "$transaction_dir/Tasks-Kanban.md" "$TARGET_TASKS" || return 1
+    cp -p "$transaction_dir/Projects-Overview.md" "$TARGET_OVERVIEW" || return 1
+    cp -p "$transaction_dir/AI-Architecture.manifest.json" "$TARGET_MANIFEST" || return 1
+  else
+    rm -f "$TARGET_TASKS" "$TARGET_OVERVIEW" "$TARGET_MANIFEST" || return 1
+  fi
+  clear_generated_transaction
+}
+if [ -e "$transaction_dir" ] || [ -L "$transaction_dir" ]; then
+  recover_generated_transaction || die 'generated view recovery failed; transaction backup was preserved'
+fi
 if [ -e "$TARGET_TASKS" ] || [ -e "$TARGET_OVERVIEW" ] || [ -e "$TARGET_MANIFEST" ]; then
   [ -f "$TARGET_TASKS" ] && [ -f "$TARGET_OVERVIEW" ] && [ -f "$TARGET_MANIFEST" ] || die 'proposal pending: generated view set is incomplete'
   manifest_format="$(sed -n 's/^  "format_version": \([0-9][0-9]*\),$/\1/p' "$TARGET_MANIFEST")"
@@ -155,12 +187,19 @@ if [ -e "$TARGET_TASKS" ] || [ -e "$TARGET_OVERVIEW" ] || [ -e "$TARGET_MANIFEST
   [ "$REPLACE_CONFIRMED_BOARD" -eq 1 ] || [ "$recorded_tasks" = "$(shasum -a 256 "$TARGET_TASKS" | awk '{print $1}')" ] || die 'proposal pending: manual task board edit detected'
   [ "$recorded_overview" = "$(shasum -a 256 "$TARGET_OVERVIEW" | awk '{print $1}')" ] || die 'proposal pending: manual project overview edit detected'
 fi
-tmp_tasks='' tmp_overview='' tmp_manifest='' refresh_lock='' owns_refresh_lock=0
+tmp_tasks='' tmp_overview='' tmp_manifest='' refresh_lock='' owns_refresh_lock=0 owns_generated_transaction=0 generated_transaction_prepared=0
 cleanup_generated_write() {
+  local recovery_failed=0
+  if [ "$generated_transaction_prepared" -eq 1 ]; then
+    recover_generated_transaction || recovery_failed=1
+  elif [ "$owns_generated_transaction" -eq 1 ]; then
+    clear_generated_transaction || recovery_failed=1
+  fi
   [ -z "$tmp_tasks" ] || rm -f "$tmp_tasks"
   [ -z "$tmp_overview" ] || rm -f "$tmp_overview"
   [ -z "$tmp_manifest" ] || rm -f "$tmp_manifest"
   [ "$owns_refresh_lock" -eq 0 ] || rmdir "$refresh_lock" 2>/dev/null || true
+  [ "$recovery_failed" -eq 0 ] || printf '%s\n' 'error: generated view recovery failed; transaction backup was preserved' >&2
 }
 trap cleanup_generated_write EXIT
 
@@ -181,5 +220,23 @@ fi
 tmp_tasks="$(mktemp "$TARGET_DIR/.Tasks-Kanban.md.XXXXXX")"; tmp_overview="$(mktemp "$TARGET_DIR/.Projects-Overview.md.XXXXXX")"; tmp_manifest="$(mktemp "$TARGET_DIR/.AI-Architecture.manifest.json.XXXXXX")"
 printf '%s' "$TASKS_RENDER" > "$tmp_tasks"; printf '%s' "$OVERVIEW_RENDER" > "$tmp_overview"; printf '%s' "$MANIFEST_RENDER" > "$tmp_manifest"
 [ "$(shasum -a 256 "$tmp_tasks" | awk '{print $1}')" = "$TASKS_HASH" ] || die 'temporary task board hash validation failed'; [ "$(shasum -a 256 "$tmp_overview" | awk '{print $1}')" = "$OVERVIEW_HASH" ] || die 'temporary project overview hash validation failed'
-mv -f "$tmp_tasks" "$TARGET_TASKS"; mv -f "$tmp_overview" "$TARGET_OVERVIEW"; mv -f "$tmp_manifest" "$TARGET_MANIFEST"; cleanup_generated_write; trap - EXIT
+mkdir "$transaction_dir" || die 'generated view transaction already in progress'
+owns_generated_transaction=1
+if [ -f "$TARGET_TASKS" ]; then
+  cp -p "$TARGET_TASKS" "$transaction_dir/Tasks-Kanban.md"
+  cp -p "$TARGET_OVERVIEW" "$transaction_dir/Projects-Overview.md"
+  cp -p "$TARGET_MANIFEST" "$transaction_dir/AI-Architecture.manifest.json"
+  : > "$transaction_dir/original-set-present"
+else
+  : > "$transaction_dir/original-set-absent"
+fi
+: > "$transaction_dir/prepared"
+generated_transaction_prepared=1
+mv -f "$tmp_tasks" "$TARGET_TASKS"; tmp_tasks=''
+mv -f "$tmp_overview" "$TARGET_OVERVIEW"; tmp_overview=''
+mv -f "$tmp_manifest" "$TARGET_MANIFEST"; tmp_manifest=''
+generated_transaction_prepared=0
+clear_generated_transaction
+owns_generated_transaction=0
+cleanup_generated_write; trap - EXIT
 printf 'wrote %s, %s, and %s\n' "$TARGET_TASKS" "$TARGET_OVERVIEW" "$TARGET_MANIFEST"

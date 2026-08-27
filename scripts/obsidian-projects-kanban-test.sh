@@ -93,6 +93,39 @@ paused_sha="$(shasum -a 256 "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" | awk '{p
 printf '%s\n' $'Status: active\nTask ID: TASK-20260826-001\ndue: 2026-08-26\n\n## Goal\n\nRefreshed architecture task' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture > "$TMP_DIR/refresh.out"
 assert_contains "$TASKS" 'Refreshed architecture task'
+
+# Replacing the generated view set is one transaction: a failed move at any
+# point must leave all three previously published files byte-for-byte intact.
+mkdir -p "$TMP_DIR/fake-bin"
+cat > "$TMP_DIR/fake-bin/mv" <<'EOF'
+#!/bin/sh
+count=0
+[ ! -f "$MV_FAIL_STATE" ] || count="$(cat "$MV_FAIL_STATE")"
+count=$((count + 1))
+printf '%s\n' "$count" > "$MV_FAIL_STATE"
+if [ "$count" -eq "$MV_FAIL_AT" ]; then
+  exit 91
+fi
+exec /bin/mv "$@"
+EOF
+chmod +x "$TMP_DIR/fake-bin/mv"
+cp "$TASKS" "$TMP_DIR/published-tasks"
+cp "$OVERVIEW" "$TMP_DIR/published-overview"
+cp "$MANIFEST" "$TMP_DIR/published-manifest"
+printf '%s\n' $'Status: active\nTask ID: TASK-20260826-001\ndue: 2026-08-26\n\n## Goal\n\nTransactional architecture task' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+for fail_at in 1 2 3; do
+  state="$TMP_DIR/mv-state-$fail_at"
+  if PATH="$TMP_DIR/fake-bin:$PATH" MV_FAIL_STATE="$state" MV_FAIL_AT="$fail_at" SOURCE_DATE_EPOCH=1700000000 \
+    "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture > "$TMP_DIR/transaction-$fail_at.out" 2>&1; then
+    fail "generated view transaction succeeded when mv $fail_at failed"
+  fi
+  cmp -s "$TASKS" "$TMP_DIR/published-tasks" || fail "task board changed after mv $fail_at failed"
+  cmp -s "$OVERVIEW" "$TMP_DIR/published-overview" || fail "project overview changed after mv $fail_at failed"
+  cmp -s "$MANIFEST" "$TMP_DIR/published-manifest" || fail "manifest changed after mv $fail_at failed"
+done
+SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture > "$TMP_DIR/transaction-success.out"
+assert_contains "$TASKS" 'Transactional architecture task'
+
 printf '\nmanual task edit\n' >> "$TASKS"
 if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture > "$TMP_DIR/refresh-manual-task.txt" 2>&1; then fail 'manual task-board edit did not block architecture refresh'; fi
 assert_contains "$TMP_DIR/refresh-manual-task.txt" 'proposal pending: manual task board edit detected'
