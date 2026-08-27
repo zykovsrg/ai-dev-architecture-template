@@ -147,6 +147,7 @@ if [ "$MODE" = preview ]; then printf '%s\n--- projects overview ---\n%s\n--- ma
 TARGET_DIR="$VAULT/Obsidian"; TARGET_TASKS="$TARGET_DIR/Tasks-Kanban.md"; TARGET_OVERVIEW="$TARGET_DIR/Projects-Overview.md"; TARGET_MANIFEST="$TARGET_DIR/AI-Architecture.manifest.json"
 [ -d "$TARGET_DIR" ] && [ ! -L "$TARGET_DIR" ] || die 'target directory missing or symlinked'; [ ! -L "$TARGET_TASKS" ] && [ ! -L "$TARGET_OVERVIEW" ] && [ ! -L "$TARGET_MANIFEST" ] || die 'generated targets must not be symlinks'
 transaction_dir="$TARGET_DIR/.AI-Architecture.generated-write.transaction"
+tmp_tasks='' tmp_overview='' tmp_manifest='' refresh_lock='' owns_refresh_lock=0 owns_generated_transaction=0 generated_transaction_prepared=0
 clear_generated_transaction() {
   rm -f "$transaction_dir/Tasks-Kanban.md" "$transaction_dir/Projects-Overview.md" "$transaction_dir/AI-Architecture.manifest.json" \
     "$transaction_dir/original-set-present" "$transaction_dir/original-set-absent" "$transaction_dir/prepared" || return 1
@@ -178,31 +179,11 @@ recover_generated_transaction() {
 if [ -e "$transaction_dir" ] || [ -L "$transaction_dir" ]; then
   recover_generated_transaction || die 'generated view recovery failed; transaction backup was preserved'
 fi
-if [ -e "$TARGET_TASKS" ] || [ -e "$TARGET_OVERVIEW" ] || [ -e "$TARGET_MANIFEST" ]; then
-  [ -f "$TARGET_TASKS" ] && [ -f "$TARGET_OVERVIEW" ] && [ -f "$TARGET_MANIFEST" ] || die 'proposal pending: generated view set is incomplete'
-  manifest_format="$(sed -n 's/^  "format_version": \([0-9][0-9]*\),$/\1/p' "$TARGET_MANIFEST")"
-  [ "$manifest_format" = 3 ] || { [ "$manifest_format" = 2 ] && die 'proposal pending: manifest v2 requires a fresh confirmed rebuild'; die 'proposal pending: generated manifest is invalid'; }
-  recorded_tasks="$(sed -n 's/^    "tasks_kanban": {"target": "Obsidian\/Tasks-Kanban.md", "sha256": "\([0-9a-f]*\)"},$/\1/p' "$TARGET_MANIFEST")"; recorded_overview="$(sed -n 's/^    "projects_overview": {"target": "Obsidian\/Projects-Overview.md", "sha256": "\([0-9a-f]*\)"}$/\1/p' "$TARGET_MANIFEST")"
-  [ -n "$recorded_tasks" ] && [ -n "$recorded_overview" ] || die 'proposal pending: generated manifest is invalid'
-  [ "$REPLACE_CONFIRMED_BOARD" -eq 1 ] || [ "$recorded_tasks" = "$(shasum -a 256 "$TARGET_TASKS" | awk '{print $1}')" ] || die 'proposal pending: manual task board edit detected'
-  [ "$recorded_overview" = "$(shasum -a 256 "$TARGET_OVERVIEW" | awk '{print $1}')" ] || die 'proposal pending: manual project overview edit detected'
-fi
-tmp_tasks='' tmp_overview='' tmp_manifest='' refresh_lock='' owns_refresh_lock=0 owns_generated_transaction=0 generated_transaction_prepared=0
-cleanup_generated_write() {
-  local recovery_failed=0
-  if [ "$generated_transaction_prepared" -eq 1 ]; then
-    recover_generated_transaction || recovery_failed=1
-  elif [ "$owns_generated_transaction" -eq 1 ]; then
-    clear_generated_transaction || recovery_failed=1
-  fi
-  [ -z "$tmp_tasks" ] || rm -f "$tmp_tasks"
-  [ -z "$tmp_overview" ] || rm -f "$tmp_overview"
-  [ -z "$tmp_manifest" ] || rm -f "$tmp_manifest"
-  [ "$owns_refresh_lock" -eq 0 ] || rmdir "$refresh_lock" 2>/dev/null || true
-  [ "$recovery_failed" -eq 0 ] || printf '%s\n' 'error: generated view recovery failed; transaction backup was preserved' >&2
-}
-trap cleanup_generated_write EXIT
 
+release_refresh_lock() {
+  [ "$owns_refresh_lock" -eq 0 ] || rmdir "$refresh_lock" 2>/dev/null || true
+  owns_refresh_lock=0
+}
 if [ "$REFRESH_FROM_ARCHITECTURE" -eq 1 ]; then
   RUNTIME="$VAULT/.ai-architecture-sync"
   if [ -e "$RUNTIME" ] || [ -L "$RUNTIME" ]; then
@@ -215,7 +196,41 @@ if [ "$REFRESH_FROM_ARCHITECTURE" -eq 1 ]; then
   [ ! -e "$refresh_lock" ] && [ ! -L "$refresh_lock" ] || die 'architecture refresh already in progress'
   mkdir "$refresh_lock" || die 'architecture refresh already in progress'
   owns_refresh_lock=1
+  trap release_refresh_lock EXIT
 fi
+
+guard_manual_board_edit() {
+  local script_dir sync
+  [ "$REFRESH_FROM_ARCHITECTURE" -eq 1 ] || die 'proposal pending: manual task board edit detected'
+  script_dir="$(cd "$(dirname "$0")" && pwd -P)"
+  sync="$script_dir/obsidian-task-sync.sh"
+  [ -f "$sync" ] && [ ! -L "$sync" ] || die 'proposal pending: manual task board edit detected; task sync command is missing or unsafe'
+  "$sync" scan --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" || die 'proposal pending: manual task board edit detected; proposal scan failed'
+  die 'proposal pending: manual task board edit detected'
+}
+if [ -e "$TARGET_TASKS" ] || [ -e "$TARGET_OVERVIEW" ] || [ -e "$TARGET_MANIFEST" ]; then
+  [ -f "$TARGET_TASKS" ] && [ -f "$TARGET_OVERVIEW" ] && [ -f "$TARGET_MANIFEST" ] || die 'proposal pending: generated view set is incomplete'
+  manifest_format="$(sed -n 's/^  "format_version": \([0-9][0-9]*\),$/\1/p' "$TARGET_MANIFEST")"
+  [ "$manifest_format" = 3 ] || { [ "$manifest_format" = 2 ] && die 'proposal pending: manifest v2 requires a fresh confirmed rebuild'; die 'proposal pending: generated manifest is invalid'; }
+  recorded_tasks="$(sed -n 's/^    "tasks_kanban": {"target": "Obsidian\/Tasks-Kanban.md", "sha256": "\([0-9a-f]*\)"},$/\1/p' "$TARGET_MANIFEST")"; recorded_overview="$(sed -n 's/^    "projects_overview": {"target": "Obsidian\/Projects-Overview.md", "sha256": "\([0-9a-f]*\)"}$/\1/p' "$TARGET_MANIFEST")"
+  [ -n "$recorded_tasks" ] && [ -n "$recorded_overview" ] || die 'proposal pending: generated manifest is invalid'
+  [ "$REPLACE_CONFIRMED_BOARD" -eq 1 ] || [ "$recorded_tasks" = "$(shasum -a 256 "$TARGET_TASKS" | awk '{print $1}')" ] || guard_manual_board_edit
+  [ "$recorded_overview" = "$(shasum -a 256 "$TARGET_OVERVIEW" | awk '{print $1}')" ] || die 'proposal pending: manual project overview edit detected'
+fi
+cleanup_generated_write() {
+  local recovery_failed=0
+  if [ "$generated_transaction_prepared" -eq 1 ]; then
+    recover_generated_transaction || recovery_failed=1
+  elif [ "$owns_generated_transaction" -eq 1 ]; then
+    clear_generated_transaction || recovery_failed=1
+  fi
+  [ -z "$tmp_tasks" ] || rm -f "$tmp_tasks"
+  [ -z "$tmp_overview" ] || rm -f "$tmp_overview"
+  [ -z "$tmp_manifest" ] || rm -f "$tmp_manifest"
+  release_refresh_lock
+  [ "$recovery_failed" -eq 0 ] || printf '%s\n' 'error: generated view recovery failed; transaction backup was preserved' >&2
+}
+trap cleanup_generated_write EXIT
 
 tmp_tasks="$(mktemp "$TARGET_DIR/.Tasks-Kanban.md.XXXXXX")"; tmp_overview="$(mktemp "$TARGET_DIR/.Projects-Overview.md.XXXXXX")"; tmp_manifest="$(mktemp "$TARGET_DIR/.AI-Architecture.manifest.json.XXXXXX")"
 printf '%s' "$TASKS_RENDER" > "$tmp_tasks"; printf '%s' "$OVERVIEW_RENDER" > "$tmp_overview"; printf '%s' "$MANIFEST_RENDER" > "$tmp_manifest"

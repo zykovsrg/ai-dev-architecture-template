@@ -126,9 +126,28 @@ done
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture > "$TMP_DIR/transaction-success.out"
 assert_contains "$TASKS" 'Transactional architecture task'
 
-printf '\nmanual task edit\n' >> "$TASKS"
+sed -i '' 's/Transactional architecture task/Manual Obsidian title/' "$TASKS"
+cp "$TASKS" "$TMP_DIR/manual-edited-tasks"
+cp "$OVERVIEW" "$TMP_DIR/manual-edited-overview"
+cp "$MANIFEST" "$TMP_DIR/manual-edited-manifest"
 if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture > "$TMP_DIR/refresh-manual-task.txt" 2>&1; then fail 'manual task-board edit did not block architecture refresh'; fi
 assert_contains "$TMP_DIR/refresh-manual-task.txt" 'proposal pending: manual task board edit detected'
+PROPOSAL="$VAULT/.ai-architecture-sync/pending-proposal.json"
+assert_file "$PROPOSAL"
+/usr/bin/jq -e '
+  .state == "ready" and
+  (.operations == [{
+    "operation": "rename",
+    "task_id": "TASK-20260826-001",
+    "from": "Transactional architecture task",
+    "to": "Manual Obsidian title"
+  }]) and
+  (.blocked_reasons == [])
+' "$PROPOSAL" >/dev/null || fail 'guarded refresh did not create the exact manual-board proposal'
+cmp -s "$TASKS" "$TMP_DIR/manual-edited-tasks" || fail 'guarded refresh overwrote the manually edited task board'
+cmp -s "$OVERVIEW" "$TMP_DIR/manual-edited-overview" || fail 'guarded refresh changed the overview after a manual board edit'
+cmp -s "$MANIFEST" "$TMP_DIR/manual-edited-manifest" || fail 'guarded refresh changed the manifest after a manual board edit'
+rm -f "$PROPOSAL"
 
 sed -i '' 's/"format_version": 3/"format_version": 2/' "$MANIFEST"
 if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write > "$TMP_DIR/v2-manifest.txt" 2>&1; then fail 'v2 manifest did not block write'; fi
