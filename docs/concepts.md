@@ -61,6 +61,20 @@ bash scripts/obsidian-task-sync.sh status --vault /path/to/_ai-hub/projects/ai-d
 bash scripts/obsidian-task-sync.sh apply --hub /path/to/_ai-hub --scope /path/to/scope.txt --vault /path/to/_ai-hub/projects/ai-dev-architecture/obsidian-vault --confirm-proposal <sha256>
 ```
 
+A board edit becomes a proposal only when the synchronizer can express it as an
+exact canonical change. It supports renaming a card, changing or removing its
+explicit due date, moving a future task between `Ideas`, `Ready`, `Blocked`, and
+`Active`, moving the current task between `Active`, `Blocked`, and `Review`, and
+creating an unchecked card that names a registered project. Everything else is a
+blocked proposal to resolve through the architecture: pausing needs
+`task-switch`, finishing needs `task-finish`, a paused card cannot change at all,
+and a ticked checkbox or an extra card field blocks the whole board rather than
+being reverted in silence by the next refresh.
+
+Promoting a future task into `Active` replaces the project's current task. The
+replaced task is written to `ai/paused-tasks.md` with its whole recorded body, so
+its working state stays readable.
+
 The optional local watcher only runs `scan`; it never applies a proposal. First
 preview its user launchd plist. Installation and removal are separate explicit
 actions, each with its own confirmation flag:

@@ -162,24 +162,28 @@ load_known_cards() {
   [ "${#KNOWN_IDS[@]}" -gt 0 ] || die 'manifest contains no tasks'
 }
 
-BOARD_COLUMNS=() BOARD_IDS=() BOARD_TITLES=() BOARD_PROJECTS=() BOARD_DUES=() BOARD_ERRORS=()
+BOARD_COLUMNS=() BOARD_IDS=() BOARD_TITLES=() BOARD_PROJECTS=() BOARD_DUES=() BOARD_DONE=() BOARD_ERRORS=()
 parse_cards() {
-  local row column id title project due
-  while IFS=$'\034' read -r column id title project due; do
-    BOARD_COLUMNS+=("$column"); BOARD_IDS+=("$id"); BOARD_TITLES+=("$title"); BOARD_PROJECTS+=("$project"); BOARD_DUES+=("$due")
+  local row column id title project due done_mark extra
+  while IFS=$'\034' read -r column id title project due done_mark extra; do
+    BOARD_COLUMNS+=("$column"); BOARD_IDS+=("$id"); BOARD_TITLES+=("$title"); BOARD_PROJECTS+=("$project"); BOARD_DUES+=("$due"); BOARD_DONE+=("$done_mark")
     valid_column "$column" || BOARD_ERRORS+=("unknown column: $column")
     [ -n "$title" ] || BOARD_ERRORS+=("card title is empty in column: $column")
     [ -z "$due" ] || [[ "$due" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || BOARD_ERRORS+=("invalid due date for card: $title")
+    # A field the synchronizer cannot model would be reverted without ever
+    # appearing in the confirmed diff, so refuse the whole board instead.
+    [ "$extra" -eq 0 ] || BOARD_ERRORS+=("card has an unsupported field: $title")
   done < <(awk '
-    function flush() { if (card) print column "\034" id "\034" title "\034" project "\034" due }
+    function flush() { if (card) print column "\034" id "\034" title "\034" project "\034" due "\034" done_mark "\034" extra }
     /^## / { flush(); card=0; column=$0; sub(/^## /, "", column); next }
     /^- \[[ xX]\] / {
-      flush(); card=1; line=$0; sub(/^- \[[ xX]\] /, "", line); id=""; project=""; due=""
+      flush(); card=1; line=$0; done_mark=substr(line, 4, 1); sub(/^- \[[ xX]\] /, "", line); id=""; project=""; due=""; extra=0
       if (match(line, / \^[^[:space:]]+$/)) { id=substr(line, RSTART + 2); line=substr(line, 1, RSTART - 1) }
       title=line; next
     }
     card && /^  - project: / { project=$0; sub(/^  - project: /, "", project); next }
     card && /^  - 📅 / { due=$0; sub(/^  - 📅 /, "", due); next }
+    card && /^[[:space:]]/ { extra=1; next }
     END { flush() }
   ' "$TASKS")
   [ "${#BOARD_COLUMNS[@]}" -gt 0 ] || die 'board contains no task cards'
@@ -215,7 +219,9 @@ record_kind() {
 # would confirm a proposal that fails halfway through the canonical write.
 transition_supported() {
   case "$1" in
-    current-task.md) case "$2" in active|ready|waiting|blocked|review|paused|done) return 0;; *) return 1;; esac;;
+    # Pausing needs task-switch and finishing needs task-finish, so the board
+    # may only set the states those workflows do not own.
+    current-task.md) case "$2" in active|blocked|review) return 0;; *) return 1;; esac;;
     future-tasks.md) case "$2" in idea|ready|blocked|active) return 0;; *) return 1;; esac;;
     paused-tasks.md) case "$2" in paused) return 0;; *) return 1;; esac;;
   esac
@@ -228,7 +234,7 @@ find_known_title_project() {
 }
 
 diff_cards() {
-  local i id known title project due column count project_index status future_source j k active_count future_active_count duplicate_project known_base new_status
+  local i id known title project due column count project_index status future_source j k active_count future_active_count duplicate_project known_base new_status expected_done
   for i in "${!KNOWN_IDS[@]}"; do
     count=0
     for id in "${BOARD_IDS[@]}"; do [ "$id" = "${KNOWN_IDS[$i]}" ] && count=$((count + 1)); done
@@ -241,6 +247,8 @@ diff_cards() {
         [ "$project" = "${KNOWN_PROJECTS[$known]}" ] || BLOCK_REASONS+=("known task project changed or missing: $id")
         [ "$title" = "${KNOWN_TITLES[$known]}" ] || add_operation "$(/usr/bin/jq -cn --arg id "$id" --arg from "${KNOWN_TITLES[$known]}" --arg to "$title" '{operation:"rename", task_id:$id, from:$from, to:$to}')"
         known_base="$(basename "${KNOWN_SOURCES[$known]}")"
+        if [ "${KNOWN_COLUMNS[$known]}" = Done ]; then expected_done=x; else expected_done=' '; fi
+        [ "${BOARD_DONE[$i]}" = "$expected_done" ] || BLOCK_REASONS+=("card checkbox does not match its canonical state: $id")
         if [ "$column" != "${KNOWN_COLUMNS[$known]}" ]; then
           new_status="$(column_to_status "$column" || true)"
           if transition_supported "$known_base" "$new_status"; then
@@ -263,6 +271,7 @@ diff_cards() {
       fi
       continue
     }
+    [ "${BOARD_DONE[$i]}" = " " ] || BLOCK_REASONS+=("new card must be unchecked: $title")
     [ -n "$project" ] || { BLOCK_REASONS+=("new card has no project: $title"); continue; }
     project_index="$(project_index_for_name "$project")" || { BLOCK_REASONS+=("new card has unknown or ambiguous project: $project"); continue; }
     find_known_title_project "$title" "$project" && { BLOCK_REASONS+=("new card duplicates a known title without its block ID: $title"); continue; }
@@ -474,6 +483,18 @@ preserve_replaced_current_record() {
   esac
   [[ "$old_id" =~ ^TASK-[0-9]{8}-[0-9]{3}$ ]] && [ -n "$old_title" ] || die "invalid current task to preserve: $current_temp"
   printf '\n### %s — %s\n\nTask ID: %s\n\nStatus: %s\n' "$(date -u +%F)" "$old_title" "$old_id" "$preserved_status" >> "$paused_temp"
+  # The replaced task's recorded working state would otherwise be lost. Keep the
+  # whole body, demoting its headings so it stays inside this paused record.
+  {
+    printf '\n'
+    awk '
+      !body && /^# / { next }
+      !body && /^Status: / { next }
+      !body && /^Task ID: / { next }
+      /^## / { body = 1 }
+      { if (/^#/) sub(/^#/, "###"); print }
+    ' "$current_temp" | sed '/./,$!d'
+  } >> "$paused_temp"
 }
 
 promote_to_active() {

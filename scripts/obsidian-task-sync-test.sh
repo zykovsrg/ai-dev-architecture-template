@@ -575,4 +575,38 @@ if apply > "$TMP_DIR/temp-leak-apply.out" 2>&1; then fail 'stale apply reported 
 [ -z "$(find "$PROJECTS" -path '*/ai/*' -name '.*.apply.*' -print -quit)" ] || fail 'refused apply leaked staged copies into ai/'
 rm -f "$PROPOSAL"
 
+# Replacing the current task must not destroy its recorded working state. The
+# paused record has to keep the whole replaced body, not just its title.
+printf '%s\n' 'Status: active' 'Task ID: TASK-20260827-910' '' '## Goal' '' 'Task with a recorded body' '' '## Relevant files' '' '- scripts/example.sh' '' '## Agent handoff' '' 'Open risks: the tricky migration' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+printf '%s\n' '### FT-20260827-911 — Promotion over a recorded body' '' 'Status: ready' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+printf '%s\n' 'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+refresh_board
+move_card_to_column FT-20260827-911 'Promotion over a recorded body' 'Architecture project' Active
+scan > "$TMP_DIR/preserve-body-scan.out"
+apply > "$TMP_DIR/preserve-body-apply.out"
+assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" 'Task with a recorded body'
+assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" '- scripts/example.sh'
+assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" 'Open risks: the tricky migration'
+! grep -Eq '^## ' "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" || fail 'preserved body broke the paused file section structure'
+assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Promotion over a recorded body'
+assert_not_exists "$PROPOSAL"
+
+# The current task may only reach a state Obsidian is allowed to set. Pausing
+# and finishing stay with their own architecture workflows.
+for guarded_column in Ready Waiting Paused Done; do
+  prepare_transition_fixture
+  move_card_to_column TASK-20260827-500 'Transition guard current task' 'Architecture project' "$guarded_column"
+  assert_scan_blocked "current-$guarded_column" 'unsupported status transition for current task'
+done
+
+# A board edit the synchronizer cannot model must block, not be reverted in
+# silence by the rebuild that follows apply.
+prepare_transition_fixture
+perl -0pi -e 's/- \[ \] (Transition guard current task \^TASK-20260827-500)/- [x] $1/' "$TASKS"
+assert_scan_blocked 'checkbox' 'card checkbox does not match its canonical state'
+
+prepare_transition_fixture
+perl -0pi -e 's/(Transition guard current task \^TASK-20260827-500\n  - project: Architecture project\n)/$1  - note: my manual annotation\n/' "$TASKS"
+assert_scan_blocked 'unknown-field' 'card has an unsupported field'
+
 printf 'PASS: Obsidian confirmed task sync contract\n'
