@@ -144,13 +144,12 @@ paused_template_block="$(printf '%s\n' '### YYYY-MM-DD — Task title' '' 'Task 
 PAUSED_TEMPLATE_BLOCK="$paused_template_block" perl -0777 -ne 'exit(index($_, $ENV{PAUSED_TEMPLATE_BLOCK}) >= 0 ? 0 : 1)' \
   "$ROOT/template/ai/paused-tasks.md" || fail 'paused template does not match the generated paused record format'
 for task_skill in hub-task-intake hub-task-switch; do
-  assert_contains "$ROOT/hub-template/ai/skills/$task_skill/SKILL.md" 'a concrete unique `Task ID:`'
-  assert_contains "$ROOT/hub-template/ai/skills/$task_skill/SKILL.md" 'never leave the `TASK-YYYYMMDD-NNN` placeholder'
+  assert_contains "$ROOT/hub-template/ai/skills/$task_skill/SKILL.md" 'TASK-<project-id>-<UTC-date>-<NNN>'
 done
 for task_skill in hub-task-intake hub-task-switch hub-task-finish; do
   assert_contains "$ROOT/hub-template/ai/skills/$task_skill/SKILL.md" 'trusted architecture-to-Obsidian refresh'
   assert_contains "$ROOT/hub-template/ai/skills/$task_skill/SKILL.md" 'confirmed Obsidian-to-architecture proposal'
-  assert_contains "$ROOT/hub-template/ai/skills/$task_skill/SKILL.md" 'do not overwrite it'
+  assert_contains "$ROOT/hub-template/ai/skills/$task_skill/SKILL.md" 'do not overwrite'
 done
 for sync_doc in docs/concepts.md docs/install.md docs/update.md; do
   assert_contains "$ROOT/$sync_doc" 'trusted architecture-to-Obsidian refresh'
