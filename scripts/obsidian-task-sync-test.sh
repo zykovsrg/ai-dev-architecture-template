@@ -15,6 +15,7 @@ assert_file() { [ -f "$1" ] || fail "missing file: $1"; }
 assert_not_exists() { [ ! -e "$1" ] || fail "unexpected path: $1"; }
 assert_not_link() { [ ! -L "$1" ] || fail "unexpected symlink: $1"; }
 assert_contains() { grep -Fq -- "$2" "$1" || fail "expected '$2' in $1"; }
+assert_not_contains() { ! grep -Fq -- "$2" "$1" || fail "unexpected '$2' in $1"; }
 assert_equal() { [ "$1" = "$2" ] || fail "$3"; }
 
 HUB="$TMP_DIR/hub"
@@ -342,14 +343,14 @@ perl -0pi -e 's{(## Active\n)}{$1\n- [ ] Promoted renamed idea ^FT-20260826-001\
 scan > "$TMP_DIR/combined-promote-scan.out"
 assert_contains "$PROPOSAL" '"operation": "rename"'
 assert_contains "$PROPOSAL" '"operation": "set_due"'
-assert_contains "$PROPOSAL" '"operation": "set_status"'
+assert_contains "$PROPOSAL" '"operation": "promote_to_current"'
 apply > "$TMP_DIR/combined-promote-apply.out"
-grep -Eq '^Task ID: TASK-[0-9]{8}-[0-9]{3}$' "$ARCHITECTURE_PROJECT/ai/current-task.md" || fail 'promoted current task did not receive a TASK ID'
+assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Task ID: FT-20260826-001'
 assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Promoted renamed idea'
 assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'due: 2026-09-03'
 assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" 'Task ID: TASK-20260826-001'
 assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" 'Status: promoted'
-assert_contains "$TASKS" 'Promoted renamed idea ^TASK-'
+assert_contains "$TASKS" 'Promoted renamed idea ^FT-20260826-001'
 assert_not_exists "$PROPOSAL"
 
 # A valid unblocked card is appended to the project's canonical future tasks.
@@ -398,8 +399,8 @@ assert_contains "$TMP_DIR/empty-current-promotion-apply.out" 'proposal is stale:
 assert_equal "$(cat "$TMP_DIR/empty-current-promotion-before.txt")" "$(source_hashes)" 'stale empty current promotion rewrote sources'
 rm -f "$PROPOSAL"
 
-# Two projects can promote in one proposal. Each replacement current task must
-# receive its own valid TASK ID, before the generator is called.
+# Two projects can promote in one proposal. Legacy FT identities remain
+# readable and are not silently converted during promotion.
 prepare_promotion_fixture active 'Architecture previous task' TASK-20260827-010 FT-20260827-201 'Architecture simultaneous promotion'
 printf '%s\n' 'Status: waiting' 'Task ID: TASK-20260827-011' '' '## Goal' '' 'Extra previous task' > "$EXTRA_PROJECT/ai/current-task.md"
 printf '%s\n' '### FT-20260827-202 — Extra simultaneous promotion' '' 'Status: ready' > "$EXTRA_PROJECT/ai/future-tasks.md"
@@ -409,11 +410,8 @@ move_future_card_to_active FT-20260827-201 'Architecture simultaneous promotion'
 move_future_card_to_active FT-20260827-202 'Extra simultaneous promotion' 'Extra project'
 scan > "$TMP_DIR/multiple-promotions-scan.out"
 apply > "$TMP_DIR/multiple-promotions-apply.out"
-architecture_promoted_id="$(sed -n 's/^Task ID: \(TASK-[0-9]\{8\}-[0-9]\{3\}\)$/\1/p' "$ARCHITECTURE_PROJECT/ai/current-task.md")"
-extra_promoted_id="$(sed -n 's/^Task ID: \(TASK-[0-9]\{8\}-[0-9]\{3\}\)$/\1/p' "$EXTRA_PROJECT/ai/current-task.md")"
-[[ "$architecture_promoted_id" =~ ^TASK-[0-9]{8}-[0-9]{3}$ ]] || fail 'architecture simultaneous promotion has an invalid TASK ID'
-[[ "$extra_promoted_id" =~ ^TASK-[0-9]{8}-[0-9]{3}$ ]] || fail 'extra simultaneous promotion has an invalid TASK ID'
-[ "$architecture_promoted_id" != "$extra_promoted_id" ] || fail 'simultaneous promotions reused one TASK ID'
+assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Task ID: FT-20260827-201'
+assert_contains "$EXTRA_PROJECT/ai/current-task.md" 'Task ID: FT-20260827-202'
 assert_not_exists "$PROPOSAL"
 
 # Replacing a current task must preserve every unfinished state as a paused
@@ -510,7 +508,8 @@ if "$INSTALLER" --hub "$HUB" --scope "$SCOPE" --vault "$ARCHITECTURE_PROJECT" --
 fi
 
 # An untouched project ships the shipped template as its current task: an empty
-# status and a placeholder ID. Promotion must still replace that empty slot.
+# status and a placeholder ID. Promotion replaces that empty slot while keeping
+# the legacy future ID readable.
 printf '%s\n' 'Status: empty' 'Task ID: TASK-YYYYMMDD-NNN' '' '## Goal' '' 'Что нужно изменить.' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
 printf '%s\n' '### FT-20260827-601 — Promotion into an empty slot' '' 'Status: ready' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
 printf '%s\n' 'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
@@ -519,7 +518,7 @@ move_card_to_column FT-20260827-601 'Promotion into an empty slot' 'Architecture
 scan > "$TMP_DIR/empty-status-promotion-scan.out"
 apply > "$TMP_DIR/empty-status-promotion-apply.out"
 assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Promotion into an empty slot'
-grep -Eq '^Task ID: TASK-[0-9]{8}-[0-9]{3}$' "$ARCHITECTURE_PROJECT/ai/current-task.md" || fail 'promotion into an empty slot kept the placeholder Task ID'
+assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Task ID: FT-20260827-601'
 assert_not_exists "$PROPOSAL"
 
 # Two new cards in one proposal must receive two different future task IDs.
@@ -540,7 +539,7 @@ scan > "$TMP_DIR/two-new-cards-scan.out"
 apply > "$TMP_DIR/two-new-cards-apply.out"
 assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" 'First simultaneous new card'
 assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" 'Second simultaneous new card'
-new_future_ids="$(grep -Eo '^### FT-[0-9]{8}-[0-9]{3} — (First|Second) simultaneous new card$' "$ARCHITECTURE_PROJECT/ai/future-tasks.md" | awk '{print $2}')"
+new_future_ids="$(grep -Eo '^### TASK-ai-dev-architecture-[0-9]{8}-[0-9]{3} — (First|Second) simultaneous new card$' "$ARCHITECTURE_PROJECT/ai/future-tasks.md" | awk '{print $2}')"
 assert_equal 2 "$(printf '%s\n' "$new_future_ids" | sort -u | grep -c .)" 'two new cards reused one future task ID'
 assert_not_exists "$PROPOSAL"
 
@@ -724,5 +723,78 @@ for goal_space in $'\v' $'\f'; do
   assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Renamed whitespace goal'
   assert_not_exists "$PROPOSAL"
 done
+
+# A new Obsidian card receives its permanent project-namespaced ID in the
+# confirmed proposal. Each project owns its own sequence, so the same date and
+# number are globally unique without reading unregistered project memory.
+id_date="$(date -u +%Y%m%d)"
+printf '%s\n' 'Status: active' 'Task ID: TASK-20260827-970' '' '## Goal' '' 'Current before stable promotion' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+printf '%s\n' 'No future tasks.' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+printf '%s\n' 'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+printf '%s\n' 'Status: waiting' 'Task ID: TASK-20260827-971' '' '## Goal' '' 'Extra current before allocation' > "$EXTRA_PROJECT/ai/current-task.md"
+printf '%s\n' 'No future tasks.' > "$EXTRA_PROJECT/ai/future-tasks.md"
+printf '%s\n' 'No paused tasks.' > "$EXTRA_PROJECT/ai/paused-tasks.md"
+mkdir -p "$PROJECTS/unregistered-shadow/ai"
+printf '%s\n' "### TASK-ai-dev-architecture-${id_date}-999 — Must not affect allocation" '' 'Status: idea' > "$PROJECTS/unregistered-shadow/ai/future-tasks.md"
+printf '%s\n' "Status: active" "Task ID: TASK-extra-project-${id_date}-999" '' '## Goal' '' 'Must not be read' > "$PROJECTS/unregistered-shadow/ai/current-task.md"
+printf '%s\n' 'No paused tasks.' > "$PROJECTS/unregistered-shadow/ai/paused-tasks.md"
+refresh_board
+perl -0pi -e 's/(?<!\n)\z/\n/' "$TASKS"
+NEW_ARCH_CARD="$(printf '%s\n' '- [ ] Stable architecture future' '  - project: Architecture project')" \
+NEW_EXTRA_CARD="$(printf '%s\n' '- [ ] Stable extra future' '  - project: Extra project')" \
+perl -0pi -e 's{(^## Ideas\n)}{$1 . "\n" . $ENV{NEW_ARCH_CARD} . "\n" . $ENV{NEW_EXTRA_CARD} . "\n"}me' "$TASKS"
+scan > "$TMP_DIR/namespaced-create-scan.out"
+architecture_stable_id="TASK-ai-dev-architecture-${id_date}-001"
+extra_stable_id="TASK-extra-project-${id_date}-001"
+/usr/bin/jq -e --arg architecture_id "$architecture_stable_id" --arg extra_id "$extra_stable_id" '
+  .state == "ready" and
+  ([.operations[] | select(.operation == "create_future") | .task_id] | sort) == ([$architecture_id, $extra_id] | sort)
+' "$PROPOSAL" >/dev/null || { /usr/bin/jq . "$PROPOSAL" >&2; fail 'new cards did not receive exact project-namespaced IDs in the proposal'; }
+[ "$architecture_stable_id" != "$extra_stable_id" ] || fail 'project namespaces did not make new task IDs globally unique'
+apply > "$TMP_DIR/namespaced-create-apply.out"
+assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" "### $architecture_stable_id — Stable architecture future"
+assert_contains "$EXTRA_PROJECT/ai/future-tasks.md" "### $extra_stable_id — Stable extra future"
+assert_contains "$TASKS" "Stable architecture future ^$architecture_stable_id"
+assert_contains "$TASKS" "Stable extra future ^$extra_stable_id"
+assert_not_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" "${id_date}-999"
+assert_not_contains "$EXTRA_PROJECT/ai/future-tasks.md" "${id_date}-999"
+
+# Promotion keeps exactly the same ID. The proposal must name every canonical
+# source change: preserve the old current record, replace current, and mark the
+# promoted future record. A generic set_status operation is not an exact diff.
+move_card_to_column "$architecture_stable_id" 'Stable architecture future' 'Architecture project' Active
+scan > "$TMP_DIR/stable-promotion-scan.out"
+/usr/bin/jq -e \
+  --arg promoted_id "$architecture_stable_id" \
+  --arg old_id 'TASK-20260827-970' \
+  --arg future "$ARCHITECTURE_PROJECT/ai/future-tasks.md" \
+  --arg current "$ARCHITECTURE_PROJECT/ai/current-task.md" \
+  --arg paused "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" '
+  .state == "ready" and
+  ([.operations[] | select(.operation == "set_status" and .task_id == $promoted_id)] | length) == 0 and
+  ([.operations[] | select(
+    .operation == "promote_to_current" and
+    .task_id == $promoted_id and
+    .from == "idea" and .to == "active" and
+    .replaced_current.task_id == $old_id and
+    .replaced_current.from_status == "active" and
+    .replaced_current.to_status == "paused" and
+    ([.source_changes[] | select(.action == "mark_future_promoted" and .source_file == $future and .task_id == $promoted_id)] | length) == 1 and
+    ([.source_changes[] | select(.action == "append_paused_record" and .source_file == $paused and .task_id == $old_id)] | length) == 1 and
+    ([.source_changes[] | select(.action == "replace_current" and .source_file == $current and .from_task_id == $old_id and .to_task_id == $promoted_id)] | length) == 1
+  )] | length) == 1
+' "$PROPOSAL" >/dev/null || fail 'promotion proposal did not expose every exact canonical source change'
+apply > "$TMP_DIR/stable-promotion-apply.out"
+assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" "Task ID: $architecture_stable_id"
+assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Stable architecture future'
+assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" "### $architecture_stable_id — Stable architecture future"
+assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" 'Status: promoted'
+assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" 'Task ID: TASK-20260827-970'
+assert_contains "$TASKS" "Stable architecture future ^$architecture_stable_id"
+! grep -Eq "Stable architecture future \^TASK-(20|[a-z0-9-]+-20)[0-9]{6}-[0-9]{3}$" "$TASKS" || \
+  [ "$(grep -Ec "Stable architecture future \^$architecture_stable_id$" "$TASKS")" -eq 1 ] || fail 'promotion changed the permanent task ID'
+scan > "$TMP_DIR/stable-promotion-rescan.out"
+assert_contains "$TMP_DIR/stable-promotion-rescan.out" 'board matches canonical task records'
+assert_not_exists "$PROPOSAL"
 
 printf 'PASS: Obsidian confirmed task sync contract\n'

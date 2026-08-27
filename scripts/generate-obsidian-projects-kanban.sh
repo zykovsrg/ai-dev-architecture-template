@@ -15,32 +15,43 @@ current_state() { awk '/^## / { exit } /^Status: / { print substr($0, 9); exit }
 current_title() { awk '/^## Goal[[:space:]]*$/ {goal=1; next} goal && /^## / {exit} goal && NF {print; exit}' "$1" | sed 's/[[:space:]]*$//'; }
 validate_task_source() { LC_ALL=C grep -q $'\r' "$1" && die "task source must not contain a carriage return: $1" || true; }
 current_task_id() {
-  local file="$1" ids=()
+  local file="$1" project_id="$2" ids=()
   while IFS= read -r task_id; do ids+=("$task_id"); done < <(sed -n '/^## /q; /^Task ID: /s/^Task ID: //p' "$file")
   [ "${#ids[@]}" -eq 1 ] && [ -n "${ids[0]}" ] || die "renderable current task must have exactly one Task ID: $file"
   ids[0]="$(printf '%s' "${ids[0]}" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
-  [[ "${ids[0]}" =~ ^TASK-[0-9]{8}-[0-9]{3}$ ]] || die "invalid Task ID: $file"
+  [[ "${ids[0]}" =~ ^TASK-[0-9]{8}-[0-9]{3}$ || "${ids[0]}" =~ ^FT-[0-9]{8}-[0-9]+$ || "${ids[0]}" =~ ^TASK-${project_id}-[0-9]{8}-[0-9]{3}$ ]] || die "invalid Task ID for project $project_id: $file"
   printf '%s' "${ids[0]}"
 }
 safe_due() { sed -nE 's/^[[:space:]]*due:[[:space:]]*([0-9]{4}-[0-9]{2}-[0-9]{2})[[:space:]]*$/\1/p' "$@" | sort -u | head -n 1; }
 table_cell() { local text="$1"; text=${text//|/\\|}; text=${text//$'\n'/ }; printf '%s' "$text"; }
 
 future_records() {
-  awk '
+  awk -v project_id="$2" '
     function flush() { if (entry && (state == "idea" || state == "ready" || state == "blocked")) print id "\t" state "\t" title "\t" due }
-    /^### FT-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9]+[[:space:]]/ {
-      flush(); entry=1; state=""; due=""; id=$2; title=$0
-      sub(/^### FT-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9]+[[:space:]]+[^[:space:]]+[[:space:]]*/, "", title); next
+    function valid_id(value) {
+      return value ~ /^FT-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9]+$/ || value ~ ("^TASK-" project_id "-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9]$")
+    }
+    /^### (FT-|TASK-)/ {
+      flush(); id=$2
+      if (!valid_id(id)) {
+        if (id ~ /^TASK-/) { printf "error: invalid future Task ID for project %s: %s\n", project_id, FILENAME > "/dev/stderr"; invalid=1 }
+        entry=0; next
+      }
+      entry=1; state=""; due=""; title=$0
+      sub(/^### [^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]*/, "", title); next
     }
     /^### / { flush(); entry=0; state=""; due=""; title=""; next }
     entry && /^Status: / { state=substr($0, 9); next }
     entry && /^[[:space:]]*due:[[:space:]]*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9][[:space:]]*$/ { due=$0; sub(/^[[:space:]]*due:[[:space:]]*/, "", due); sub(/[[:space:]]*$/, "", due) }
-    END { flush() }
+    END { flush(); exit invalid }
   ' "$1" | sed 's/[[:space:]]*$//'
 }
 paused_records() {
-  awk '
-    function flush() { if (entry && state == "paused") { sub(/^[[:space:]]+/, "", id); sub(/[[:space:]]+$/, "", id); if (id_count != 1 || id == "") { printf "error: renderable paused task must have exactly one Task ID: %s\\n", FILENAME > "/dev/stderr"; invalid=1 } else if (id !~ /^TASK-[0-9]{8}-[0-9]{3}$/) { printf "error: invalid Task ID: %s\\n", FILENAME > "/dev/stderr"; invalid=1 } else print id "\t" title } }
+  awk -v project_id="$2" '
+    function valid_id(value) {
+      return value ~ /^TASK-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9]$/ || value ~ /^FT-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9]+$/ || value ~ ("^TASK-" project_id "-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9]$")
+    }
+    function flush() { if (entry && state == "paused") { sub(/^[[:space:]]+/, "", id); sub(/[[:space:]]+$/, "", id); if (id_count != 1 || id == "") { printf "error: renderable paused task must have exactly one Task ID: %s\\n", FILENAME > "/dev/stderr"; invalid=1 } else if (!valid_id(id)) { printf "error: invalid Task ID for project %s: %s\\n", project_id, FILENAME > "/dev/stderr"; invalid=1 } else print id "\t" title } }
     /^### [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9][[:space:]]/ { flush(); entry=1; state=""; id=""; id_count=0; title=$0; sub(/^### [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9][[:space:]]+[^[:space:]]+[[:space:]]*/, "", title); next }
     /^### / { flush(); entry=0; state=""; id=""; id_count=0; title=""; next }
     entry && /^Task ID: / { id=substr($0, 10); id_count++; next }
@@ -48,7 +59,7 @@ paused_records() {
     END { flush(); exit invalid }
   ' "$1" | sed 's/[[:space:]]*$//'
 }
-count_future_state() { future_records "$1" | awk -F '\t' -v wanted="$2" '$2 == wanted {count++} END {print count+0}'; }
+count_future_state() { future_records "$1" "$3" | awk -F '\t' -v wanted="$2" '$2 == wanted {count++} END {print count+0}'; }
 resolve_card() {
   local raw="$1" parent canonical_parent root
   case "$raw" in /*) die "registry card path must be relative: $raw";; ai/project-cards/*);; *) die "registry card path must stay beneath ai/project-cards: $raw";; esac
@@ -119,18 +130,18 @@ for id in "${IDS[@]}"; do
     # A substituted placeholder title would differ from the canonical record, so
     # every later scan would propose a rename the user never made.
     [ -n "$title" ] || die "renderable current task must have a goal line: $current_file"
-    current_task_id="$(current_task_id "$current_file")"
+    current_task_id="$(current_task_id "$current_file" "$id")"
     add_task "$current_task_id" "$current_column" "$title" "$name" "$id" "$due" "$current_done" "$current_file" "$(hash_file "$current_file")"
     overview_current="$title"
   fi
   while IFS=$'\t' read -r future_task_id future_status future_title future_due; do
     [ -n "$future_status" ] || continue
     case "$future_status" in idea) add_task "$future_task_id" Ideas "$future_title" "$name" "$id" "$future_due" ' ' "$future_file" "$(hash_file "$future_file")";; ready) add_task "$future_task_id" Ready "$future_title" "$name" "$id" "$future_due" ' ' "$future_file" "$(hash_file "$future_file")";; blocked) add_task "$future_task_id" Blocked "$future_title" "$name" "$id" "$future_due" ' ' "$future_file" "$(hash_file "$future_file")";; esac
-  done < <(future_records "$future_file")
-  paused_output="$(paused_records "$paused_file")"
+  done < <(future_records "$future_file" "$id")
+  paused_output="$(paused_records "$paused_file" "$id")"
   while IFS=$'\t' read -r paused_task_id paused_title; do [ -n "$paused_title" ] && add_task "$paused_task_id" Paused "$paused_title" "$name" "$id" '' ' ' "$paused_file" "$(hash_file "$paused_file")"; done <<< "$paused_output"
-  ready_count="$(count_future_state "$future_file" ready)"; waiting_count=0; [ "$current" = waiting ] && waiting_count=1
-  overview_due="$due"; [ -n "$overview_due" ] || overview_due="$(future_records "$future_file" | awk -F '\t' '$2 == "ready" && $4 != "" {print $4}' | sort | head -n 1)"; [ -n "$overview_due" ] || overview_due='—'
+  ready_count="$(count_future_state "$future_file" ready "$id")"; waiting_count=0; [ "$current" = waiting ] && waiting_count=1
+  overview_due="$due"; [ -n "$overview_due" ] || overview_due="$(future_records "$future_file" "$id" | awk -F '\t' '$2 == "ready" && $4 != "" {print $4}' | sort | head -n 1)"; [ -n "$overview_due" ] || overview_due='—'
   OVERVIEW_ROWS+="| $(table_cell "$name") | $(table_cell "$registry_status") | $(table_cell "$overview_current") | $ready_count | $waiting_count | $overview_due |"$'\n'
   SOURCE_IDS+=("$id"); SOURCE_PATHS+=("$path"); SOURCE_CARDS+=("$card"); SOURCE_HASHES+=("$(hash_files "$card" "$current_file" "$future_file" "$paused_file")")
 done

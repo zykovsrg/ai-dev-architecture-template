@@ -210,4 +210,22 @@ printf '%s\n' $'### FT-20260826-7 — Single-digit future task\n\nStatus: idea' 
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/strict-future-heading.txt"
 assert_contains "$TMP_DIR/strict-future-heading.txt" '- [ ] Single-digit future task ^FT-20260826-7'
 
+# New records use a project namespace. Two projects may allocate the same UTC
+# date and sequence without colliding, while legacy TASK/FT IDs stay readable.
+printf '%s\n' $'Status: active\nTask ID: TASK-ai-dev-architecture-20260826-001\n\n## Goal\n\nNamespaced current task' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+printf '%s\n' $'### TASK-ai-dev-architecture-20260826-002 — Namespaced future task\n\nStatus: ready' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+printf '%s\n' $'### 2026-08-20 — Namespaced paused task\n\nTask ID: TASK-ai-dev-architecture-20260826-003\n\nStatus: paused' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+printf '%s\n' $'Status: waiting\nTask ID: TASK-waiting-project-20260826-001\n\n## Goal\n\nNamespaced waiting task' > "$PROJECTS/waiting-project/ai/current-task.md"
+SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/namespaced-ids.txt"
+assert_contains "$TMP_DIR/namespaced-ids.txt" 'Namespaced current task ^TASK-ai-dev-architecture-20260826-001'
+assert_contains "$TMP_DIR/namespaced-ids.txt" 'Namespaced future task ^TASK-ai-dev-architecture-20260826-002'
+assert_contains "$TMP_DIR/namespaced-ids.txt" 'Namespaced paused task ^TASK-ai-dev-architecture-20260826-003'
+assert_contains "$TMP_DIR/namespaced-ids.txt" 'Namespaced waiting task ^TASK-waiting-project-20260826-001'
+
+printf '%s\n' $'Status: active\nTask ID: TASK-waiting-project-20260826-004\n\n## Goal\n\nForeign namespace task' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/foreign-namespace.txt" 2>&1; then
+  fail 'generator accepted a new Task ID from another project namespace'
+fi
+assert_contains "$TMP_DIR/foreign-namespace.txt" 'invalid Task ID for project'
+
 echo 'PASS: Obsidian task Kanban and project overview contract'
