@@ -206,7 +206,7 @@ find_known_title_project() {
 }
 
 diff_cards() {
-  local i id known title project due column count project_index status future_source
+  local i id known title project due column count project_index status future_source j k active_count future_active_count duplicate_project
   for i in "${!KNOWN_IDS[@]}"; do
     count=0
     for id in "${BOARD_IDS[@]}"; do [ "$id" = "${KNOWN_IDS[$i]}" ] && count=$((count + 1)); done
@@ -234,6 +234,30 @@ diff_cards() {
     [ -f "$future_source" ] && [ ! -L "$future_source" ] || { BLOCK_REASONS+=("new card project has unsafe future task source: $project"); continue; }
     add_operation "$(/usr/bin/jq -cn --arg project_id "${PROJECT_IDS[$project_index]}" --arg title "$title" --arg status "$(column_to_status "$column")" --arg due "$due" '{operation:"create_future", project_id:$project_id, title:$title, status:$status, due:$due}')"
     add_affected_source "$future_source" "$(hash_file "$future_source")"
+  done
+  # Validate the final board state, not each status operation independently.
+  # This catches two future tasks moved to Active in the same delta.
+  for i in "${!KNOWN_PROJECTS[@]}"; do
+    project="${KNOWN_PROJECTS[$i]}"; duplicate_project=0
+    for j in "${!KNOWN_PROJECTS[@]}"; do
+      [ "$j" -lt "$i" ] || continue
+      if [ "${KNOWN_PROJECTS[$j]}" = "$project" ]; then duplicate_project=1; break; fi
+    done
+    [ "$duplicate_project" -eq 0 ] || continue
+    active_count=0; future_active_count=0
+    for j in "${!BOARD_IDS[@]}"; do
+      [ "${BOARD_COLUMNS[$j]}" = Active ] || continue
+      for k in "${!KNOWN_IDS[@]}"; do
+        if [ "${BOARD_IDS[$j]}" = "${KNOWN_IDS[$k]}" ] && [ "${KNOWN_PROJECTS[$k]}" = "$project" ]; then
+          active_count=$((active_count + 1))
+          [ "$(basename "${KNOWN_SOURCES[$k]}")" = future-tasks.md ] && future_active_count=$((future_active_count + 1))
+          break
+        fi
+      done
+    done
+    # One future task in Active is a promotion and replaces the project's
+    # current task. Two future tasks cannot be promoted together.
+    [ "$active_count" -le 1 ] || { [ "$active_count" -eq 2 ] && [ "$future_active_count" -eq 1 ]; } || BLOCK_REASONS+=("board would place more than one task in Active for project: $project ($active_count tasks)")
   done
   if [ "${#BOARD_ERRORS[@]}" -gt 0 ]; then BLOCK_REASONS+=("${BOARD_ERRORS[@]}"); fi
 }

@@ -46,6 +46,10 @@ changed.
    generated current task retained the old title. **GREEN:** promotion reads
    the staged temporary future record, so the new current task keeps the new
    title; its due update is redirected to that current record.
+5. Added a two-future-tasks-to-Active fixture. **RED:** scanner produced a
+   ready proposal for multiple Active tasks in one project. **GREEN:** scanner
+   now validates the final board delta, creates `state: blocked` with a clear
+   reason, leaves canonical files unchanged, and `apply` rejects the proposal.
 
 ## Fresh verification
 

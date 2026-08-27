@@ -132,6 +132,21 @@ assert_blocked "cat >> \"$TASKS\" <<'EOF'
   - project: Unknown project
 EOF"
 
+# A board delta cannot place multiple tasks from one project in Active. This
+# fixture moves both future tasks together, so checking each operation alone is
+# insufficient.
+reset_board
+perl -0pi -e 's/## Ideas/## Active/; s/## Ready/## Active/' "$TASKS"
+source_hashes > "$TMP_DIR/multi-active-before.txt"
+scan > "$TMP_DIR/multi-active-scan.out"
+/usr/bin/jq -e '.state == "blocked" and ([.blocked_reasons[] | select(contains("more than one task in Active"))] | length == 1)' "$PROPOSAL" >/dev/null || fail 'multiple Active tasks for one project were not blocked'
+assert_contains "$TMP_DIR/multi-active-scan.out" 'created '
+assert_equal "$(cat "$TMP_DIR/multi-active-before.txt")" "$(source_hashes)" 'multi-Active scan changed canonical files'
+if apply > "$TMP_DIR/multi-active-apply.out" 2>&1; then fail 'apply accepted blocked multiple-Active proposal'; fi
+assert_contains "$TMP_DIR/multi-active-apply.out" 'proposal is blocked or malformed'
+assert_file "$PROPOSAL"
+rm -f "$PROPOSAL"
+
 # Apply is the sole reverse writer and needs the exact fresh proposal hash.
 reset_board
 perl -0pi -e 's/Idea task \^FT-20260826-001/Renamed idea \^FT-20260826-001/' "$TASKS"
