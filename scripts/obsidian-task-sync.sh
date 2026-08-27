@@ -199,6 +199,15 @@ known_index() {
 OPERATION_LINES=() BLOCK_REASONS=() AFFECTED_LINES=()
 add_operation() { OPERATION_LINES+=("$1"); }
 add_affected_source() { AFFECTED_LINES+=("$1"$'\t'"$2"); }
+add_promotion_replacement_sources() {
+  local known_index="$1" project_id="${KNOWN_PROJECT_IDS[$1]}" project_index='' source
+  for project_index in "${!PROJECT_IDS[@]}"; do [ "${PROJECT_IDS[$project_index]}" = "$project_id" ] && break; done
+  [ -n "$project_index" ] && [ "${PROJECT_IDS[$project_index]}" = "$project_id" ] || die "unknown project for promoted task: ${KNOWN_IDS[$known_index]}"
+  for source in "${PROJECT_PATHS[$project_index]}/ai/current-task.md" "${PROJECT_PATHS[$project_index]}/ai/paused-tasks.md"; do
+    [ -f "$source" ] && [ ! -L "$source" ] || die "unsafe promotion replacement source: $source"
+    add_affected_source "$source" "$(hash_file "$source")"
+  done
+}
 find_known_title_project() {
   local title="$1" project="$2" i
   for i in "${!KNOWN_IDS[@]}"; do [ "${KNOWN_TITLES[$i]}" = "$title" ] && [ "${KNOWN_PROJECTS[$i]}" = "$project" ] && return 0; done
@@ -218,7 +227,10 @@ diff_cards() {
       known=''; if known="$(known_index "$id")"; then
         [ "$project" = "${KNOWN_PROJECTS[$known]}" ] || BLOCK_REASONS+=("known task project changed or missing: $id")
         [ "$title" = "${KNOWN_TITLES[$known]}" ] || add_operation "$(/usr/bin/jq -cn --arg id "$id" --arg from "${KNOWN_TITLES[$known]}" --arg to "$title" '{operation:"rename", task_id:$id, from:$from, to:$to}')"
-        [ "$column" = "${KNOWN_COLUMNS[$known]}" ] || add_operation "$(/usr/bin/jq -cn --arg id "$id" --arg from "${KNOWN_STATUSES[$known]}" --arg to "$(column_to_status "$column" || true)" '{operation:"set_status", task_id:$id, from:$from, to:$to}')"
+        if [ "$column" != "${KNOWN_COLUMNS[$known]}" ]; then
+          add_operation "$(/usr/bin/jq -cn --arg id "$id" --arg from "${KNOWN_STATUSES[$known]}" --arg to "$(column_to_status "$column" || true)" '{operation:"set_status", task_id:$id, from:$from, to:$to}')"
+          [ "$column" != Active ] || [ "$(basename "${KNOWN_SOURCES[$known]}")" != future-tasks.md ] || add_promotion_replacement_sources "$known"
+        fi
         [ "$due" = "${KNOWN_DUES[$known]}" ] || add_operation "$(/usr/bin/jq -cn --arg id "$id" --arg from "${KNOWN_DUES[$known]}" --arg to "$due" '{operation:"set_due", task_id:$id, from:$from, to:$to}')"
         add_affected_source "${KNOWN_SOURCES[$known]}" "${KNOWN_SHAS[$known]}"
       else
@@ -398,11 +410,38 @@ mark_record_promoted() {
   esac
 }
 
+RESERVED_TASK_IDS=()
 next_task_id() {
-  local date_part max id
+  local date_part max id temp
   date_part="$(date -u +%Y%m%d)"; max=0
   while IFS= read -r id; do [ "$id" -gt "$max" ] && max="$id"; done < <(grep -hE "^Task ID: TASK-${date_part}-[0-9]{3}$" "$HUB"/projects/*/ai/current-task.md "$HUB"/projects/*/ai/paused-tasks.md 2>/dev/null | sed "s/^Task ID: TASK-${date_part}-//")
-  printf 'TASK-%s-%03d' "$date_part" "$((10#$max + 1))"
+  if [ "${#APPLY_TEMPS[@]}" -gt 0 ]; then
+    for temp in "${APPLY_TEMPS[@]}"; do
+      while IFS= read -r id; do [ "$id" -gt "$max" ] && max="$id"; done < <(grep -E "^Task ID: TASK-${date_part}-[0-9]{3}$" "$temp" 2>/dev/null | sed "s/^Task ID: TASK-${date_part}-//")
+    done
+  fi
+  if [ "${#RESERVED_TASK_IDS[@]}" -gt 0 ]; then
+    for id in "${RESERVED_TASK_IDS[@]}"; do
+      id="${id##*-}"; [ "$id" -gt "$max" ] && max="$id"
+    done
+  fi
+  printf -v id 'TASK-%s-%03d' "$date_part" "$((10#$max + 1))"
+  RESERVED_TASK_IDS+=("$id")
+  printf '%s' "$id"
+}
+
+preserve_replaced_current_record() {
+  local current_temp="$1" paused_temp="$2" old_status="$3" old_id old_title preserved_status
+  old_id="$(sed -n '/^## /q; /^Task ID: /s/^Task ID: //p' "$current_temp" | head -n 1)"
+  old_title="$(awk '/^## Goal[[:space:]]*$/ {goal=1; next} goal && /^## / {exit} goal && NF {print; exit}' "$current_temp")"
+  case "$old_status" in
+    active|ready|in_progress|waiting|blocked|review|paused) preserved_status=paused;;
+    done|completed) preserved_status="$old_status";;
+    '') [ -z "$old_id$old_title" ] && return 0; preserved_status=paused;;
+    *) die "unsupported current task status for promotion: $old_status";;
+  esac
+  [[ "$old_id" =~ ^TASK-[0-9]{8}-[0-9]{3}$ ]] && [ -n "$old_title" ] || die "invalid current task to preserve: $current_temp"
+  printf '\n### %s — %s\n\nTask ID: %s\n\nStatus: %s\n' "$(date -u +%F)" "$old_title" "$old_id" "$preserved_status" >> "$paused_temp"
 }
 
 promote_to_active() {
@@ -415,12 +454,7 @@ promote_to_active() {
   stage_source "$current"; stage_source "$paused"
   current_temp="$(temp_for_source "$current")"; paused_temp="$(temp_for_source "$paused")"
   old_status="$(awk '/^## / {exit} /^Status: / {print substr($0, 9); exit}' "$current_temp")"
-  if [ "$old_status" = active ]; then
-    old_id="$(sed -n '/^## /q; /^Task ID: /s/^Task ID: //p' "$current_temp" | head -n 1)"
-    old_title="$(awk '/^## Goal[[:space:]]*$/ {goal=1; next} goal && /^## / {exit} goal && NF {print; exit}' "$current_temp")"
-    [[ "$old_id" =~ ^TASK-[0-9]{8}-[0-9]{3}$ ]] && [ -n "$old_title" ] || die "invalid active current task: $current"
-    printf '\n### %s — %s\n\nTask ID: %s\n\nStatus: paused\n' "$(date -u +%F)" "$old_title" "$old_id" >> "$paused_temp"
-  fi
+  preserve_replaced_current_record "$current_temp" "$paused_temp" "$old_status"
   record="$(source_record "$(temp_for_source "$source")" "$task_id" "$source")" || die "invalid promoted source record: $source"
   IFS=$'\t' read -r _ title due <<< "$record"
   new_task_id="$(next_task_id)"

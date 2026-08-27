@@ -74,3 +74,52 @@ exit 0
   multi-file rename. A process crash during the short rename loop could leave
   a mixed set; the specified Task 4 contract does not include crash-recovery
   journaling.
+
+## Final-review P1 remediation — RED/GREEN
+
+1. **Promotion replacement files were not both stale-checked.**
+   **RED:** the new fixture promoted a future card, edited a replacement file,
+   and inspected the signed proposal. It failed with
+   `FAIL: proposal did not hash promotion target: paused-tasks.md`.
+   **GREEN:** a promotion now adds both project replacement targets
+   (`current-task.md` and `paused-tasks.md`) with SHA-256 values to
+   `affected_sources` while scanning. `apply` therefore verifies and stages
+   both before processing operations. The fixture checks stale edits to each
+   file, plus an empty current-task file that is absent from the manifest; all
+   fail before a canonical write.
+
+2. **Two promotions could allocate the same TASK ID.**
+   **RED:** promoting one future task in each of two projects in a single
+   proposal failed during regeneration with `error: duplicate task ID in
+   renderable tasks`.
+   **GREEN:** `next_task_id` now considers staged files and IDs reserved by
+   the same apply operation, then reserves the generated ID immediately. The
+   fixture confirms that both resulting current tasks have distinct valid
+   `TASK-YYYYMMDD-NNN` IDs before generator output is accepted.
+
+3. **Non-active unfinished current tasks were overwritten.**
+   **RED:** promoting over a `ready` current task failed with
+   `FAIL: expected 'Prior ready task' in .../paused-tasks.md`.
+   **GREEN:** promotion now preserves `active`, `ready`, `in_progress`,
+   `waiting`, `blocked`, `review`, and `paused` current records as paused
+   records. It also retains `done`/`completed` records with their terminal
+   state, and safely leaves a truly empty current file without a phantom
+   archive record. Focused fixtures cover every unfinished state and the
+   completed case.
+
+### Verification after remediation
+
+```text
+$ bash scripts/obsidian-task-sync-test.sh
+PASS: Obsidian confirmed task sync contract
+
+$ bash scripts/obsidian-projects-kanban-test.sh
+PASS: Obsidian task Kanban and project overview contract
+
+$ bash -n scripts/obsidian-task-sync.sh scripts/obsidian-task-sync-test.sh \
+    scripts/generate-obsidian-projects-kanban.sh scripts/obsidian-projects-kanban-test.sh
+exit 0
+
+$ git diff --check
+exit 0
+```

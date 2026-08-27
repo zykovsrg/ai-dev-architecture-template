@@ -63,6 +63,20 @@ apply() {
   "$SYNC" apply --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --confirm-proposal "$proposal_hash"
 }
 assert_sources_unchanged() { assert_equal "$(cat "$TMP_DIR/source-before.txt")" "$(source_hashes)" 'scanner changed canonical source files'; }
+refresh_board() { SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture --replace-confirmed-board --confirm-generated-write >/dev/null; }
+move_future_card_to_active() {
+  local task_id="$1" title="$2" project="$3"
+  CARD_ID="$task_id" perl -0pi -e 's{^- \[ \] [^\n]* \^\Q$ENV{CARD_ID}\E\n(?:  - [^\n]*\n)*}{}mg' "$TASKS"
+  CARD_TEXT="$(printf '%s\n' "- [ ] $title ^$task_id" "  - project: $project")" perl -0pi -e 's{(## Active\n)}{$1 . "\n" . $ENV{CARD_TEXT}}e' "$TASKS"
+}
+prepare_promotion_fixture() {
+  local status="$1" title="$2" task_id="$3" future_id="$4" future_title="$5"
+  printf '%s\n' "Status: $status" "Task ID: $task_id" '' '## Goal' '' "$title" > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+  printf '%s\n' "### $future_id — $future_title" '' 'Status: ready' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+  printf '%s\n' 'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+  refresh_board
+  move_future_card_to_active "$future_id" "$future_title" 'Architecture project'
+}
 run_and_check() {
   source_hashes > "$TMP_DIR/source-before.txt"
   scan > "$TMP_DIR/scan.out"
@@ -226,6 +240,80 @@ scan > "$TMP_DIR/create-scan.out"
 apply > "$TMP_DIR/create-apply.out"
 assert_contains "$EXTRA_PROJECT/ai/future-tasks.md" 'Applied new future task'
 assert_contains "$TASKS" 'Applied new future task'
+assert_not_exists "$PROPOSAL"
+
+# Promotion writes current-task.md and paused-tasks.md as well as its future
+# source. Both replacement targets must be captured in the proposal and make
+# apply fail before any write if either changed after the scan.
+for stale_target in current-task.md paused-tasks.md; do
+  prepare_promotion_fixture active 'Stale protected current task' TASK-20260827-001 FT-20260827-101 'Stale target promotion'
+  scan > "$TMP_DIR/stale-promotion-${stale_target}-scan.out"
+  /usr/bin/jq -e --arg source "$ARCHITECTURE_PROJECT/ai/$stale_target" '[.affected_sources[] | select(.source_file == $source)] | length == 1' "$PROPOSAL" >/dev/null || fail "proposal did not hash promotion target: $stale_target"
+  printf '\nManual stale edit\n' >> "$ARCHITECTURE_PROJECT/ai/$stale_target"
+  source_hashes > "$TMP_DIR/stale-promotion-${stale_target}-before.txt"
+  if apply > "$TMP_DIR/stale-promotion-${stale_target}-apply.out" 2>&1; then fail "stale promotion applied after $stale_target changed"; fi
+  assert_contains "$TMP_DIR/stale-promotion-${stale_target}-apply.out" 'proposal is stale: canonical source changed'
+  assert_equal "$(cat "$TMP_DIR/stale-promotion-${stale_target}-before.txt")" "$(source_hashes)" "stale promotion rewrote sources after $stale_target changed"
+  rm -f "$PROPOSAL"
+done
+
+# An empty current task is absent from the manifest, but promotion still
+# replaces its file. It must therefore be protected independently of cards.
+printf '%s\n' 'No current task.' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+printf '%s\n' '### FT-20260827-102 — Empty current promotion' '' 'Status: ready' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+printf '%s\n' 'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+refresh_board
+move_future_card_to_active FT-20260827-102 'Empty current promotion' 'Architecture project'
+scan > "$TMP_DIR/empty-current-promotion-scan.out"
+/usr/bin/jq -e --arg source "$ARCHITECTURE_PROJECT/ai/current-task.md" '[.affected_sources[] | select(.source_file == $source)] | length == 1' "$PROPOSAL" >/dev/null || fail 'proposal did not hash an empty current-task replacement target'
+printf '\nManual stale edit\n' >> "$ARCHITECTURE_PROJECT/ai/current-task.md"
+source_hashes > "$TMP_DIR/empty-current-promotion-before.txt"
+if apply > "$TMP_DIR/empty-current-promotion-apply.out" 2>&1; then fail 'promotion applied after an empty current-task changed'; fi
+assert_contains "$TMP_DIR/empty-current-promotion-apply.out" 'proposal is stale: canonical source changed'
+assert_equal "$(cat "$TMP_DIR/empty-current-promotion-before.txt")" "$(source_hashes)" 'stale empty current promotion rewrote sources'
+rm -f "$PROPOSAL"
+
+# Two projects can promote in one proposal. Each replacement current task must
+# receive its own valid TASK ID, before the generator is called.
+prepare_promotion_fixture active 'Architecture previous task' TASK-20260827-010 FT-20260827-201 'Architecture simultaneous promotion'
+printf '%s\n' 'Status: waiting' 'Task ID: TASK-20260827-011' '' '## Goal' '' 'Extra previous task' > "$EXTRA_PROJECT/ai/current-task.md"
+printf '%s\n' '### FT-20260827-202 — Extra simultaneous promotion' '' 'Status: ready' > "$EXTRA_PROJECT/ai/future-tasks.md"
+printf '%s\n' 'No paused tasks.' > "$EXTRA_PROJECT/ai/paused-tasks.md"
+refresh_board
+move_future_card_to_active FT-20260827-201 'Architecture simultaneous promotion' 'Architecture project'
+move_future_card_to_active FT-20260827-202 'Extra simultaneous promotion' 'Extra project'
+scan > "$TMP_DIR/multiple-promotions-scan.out"
+apply > "$TMP_DIR/multiple-promotions-apply.out"
+architecture_promoted_id="$(sed -n 's/^Task ID: \(TASK-[0-9]\{8\}-[0-9]\{3\}\)$/\1/p' "$ARCHITECTURE_PROJECT/ai/current-task.md")"
+extra_promoted_id="$(sed -n 's/^Task ID: \(TASK-[0-9]\{8\}-[0-9]\{3\}\)$/\1/p' "$EXTRA_PROJECT/ai/current-task.md")"
+[[ "$architecture_promoted_id" =~ ^TASK-[0-9]{8}-[0-9]{3}$ ]] || fail 'architecture simultaneous promotion has an invalid TASK ID'
+[[ "$extra_promoted_id" =~ ^TASK-[0-9]{8}-[0-9]{3}$ ]] || fail 'extra simultaneous promotion has an invalid TASK ID'
+[ "$architecture_promoted_id" != "$extra_promoted_id" ] || fail 'simultaneous promotions reused one TASK ID'
+assert_not_exists "$PROPOSAL"
+
+# Replacing a current task must preserve every unfinished state as a paused
+# record. Completed data must remain recorded rather than being overwritten.
+preserve_counter=30
+for prior_status in active ready in_progress waiting blocked review paused; do
+  preserve_counter=$((preserve_counter + 1))
+  printf -v prior_id 'TASK-20260827-%03d' "$preserve_counter"
+  printf -v future_id 'FT-20260827-%03d' "$((preserve_counter + 100))"
+  prior_title="Prior $prior_status task"
+  prepare_promotion_fixture "$prior_status" "$prior_title" "$prior_id" "$future_id" "Promote after $prior_status"
+  scan > "$TMP_DIR/preserve-${prior_status}-scan.out"
+  apply > "$TMP_DIR/preserve-${prior_status}-apply.out"
+  assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" "$prior_title"
+  assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" "Task ID: $prior_id"
+  assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" 'Status: paused'
+  assert_not_exists "$PROPOSAL"
+done
+
+prepare_promotion_fixture completed 'Completed current task remains recorded' TASK-20260827-099 FT-20260827-399 'Promotion after completion'
+scan > "$TMP_DIR/preserve-completed-scan.out"
+apply > "$TMP_DIR/preserve-completed-apply.out"
+assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" 'Completed current task remains recorded'
+assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" 'Task ID: TASK-20260827-099'
+assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" 'Status: completed'
 assert_not_exists "$PROPOSAL"
 
 printf 'PASS: Obsidian confirmed task sync contract\n'
