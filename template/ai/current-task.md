@@ -2,6 +2,8 @@
 
 Status: empty
 
+Task ID: TASK-YYYYMMDD-NNN
+
 Allowed statuses: empty / active / review / blocked / done / paused
 
 Note: `paused` is a transient status used only while `task-switch` is moving this

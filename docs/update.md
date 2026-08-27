@@ -77,6 +77,29 @@ bash /path/to/ai-dev-architecture-template/scripts/update-installed-hub.sh --hub
 The hub updater preserves hub-managed project memory. It does not register
 projects, migrate a standalone project, clean up files, or create reminders.
 
+## Optional confirmed Obsidian task sync
+
+An updated hub can use the local task synchronizer only after the user reviews
+its commands. The trusted architecture-to-Obsidian refresh rebuilds the
+generated views from canonical `ai/` task records and still checks the manifest.
+If Obsidian was edited manually, it stops with a pending proposal and does not
+overwrite it. The reverse direction remains a confirmed Obsidian-to-architecture proposal:
+inspect it with `status`, then use
+`apply --confirm-proposal <sha256>` only for the exact reviewed change.
+
+The watcher is optional and local. Preview its user plist after an update, then
+install, check, or remove it explicitly:
+
+```bash
+bash scripts/install-obsidian-task-sync.sh --hub /path/to/_ai-hub --scope /path/to/scope.txt --vault /path/to/_ai-hub/projects/ai-dev-architecture/obsidian-vault --preview
+bash scripts/install-obsidian-task-sync.sh --hub /path/to/_ai-hub --scope /path/to/scope.txt --vault /path/to/_ai-hub/projects/ai-dev-architecture/obsidian-vault --install --confirm-launchd-install
+bash scripts/install-obsidian-task-sync.sh --hub /path/to/_ai-hub --scope /path/to/scope.txt --vault /path/to/_ai-hub/projects/ai-dev-architecture/obsidian-vault --status
+bash scripts/install-obsidian-task-sync.sh --hub /path/to/_ai-hub --scope /path/to/scope.txt --vault /path/to/_ai-hub/projects/ai-dev-architecture/obsidian-vault --uninstall --confirm-launchd-uninstall
+```
+
+`scan` creates only a local proposal. The separate install and uninstall flags
+are not interchangeable and neither action is performed by an update.
+
 Updating an installed hub also removes superseded paths listed by the
 updater — hub skill directories that were renamed or retired upstream.
 `--dry-run` (and `--check`, when it detects stale superseded paths) shows

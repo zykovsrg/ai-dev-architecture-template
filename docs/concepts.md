@@ -41,6 +41,40 @@ Work modes tell the agent what exactly it should be doing.
 - `hub-task-finish` — check whether the task can be closed and clean up the context after confirmation.
 - `architecture-update` — update the AI development rules, not the application code.
 
+## Confirmed Obsidian task sync
+
+`ai/current-task.md`, `ai/future-tasks.md`, and `ai/paused-tasks.md` are the
+only canonical task records. Obsidian Kanban is a local generated view.
+
+After an approved task-memory write, the trusted architecture-to-Obsidian refresh
+rebuilds the view with `--write --refresh-from-architecture`. It is
+trusted only in that direction and still validates the manifest. A manual
+Obsidian edit makes the refresh stop with a pending proposal; it must not
+overwrite it.
+
+The reverse direction is a confirmed Obsidian-to-architecture proposal:
+scan the local board, inspect it, then apply only the shown hash.
+
+```bash
+bash scripts/obsidian-task-sync.sh scan --hub /path/to/_ai-hub --scope /path/to/scope.txt --vault /path/to/_ai-hub/projects/ai-dev-architecture/obsidian-vault
+bash scripts/obsidian-task-sync.sh status --vault /path/to/_ai-hub/projects/ai-dev-architecture/obsidian-vault
+bash scripts/obsidian-task-sync.sh apply --hub /path/to/_ai-hub --scope /path/to/scope.txt --vault /path/to/_ai-hub/projects/ai-dev-architecture/obsidian-vault --confirm-proposal <sha256>
+```
+
+The optional local watcher only runs `scan`; it never applies a proposal. First
+preview its user launchd plist. Installation and removal are separate explicit
+actions, each with its own confirmation flag:
+
+```bash
+bash scripts/install-obsidian-task-sync.sh --hub /path/to/_ai-hub --scope /path/to/scope.txt --vault /path/to/_ai-hub/projects/ai-dev-architecture/obsidian-vault --preview
+bash scripts/install-obsidian-task-sync.sh --hub /path/to/_ai-hub --scope /path/to/scope.txt --vault /path/to/_ai-hub/projects/ai-dev-architecture/obsidian-vault --install --confirm-launchd-install
+bash scripts/install-obsidian-task-sync.sh --hub /path/to/_ai-hub --scope /path/to/scope.txt --vault /path/to/_ai-hub/projects/ai-dev-architecture/obsidian-vault --status
+bash scripts/install-obsidian-task-sync.sh --hub /path/to/_ai-hub --scope /path/to/scope.txt --vault /path/to/_ai-hub/projects/ai-dev-architecture/obsidian-vault --uninstall --confirm-launchd-uninstall
+```
+
+`.ai-architecture-sync/` holds only local proposals, locks, and watcher logs;
+Git ignores it.
+
 ## Optional local knowledge
 
 `knowledge/` is an optional local reference layer. It is different from

@@ -99,7 +99,7 @@ echo "Smoke test workspace: $TMP_DIR"
 bash "$ROOT/scripts/check-consistency.sh" > "$TMP_DIR/consistency.out"
 assert_contains "$TMP_DIR/consistency.out" 'OK [standalone canonical blocks]'
 assert_contains "$TMP_DIR/consistency.out" 'OK [hub entry parity]'
-assert_contains "$TMP_DIR/consistency.out" 'OK [hub skill references] — 15 declared skills exist'
+assert_contains "$TMP_DIR/consistency.out" 'OK [hub skill references] — 16 declared skills exist'
 assert_contains "$TMP_DIR/consistency.out" 'OK [hub update classes]'
 assert_contains "$TMP_DIR/consistency.out" 'OK [standalone memory updater boundaries]'
 assert_contains "$TMP_DIR/consistency.out" 'OK [hub skill naming]'
@@ -136,6 +136,19 @@ assert_contains "$ROOT/README.md" 'единая точка входа'
 assert_contains "$ROOT/docs/install.md" '--mode hub'
 assert_contains "$ROOT/docs/update.md" 'update-installed-hub.sh'
 assert_contains "$ROOT/docs/file-roles.md" 'Hub-managed project memory'
+assert_contains "$ROOT/template/ai/current-task.md" 'Task ID: TASK-YYYYMMDD-NNN'
+assert_contains "$ROOT/template/ai/paused-tasks.md" 'Task ID: TASK-YYYYMMDD-NNN'
+for task_skill in hub-task-intake hub-task-switch hub-task-finish; do
+  assert_contains "$ROOT/hub-template/ai/skills/$task_skill/SKILL.md" 'trusted architecture-to-Obsidian refresh'
+  assert_contains "$ROOT/hub-template/ai/skills/$task_skill/SKILL.md" 'confirmed Obsidian-to-architecture proposal'
+  assert_contains "$ROOT/hub-template/ai/skills/$task_skill/SKILL.md" 'do not overwrite it'
+done
+for sync_doc in docs/concepts.md docs/install.md docs/update.md; do
+  assert_contains "$ROOT/$sync_doc" 'trusted architecture-to-Obsidian refresh'
+  assert_contains "$ROOT/$sync_doc" 'confirmed Obsidian-to-architecture proposal'
+  assert_contains "$ROOT/$sync_doc" '--confirm-launchd-install'
+  assert_contains "$ROOT/$sync_doc" '--confirm-launchd-uninstall'
+done
 for knowledge_doc in docs/file-roles.md docs/install.md docs/update.md docs/concepts.md; do
   assert_contains "$ROOT/$knowledge_doc" "Existing-project knowledge enablement is available only through the hub's"
   assert_contains "$ROOT/$knowledge_doc" 'Legacy standalone knowledge migration is out of scope.'

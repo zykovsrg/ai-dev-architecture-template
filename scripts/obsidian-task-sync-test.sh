@@ -5,6 +5,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 GENERATOR="$ROOT/scripts/generate-obsidian-projects-kanban.sh"
 SYNC="$ROOT/scripts/obsidian-task-sync.sh"
+WATCHER="$ROOT/scripts/obsidian-task-sync-watch.sh"
+INSTALLER="$ROOT/scripts/install-obsidian-task-sync.sh"
 TMP_DIR="$(mktemp -d /private/tmp/obsidian-task-sync.XXXXXX)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
@@ -84,6 +86,45 @@ run_and_check() {
   assert_contains "$PROPOSAL" "$1"
   assert_sources_unchanged
 }
+
+# The optional watcher only creates a local proposal. It must not alter canonical
+# task files, skip a matching board, and respect a guarded architecture refresh.
+source_hashes > "$TMP_DIR/watcher-matching-before.txt"
+"$WATCHER" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --once > "$TMP_DIR/watcher-matching.out"
+assert_not_exists "$PROPOSAL"
+assert_equal "$(cat "$TMP_DIR/watcher-matching-before.txt")" "$(source_hashes)" 'matching watcher scan changed canonical sources'
+
+perl -0pi -e 's/Idea task \^FT-20260826-001/Watcher renamed idea ^FT-20260826-001/' "$TASKS"
+source_hashes > "$TMP_DIR/watcher-changed-before.txt"
+"$WATCHER" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --once > "$TMP_DIR/watcher-changed.out"
+assert_file "$PROPOSAL"
+assert_contains "$PROPOSAL" '"operation": "rename"'
+assert_equal "$(cat "$TMP_DIR/watcher-changed-before.txt")" "$(source_hashes)" 'watcher changed canonical sources'
+"$SYNC" dismiss --vault "$VAULT"
+
+mkdir -p "$RUNTIME"
+printf '%s\n' 'guarded architecture refresh' > "$RUNTIME/refresh.lock"
+source_hashes > "$TMP_DIR/watcher-locked-before.txt"
+"$WATCHER" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --once > "$TMP_DIR/watcher-locked.out"
+assert_not_exists "$PROPOSAL"
+assert_equal "$(cat "$TMP_DIR/watcher-locked-before.txt")" "$(source_hashes)" 'locked watcher scan changed canonical sources'
+rm -f "$RUNTIME/refresh.lock"
+reset_board
+
+# Preview is read-only. Installing or unloading a user launchd job has its own
+# explicit confirmation boundary and therefore must reject bare commands.
+"$INSTALLER" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/installer-preview.out"
+assert_contains "$TMP_DIR/installer-preview.out" '<key>StartInterval</key>'
+assert_contains "$TMP_DIR/installer-preview.out" '<integer>10</integer>'
+assert_contains "$TMP_DIR/installer-preview.out" 'obsidian-task-sync-watch.sh'
+if "$INSTALLER" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --install > "$TMP_DIR/installer-install-without-confirm.out" 2>&1; then
+  fail 'installer accepted install without explicit confirmation'
+fi
+assert_contains "$TMP_DIR/installer-install-without-confirm.out" '--confirm-launchd-install'
+if "$INSTALLER" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --uninstall > "$TMP_DIR/installer-uninstall-without-confirm.out" 2>&1; then
+  fail 'installer accepted uninstall without explicit confirmation'
+fi
+assert_contains "$TMP_DIR/installer-uninstall-without-confirm.out" '--confirm-launchd-uninstall'
 
 # A known card is identified exclusively by its generated Obsidian block ID.
 reset_board

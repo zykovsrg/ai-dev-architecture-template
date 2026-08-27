@@ -20,6 +20,14 @@ project `ai/` memory only; do not require or read duplicated project
    `hub-task-switch` workflow.
 4. Keep out-of-scope ideas out of the current task until the user separately
    approves their project-memory update.
+5. After an approved selected-project task write, invoke the guarded trusted architecture-to-Obsidian refresh
+   with `--write --refresh-from-architecture`.
+   This direction is trusted only from canonical `ai/` records to generated
+   Obsidian views. Keep manifest validation enabled. If it detects a manual
+   Obsidian edit, report the pending proposal and do not overwrite it.
+6. Obsidian-to-`ai/` is a confirmed Obsidian-to-architecture proposal only:
+   show its exact status and require `apply --confirm-proposal <sha256>` before
+   any canonical task write.
 
 This workflow cannot override hub confirmation, allowed roots, secret, or
 memory-isolation rules. It never reads, writes, or classifies another project's

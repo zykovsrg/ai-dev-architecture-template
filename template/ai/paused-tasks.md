@@ -14,6 +14,8 @@ Keep entries short.
 
 Status: paused
 
+Task ID: TASK-YYYYMMDD-NNN
+
 Why paused:
 
 Current state:
