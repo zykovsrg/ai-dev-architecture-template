@@ -121,7 +121,7 @@ source_record() {
       ;;
     future-tasks.md)
       result="$(awk -v wanted="$wanted_id" '
-        function flush() { if (entry && id == wanted) { print status "\t" title "\t" due; count++ } }
+        function flush() { if (entry && id == wanted) { sub(/[[:space:]]*$/, "", title); print status "\t" title "\t" due; count++ } }
         /^### / { flush(); entry=1; id=$2; status=""; due=""; title=$0; sub(/^### [^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]*/, "", title); next }
         entry && /^Status: / { status=substr($0, 9); next }
         entry && /^[[:space:]]*due:[[:space:]]*[0-9]{4}-[0-9]{2}-[0-9]{2}[[:space:]]*$/ { due=$0; sub(/^[[:space:]]*due:[[:space:]]*/, "", due); sub(/[[:space:]]*$/, "", due) }
@@ -131,7 +131,7 @@ source_record() {
       ;;
     paused-tasks.md)
       result="$(awk -v wanted="$wanted_id" '
-        function flush() { if (entry && id == wanted) { print status "\t" title "\t"; count++ } }
+        function flush() { if (entry && id == wanted) { sub(/[[:space:]]*$/, "", title); print status "\t" title "\t"; count++ } }
         /^### / { flush(); entry=1; id=""; status=""; title=$0; sub(/^### [^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]*/, "", title); next }
         entry && /^Task ID: / { id=substr($0, 10); sub(/^[[:space:]]+/, "", id); sub(/[[:space:]]+$/, "", id); next }
         entry && /^Status: / { status=substr($0, 9) }
@@ -420,7 +420,7 @@ rename_record() {
   # Every branch must rewrite exactly one record. A silent no-op would report a
   # successful apply and then let the rebuild discard the confirmed edit.
   case "$base" in
-    current-task.md) NEW_TITLE="$title" perl -0pi -e 'die "rename matched no goal line\n" unless s{(^## Goal\n\n+)[^\n]*}{$1 . $ENV{NEW_TITLE}}me == 1' "$temp";;
+    current-task.md) NEW_TITLE="$title" perl -0pi -e 'die "rename matched no goal line\n" unless s{(^## Goal[ \t]*\n\n*)[^\n]*}{$1 . $ENV{NEW_TITLE}}me == 1' "$temp";;
     future-tasks.md) TASK_ID="$task_id" NEW_TITLE="$title" perl -0pi -e 'die "rename matched no future record\n" unless s{^### \Q$ENV{TASK_ID}\E [^\n]*}{"### $ENV{TASK_ID} — $ENV{NEW_TITLE}"}me == 1' "$temp";;
     paused-tasks.md) TASK_ID="$task_id" NEW_TITLE="$title" perl -0pi -e 'die "rename matched no paused record\n" unless s{(^### [0-9]{4}-[0-9]{2}-[0-9]{2} — )[^\n]*(\n(?:(?!^### ).)*?^Task ID: \Q$ENV{TASK_ID}\E$)}{$1 . $ENV{NEW_TITLE} . $2}mse == 1' "$temp";;
   esac || die "cannot rewrite the title of $task_id in $source"

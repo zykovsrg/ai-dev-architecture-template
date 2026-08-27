@@ -13,6 +13,7 @@ json_string() { local text="$1"; text=${text//\\/\\\\}; text=${text//\"/\\\"}; t
 read_field() { sed -n "s/^$2: //p" "$1" | head -n 1; }
 current_state() { awk '/^## / { exit } /^Status: / { print substr($0, 9); exit }' "$1"; }
 current_title() { awk '/^## Goal[[:space:]]*$/ {goal=1; next} goal && /^## / {exit} goal && NF {print; exit}' "$1" | sed 's/[[:space:]]*$//'; }
+validate_task_source() { LC_ALL=C grep -q $'\r' "$1" && die "task source must not contain a carriage return: $1" || true; }
 current_task_id() {
   local file="$1" ids=()
   while IFS= read -r task_id; do ids+=("$task_id"); done < <(sed -n '/^## /q; /^Task ID: /s/^Task ID: //p' "$file")
@@ -94,6 +95,7 @@ if [ "$MODE" = write ] && ! cmp -s <(printf '%s\n' "${IDS[@]}") <(printf '%s\n' 
 TASK_IDS=() TASK_COLUMNS=() TASK_TITLES=() TASK_PROJECTS=() TASK_PROJECT_IDS=() TASK_DUES=() TASK_DONE=() TASK_SOURCE_FILES=() TASK_SOURCE_HASHES=()
 SOURCE_IDS=() SOURCE_PATHS=() SOURCE_CARDS=() SOURCE_HASHES=(); OVERVIEW_ROWS=''
 add_task() {
+  [[ "$3" != *$'\t'* ]] || die "task title must not contain a tab: $3"
   TASK_IDS+=("$1"); TASK_COLUMNS+=("$2"); TASK_TITLES+=("$3"); TASK_PROJECTS+=("$4"); TASK_PROJECT_IDS+=("$5"); TASK_DUES+=("$6"); TASK_DONE+=("$7"); TASK_SOURCE_FILES+=("$8"); TASK_SOURCE_HASHES+=("$9")
 }
 
@@ -106,7 +108,7 @@ for id in "${IDS[@]}"; do
   path="$(physical_dir "$path")"; inside "$path" "$HUB/projects" || die "registry project path outside allowed root: $id"; card="$(resolve_card "$raw_card")"
   [ -f "$card" ] && [ ! -L "$card" ] || die "missing or symlinked project card: $id"
   current_file="$path/ai/current-task.md"; future_file="$path/ai/future-tasks.md"; paused_file="$path/ai/paused-tasks.md"
-  for source in "$current_file" "$future_file" "$paused_file"; do [ -f "$source" ] && [ ! -L "$source" ] || die "missing or symlinked allowed task file: $id"; done
+  for source in "$current_file" "$future_file" "$paused_file"; do [ -f "$source" ] && [ ! -L "$source" ] || die "missing or symlinked allowed task file: $id"; validate_task_source "$source"; done
   name="$(read_field "$card" Name)"; [ -n "$name" ] || name=$id
   current="$(current_state "$current_file")"; title="$(current_title "$current_file")"; due="$(safe_due "$current_file")"; overview_current='—'
   current_column='' current_done=' '

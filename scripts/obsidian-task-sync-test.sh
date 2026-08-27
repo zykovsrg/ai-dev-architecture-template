@@ -638,4 +638,50 @@ assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Обычный за�
 ! grep -Fq -- '#1 приоритет' "$ARCHITECTURE_PROJECT/ai/current-task.md" || fail 'rename left a goal line starting with a hash'
 assert_not_exists "$PROPOSAL"
 
+# A tab in a title would split the record separator and make the scanner
+# propose a rename and a due-date change on every run.
+printf '%s\n' 'Status: active' 'Task ID: TASK-20260827-940' '' '## Goal' '' 'Tab	inside title' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+printf '%s\n' 'No future tasks.' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+printf '%s\n' 'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+if refresh_board > "$TMP_DIR/tab-title-refresh.out" 2>&1; then
+  fail 'generator rendered a task title containing a tab'
+fi
+assert_contains "$TMP_DIR/tab-title-refresh.out" 'must not contain a tab'
+
+# A carriage return would drop the task from the board with no diagnostic.
+printf 'Status: active\r\nTask ID: TASK-20260827-941\r\n\r\n## Goal\r\n\r\nCarriage return task\r\n' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+if refresh_board > "$TMP_DIR/crlf-refresh.out" 2>&1; then
+  fail 'generator accepted a task file with carriage returns'
+fi
+assert_contains "$TMP_DIR/crlf-refresh.out" 'carriage return'
+
+# Trailing whitespace must not survive into a generated record, or the tool
+# proposes a rename against a heading it wrote itself.
+printf '%s\n' 'Status: active' 'Task ID: TASK-20260827-950' '' '## Goal' '' 'Trailing space title ' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+printf '%s\n' '### FT-20260827-951 — Promotion over a trailing space ' '' 'Status: ready' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+printf '%s\n' 'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+refresh_board
+move_card_to_column FT-20260827-951 'Promotion over a trailing space' 'Architecture project' Active
+scan > "$TMP_DIR/trailing-space-scan.out"
+apply > "$TMP_DIR/trailing-space-apply.out"
+scan > "$TMP_DIR/trailing-space-rescan.out"
+assert_contains "$TMP_DIR/trailing-space-rescan.out" 'board matches canonical task records'
+assert_not_exists "$PROPOSAL"
+
+# The rename must accept every goal shape the readers accept.
+for goal_shape in trailing-heading-space no-blank-line; do
+  case "$goal_shape" in
+    trailing-heading-space) printf '%s\n' 'Status: active' 'Task ID: TASK-20260827-960' '' '## Goal ' '' 'Shape goal' > "$ARCHITECTURE_PROJECT/ai/current-task.md";;
+    no-blank-line) printf '%s\n' 'Status: active' 'Task ID: TASK-20260827-960' '' '## Goal' 'Shape goal' > "$ARCHITECTURE_PROJECT/ai/current-task.md";;
+  esac
+  printf '%s\n' 'No future tasks.' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+  printf '%s\n' 'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+  refresh_board
+  perl -0pi -e 's/Shape goal \^TASK-20260827-960/Renamed shape goal ^TASK-20260827-960/' "$TASKS"
+  scan > "$TMP_DIR/shape-${goal_shape}-scan.out"
+  apply > "$TMP_DIR/shape-${goal_shape}-apply.out"
+  assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Renamed shape goal'
+  assert_not_exists "$PROPOSAL"
+done
+
 printf 'PASS: Obsidian confirmed task sync contract\n'
