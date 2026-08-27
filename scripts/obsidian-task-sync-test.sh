@@ -549,4 +549,30 @@ assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Renamed current goal
 ! grep -Fq -- 'Original goal line' "$ARCHITECTURE_PROJECT/ai/current-task.md" || fail 'current rename orphaned the original goal line'
 assert_not_exists "$PROPOSAL"
 
+# A renderable current task with no goal line must be refused at generation.
+# Inventing a placeholder title made every later scan propose a rename the user
+# never made, and applying it destroyed the following section.
+printf '%s\n' 'Status: active' 'Task ID: TASK-20260827-900' '' '## Goal' '' '## Done criteria' '' '- something' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+printf '%s\n' 'No future tasks.' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+printf '%s\n' 'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+if refresh_board > "$TMP_DIR/empty-goal-refresh.out" 2>&1; then
+  fail 'generator rendered a current task that has no goal line'
+fi
+assert_contains "$TMP_DIR/empty-goal-refresh.out" 'must have a goal line'
+
+# A well-formed board proposes nothing. A phantom rename would appear here.
+printf '%s\n' 'Status: active' 'Task ID: TASK-20260827-901' '' '## Goal' '' 'Well formed goal' '' '## Done criteria' '' '- something' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+refresh_board
+scan > "$TMP_DIR/no-phantom-scan.out"
+assert_contains "$TMP_DIR/no-phantom-scan.out" 'board matches canonical task records'
+assert_not_exists "$PROPOSAL"
+
+# A refused apply must not leave staged copies inside controlled ai/ memory.
+perl -0pi -e 's/Well formed goal \^TASK-20260827-901/Renamed well formed goal ^TASK-20260827-901/' "$TASKS"
+scan > "$TMP_DIR/temp-leak-scan.out"
+printf '\nManual canonical change\n' >> "$EXTRA_PROJECT/ai/current-task.md"
+if apply > "$TMP_DIR/temp-leak-apply.out" 2>&1; then fail 'stale apply reported success'; fi
+[ -z "$(find "$PROJECTS" -path '*/ai/*' -name '.*.apply.*' -print -quit)" ] || fail 'refused apply leaked staged copies into ai/'
+rm -f "$PROPOSAL"
+
 printf 'PASS: Obsidian confirmed task sync contract\n'

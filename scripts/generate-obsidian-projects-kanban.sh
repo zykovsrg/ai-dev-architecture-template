@@ -108,12 +108,15 @@ for id in "${IDS[@]}"; do
   current_file="$path/ai/current-task.md"; future_file="$path/ai/future-tasks.md"; paused_file="$path/ai/paused-tasks.md"
   for source in "$current_file" "$future_file" "$paused_file"; do [ -f "$source" ] && [ ! -L "$source" ] || die "missing or symlinked allowed task file: $id"; done
   name="$(read_field "$card" Name)"; [ -n "$name" ] || name=$id
-  current="$(current_state "$current_file")"; title="$(current_title "$current_file")"; [ -n "$title" ] || title='Current task'; due="$(safe_due "$current_file")"; overview_current='—'
+  current="$(current_state "$current_file")"; title="$(current_title "$current_file")"; due="$(safe_due "$current_file")"; overview_current='—'
   current_column='' current_done=' '
   case "$current" in
     active) current_column=Active;; ready|in_progress) current_column=Ready;; waiting) current_column=Waiting;; blocked) current_column=Blocked;; review) current_column=Review;; paused) current_column=Paused;; done|completed) current_column=Done; current_done=x;;
   esac
   if [ -n "$current_column" ]; then
+    # A substituted placeholder title would differ from the canonical record, so
+    # every later scan would propose a rename the user never made.
+    [ -n "$title" ] || die "renderable current task must have a goal line: $current_file"
     current_task_id="$(current_task_id "$current_file")"
     add_task "$current_task_id" "$current_column" "$title" "$name" "$id" "$due" "$current_done" "$current_file" "$(hash_file "$current_file")"
     overview_current="$title"
