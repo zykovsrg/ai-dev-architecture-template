@@ -72,8 +72,11 @@ and a ticked checkbox or an extra card field blocks the whole board rather than
 being reverted in silence by the next refresh.
 
 Promoting a future task into `Active` replaces the project's current task. The
-replaced task is written to `ai/paused-tasks.md` with its whole recorded body, so
-its working state stays readable.
+replaced task is written to `ai/paused-tasks.md` with its whole recorded body
+kept verbatim as an indented block, so no preserved line can be read back as a
+record field and its working state stays readable. The new current task starts
+from the promoted title alone; fill in its remaining sections through the normal
+task workflow.
 
 The optional local watcher only runs `scan`; it never applies a proposal. First
 preview its user launchd plist. Installation and removal are separate explicit

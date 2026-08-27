@@ -609,4 +609,33 @@ prepare_transition_fixture
 perl -0pi -e 's/(Transition guard current task \^TASK-20260827-500\n  - project: Architecture project\n)/$1  - note: my manual annotation\n/' "$TASKS"
 assert_scan_blocked 'unknown-field' 'card has an unsupported field'
 
+# The replaced body is free-form text. No line inside it may be read back as a
+# record field, a heading, or a second Task ID.
+printf '%s\n' 'Status: active' 'Task ID: TASK-20260827-920' '' '## Goal' '' 'Task with a hostile body' '' '## Agent handoff' '' 'Status: blocked' 'Task ID: TASK-20260825-002' '' '### Not a record' '' '```bash' '#!/usr/bin/env bash' '```' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+printf '%s\n' '### FT-20260827-921 — Promotion over a hostile body' '' 'Status: ready' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+printf '%s\n' 'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+refresh_board
+move_card_to_column FT-20260827-921 'Promotion over a hostile body' 'Architecture project' Active
+scan > "$TMP_DIR/hostile-body-scan.out"
+apply > "$TMP_DIR/hostile-body-apply.out"
+assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" 'Task with a hostile body'
+assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" '#!/usr/bin/env bash'
+assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" 'Task ID: TASK-20260825-002'
+assert_contains "$TASKS" 'Task with a hostile body ^TASK-20260827-920'
+scan > "$TMP_DIR/hostile-body-rescan.out"
+assert_contains "$TMP_DIR/hostile-body-rescan.out" 'board matches canonical task records'
+assert_not_exists "$PROPOSAL"
+
+# A goal line may legitimately begin with a Markdown character.
+printf '%s\n' 'Status: active' 'Task ID: TASK-20260827-930' '' '## Goal' '' '#1 приоритет' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+printf '%s\n' 'No future tasks.' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+printf '%s\n' 'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+refresh_board
+perl -0pi -e 's/#1 приоритет \^TASK-20260827-930/Обычный заголовок ^TASK-20260827-930/' "$TASKS"
+scan > "$TMP_DIR/hash-goal-scan.out"
+apply > "$TMP_DIR/hash-goal-apply.out"
+assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Обычный заголовок'
+! grep -Fq -- '#1 приоритет' "$ARCHITECTURE_PROJECT/ai/current-task.md" || fail 'rename left a goal line starting with a hash'
+assert_not_exists "$PROPOSAL"
+
 printf 'PASS: Obsidian confirmed task sync contract\n'

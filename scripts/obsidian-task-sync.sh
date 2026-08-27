@@ -420,7 +420,7 @@ rename_record() {
   # Every branch must rewrite exactly one record. A silent no-op would report a
   # successful apply and then let the rebuild discard the confirmed edit.
   case "$base" in
-    current-task.md) NEW_TITLE="$title" perl -0pi -e 'die "rename matched no goal line\n" unless s{(^## Goal\n\n+)(?!#)[^\n]*}{$1 . $ENV{NEW_TITLE}}me == 1' "$temp";;
+    current-task.md) NEW_TITLE="$title" perl -0pi -e 'die "rename matched no goal line\n" unless s{(^## Goal\n\n+)[^\n]*}{$1 . $ENV{NEW_TITLE}}me == 1' "$temp";;
     future-tasks.md) TASK_ID="$task_id" NEW_TITLE="$title" perl -0pi -e 'die "rename matched no future record\n" unless s{^### \Q$ENV{TASK_ID}\E [^\n]*}{"### $ENV{TASK_ID} — $ENV{NEW_TITLE}"}me == 1' "$temp";;
     paused-tasks.md) TASK_ID="$task_id" NEW_TITLE="$title" perl -0pi -e 'die "rename matched no paused record\n" unless s{(^### [0-9]{4}-[0-9]{2}-[0-9]{2} — )[^\n]*(\n(?:(?!^### ).)*?^Task ID: \Q$ENV{TASK_ID}\E$)}{$1 . $ENV{NEW_TITLE} . $2}mse == 1' "$temp";;
   esac || die "cannot rewrite the title of $task_id in $source"
@@ -484,16 +484,11 @@ preserve_replaced_current_record() {
   [[ "$old_id" =~ ^TASK-[0-9]{8}-[0-9]{3}$ ]] && [ -n "$old_title" ] || die "invalid current task to preserve: $current_temp"
   printf '\n### %s — %s\n\nTask ID: %s\n\nStatus: %s\n' "$(date -u +%F)" "$old_title" "$old_id" "$preserved_status" >> "$paused_temp"
   # The replaced task's recorded working state would otherwise be lost. Keep the
-  # whole body, demoting its headings so it stays inside this paused record.
+  # body verbatim, but indent every line into a Markdown code block: a preserved
+  # Status, Task ID, or heading line must never be read back as a record field.
   {
-    printf '\n'
-    awk '
-      !body && /^# / { next }
-      !body && /^Status: / { next }
-      !body && /^Task ID: / { next }
-      /^## / { body = 1 }
-      { if (/^#/) sub(/^#/, "###"); print }
-    ' "$current_temp" | sed '/./,$!d'
+    printf '\nReplaced task record:\n\n'
+    sed 's/^/    /' "$current_temp"
   } >> "$paused_temp"
 }
 
