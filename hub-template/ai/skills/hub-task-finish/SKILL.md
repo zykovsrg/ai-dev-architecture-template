@@ -28,7 +28,8 @@ project `ai/` memory only; do not require or read duplicated project
    with `--write --refresh-from-architecture`.
    This direction is trusted only from canonical `ai/` records to generated
    Obsidian views. Keep manifest validation enabled. If it detects a manual
-   Obsidian edit, report the pending proposal and do not overwrite it.
+   Obsidian edit, run the local `obsidian-task-sync scan` to create its pending
+   proposal, report that proposal, and do not overwrite the board.
 7. Obsidian-to-`ai/` is a confirmed Obsidian-to-architecture proposal only:
    show its exact status and require `apply --confirm-proposal <sha256>` before
    any canonical task write.

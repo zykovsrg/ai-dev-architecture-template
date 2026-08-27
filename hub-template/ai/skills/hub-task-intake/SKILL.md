@@ -15,9 +15,10 @@ project `ai/` memory only; do not require or read duplicated project
 1. Read the selected project's `ai/current-task.md`.
 2. If it is empty, record the user's requested goal, scope, Done criteria, and
    `Stage: intake` in that same file. Write a concrete unique `Task ID:` in the
-   `TASK-<UTC-date>-<NNN>` form, where `<NNN>` is the next free three-digit
-   number for that date across the selected project's `ai/current-task.md` and
-   `ai/paused-tasks.md`; never leave the `TASK-YYYYMMDD-NNN` placeholder.
+   `TASK-<project-id>-<UTC-date>-<NNN>` form, where `<NNN>` is the next free
+   three-digit number for that date in the selected project. This project
+   namespace makes the immutable ID globally unique without reading another
+   project's memory; never leave the placeholder.
 3. If it is unfinished, compare the request with its recorded Done criteria.
    Continue only when it fits; otherwise stop and require the hub-owned
    `hub-task-switch` workflow.
@@ -27,7 +28,8 @@ project `ai/` memory only; do not require or read duplicated project
    with `--write --refresh-from-architecture`.
    This direction is trusted only from canonical `ai/` records to generated
    Obsidian views. Keep manifest validation enabled. If it detects a manual
-   Obsidian edit, report the pending proposal and do not overwrite it.
+   Obsidian edit, run the local `obsidian-task-sync scan` to create its pending
+   proposal, report that proposal, and do not overwrite the board.
 6. Obsidian-to-`ai/` is a confirmed Obsidian-to-architecture proposal only:
    show its exact status and require `apply --confirm-proposal <sha256>` before
    any canonical task write.
