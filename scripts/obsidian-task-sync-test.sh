@@ -273,6 +273,33 @@ assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" 'Renamed idea'
 assert_contains "$TASKS" 'Renamed idea ^FT-20260826-001'
 assert_not_exists "$PROPOSAL"
 
+# A manifest is editable input. A lexical path below ai/ may use ../ to target
+# a same-named file outside the registered project task memory. Confirmed apply
+# must reject it before creating a staged copy or changing any source.
+reset_board
+ESCAPED_SOURCE="$ARCHITECTURE_PROJECT/current-task.md"
+ESCAPED_MANIFEST_SOURCE="$ARCHITECTURE_PROJECT/ai/../current-task.md"
+cp "$MANIFEST" "$TMP_DIR/manifest-before-escape.json"
+printf '%s\n' 'Status: active' 'Task ID: TASK-20260826-001' '' '## Goal' '' 'Current task' > "$ESCAPED_SOURCE"
+escaped_sha="$(shasum -a 256 "$ESCAPED_SOURCE" | awk '{print $1}')"
+/usr/bin/jq --arg source "$ESCAPED_MANIFEST_SOURCE" --arg sha "$escaped_sha" '
+  (.tasks[] | select(.task_id == "TASK-20260826-001") | .source_file) = $source |
+  (.tasks[] | select(.task_id == "TASK-20260826-001") | .source_sha256) = $sha
+' "$MANIFEST" > "$TMP_DIR/escaped-manifest.json"
+mv "$TMP_DIR/escaped-manifest.json" "$MANIFEST"
+perl -0pi -e 's/Current task \^TASK-20260826-001/Escaped manifest rename ^TASK-20260826-001/' "$TASKS"
+scan > "$TMP_DIR/escaped-manifest-scan.out"
+source_hashes > "$TMP_DIR/escaped-manifest-before.txt"
+escaped_before="$(shasum -a 256 "$ESCAPED_SOURCE" | awk '{print $1}')"
+if apply > "$TMP_DIR/escaped-manifest-apply.out" 2>&1; then fail 'apply accepted a manifest source that escapes registered ai memory'; fi
+assert_contains "$TMP_DIR/escaped-manifest-apply.out" 'manifest source is not a registered task file'
+assert_equal "$escaped_before" "$(shasum -a 256 "$ESCAPED_SOURCE" | awk '{print $1}')" 'escaped manifest source changed before rejection'
+assert_equal "$(cat "$TMP_DIR/escaped-manifest-before.txt")" "$(source_hashes)" 'escaped manifest source rejection changed canonical files'
+assert_file "$PROPOSAL"
+rm -f "$PROPOSAL" "$ESCAPED_SOURCE"
+cp "$TMP_DIR/manifest-before-escape.json" "$MANIFEST"
+refresh_board
+
 # A source edit after scan makes the proposal stale and keeps both source and proposal.
 SOURCE_BACKUP="$TMP_DIR/future-before-stale.md"
 cp "$ARCHITECTURE_PROJECT/ai/future-tasks.md" "$SOURCE_BACKUP"

@@ -338,11 +338,32 @@ APPLY_TARGETS=() APPLY_TEMPS=() APPLY_BACKUPS=()
 cleanup_apply_state() { restore_replaced_source_files; local file; for file in "${APPLY_TEMPS[@]:-}"; do [ -z "$file" ] || rm -f -- "$file"; done; }
 
 source_is_safe_task_file() {
-  local source="$1" base
-  [ -f "$source" ] && [ ! -L "$source" ] || return 1
-  inside "$source" "$HUB/projects" || return 1
+  local source="$1" i
+  for i in "${!PROJECT_IDS[@]}"; do
+    source_is_registered_task_file "$source" "$i" && return 0
+  done
+  return 1
+}
+
+source_is_registered_task_file() {
+  local source="$1" project_index="$2" base resolved expected
   base="$(basename "$source")"
-  case "$base" in current-task.md|future-tasks.md|paused-tasks.md) return 0;; *) return 1;; esac
+  case "$base" in current-task.md|future-tasks.md|paused-tasks.md);; *) return 1;; esac
+  [ -f "$source" ] && [ ! -L "$source" ] || return 1
+  resolved="$(cd "$(dirname "$source")" && pwd -P)/$base" || return 1
+  expected="${PROJECT_PATHS[$project_index]}/ai/$base"
+  [ "$resolved" = "$expected" ] && [ -f "$expected" ] && [ ! -L "$expected" ]
+}
+
+verify_manifest_sources_are_registered() {
+  local task_id project_id source i project_index
+  while IFS=$'\t' read -r task_id project_id source; do
+    project_index=''
+    for i in "${!PROJECT_IDS[@]}"; do [ "${PROJECT_IDS[$i]}" = "$project_id" ] && project_index="$i"; done
+    [ -n "$project_index" ] || die "manifest task has unknown project: $task_id"
+    scope_contains "$project_id" || die "manifest task project is outside scope: $project_id"
+    source_is_registered_task_file "$source" "$project_index" || die "manifest source is not a registered task file: $task_id"
+  done < <(/usr/bin/jq -r '.tasks[] | [.task_id, .project_id, .source_file] | @tsv' "$MANIFEST")
 }
 
 stage_source() {
@@ -606,7 +627,7 @@ replace_named_source_files() {
 
 apply() {
   trap cleanup_apply_state EXIT
-  require_safe_paths; load_proposal; verify_board_hash; verify_manifest_hash; load_projects; load_scope_and_validate_vault; verify_every_affected_source_hash; load_known_cards
+  require_safe_paths; load_proposal; verify_board_hash; verify_manifest_hash; load_projects; load_scope_and_validate_vault; verify_manifest_sources_are_registered; verify_every_affected_source_hash; load_known_cards
   apply_operations_to_temporary_files; validate_temporary_records
   GENERATOR="$(cd "$(dirname "$0")" && pwd -P)/generate-obsidian-projects-kanban.sh"
   [ -f "$GENERATOR" ] && [ ! -L "$GENERATOR" ] || die 'missing or unsafe generator'
