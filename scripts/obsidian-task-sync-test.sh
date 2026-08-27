@@ -482,4 +482,71 @@ if "$INSTALLER" --hub "$HUB" --scope "$SCOPE" --vault "$ARCHITECTURE_PROJECT" --
   fail 'installer accepted a vault that is not the generated vault directory'
 fi
 
+# An untouched project ships the shipped template as its current task: an empty
+# status and a placeholder ID. Promotion must still replace that empty slot.
+printf '%s\n' 'Status: empty' 'Task ID: TASK-YYYYMMDD-NNN' '' '## Goal' '' 'Что нужно изменить.' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+printf '%s\n' '### FT-20260827-601 — Promotion into an empty slot' '' 'Status: ready' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+printf '%s\n' 'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+refresh_board
+move_card_to_column FT-20260827-601 'Promotion into an empty slot' 'Architecture project' Active
+scan > "$TMP_DIR/empty-status-promotion-scan.out"
+apply > "$TMP_DIR/empty-status-promotion-apply.out"
+assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Promotion into an empty slot'
+grep -Eq '^Task ID: TASK-[0-9]{8}-[0-9]{3}$' "$ARCHITECTURE_PROJECT/ai/current-task.md" || fail 'promotion into an empty slot kept the placeholder Task ID'
+assert_not_exists "$PROPOSAL"
+
+# Two new cards in one proposal must receive two different future task IDs.
+prepare_transition_fixture
+perl -0pi -e 's/(?<!\n)\z/\n/' "$TASKS"
+cat >> "$TASKS" <<'EOF'
+
+## Ideas
+
+- [ ] First simultaneous new card
+  - project: Architecture project
+- [ ] Second simultaneous new card
+  - project: Architecture project
+EOF
+scan > "$TMP_DIR/two-new-cards-scan.out"
+/usr/bin/jq -e '.state == "ready" and ([.operations[] | select(.operation == "create_future")] | length == 2)' "$PROPOSAL" >/dev/null \
+  || fail 'two new cards did not produce two ready create_future operations'
+apply > "$TMP_DIR/two-new-cards-apply.out"
+assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" 'First simultaneous new card'
+assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" 'Second simultaneous new card'
+new_future_ids="$(grep -Eo '^### FT-[0-9]{8}-[0-9]{3} — (First|Second) simultaneous new card$' "$ARCHITECTURE_PROJECT/ai/future-tasks.md" | awk '{print $2}')"
+assert_equal 2 "$(printf '%s\n' "$new_future_ids" | sort -u | grep -c .)" 'two new cards reused one future task ID'
+assert_not_exists "$PROPOSAL"
+
+# A current task has no Ideas state, so that move must be blocked at scan.
+prepare_transition_fixture
+move_card_to_column TASK-20260827-500 'Transition guard current task' 'Architecture project' Ideas
+assert_scan_blocked 'current-Ideas' 'unsupported status transition for current task'
+
+# Renaming a paused card must actually rewrite the canonical heading, including
+# a title that itself contains the heading separator.
+printf '%s\n' 'No current task.' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+printf '%s\n' 'No future tasks.' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+printf '%s\n' '### 2026-08-20 — Alpha — Beta' '' 'Task ID: TASK-20260820-700' '' 'Status: paused' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+refresh_board
+assert_contains "$TASKS" 'Alpha — Beta ^TASK-20260820-700'
+perl -0pi -e 's/Alpha — Beta \^TASK-20260820-700/Renamed paused task ^TASK-20260820-700/' "$TASKS"
+scan > "$TMP_DIR/paused-rename-scan.out"
+apply > "$TMP_DIR/paused-rename-apply.out"
+assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" '### 2026-08-20 — Renamed paused task'
+! grep -Fq -- 'Alpha — Beta' "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" || fail 'paused rename left the old title behind'
+assert_not_exists "$PROPOSAL"
+
+# Renaming the current task must replace its goal line, not prepend a new one,
+# even when extra blank lines follow the Goal heading.
+printf '%s\n' 'Status: active' 'Task ID: TASK-20260827-800' '' '## Goal' '' '' 'Original goal line' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+printf '%s\n' 'No future tasks.' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+printf '%s\n' 'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+refresh_board
+perl -0pi -e 's/Original goal line \^TASK-20260827-800/Renamed current goal ^TASK-20260827-800/' "$TASKS"
+scan > "$TMP_DIR/current-rename-scan.out"
+apply > "$TMP_DIR/current-rename-apply.out"
+assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Renamed current goal'
+! grep -Fq -- 'Original goal line' "$ARCHITECTURE_PROJECT/ai/current-task.md" || fail 'current rename orphaned the original goal line'
+assert_not_exists "$PROPOSAL"
+
 printf 'PASS: Obsidian confirmed task sync contract\n'

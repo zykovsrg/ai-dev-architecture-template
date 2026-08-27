@@ -215,7 +215,7 @@ record_kind() {
 # would confirm a proposal that fails halfway through the canonical write.
 transition_supported() {
   case "$1" in
-    current-task.md) return 0;;
+    current-task.md) case "$2" in active|ready|waiting|blocked|review|paused|done) return 0;; *) return 1;; esac;;
     future-tasks.md) case "$2" in idea|ready|blocked|active) return 0;; *) return 1;; esac;;
     paused-tasks.md) case "$2" in paused) return 0;; *) return 1;; esac;;
   esac
@@ -408,11 +408,13 @@ promoted_current_source_for() {
 rename_record() {
   local source="$1" task_id="$2" title="$3" temp base
   temp="$(temp_for_source "$source")"; base="$(basename "$source")"
+  # Every branch must rewrite exactly one record. A silent no-op would report a
+  # successful apply and then let the rebuild discard the confirmed edit.
   case "$base" in
-    current-task.md) NEW_TITLE="$title" perl -0pi -e 's{(^## Goal\n\n)[^\n]*}{$1 . $ENV{NEW_TITLE}}me' "$temp";;
-    future-tasks.md) TASK_ID="$task_id" NEW_TITLE="$title" perl -0pi -e 's{^### \Q$ENV{TASK_ID}\E [^\n]*}{"### $ENV{TASK_ID} — $ENV{NEW_TITLE}"}me' "$temp";;
-    paused-tasks.md) TASK_ID="$task_id" NEW_TITLE="$title" perl -0pi -e 's{(^### [^\n]* — )[^\n]*(\n\nTask ID: \Q$ENV{TASK_ID}\E\n)}{$1 . $ENV{NEW_TITLE} . $2}me' "$temp";;
-  esac
+    current-task.md) NEW_TITLE="$title" perl -0pi -e 'die "rename matched no goal line\n" unless s{(^## Goal\n\n+)[^\n]*}{$1 . $ENV{NEW_TITLE}}me == 1' "$temp";;
+    future-tasks.md) TASK_ID="$task_id" NEW_TITLE="$title" perl -0pi -e 'die "rename matched no future record\n" unless s{^### \Q$ENV{TASK_ID}\E [^\n]*}{"### $ENV{TASK_ID} — $ENV{NEW_TITLE}"}me == 1' "$temp";;
+    paused-tasks.md) TASK_ID="$task_id" NEW_TITLE="$title" perl -0pi -e 'die "rename matched no paused record\n" unless s{(^### [0-9]{4}-[0-9]{2}-[0-9]{2} — )[^\n]*(\n(?:(?!^### ).)*?^Task ID: \Q$ENV{TASK_ID}\E$)}{$1 . $ENV{NEW_TITLE} . $2}mse == 1' "$temp";;
+  esac || die "cannot rewrite the title of $task_id in $source"
 }
 
 set_due_record() {
@@ -464,7 +466,10 @@ preserve_replaced_current_record() {
   case "$old_status" in
     active|ready|in_progress|waiting|blocked|review|paused) preserved_status=paused;;
     done|completed) preserved_status="$old_status";;
-    '') [ -z "$old_id$old_title" ] && return 0; preserved_status=paused;;
+    # An empty slot holds no task, so the shipped template needs no preserved
+    # record even though it carries a placeholder ID and goal text.
+    empty) return 0;;
+    '') [ -n "$old_id$old_title" ] || return 0; preserved_status=paused;;
     *) die "unsupported current task status for promotion: $old_status";;
   esac
   [[ "$old_id" =~ ^TASK-[0-9]{8}-[0-9]{3}$ ]] && [ -n "$old_title" ] || die "invalid current task to preserve: $current_temp"
@@ -506,13 +511,21 @@ set_status_record() {
 }
 
 create_future_record() {
-  local project_id="$1" title="$2" status="$3" due="$4" i source temp date_part max next id
+  local project_id="$1" title="$2" status="$3" due="$4" i source temp date_part max next id staged
   case "$status" in idea|ready|blocked) ;; *) die "unsupported future status: $status";; esac
   source=''; for i in "${!PROJECT_IDS[@]}"; do [ "${PROJECT_IDS[$i]}" = "$project_id" ] && source="${PROJECT_PATHS[$i]}/ai/future-tasks.md"; done
   [ -n "$source" ] || die "unknown project ID in proposal: $project_id"
   temp="$(temp_for_source "$source")"
   date_part="$(date -u +%Y%m%d)"; max=0
   while IFS= read -r id; do [ "$id" -gt "$max" ] && max="$id"; done < <(grep -hEo "^### FT-${date_part}-[0-9]+" "$HUB"/projects/*/ai/future-tasks.md 2>/dev/null | sed "s/^### FT-${date_part}-//")
+  # Earlier operations in this same proposal appended to staged copies, so the
+  # unmodified sources alone would hand out one ID twice.
+  if [ "${#APPLY_TEMPS[@]}" -gt 0 ]; then
+    for staged in "${APPLY_TEMPS[@]}"; do
+      [ -n "$staged" ] || continue
+      while IFS= read -r id; do [ "$id" -gt "$max" ] && max="$id"; done < <(grep -hEo "^### FT-${date_part}-[0-9]+" "$staged" 2>/dev/null | sed "s/^### FT-${date_part}-//")
+    done
+  fi
   printf -v next '%03d' "$((10#$max + 1))"
   printf '\n### FT-%s-%s — %s\n\nStatus: %s\n' "$date_part" "$next" "$title" "$status" >> "$temp"
   [ -z "$due" ] || printf 'due: %s\n' "$due" >> "$temp"
