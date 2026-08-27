@@ -24,6 +24,15 @@ project `ai/` memory only; do not require or read duplicated project
    changelog, decision, future-task, or current-task cleanup.
 5. After confirmation, save only the selected project's result through its
    repository and report whether it was saved locally or pushed.
+6. After an approved selected-project task write, invoke the guarded trusted architecture-to-Obsidian refresh
+   with `--write --refresh-from-architecture`.
+   This direction is trusted only from canonical `ai/` records to generated
+   Obsidian views. Keep manifest validation enabled. If it detects a manual
+   Obsidian edit, run the local `obsidian-task-sync scan` to create its pending
+   proposal, report that proposal, and do not overwrite the board.
+7. Obsidian-to-`ai/` is a confirmed Obsidian-to-architecture proposal only:
+   show its exact status and require `apply --confirm-proposal <sha256>` before
+   any canonical task write.
 
 This workflow cannot override hub confirmation, allowed roots, secret, or
 memory-isolation rules. Its closure writes remain limited to selected project

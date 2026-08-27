@@ -33,6 +33,40 @@ The hub repository ignores `/projects/`. Each project can therefore retain its
 own `.git/` directory, history, and remote repository without becoming part of
 the hub repository.
 
+## Optional confirmed Obsidian task sync
+
+For a hub whose `ai-dev-architecture` project has a local `obsidian-vault/`,
+the trusted architecture-to-Obsidian refresh creates the generated Kanban
+only from canonical `ai/` task records. It keeps manifest validation: a manual
+Obsidian edit creates a pending proposal and the refresh does not overwrite it.
+The reverse path is a confirmed Obsidian-to-architecture proposal and never
+writes canonical records until its exact SHA-256 is confirmed.
+
+Preview the optional local watcher first. It only scans and stores a local
+proposal; it never applies one:
+
+```bash
+bash scripts/install-obsidian-task-sync.sh --hub /path/to/_ai-hub --scope /path/to/scope.txt --vault /path/to/_ai-hub/projects/ai-dev-architecture/obsidian-vault --preview
+```
+
+Install it only after reviewing the preview. The user launchd job scans every
+10 seconds and needs a separate `--confirm-launchd-install` flag:
+
+```bash
+bash scripts/install-obsidian-task-sync.sh --hub /path/to/_ai-hub --scope /path/to/scope.txt --vault /path/to/_ai-hub/projects/ai-dev-architecture/obsidian-vault --install --confirm-launchd-install
+```
+
+Check or remove it with separate commands. Removal has its own
+`--confirm-launchd-uninstall` flag:
+
+```bash
+bash scripts/install-obsidian-task-sync.sh --hub /path/to/_ai-hub --scope /path/to/scope.txt --vault /path/to/_ai-hub/projects/ai-dev-architecture/obsidian-vault --status
+bash scripts/install-obsidian-task-sync.sh --hub /path/to/_ai-hub --scope /path/to/scope.txt --vault /path/to/_ai-hub/projects/ai-dev-architecture/obsidian-vault --uninstall --confirm-launchd-uninstall
+```
+
+To inspect or deliberately apply a manual board edit, use `scan`, `status`, and
+then `apply --confirm-proposal <sha256>` from `scripts/obsidian-task-sync.sh`.
+
 Do not use hub installation to convert or move an existing standalone project.
 From the installed hub, use `hub-project-migrate`: it inventories only direct-child
 names in a separately confirmed temporary source, shows an exact move preview,

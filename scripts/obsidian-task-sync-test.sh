@@ -1,0 +1,800 @@
+#!/usr/bin/env bash
+# Contract tests for the non-writing Obsidian proposal scanner.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+GENERATOR="$ROOT/scripts/generate-obsidian-projects-kanban.sh"
+SYNC="$ROOT/scripts/obsidian-task-sync.sh"
+WATCHER="$ROOT/scripts/obsidian-task-sync-watch.sh"
+INSTALLER="$ROOT/scripts/install-obsidian-task-sync.sh"
+TMP_DIR="$(mktemp -d /private/tmp/obsidian-task-sync.XXXXXX)"
+trap 'rm -rf "$TMP_DIR"' EXIT
+
+fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
+assert_file() { [ -f "$1" ] || fail "missing file: $1"; }
+assert_not_exists() { [ ! -e "$1" ] || fail "unexpected path: $1"; }
+assert_not_link() { [ ! -L "$1" ] || fail "unexpected symlink: $1"; }
+assert_contains() { grep -Fq -- "$2" "$1" || fail "expected '$2' in $1"; }
+assert_not_contains() { ! grep -Fq -- "$2" "$1" || fail "unexpected '$2' in $1"; }
+assert_equal() { [ "$1" = "$2" ] || fail "$3"; }
+
+HUB="$TMP_DIR/hub"
+PROJECTS="$HUB/projects"
+ARCHITECTURE_PROJECT="$PROJECTS/ai-dev-architecture"
+EXTRA_PROJECT="$PROJECTS/extra-project"
+VAULT="$ARCHITECTURE_PROJECT/obsidian-vault"
+SCOPE="$HUB/scope.txt"
+TASKS="$VAULT/Obsidian/Tasks-Kanban.md"
+MANIFEST="$VAULT/Obsidian/AI-Architecture.manifest.json"
+RUNTIME="$VAULT/.ai-architecture-sync"
+PROPOSAL="$RUNTIME/pending-proposal.json"
+REFRESH_LOCK="$RUNTIME/refresh.lock"
+TEST_BIN="$TMP_DIR/test-bin"
+
+mkdir -p "$HUB/ai/project-cards" "$VAULT/Obsidian"
+mkdir -p "$TEST_BIN"
+cat > "$TEST_BIN/mv" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+target="${!#}"
+if [ "${AI_SYNC_TEST_MV_MODE:-}" = fail ] && [ "$target" = "$AI_SYNC_TEST_TASKS" ]; then
+  printf '%s\n' 'forced generated board write failure' >&2
+  exit 92
+fi
+
+/bin/mv "$@"
+
+if [ "${AI_SYNC_TEST_MV_MODE:-}" = watch ] && [ "$target" = "$AI_SYNC_TEST_TASKS" ]; then
+  [ -d "$AI_SYNC_TEST_REFRESH_LOCK" ] && [ ! -L "$AI_SYNC_TEST_REFRESH_LOCK" ] || {
+    printf '%s\n' 'refresh lock was absent during generated board write' >&2
+    exit 91
+  }
+  "$AI_SYNC_TEST_WATCHER" --hub "$AI_SYNC_TEST_HUB" --scope "$AI_SYNC_TEST_SCOPE" --vault "$AI_SYNC_TEST_VAULT" --once
+  [ ! -e "$AI_SYNC_TEST_PROPOSAL" ] && [ ! -L "$AI_SYNC_TEST_PROPOSAL" ] || {
+    printf '%s\n' 'watcher scanned a generated board write' >&2
+    exit 93
+  }
+fi
+EOF
+chmod +x "$TEST_BIN/mv"
+printf '%s\n' '# Project Registry' > "$HUB/ai/project-registry.md"
+
+add_project() {
+  local id="$1" name="$2" current="$3" future="$4" paused="$5" project
+  project="$PROJECTS/$id"
+  mkdir -p "$project/ai"
+  printf '%s\n' "$current" > "$project/ai/current-task.md"
+  printf '%s\n' "$future" > "$project/ai/future-tasks.md"
+  printf '%s\n' "$paused" > "$project/ai/paused-tasks.md"
+  printf '%s\n' "# Project Card" "" "Project ID: $id" "Name: $name" "Status: active" > "$HUB/ai/project-cards/$id.md"
+  printf '\n## %s\nName: %s\nStatus: active\nPath: %s\nCard: ai/project-cards/%s.md\n' "$id" "$name" "$project" "$id" >> "$HUB/ai/project-registry.md"
+  printf '%s\n' "$id" >> "$SCOPE"
+}
+
+add_project "ai-dev-architecture" "Architecture project" \
+  $'Status: active\nTask ID: TASK-20260826-001\n\n## Goal\n\nCurrent task' \
+  $'### FT-20260826-001 — Idea task\n\nStatus: idea\n\n### FT-20260826-002 — Ready task\n\nStatus: ready\ndue: 2026-08-28' \
+  $'### 2026-08-20 — Paused task\n\nTask ID: TASK-20260820-001\n\nStatus: paused'
+add_project "extra-project" "Extra project" \
+  $'Status: waiting\nTask ID: TASK-20260826-010\n\n## Goal\n\nExtra current task' \
+  'No future tasks.' 'No paused tasks.'
+
+SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write >/dev/null
+cp "$TASKS" "$TMP_DIR/original-board.md"
+
+reset_board() {
+  cp "$TMP_DIR/original-board.md" "$TASKS"
+  rm -f "$PROPOSAL"
+}
+source_hashes() { find "$PROJECTS" -path '*/ai/*.md' -type f -exec shasum -a 256 {} + | sort; }
+scan() { "$SYNC" scan --hub "$HUB" --scope "$SCOPE" --vault "$VAULT"; }
+apply() {
+  local proposal_hash
+  proposal_hash="$(/usr/bin/jq -r '.proposal_sha256' "$PROPOSAL")"
+  "$SYNC" apply --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --confirm-proposal "$proposal_hash"
+}
+assert_sources_unchanged() { assert_equal "$(cat "$TMP_DIR/source-before.txt")" "$(source_hashes)" 'scanner changed canonical source files'; }
+refresh_board() { SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture --replace-confirmed-board --confirm-generated-write >/dev/null; }
+move_card_to_column() {
+  local task_id="$1" title="$2" project="$3" column="$4" due="${5:-}" card
+  # The generated board has no trailing newline, so the last column heading
+  # would otherwise never match the insertion pattern.
+  perl -0pi -e 's/(?<!\n)\z/\n/' "$TASKS"
+  CARD_ID="$task_id" perl -0pi -e 's{^- \[[ xX]\] [^\n]* \^\Q$ENV{CARD_ID}\E\n(?:  - [^\n]*\n)*}{}mg' "$TASKS"
+  card="$(printf '%s\n' "- [ ] $title ^$task_id" "  - project: $project")"
+  [ -z "$due" ] || card="$(printf '%s\n' "$card" "  - 📅 $due")"
+  CARD_TEXT="$card" COLUMN="$column" perl -0pi -e 's{(^## \Q$ENV{COLUMN}\E\n)}{$1 . "\n" . $ENV{CARD_TEXT}}me' "$TASKS"
+}
+move_future_card_to_active() { move_card_to_column "$1" "$2" "$3" Active; }
+prepare_promotion_fixture() {
+  local status="$1" title="$2" task_id="$3" future_id="$4" future_title="$5"
+  printf '%s\n' "Status: $status" "Task ID: $task_id" '' '## Goal' '' "$title" > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+  printf '%s\n' "### $future_id — $future_title" '' 'Status: ready' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+  printf '%s\n' 'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+  refresh_board
+  move_future_card_to_active "$future_id" "$future_title" 'Architecture project'
+}
+run_and_check() {
+  source_hashes > "$TMP_DIR/source-before.txt"
+  scan > "$TMP_DIR/scan.out"
+  assert_file "$PROPOSAL"
+  assert_contains "$PROPOSAL" "$1"
+  assert_sources_unchanged
+}
+
+# The optional watcher only creates a local proposal. It must not alter canonical
+# task files, skip a matching board, and respect a guarded architecture refresh.
+source_hashes > "$TMP_DIR/watcher-matching-before.txt"
+"$WATCHER" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --once > "$TMP_DIR/watcher-matching.out"
+assert_not_exists "$PROPOSAL"
+assert_equal "$(cat "$TMP_DIR/watcher-matching-before.txt")" "$(source_hashes)" 'matching watcher scan changed canonical sources'
+
+perl -0pi -e 's/Idea task \^FT-20260826-001/Watcher renamed idea ^FT-20260826-001/' "$TASKS"
+source_hashes > "$TMP_DIR/watcher-changed-before.txt"
+"$WATCHER" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --once > "$TMP_DIR/watcher-changed.out"
+assert_file "$PROPOSAL"
+assert_contains "$PROPOSAL" '"operation": "rename"'
+assert_equal "$(cat "$TMP_DIR/watcher-changed-before.txt")" "$(source_hashes)" 'watcher changed canonical sources'
+"$SYNC" dismiss --vault "$VAULT"
+
+# A guarded refresh owns a real lock while it replaces the task board. The mv
+# wrapper runs the watcher after the generated board move, which verifies both
+# that the watcher is suppressed during the write and that the lock is cleaned
+# afterwards. A forced move failure covers cleanup through the EXIT trap.
+reset_board
+printf '%s\n' $'Status: active\nTask ID: TASK-20260826-001\n\n## Goal\n\nRefresh lifecycle task' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+AI_SYNC_TEST_MV_MODE=watch AI_SYNC_TEST_TASKS="$TASKS" AI_SYNC_TEST_REFRESH_LOCK="$REFRESH_LOCK" AI_SYNC_TEST_WATCHER="$WATCHER" AI_SYNC_TEST_HUB="$HUB" AI_SYNC_TEST_SCOPE="$SCOPE" AI_SYNC_TEST_VAULT="$VAULT" AI_SYNC_TEST_PROPOSAL="$PROPOSAL" PATH="$TEST_BIN:$PATH" SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture > "$TMP_DIR/refresh-lifecycle.out"
+assert_contains "$TASKS" 'Refresh lifecycle task'
+assert_not_exists "$REFRESH_LOCK"
+assert_not_link "$REFRESH_LOCK"
+
+printf '%s\n' $'Status: active\nTask ID: TASK-20260826-001\n\n## Goal\n\nFailed refresh lifecycle task' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+if AI_SYNC_TEST_MV_MODE=fail AI_SYNC_TEST_TASKS="$TASKS" PATH="$TEST_BIN:$PATH" SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture > "$TMP_DIR/refresh-lifecycle-failure.out" 2>&1; then
+  fail 'guarded refresh accepted a forced generated board write failure'
+fi
+assert_contains "$TMP_DIR/refresh-lifecycle-failure.out" 'forced generated board write failure'
+assert_not_exists "$REFRESH_LOCK"
+assert_not_link "$REFRESH_LOCK"
+printf '%s\n' $'Status: active\nTask ID: TASK-20260826-001\n\n## Goal\n\nCurrent task' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture >/dev/null
+reset_board
+
+# Preview is read-only. Installing or unloading a user launchd job has its own
+# explicit confirmation boundary and therefore must reject bare commands.
+"$INSTALLER" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/installer-preview.out"
+assert_contains "$TMP_DIR/installer-preview.out" '<key>StartInterval</key>'
+assert_contains "$TMP_DIR/installer-preview.out" '<integer>10</integer>'
+assert_contains "$TMP_DIR/installer-preview.out" 'obsidian-task-sync-watch.sh'
+rmdir "$RUNTIME"
+mkdir -p "$TMP_DIR/runtime-symlink-target"
+ln -s "$TMP_DIR/runtime-symlink-target" "$RUNTIME"
+if "$INSTALLER" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/installer-runtime-symlink.out" 2>&1; then
+  fail 'installer accepted a symlinked runtime directory'
+fi
+assert_contains "$TMP_DIR/installer-runtime-symlink.out" 'runtime directory is unsafe'
+rm -f "$RUNTIME"
+mkdir -p "$RUNTIME"
+if "$INSTALLER" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --install > "$TMP_DIR/installer-install-without-confirm.out" 2>&1; then
+  fail 'installer accepted install without explicit confirmation'
+fi
+assert_contains "$TMP_DIR/installer-install-without-confirm.out" '--confirm-launchd-install'
+if "$INSTALLER" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --uninstall > "$TMP_DIR/installer-uninstall-without-confirm.out" 2>&1; then
+  fail 'installer accepted uninstall without explicit confirmation'
+fi
+assert_contains "$TMP_DIR/installer-uninstall-without-confirm.out" '--confirm-launchd-uninstall'
+
+# A known card is identified exclusively by its generated Obsidian block ID.
+reset_board
+perl -0pi -e 's/Idea task \^FT-20260826-001/Renamed idea ^FT-20260826-001/' "$TASKS"
+run_and_check '"operation": "rename"'
+"$SYNC" status --vault "$VAULT" > "$TMP_DIR/status.out"
+assert_contains "$TMP_DIR/status.out" '"proposal_sha256"'
+"$SYNC" dismiss --vault "$VAULT"
+assert_not_exists "$PROPOSAL"
+
+reset_board
+perl -0pi -e 's/## Ideas\n\n- \[ \] Idea task \^FT-20260826-001/## Ready\n\n- [ ] Idea task ^FT-20260826-001/' "$TASKS"
+run_and_check '"operation": "set_status"'
+
+reset_board
+perl -0pi -e 's/(Idea task \^FT-20260826-001\n  - project: Architecture project)/$1\n  - 📅 2026-09-01/' "$TASKS"
+run_and_check '"operation": "set_due"'
+
+reset_board
+cat >> "$TASKS" <<'EOF'
+
+## Ideas
+
+- [ ] New future task
+  - project: Extra project
+  - 📅 2026-09-02
+EOF
+run_and_check '"operation": "create_future"'
+
+assert_blocked() {
+  reset_board
+  eval "$1"
+  source_hashes > "$TMP_DIR/source-before.txt"
+  scan > "$TMP_DIR/blocked.out"
+  assert_file "$PROPOSAL"
+  /usr/bin/jq -e '.state == "blocked"' "$PROPOSAL" >/dev/null || fail 'invalid board did not create blocked proposal'
+  assert_sources_unchanged
+}
+
+assert_blocked "perl -0pi -e 's/ \^FT-20260826-001//' \"$TASKS\""
+assert_blocked "cat >> \"$TASKS\" <<'EOF'
+
+## Ideas
+
+- [ ] Duplicate task ^FT-20260826-001
+  - project: Architecture project
+EOF"
+assert_blocked "cat >> \"$TASKS\" <<'EOF'
+
+## Unknown
+
+- [ ] Unsupported column task
+  - project: Architecture project
+EOF"
+assert_blocked "cat >> \"$TASKS\" <<'EOF'
+
+## Ideas
+
+- [ ] Unknown project task
+  - project: Unknown project
+EOF"
+
+# A board delta cannot place multiple tasks from one project in Active. This
+# fixture moves both future tasks together, so checking each operation alone is
+# insufficient.
+reset_board
+perl -0pi -e 's/## Ideas/## Active/; s/## Ready/## Active/' "$TASKS"
+source_hashes > "$TMP_DIR/multi-active-before.txt"
+scan > "$TMP_DIR/multi-active-scan.out"
+/usr/bin/jq -e '.state == "blocked" and ([.blocked_reasons[] | select(contains("more than one task in Active"))] | length == 1)' "$PROPOSAL" >/dev/null || fail 'multiple Active tasks for one project were not blocked'
+assert_contains "$TMP_DIR/multi-active-scan.out" 'created '
+assert_equal "$(cat "$TMP_DIR/multi-active-before.txt")" "$(source_hashes)" 'multi-Active scan changed canonical files'
+if apply > "$TMP_DIR/multi-active-apply.out" 2>&1; then fail 'apply accepted blocked multiple-Active proposal'; fi
+assert_contains "$TMP_DIR/multi-active-apply.out" 'proposal is blocked or malformed'
+assert_file "$PROPOSAL"
+rm -f "$PROPOSAL"
+
+# Apply is the sole reverse writer and needs the exact fresh proposal hash.
+reset_board
+perl -0pi -e 's/Idea task \^FT-20260826-001/Renamed idea \^FT-20260826-001/' "$TASKS"
+scan > "$TMP_DIR/apply-scan.out"
+source_hashes > "$TMP_DIR/wrong-confirm-before.txt"
+if "$SYNC" apply --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --confirm-proposal "$(printf '0%.0s' {1..64})" > "$TMP_DIR/wrong-confirm.out" 2>&1; then fail 'apply accepted a different proposal hash'; fi
+assert_file "$PROPOSAL"
+assert_contains "$TMP_DIR/wrong-confirm.out" 'confirmation does not match proposal'
+assert_equal "$(cat "$TMP_DIR/wrong-confirm-before.txt")" "$(source_hashes)" 'wrong confirmation changed canonical files'
+apply > "$TMP_DIR/apply.out"
+assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" 'Renamed idea'
+assert_contains "$TASKS" 'Renamed idea ^FT-20260826-001'
+assert_not_exists "$PROPOSAL"
+
+# A manifest is editable input. A lexical path below ai/ may use ../ to target
+# a same-named file outside the registered project task memory. Confirmed apply
+# must reject it before creating a staged copy or changing any source.
+reset_board
+ESCAPED_SOURCE="$ARCHITECTURE_PROJECT/current-task.md"
+ESCAPED_MANIFEST_SOURCE="$ARCHITECTURE_PROJECT/ai/../current-task.md"
+cp "$MANIFEST" "$TMP_DIR/manifest-before-escape.json"
+printf '%s\n' 'Status: active' 'Task ID: TASK-20260826-001' '' '## Goal' '' 'Current task' > "$ESCAPED_SOURCE"
+escaped_sha="$(shasum -a 256 "$ESCAPED_SOURCE" | awk '{print $1}')"
+/usr/bin/jq --arg source "$ESCAPED_MANIFEST_SOURCE" --arg sha "$escaped_sha" '
+  (.tasks[] | select(.task_id == "TASK-20260826-001") | .source_file) = $source |
+  (.tasks[] | select(.task_id == "TASK-20260826-001") | .source_sha256) = $sha
+' "$MANIFEST" > "$TMP_DIR/escaped-manifest.json"
+mv "$TMP_DIR/escaped-manifest.json" "$MANIFEST"
+perl -0pi -e 's/Current task \^TASK-20260826-001/Escaped manifest rename ^TASK-20260826-001/' "$TASKS"
+scan > "$TMP_DIR/escaped-manifest-scan.out"
+source_hashes > "$TMP_DIR/escaped-manifest-before.txt"
+escaped_before="$(shasum -a 256 "$ESCAPED_SOURCE" | awk '{print $1}')"
+if apply > "$TMP_DIR/escaped-manifest-apply.out" 2>&1; then fail 'apply accepted a manifest source that escapes registered ai memory'; fi
+assert_contains "$TMP_DIR/escaped-manifest-apply.out" 'manifest source is not a registered task file'
+assert_equal "$escaped_before" "$(shasum -a 256 "$ESCAPED_SOURCE" | awk '{print $1}')" 'escaped manifest source changed before rejection'
+assert_equal "$(cat "$TMP_DIR/escaped-manifest-before.txt")" "$(source_hashes)" 'escaped manifest source rejection changed canonical files'
+assert_file "$PROPOSAL"
+rm -f "$PROPOSAL" "$ESCAPED_SOURCE"
+cp "$TMP_DIR/manifest-before-escape.json" "$MANIFEST"
+refresh_board
+
+# A source edit after scan makes the proposal stale and keeps both source and proposal.
+SOURCE_BACKUP="$TMP_DIR/future-before-stale.md"
+cp "$ARCHITECTURE_PROJECT/ai/future-tasks.md" "$SOURCE_BACKUP"
+reset_board
+perl -0pi -e 's/Renamed idea \^FT-20260826-001/Stale source edit ^FT-20260826-001/' "$TASKS"
+scan > "$TMP_DIR/stale-source-scan.out"
+printf '\nManual canonical change\n' >> "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+source_hashes > "$TMP_DIR/stale-source-before.txt"
+if apply > "$TMP_DIR/stale-source-apply.out" 2>&1; then fail 'stale source proposal applied'; fi
+assert_file "$PROPOSAL"
+assert_contains "$TMP_DIR/stale-source-apply.out" 'proposal is stale: canonical source changed'
+assert_equal "$(cat "$TMP_DIR/stale-source-before.txt")" "$(source_hashes)" 'stale source apply changed canonical files'
+cp "$SOURCE_BACKUP" "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+
+# A board edit after scan makes the proposal stale and keeps the proposal.
+reset_board
+perl -0pi -e 's/Renamed idea \^FT-20260826-001/Stale board edit ^FT-20260826-001/' "$TASKS"
+scan > "$TMP_DIR/stale-board-scan.out"
+printf '\nManual board change after scan\n' >> "$TASKS"
+source_hashes > "$TMP_DIR/stale-board-before.txt"
+if apply > "$TMP_DIR/stale-board-apply.out" 2>&1; then fail 'stale board proposal applied'; fi
+assert_file "$PROPOSAL"
+assert_contains "$TMP_DIR/stale-board-apply.out" 'proposal is stale: board changed'
+assert_equal "$(cat "$TMP_DIR/stale-board-before.txt")" "$(source_hashes)" 'stale board apply changed canonical files'
+rm -f "$PROPOSAL"
+SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture --replace-confirmed-board --confirm-generated-write >/dev/null
+
+# Applying a due-date change rewrites only the named future record and view.
+perl -0pi -e 's/📅 2026-08-28/📅 2026-09-01/' "$TASKS"
+scan > "$TMP_DIR/due-scan.out"
+apply > "$TMP_DIR/due-apply.out"
+assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" 'due: 2026-09-01'
+assert_contains "$TASKS" '📅 2026-09-01'
+assert_not_exists "$PROPOSAL"
+
+# A single proposal may rename, reschedule, and promote a future task. Promotion
+# must consume the staged source record and carry the changed values into current.
+perl -0pi -e 's{(## Ideas\n\n)- \[ \] Renamed idea \^FT-20260826-001\n  - project: Architecture project\n\n}{$1}' "$TASKS"
+perl -0pi -e 's{(## Active\n)}{$1\n- [ ] Promoted renamed idea ^FT-20260826-001\n  - project: Architecture project\n  - 📅 2026-09-03\n} ' "$TASKS"
+scan > "$TMP_DIR/combined-promote-scan.out"
+assert_contains "$PROPOSAL" '"operation": "rename"'
+assert_contains "$PROPOSAL" '"operation": "set_due"'
+assert_contains "$PROPOSAL" '"operation": "promote_to_current"'
+apply > "$TMP_DIR/combined-promote-apply.out"
+assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Task ID: FT-20260826-001'
+assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Promoted renamed idea'
+assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'due: 2026-09-03'
+assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" 'Task ID: TASK-20260826-001'
+assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" 'Status: promoted'
+assert_contains "$TASKS" 'Promoted renamed idea ^FT-20260826-001'
+assert_not_exists "$PROPOSAL"
+
+# A valid unblocked card is appended to the project's canonical future tasks.
+cat >> "$TASKS" <<'EOF'
+
+## Ideas
+
+- [ ] Applied new future task
+  - project: Extra project
+  - 📅 2026-09-02
+EOF
+scan > "$TMP_DIR/create-scan.out"
+apply > "$TMP_DIR/create-apply.out"
+assert_contains "$EXTRA_PROJECT/ai/future-tasks.md" 'Applied new future task'
+assert_contains "$TASKS" 'Applied new future task'
+assert_not_exists "$PROPOSAL"
+
+# Promotion writes current-task.md and paused-tasks.md as well as its future
+# source. Both replacement targets must be captured in the proposal and make
+# apply fail before any write if either changed after the scan.
+for stale_target in current-task.md paused-tasks.md; do
+  prepare_promotion_fixture active 'Stale protected current task' TASK-20260827-001 FT-20260827-101 'Stale target promotion'
+  scan > "$TMP_DIR/stale-promotion-${stale_target}-scan.out"
+  /usr/bin/jq -e --arg source "$ARCHITECTURE_PROJECT/ai/$stale_target" '[.affected_sources[] | select(.source_file == $source)] | length == 1' "$PROPOSAL" >/dev/null || fail "proposal did not hash promotion target: $stale_target"
+  printf '\nManual stale edit\n' >> "$ARCHITECTURE_PROJECT/ai/$stale_target"
+  source_hashes > "$TMP_DIR/stale-promotion-${stale_target}-before.txt"
+  if apply > "$TMP_DIR/stale-promotion-${stale_target}-apply.out" 2>&1; then fail "stale promotion applied after $stale_target changed"; fi
+  assert_contains "$TMP_DIR/stale-promotion-${stale_target}-apply.out" 'proposal is stale: canonical source changed'
+  assert_equal "$(cat "$TMP_DIR/stale-promotion-${stale_target}-before.txt")" "$(source_hashes)" "stale promotion rewrote sources after $stale_target changed"
+  rm -f "$PROPOSAL"
+done
+
+# An empty current task is absent from the manifest, but promotion still
+# replaces its file. It must therefore be protected independently of cards.
+printf '%s\n' 'No current task.' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+printf '%s\n' '### FT-20260827-102 — Empty current promotion' '' 'Status: ready' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+printf '%s\n' 'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+refresh_board
+move_future_card_to_active FT-20260827-102 'Empty current promotion' 'Architecture project'
+scan > "$TMP_DIR/empty-current-promotion-scan.out"
+/usr/bin/jq -e --arg source "$ARCHITECTURE_PROJECT/ai/current-task.md" '[.affected_sources[] | select(.source_file == $source)] | length == 1' "$PROPOSAL" >/dev/null || fail 'proposal did not hash an empty current-task replacement target'
+printf '\nManual stale edit\n' >> "$ARCHITECTURE_PROJECT/ai/current-task.md"
+source_hashes > "$TMP_DIR/empty-current-promotion-before.txt"
+if apply > "$TMP_DIR/empty-current-promotion-apply.out" 2>&1; then fail 'promotion applied after an empty current-task changed'; fi
+assert_contains "$TMP_DIR/empty-current-promotion-apply.out" 'proposal is stale: canonical source changed'
+assert_equal "$(cat "$TMP_DIR/empty-current-promotion-before.txt")" "$(source_hashes)" 'stale empty current promotion rewrote sources'
+rm -f "$PROPOSAL"
+
+# Two projects can promote in one proposal. Legacy FT identities remain
+# readable and are not silently converted during promotion.
+prepare_promotion_fixture active 'Architecture previous task' TASK-20260827-010 FT-20260827-201 'Architecture simultaneous promotion'
+printf '%s\n' 'Status: waiting' 'Task ID: TASK-20260827-011' '' '## Goal' '' 'Extra previous task' > "$EXTRA_PROJECT/ai/current-task.md"
+printf '%s\n' '### FT-20260827-202 — Extra simultaneous promotion' '' 'Status: ready' > "$EXTRA_PROJECT/ai/future-tasks.md"
+printf '%s\n' 'No paused tasks.' > "$EXTRA_PROJECT/ai/paused-tasks.md"
+refresh_board
+move_future_card_to_active FT-20260827-201 'Architecture simultaneous promotion' 'Architecture project'
+move_future_card_to_active FT-20260827-202 'Extra simultaneous promotion' 'Extra project'
+scan > "$TMP_DIR/multiple-promotions-scan.out"
+apply > "$TMP_DIR/multiple-promotions-apply.out"
+assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Task ID: FT-20260827-201'
+assert_contains "$EXTRA_PROJECT/ai/current-task.md" 'Task ID: FT-20260827-202'
+assert_not_exists "$PROPOSAL"
+
+# Replacing a current task must preserve every unfinished state as a paused
+# record. Completed data must remain recorded rather than being overwritten.
+preserve_counter=30
+for prior_status in active ready in_progress waiting blocked review paused; do
+  preserve_counter=$((preserve_counter + 1))
+  printf -v prior_id 'TASK-20260827-%03d' "$preserve_counter"
+  printf -v future_id 'FT-20260827-%03d' "$((preserve_counter + 100))"
+  prior_title="Prior $prior_status task"
+  prepare_promotion_fixture "$prior_status" "$prior_title" "$prior_id" "$future_id" "Promote after $prior_status"
+  scan > "$TMP_DIR/preserve-${prior_status}-scan.out"
+  apply > "$TMP_DIR/preserve-${prior_status}-apply.out"
+  assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" "$prior_title"
+  assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" "Task ID: $prior_id"
+  assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" 'Status: paused'
+  assert_not_exists "$PROPOSAL"
+done
+
+prepare_promotion_fixture completed 'Completed current task remains recorded' TASK-20260827-099 FT-20260827-399 'Promotion after completion'
+scan > "$TMP_DIR/preserve-completed-scan.out"
+apply > "$TMP_DIR/preserve-completed-apply.out"
+assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" 'Completed current task remains recorded'
+assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" 'Task ID: TASK-20260827-099'
+assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" 'Status: completed'
+assert_not_exists "$PROPOSAL"
+
+# The scanner must not offer a ready proposal for a move that apply refuses.
+# Every unsupported transition has to be blocked while it is still a proposal.
+prepare_transition_fixture() {
+  printf '%s\n' 'Status: active' 'Task ID: TASK-20260827-500' '' '## Goal' '' 'Transition guard current task' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+  printf '%s\n' '### FT-20260827-501 — Future transition guard' '' 'Status: ready' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+  printf '%s\n' '### 2026-08-20 — Paused transition guard' '' 'Task ID: TASK-20260820-500' '' 'Status: paused' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+  refresh_board
+}
+assert_scan_blocked() {
+  local label="$1" needle="$2"
+  source_hashes > "$TMP_DIR/source-before.txt"
+  scan > "$TMP_DIR/transition-${label}-scan.out"
+  assert_file "$PROPOSAL"
+  /usr/bin/jq -e --arg needle "$needle" '.state == "blocked" and ([.blocked_reasons[] | select(contains($needle))] | length >= 1)' "$PROPOSAL" >/dev/null \
+    || fail "scanner did not block an unsupported transition: $label"
+  assert_sources_unchanged
+  rm -f "$PROPOSAL"
+}
+
+for guarded_column in Waiting Review Done Paused; do
+  prepare_transition_fixture
+  move_card_to_column FT-20260827-501 'Future transition guard' 'Architecture project' "$guarded_column"
+  assert_scan_blocked "future-$guarded_column" 'unsupported status transition for future task'
+done
+
+for guarded_column in Ideas Ready Active Waiting Blocked Review Done; do
+  prepare_transition_fixture
+  move_card_to_column TASK-20260820-500 'Paused transition guard' 'Architecture project' "$guarded_column"
+  assert_scan_blocked "paused-$guarded_column" 'unsupported status transition for paused task'
+done
+
+prepare_transition_fixture
+move_card_to_column TASK-20260820-500 'Paused transition guard' 'Architecture project' Paused 2026-09-09
+assert_scan_blocked 'paused-due' 'due dates are not supported for paused task'
+
+# A failing generator must not leave the canonical records already replaced.
+# Apply is atomic: either every named source and the board change, or neither.
+prepare_transition_fixture
+move_card_to_column FT-20260827-501 'Rolled back rename' 'Architecture project' Ready
+scan > "$TMP_DIR/rollback-scan.out"
+/usr/bin/jq -e '.state == "ready"' "$PROPOSAL" >/dev/null || fail 'rollback fixture did not produce a ready proposal'
+source_hashes > "$TMP_DIR/rollback-before.txt"
+if AI_SYNC_TEST_MV_MODE=fail AI_SYNC_TEST_TASKS="$TASKS" PATH="$TEST_BIN:$PATH" apply > "$TMP_DIR/rollback-apply.out" 2>&1; then
+  fail 'apply reported success after the generator failed'
+fi
+assert_contains "$TMP_DIR/rollback-apply.out" 'forced generated board write failure'
+assert_contains "$TMP_DIR/rollback-apply.out" 'canonical records were rolled back'
+assert_equal "$(cat "$TMP_DIR/rollback-before.txt")" "$(source_hashes)" 'failed generator left canonical sources replaced'
+[ -z "$(find "$ARCHITECTURE_PROJECT/ai" -name '.*.backup.*' -print -quit)" ] || fail 'rollback left a backup file behind'
+assert_file "$PROPOSAL"
+rm -f "$PROPOSAL"
+
+# The watcher installer must reject an inconsistent hub, scope, and vault triple
+# with the same checks the generator and the synchronizer already apply.
+printf '%s\n' 'ai-dev-architecture' > "$TMP_DIR/outside-scope.txt"
+if "$INSTALLER" --hub "$HUB" --scope "$TMP_DIR/outside-scope.txt" --vault "$VAULT" --preview > "$TMP_DIR/installer-outside-scope.out" 2>&1; then
+  fail 'installer accepted a scope file outside the hub'
+fi
+assert_contains "$TMP_DIR/installer-outside-scope.out" 'scope must be inside hub'
+mkdir -p "$TMP_DIR/foreign-vault"
+if "$INSTALLER" --hub "$HUB" --scope "$SCOPE" --vault "$TMP_DIR/foreign-vault" --preview > "$TMP_DIR/installer-foreign-vault.out" 2>&1; then
+  fail 'installer accepted a vault outside the local architecture project'
+fi
+assert_contains "$TMP_DIR/installer-foreign-vault.out" 'vault must be the local'
+if "$INSTALLER" --hub "$HUB" --scope "$SCOPE" --vault "$ARCHITECTURE_PROJECT" --preview > "$TMP_DIR/installer-wrong-vault.out" 2>&1; then
+  fail 'installer accepted a vault that is not the generated vault directory'
+fi
+
+# An untouched project ships the shipped template as its current task: an empty
+# status and a placeholder ID. Promotion replaces that empty slot while keeping
+# the legacy future ID readable.
+printf '%s\n' 'Status: empty' 'Task ID: TASK-YYYYMMDD-NNN' '' '## Goal' '' 'Что нужно изменить.' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+printf '%s\n' '### FT-20260827-601 — Promotion into an empty slot' '' 'Status: ready' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+printf '%s\n' 'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+refresh_board
+move_card_to_column FT-20260827-601 'Promotion into an empty slot' 'Architecture project' Active
+scan > "$TMP_DIR/empty-status-promotion-scan.out"
+apply > "$TMP_DIR/empty-status-promotion-apply.out"
+assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Promotion into an empty slot'
+assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Task ID: FT-20260827-601'
+assert_not_exists "$PROPOSAL"
+
+# Two new cards in one proposal must receive two different future task IDs.
+prepare_transition_fixture
+perl -0pi -e 's/(?<!\n)\z/\n/' "$TASKS"
+cat >> "$TASKS" <<'EOF'
+
+## Ideas
+
+- [ ] First simultaneous new card
+  - project: Architecture project
+- [ ] Second simultaneous new card
+  - project: Architecture project
+EOF
+scan > "$TMP_DIR/two-new-cards-scan.out"
+/usr/bin/jq -e '.state == "ready" and ([.operations[] | select(.operation == "create_future")] | length == 2)' "$PROPOSAL" >/dev/null \
+  || fail 'two new cards did not produce two ready create_future operations'
+apply > "$TMP_DIR/two-new-cards-apply.out"
+assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" 'First simultaneous new card'
+assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" 'Second simultaneous new card'
+new_future_ids="$(grep -Eo '^### TASK-ai-dev-architecture-[0-9]{8}-[0-9]{3} — (First|Second) simultaneous new card$' "$ARCHITECTURE_PROJECT/ai/future-tasks.md" | awk '{print $2}')"
+assert_equal 2 "$(printf '%s\n' "$new_future_ids" | sort -u | grep -c .)" 'two new cards reused one future task ID'
+assert_not_exists "$PROPOSAL"
+
+# A current task has no Ideas state, so that move must be blocked at scan.
+prepare_transition_fixture
+move_card_to_column TASK-20260827-500 'Transition guard current task' 'Architecture project' Ideas
+assert_scan_blocked 'current-Ideas' 'unsupported status transition for current task'
+
+# Renaming a paused card must actually rewrite the canonical heading, including
+# a title that itself contains the heading separator.
+printf '%s\n' 'No current task.' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+printf '%s\n' 'No future tasks.' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+printf '%s\n' '### 2026-08-20 — Alpha — Beta' '' 'Task ID: TASK-20260820-700' '' 'Status: paused' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+refresh_board
+assert_contains "$TASKS" 'Alpha — Beta ^TASK-20260820-700'
+perl -0pi -e 's/Alpha — Beta \^TASK-20260820-700/Renamed paused task ^TASK-20260820-700/' "$TASKS"
+scan > "$TMP_DIR/paused-rename-scan.out"
+apply > "$TMP_DIR/paused-rename-apply.out"
+assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" '### 2026-08-20 — Renamed paused task'
+! grep -Fq -- 'Alpha — Beta' "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" || fail 'paused rename left the old title behind'
+assert_not_exists "$PROPOSAL"
+
+# Renaming the current task must replace its goal line, not prepend a new one,
+# even when extra blank lines follow the Goal heading.
+printf '%s\n' 'Status: active' 'Task ID: TASK-20260827-800' '' '## Goal' '' '' 'Original goal line' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+printf '%s\n' 'No future tasks.' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+printf '%s\n' 'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+refresh_board
+perl -0pi -e 's/Original goal line \^TASK-20260827-800/Renamed current goal ^TASK-20260827-800/' "$TASKS"
+scan > "$TMP_DIR/current-rename-scan.out"
+apply > "$TMP_DIR/current-rename-apply.out"
+assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Renamed current goal'
+! grep -Fq -- 'Original goal line' "$ARCHITECTURE_PROJECT/ai/current-task.md" || fail 'current rename orphaned the original goal line'
+assert_not_exists "$PROPOSAL"
+
+# A renderable current task with no goal line must be refused at generation.
+# Inventing a placeholder title made every later scan propose a rename the user
+# never made, and applying it destroyed the following section.
+printf '%s\n' 'Status: active' 'Task ID: TASK-20260827-900' '' '## Goal' '' '## Done criteria' '' '- something' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+printf '%s\n' 'No future tasks.' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+printf '%s\n' 'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+if refresh_board > "$TMP_DIR/empty-goal-refresh.out" 2>&1; then
+  fail 'generator rendered a current task that has no goal line'
+fi
+assert_contains "$TMP_DIR/empty-goal-refresh.out" 'must have a goal line'
+
+# A well-formed board proposes nothing. A phantom rename would appear here.
+printf '%s\n' 'Status: active' 'Task ID: TASK-20260827-901' '' '## Goal' '' 'Well formed goal' '' '## Done criteria' '' '- something' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+refresh_board
+scan > "$TMP_DIR/no-phantom-scan.out"
+assert_contains "$TMP_DIR/no-phantom-scan.out" 'board matches canonical task records'
+assert_not_exists "$PROPOSAL"
+
+# A refused apply must not leave staged copies inside controlled ai/ memory.
+perl -0pi -e 's/Well formed goal \^TASK-20260827-901/Renamed well formed goal ^TASK-20260827-901/' "$TASKS"
+scan > "$TMP_DIR/temp-leak-scan.out"
+printf '\nManual canonical change\n' >> "$EXTRA_PROJECT/ai/current-task.md"
+if apply > "$TMP_DIR/temp-leak-apply.out" 2>&1; then fail 'stale apply reported success'; fi
+[ -z "$(find "$PROJECTS" -path '*/ai/*' -name '.*.apply.*' -print -quit)" ] || fail 'refused apply leaked staged copies into ai/'
+rm -f "$PROPOSAL"
+
+# Replacing the current task must not destroy its recorded working state. The
+# paused record has to keep the whole replaced body, not just its title.
+printf '%s\n' 'Status: active' 'Task ID: TASK-20260827-910' '' '## Goal' '' 'Task with a recorded body' '' '## Relevant files' '' '- scripts/example.sh' '' '## Agent handoff' '' 'Open risks: the tricky migration' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+printf '%s\n' '### FT-20260827-911 — Promotion over a recorded body' '' 'Status: ready' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+printf '%s\n' 'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+refresh_board
+move_card_to_column FT-20260827-911 'Promotion over a recorded body' 'Architecture project' Active
+scan > "$TMP_DIR/preserve-body-scan.out"
+apply > "$TMP_DIR/preserve-body-apply.out"
+assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" 'Task with a recorded body'
+assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" '- scripts/example.sh'
+assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" 'Open risks: the tricky migration'
+! grep -Eq '^## ' "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" || fail 'preserved body broke the paused file section structure'
+assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Promotion over a recorded body'
+assert_not_exists "$PROPOSAL"
+
+# The current task may only reach a state Obsidian is allowed to set. Pausing
+# and finishing stay with their own architecture workflows.
+for guarded_column in Ready Waiting Paused Done; do
+  prepare_transition_fixture
+  move_card_to_column TASK-20260827-500 'Transition guard current task' 'Architecture project' "$guarded_column"
+  assert_scan_blocked "current-$guarded_column" 'unsupported status transition for current task'
+done
+
+# A board edit the synchronizer cannot model must block, not be reverted in
+# silence by the rebuild that follows apply.
+prepare_transition_fixture
+perl -0pi -e 's/- \[ \] (Transition guard current task \^TASK-20260827-500)/- [x] $1/' "$TASKS"
+assert_scan_blocked 'checkbox' 'card checkbox does not match its canonical state'
+
+prepare_transition_fixture
+perl -0pi -e 's/(Transition guard current task \^TASK-20260827-500\n  - project: Architecture project\n)/$1  - note: my manual annotation\n/' "$TASKS"
+assert_scan_blocked 'unknown-field' 'card has an unsupported field'
+
+# The replaced body is free-form text. No line inside it may be read back as a
+# record field, a heading, or a second Task ID.
+printf '%s\n' 'Status: active' 'Task ID: TASK-20260827-920' '' '## Goal' '' 'Task with a hostile body' '' '## Agent handoff' '' 'Status: blocked' 'Task ID: TASK-20260825-002' '' '### Not a record' '' '```bash' '#!/usr/bin/env bash' '```' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+printf '%s\n' '### FT-20260827-921 — Promotion over a hostile body' '' 'Status: ready' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+printf '%s\n' 'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+refresh_board
+move_card_to_column FT-20260827-921 'Promotion over a hostile body' 'Architecture project' Active
+scan > "$TMP_DIR/hostile-body-scan.out"
+apply > "$TMP_DIR/hostile-body-apply.out"
+assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" 'Task with a hostile body'
+assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" '#!/usr/bin/env bash'
+assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" 'Task ID: TASK-20260825-002'
+assert_contains "$TASKS" 'Task with a hostile body ^TASK-20260827-920'
+scan > "$TMP_DIR/hostile-body-rescan.out"
+assert_contains "$TMP_DIR/hostile-body-rescan.out" 'board matches canonical task records'
+assert_not_exists "$PROPOSAL"
+
+# A goal line may legitimately begin with a Markdown character.
+printf '%s\n' 'Status: active' 'Task ID: TASK-20260827-930' '' '## Goal' '' '#1 приоритет' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+printf '%s\n' 'No future tasks.' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+printf '%s\n' 'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+refresh_board
+perl -0pi -e 's/#1 приоритет \^TASK-20260827-930/Обычный заголовок ^TASK-20260827-930/' "$TASKS"
+scan > "$TMP_DIR/hash-goal-scan.out"
+apply > "$TMP_DIR/hash-goal-apply.out"
+assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Обычный заголовок'
+! grep -Fq -- '#1 приоритет' "$ARCHITECTURE_PROJECT/ai/current-task.md" || fail 'rename left a goal line starting with a hash'
+assert_not_exists "$PROPOSAL"
+
+# A tab in a title would split the record separator and make the scanner
+# propose a rename and a due-date change on every run.
+printf '%s\n' 'Status: active' 'Task ID: TASK-20260827-940' '' '## Goal' '' 'Tab	inside title' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+printf '%s\n' 'No future tasks.' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+printf '%s\n' 'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+if refresh_board > "$TMP_DIR/tab-title-refresh.out" 2>&1; then
+  fail 'generator rendered a task title containing a tab'
+fi
+assert_contains "$TMP_DIR/tab-title-refresh.out" 'must not contain a tab'
+
+# A carriage return would drop the task from the board with no diagnostic.
+printf 'Status: active\r\nTask ID: TASK-20260827-941\r\n\r\n## Goal\r\n\r\nCarriage return task\r\n' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+if refresh_board > "$TMP_DIR/crlf-refresh.out" 2>&1; then
+  fail 'generator accepted a task file with carriage returns'
+fi
+assert_contains "$TMP_DIR/crlf-refresh.out" 'carriage return'
+
+# Trailing whitespace must not survive into a generated record, or the tool
+# proposes a rename against a heading it wrote itself.
+printf '%s\n' 'Status: active' 'Task ID: TASK-20260827-950' '' '## Goal' '' 'Trailing space title ' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+printf '%s\n' '### FT-20260827-951 — Promotion over a trailing space ' '' 'Status: ready' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+printf '%s\n' 'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+refresh_board
+move_card_to_column FT-20260827-951 'Promotion over a trailing space' 'Architecture project' Active
+scan > "$TMP_DIR/trailing-space-scan.out"
+apply > "$TMP_DIR/trailing-space-apply.out"
+scan > "$TMP_DIR/trailing-space-rescan.out"
+assert_contains "$TMP_DIR/trailing-space-rescan.out" 'board matches canonical task records'
+assert_not_exists "$PROPOSAL"
+
+# The rename must accept every goal shape the readers accept.
+for goal_shape in trailing-heading-space no-blank-line; do
+  case "$goal_shape" in
+    trailing-heading-space) printf '%s\n' 'Status: active' 'Task ID: TASK-20260827-960' '' '## Goal ' '' 'Shape goal' > "$ARCHITECTURE_PROJECT/ai/current-task.md";;
+    no-blank-line) printf '%s\n' 'Status: active' 'Task ID: TASK-20260827-960' '' '## Goal' 'Shape goal' > "$ARCHITECTURE_PROJECT/ai/current-task.md";;
+  esac
+  printf '%s\n' 'No future tasks.' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+  printf '%s\n' 'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+  refresh_board
+  perl -0pi -e 's/Shape goal \^TASK-20260827-960/Renamed shape goal ^TASK-20260827-960/' "$TASKS"
+  scan > "$TMP_DIR/shape-${goal_shape}-scan.out"
+  apply > "$TMP_DIR/shape-${goal_shape}-apply.out"
+  assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Renamed shape goal'
+  assert_not_exists "$PROPOSAL"
+done
+
+# The readers accept all non-CR whitespace after the Goal heading. Rename must
+# use the same contract, including vertical tab and form feed.
+for goal_space in $'\v' $'\f'; do
+  printf 'Status: active\nTask ID: TASK-20260827-961\n\n## Goal%s\n\nWhitespace goal\n' "$goal_space" > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+  printf '%s\n' 'No future tasks.' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+  printf '%s\n' 'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+  refresh_board
+  perl -0pi -e 's/Whitespace goal \^TASK-20260827-961/Renamed whitespace goal ^TASK-20260827-961/' "$TASKS"
+  scan > "$TMP_DIR/goal-whitespace-scan.out"
+  apply > "$TMP_DIR/goal-whitespace-apply.out"
+  assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Renamed whitespace goal'
+  assert_not_exists "$PROPOSAL"
+done
+
+# A new Obsidian card receives its permanent project-namespaced ID in the
+# confirmed proposal. Each project owns its own sequence, so the same date and
+# number are globally unique without reading unregistered project memory.
+id_date="$(date -u +%Y%m%d)"
+printf '%s\n' 'Status: active' 'Task ID: TASK-20260827-970' '' '## Goal' '' 'Current before stable promotion' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+printf '%s\n' 'No future tasks.' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+printf '%s\n' 'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+printf '%s\n' 'Status: waiting' 'Task ID: TASK-20260827-971' '' '## Goal' '' 'Extra current before allocation' > "$EXTRA_PROJECT/ai/current-task.md"
+printf '%s\n' 'No future tasks.' > "$EXTRA_PROJECT/ai/future-tasks.md"
+printf '%s\n' 'No paused tasks.' > "$EXTRA_PROJECT/ai/paused-tasks.md"
+mkdir -p "$PROJECTS/unregistered-shadow/ai"
+printf '%s\n' "### TASK-ai-dev-architecture-${id_date}-999 — Must not affect allocation" '' 'Status: idea' > "$PROJECTS/unregistered-shadow/ai/future-tasks.md"
+printf '%s\n' "Status: active" "Task ID: TASK-extra-project-${id_date}-999" '' '## Goal' '' 'Must not be read' > "$PROJECTS/unregistered-shadow/ai/current-task.md"
+printf '%s\n' 'No paused tasks.' > "$PROJECTS/unregistered-shadow/ai/paused-tasks.md"
+refresh_board
+perl -0pi -e 's/(?<!\n)\z/\n/' "$TASKS"
+NEW_ARCH_CARD="$(printf '%s\n' '- [ ] Stable architecture future' '  - project: Architecture project')" \
+NEW_EXTRA_CARD="$(printf '%s\n' '- [ ] Stable extra future' '  - project: Extra project')" \
+perl -0pi -e 's{(^## Ideas\n)}{$1 . "\n" . $ENV{NEW_ARCH_CARD} . "\n" . $ENV{NEW_EXTRA_CARD} . "\n"}me' "$TASKS"
+scan > "$TMP_DIR/namespaced-create-scan.out"
+architecture_stable_id="TASK-ai-dev-architecture-${id_date}-001"
+extra_stable_id="TASK-extra-project-${id_date}-001"
+/usr/bin/jq -e --arg architecture_id "$architecture_stable_id" --arg extra_id "$extra_stable_id" '
+  .state == "ready" and
+  ([.operations[] | select(.operation == "create_future") | .task_id] | sort) == ([$architecture_id, $extra_id] | sort)
+' "$PROPOSAL" >/dev/null || { /usr/bin/jq . "$PROPOSAL" >&2; fail 'new cards did not receive exact project-namespaced IDs in the proposal'; }
+[ "$architecture_stable_id" != "$extra_stable_id" ] || fail 'project namespaces did not make new task IDs globally unique'
+apply > "$TMP_DIR/namespaced-create-apply.out"
+assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" "### $architecture_stable_id — Stable architecture future"
+assert_contains "$EXTRA_PROJECT/ai/future-tasks.md" "### $extra_stable_id — Stable extra future"
+assert_contains "$TASKS" "Stable architecture future ^$architecture_stable_id"
+assert_contains "$TASKS" "Stable extra future ^$extra_stable_id"
+assert_not_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" "${id_date}-999"
+assert_not_contains "$EXTRA_PROJECT/ai/future-tasks.md" "${id_date}-999"
+
+# Promotion keeps exactly the same ID. The proposal must name every canonical
+# source change: preserve the old current record, replace current, and mark the
+# promoted future record. A generic set_status operation is not an exact diff.
+move_card_to_column "$architecture_stable_id" 'Stable architecture future' 'Architecture project' Active
+scan > "$TMP_DIR/stable-promotion-scan.out"
+/usr/bin/jq -e \
+  --arg promoted_id "$architecture_stable_id" \
+  --arg old_id 'TASK-20260827-970' \
+  --arg future "$ARCHITECTURE_PROJECT/ai/future-tasks.md" \
+  --arg current "$ARCHITECTURE_PROJECT/ai/current-task.md" \
+  --arg paused "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" '
+  .state == "ready" and
+  ([.operations[] | select(.operation == "set_status" and .task_id == $promoted_id)] | length) == 0 and
+  ([.operations[] | select(
+    .operation == "promote_to_current" and
+    .task_id == $promoted_id and
+    .from == "idea" and .to == "active" and
+    .replaced_current.task_id == $old_id and
+    .replaced_current.from_status == "active" and
+    .replaced_current.to_status == "paused" and
+    ([.source_changes[] | select(.action == "mark_future_promoted" and .source_file == $future and .task_id == $promoted_id)] | length) == 1 and
+    ([.source_changes[] | select(.action == "append_paused_record" and .source_file == $paused and .task_id == $old_id)] | length) == 1 and
+    ([.source_changes[] | select(.action == "replace_current" and .source_file == $current and .from_task_id == $old_id and .to_task_id == $promoted_id)] | length) == 1
+  )] | length) == 1
+' "$PROPOSAL" >/dev/null || fail 'promotion proposal did not expose every exact canonical source change'
+apply > "$TMP_DIR/stable-promotion-apply.out"
+assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" "Task ID: $architecture_stable_id"
+assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Stable architecture future'
+assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" "### $architecture_stable_id — Stable architecture future"
+assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" 'Status: promoted'
+assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" 'Task ID: TASK-20260827-970'
+assert_contains "$TASKS" "Stable architecture future ^$architecture_stable_id"
+! grep -Eq "Stable architecture future \^TASK-(20|[a-z0-9-]+-20)[0-9]{6}-[0-9]{3}$" "$TASKS" || \
+  [ "$(grep -Ec "Stable architecture future \^$architecture_stable_id$" "$TASKS")" -eq 1 ] || fail 'promotion changed the permanent task ID'
+scan > "$TMP_DIR/stable-promotion-rescan.out"
+assert_contains "$TMP_DIR/stable-promotion-rescan.out" 'board matches canonical task records'
+assert_not_exists "$PROPOSAL"
+
+printf 'PASS: Obsidian confirmed task sync contract\n'

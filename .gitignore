@@ -5,4 +5,5 @@
 _source/
 tmp/
 obsidian-vault/
+.ai-architecture-sync/
 .worktrees/

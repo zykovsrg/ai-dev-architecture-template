@@ -1,102 +1,67 @@
-# Task 3 Report: Updater safety and user documentation
+# Task 3 report — Obsidian proposal scanner
 
-## Implementation summary
+## Scope
 
-The standalone architecture updater now makes its knowledge boundary explicit:
-`knowledge/` remains outside both `ARCHITECTURE_FILES` and
-`CONTROLLED_MEMORY_FILES`, and every normal update reports that it does not
-enable knowledge in existing projects. A new smoke fixture represents a
-pre-knowledge project and proves that `--apply` neither creates `knowledge/`
-nor changes existing task memory.
+Added only the non-writing scanner and its contract test:
 
-The user documentation now consistently explains that knowledge is optional,
-separate from `ai/project-context.md`, and deliberately captured rather than
-implicitly enabled by an update. It documents the five record statuses,
-`knowledge-capture`/`knowledge-review` confirmation gates, and the optional
-focused review offer from `task-finish`.
+- `scripts/obsidian-task-sync.sh`
+- `scripts/obsidian-task-sync-test.sh`
 
-## Changed files
+There is no `apply` command and no watcher in this task.
 
-- `scripts/update-installed-architecture.sh`
-- `scripts/smoke-test.sh`
-- `docs/file-roles.md`
-- `docs/install.md`
-- `docs/update.md`
-- `docs/concepts.md`
-- `.superpowers/sdd/task-3-report.md`
+## Behaviour
+
+- `scan --hub ABS --scope ABS --vault ABS` validates the local architecture
+  vault, registry, scope, manifest v3, source hashes, and known task records.
+  It writes only the local runtime proposal at
+  `.ai-architecture-sync/pending-proposal.json`.
+- The proposal contains `proposal_sha256`, actual board and manifest hashes,
+  affected source hashes, explicit operations, and blocked reasons.
+- `status --vault ABS` prints that exact JSON proposal and its hash.
+- `dismiss --vault ABS` removes only the pending proposal.
+- Known cards are matched exclusively by the verified Obsidian block ID
+  `^TASK-ID` / `^FT-ID`. A title collision without an ID is blocked rather
+  than treated as a known task.
+- Tests cover rename, column/status move, due-date change, new future card,
+  missing ID, duplicate ID, unknown column, unknown project, and unchanged
+  canonical-source hashes.
 
 ## TDD evidence
 
 ### RED
 
-The pre-knowledge fixture and its assertion for the required lifecycle message
-were added to `scripts/smoke-test.sh` before the updater output was added.
+After creating the fixture contract and before creating the scanner, this
+command failed because the requested command did not exist:
 
 ```text
-bash scripts/smoke-test.sh
-FAIL: expected 'Updating does not enable knowledge in existing projects.' in .../pre-knowledge-update.out
+$ bash scripts/obsidian-task-sync-test.sh
+scripts/obsidian-task-sync-test.sh: line 59: .../scripts/obsidian-task-sync.sh: No such file or directory
 ```
 
-The same fixture had already asserted that `knowledge/` was absent and that
-`ai/current-task.md` matched its pre-update copy. The failing message confirms
-the new lifecycle contract was not merely documented after the implementation.
+During GREEN implementation, the new-card fixture initially failed because
+empty TSV fields were collapsed by Bash and its title was interpreted as an
+ID. The scanner parser now uses a non-whitespace field separator, preserving
+the empty ID of a valid new card.
 
-### GREEN
-
-After adding the explicit updater boundary comment and lifecycle output, the
-full smoke suite passed, including the new fixture.
+### GREEN and fresh verification
 
 ```text
-Smoke tests passed.
-Hub smoke tests passed.
+$ bash -n scripts/obsidian-task-sync.sh scripts/obsidian-task-sync-test.sh \
+    scripts/generate-obsidian-projects-kanban.sh scripts/obsidian-projects-kanban-test.sh
+$ bash scripts/obsidian-task-sync-test.sh
+PASS: Obsidian confirmed task sync contract
+$ bash scripts/obsidian-projects-kanban-test.sh
+PASS: Obsidian task Kanban and project overview contract
+$ git diff --check
 ```
 
-## Fresh verification
-
-All commands below completed with exit code `0` after the final changes:
-
-- `bash scripts/check-consistency.sh`
-- `bash scripts/smoke-test.sh`
-- `bash -n scripts/update-installed-architecture.sh scripts/smoke-test.sh`
-- `git diff --check`
-
-`check-consistency` reported that all canonical lists are consistent and that
-the standalone updaters do not overwrite controlled memory.
+All commands above exited with code 0.
 
 ## Concerns
 
-No open concerns. Legacy standalone migration remains outside this change:
-the normal updater neither migrates nor enables knowledge in existing projects.
-
-## Reviewer P2 follow-up
-
-Both P2 findings from `task-3-review.md` were addressed within Task 3 scope.
-
-### RED
-
-Before the documentation update, the new smoke contract failed:
-
-```text
-bash scripts/smoke-test.sh
-FAIL: expected 'Existing-project knowledge enablement is available only through the hub's' in .../docs/file-roles.md
-```
-
-This confirms the documentation previously lacked the required positive route,
-rather than merely using imprecise wording. The same test change adds a second
-fixture containing `knowledge/research/updater-boundary.md`; it saves a
-byte-for-byte copy, runs the normal updater, and fails if the record changes.
-
-### GREEN
-
-All owned knowledge sections now state that existing-project enablement is only
-through the hub's `knowledge-enable` workflow after confirmation of the
-registered project, and that legacy standalone knowledge migration is out of
-scope. The existing-record fixture passed after `--apply`, alongside the
-pre-knowledge absent-directory fixture.
-
-Fresh verification after the fix:
-
-- `bash scripts/smoke-test.sh` — passed.
-- `bash scripts/check-consistency.sh && bash scripts/smoke-test.sh` — passed.
-- `bash -n scripts/update-installed-architecture.sh scripts/smoke-test.sh` — passed.
-- `git diff --check` — passed.
+The earlier plan text mentions an HTML ID comment, but Task 1’s verified
+compatibility decision replaced it with Obsidian block IDs: the installed
+Kanban plugin preserves `^TASK-ID` across card edits while it removes HTML
+comments. This scanner follows that established format. Applying a proposal,
+stale-proposal handling, and background detection intentionally remain Task 4
+and Task 5 work.
