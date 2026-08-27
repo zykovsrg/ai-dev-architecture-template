@@ -43,6 +43,7 @@ LABEL='com.ai-dev-architecture.obsidian-task-sync'
 LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
 PLIST_PATH="$LAUNCH_AGENTS_DIR/$LABEL.plist"
 RUNTIME="$VAULT/.ai-architecture-sync"
+[ ! -e "$RUNTIME" ] && [ ! -L "$RUNTIME" ] || { [ -d "$RUNTIME" ] && [ ! -L "$RUNTIME" ]; } || die 'runtime directory is unsafe'
 LOG_PATH="$RUNTIME/obsidian-task-sync-watch.log"
 UID_VALUE="$(id -u)"
 
@@ -86,7 +87,9 @@ case "$MODE" in
     [ "$CONFIRM_INSTALL" -eq 1 ] || die 'install requires --confirm-launchd-install'
     [ "$CONFIRM_UNINSTALL" -eq 0 ] || die 'install does not accept --confirm-launchd-uninstall'
     [ ! -e "$LAUNCH_AGENTS_DIR" ] || { [ -d "$LAUNCH_AGENTS_DIR" ] && [ ! -L "$LAUNCH_AGENTS_DIR" ]; } || die 'LaunchAgents directory is unsafe'
-    mkdir -p "$LAUNCH_AGENTS_DIR" "$RUNTIME"
+    mkdir -p "$LAUNCH_AGENTS_DIR"
+    if [ ! -e "$RUNTIME" ] && [ ! -L "$RUNTIME" ]; then mkdir "$RUNTIME" || die 'cannot create safe runtime directory'; fi
+    [ -d "$RUNTIME" ] && [ ! -L "$RUNTIME" ] || die 'runtime directory is unsafe'
     [ ! -e "$PLIST_PATH" ] || { [ -f "$PLIST_PATH" ] && [ ! -L "$PLIST_PATH" ]; } || die 'plist path is unsafe'
     tmp_plist="$(mktemp "$LAUNCH_AGENTS_DIR/.${LABEL}.XXXXXX")"
     trap 'rm -f "$tmp_plist"' EXIT

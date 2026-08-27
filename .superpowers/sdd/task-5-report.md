@@ -64,3 +64,48 @@ The installer deliberately was tested only through `--preview` and rejected
 unconfirmed actions. Installing or unloading the user launchd job remains a
 separate user decision. The optional watcher performs only `scan`; it cannot
 apply a proposal.
+
+## P1/P2 remediation — RED
+
+The new lifecycle contract invoked the watcher immediately after the real
+generated task-board move. Before the fix it failed with:
+
+```text
+refresh lock was absent during generated board write
+```
+
+The installer contract also creates `vault/.ai-architecture-sync` as a
+directory symlink and requires `--preview` to reject it before constructing
+the log path or performing an install.
+
+## P1/P2 remediation — GREEN
+
+- Guarded refresh creates `vault/.ai-architecture-sync/refresh.lock` with an
+  exclusive `mkdir` before any temporary/generated board write. The lock is a
+  directory, so its creation is atomic and does not follow a lock symlink.
+- The refresh EXIT cleanup removes only the lock it acquired, on both a
+  successful write and an injected board-move failure.
+- During the actual generated board move, the contract runs the real watcher;
+  it sees the lock and creates no feedback proposal.
+- The installer rejects an existing runtime-directory symlink in preview mode
+  and uses non-recursive runtime creation for install.
+
+Fresh verification:
+
+```text
+$ bash scripts/obsidian-projects-kanban-test.sh
+PASS: Obsidian task Kanban and project overview contract
+
+$ bash scripts/obsidian-task-sync-test.sh
+PASS: Obsidian confirmed task sync contract
+
+$ bash scripts/smoke-test.sh
+Smoke tests passed.
+Hub smoke tests passed.
+
+$ bash -n scripts/generate-obsidian-projects-kanban.sh scripts/install-obsidian-task-sync.sh scripts/obsidian-task-sync-test.sh
+exit 0
+
+$ git diff --check
+exit 0
+```

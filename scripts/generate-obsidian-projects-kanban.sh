@@ -150,8 +150,31 @@ if [ -e "$TARGET_TASKS" ] || [ -e "$TARGET_OVERVIEW" ] || [ -e "$TARGET_MANIFEST
   [ "$REPLACE_CONFIRMED_BOARD" -eq 1 ] || [ "$recorded_tasks" = "$(shasum -a 256 "$TARGET_TASKS" | awk '{print $1}')" ] || die 'proposal pending: manual task board edit detected'
   [ "$recorded_overview" = "$(shasum -a 256 "$TARGET_OVERVIEW" | awk '{print $1}')" ] || die 'proposal pending: manual project overview edit detected'
 fi
-tmp_tasks="$(mktemp "$TARGET_DIR/.Tasks-Kanban.md.XXXXXX")"; tmp_overview="$(mktemp "$TARGET_DIR/.Projects-Overview.md.XXXXXX")"; tmp_manifest="$(mktemp "$TARGET_DIR/.AI-Architecture.manifest.json.XXXXXX")"; trap 'rm -f "$tmp_tasks" "$tmp_overview" "$tmp_manifest"' EXIT
+tmp_tasks='' tmp_overview='' tmp_manifest='' refresh_lock='' owns_refresh_lock=0
+cleanup_generated_write() {
+  [ -z "$tmp_tasks" ] || rm -f "$tmp_tasks"
+  [ -z "$tmp_overview" ] || rm -f "$tmp_overview"
+  [ -z "$tmp_manifest" ] || rm -f "$tmp_manifest"
+  [ "$owns_refresh_lock" -eq 0 ] || rmdir "$refresh_lock" 2>/dev/null || true
+}
+trap cleanup_generated_write EXIT
+
+if [ "$REFRESH_FROM_ARCHITECTURE" -eq 1 ]; then
+  RUNTIME="$VAULT/.ai-architecture-sync"
+  if [ -e "$RUNTIME" ] || [ -L "$RUNTIME" ]; then
+    [ -d "$RUNTIME" ] && [ ! -L "$RUNTIME" ] || die 'runtime directory is unsafe'
+  else
+    mkdir "$RUNTIME" || die 'cannot create safe runtime directory'
+    [ -d "$RUNTIME" ] && [ ! -L "$RUNTIME" ] || die 'cannot create safe runtime directory'
+  fi
+  refresh_lock="$RUNTIME/refresh.lock"
+  [ ! -e "$refresh_lock" ] && [ ! -L "$refresh_lock" ] || die 'architecture refresh already in progress'
+  mkdir "$refresh_lock" || die 'architecture refresh already in progress'
+  owns_refresh_lock=1
+fi
+
+tmp_tasks="$(mktemp "$TARGET_DIR/.Tasks-Kanban.md.XXXXXX")"; tmp_overview="$(mktemp "$TARGET_DIR/.Projects-Overview.md.XXXXXX")"; tmp_manifest="$(mktemp "$TARGET_DIR/.AI-Architecture.manifest.json.XXXXXX")"
 printf '%s' "$TASKS_RENDER" > "$tmp_tasks"; printf '%s' "$OVERVIEW_RENDER" > "$tmp_overview"; printf '%s' "$MANIFEST_RENDER" > "$tmp_manifest"
 [ "$(shasum -a 256 "$tmp_tasks" | awk '{print $1}')" = "$TASKS_HASH" ] || die 'temporary task board hash validation failed'; [ "$(shasum -a 256 "$tmp_overview" | awk '{print $1}')" = "$OVERVIEW_HASH" ] || die 'temporary project overview hash validation failed'
-mv -f "$tmp_tasks" "$TARGET_TASKS"; mv -f "$tmp_overview" "$TARGET_OVERVIEW"; mv -f "$tmp_manifest" "$TARGET_MANIFEST"; trap - EXIT
+mv -f "$tmp_tasks" "$TARGET_TASKS"; mv -f "$tmp_overview" "$TARGET_OVERVIEW"; mv -f "$tmp_manifest" "$TARGET_MANIFEST"; cleanup_generated_write; trap - EXIT
 printf 'wrote %s, %s, and %s\n' "$TARGET_TASKS" "$TARGET_OVERVIEW" "$TARGET_MANIFEST"

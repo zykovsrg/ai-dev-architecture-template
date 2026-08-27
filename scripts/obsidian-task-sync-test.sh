@@ -13,6 +13,7 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
 assert_file() { [ -f "$1" ] || fail "missing file: $1"; }
 assert_not_exists() { [ ! -e "$1" ] || fail "unexpected path: $1"; }
+assert_not_link() { [ ! -L "$1" ] || fail "unexpected symlink: $1"; }
 assert_contains() { grep -Fq -- "$2" "$1" || fail "expected '$2' in $1"; }
 assert_equal() { [ "$1" = "$2" ] || fail "$3"; }
 
@@ -26,8 +27,36 @@ TASKS="$VAULT/Obsidian/Tasks-Kanban.md"
 MANIFEST="$VAULT/Obsidian/AI-Architecture.manifest.json"
 RUNTIME="$VAULT/.ai-architecture-sync"
 PROPOSAL="$RUNTIME/pending-proposal.json"
+REFRESH_LOCK="$RUNTIME/refresh.lock"
+TEST_BIN="$TMP_DIR/test-bin"
 
 mkdir -p "$HUB/ai/project-cards" "$VAULT/Obsidian"
+mkdir -p "$TEST_BIN"
+cat > "$TEST_BIN/mv" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+target="${!#}"
+if [ "${AI_SYNC_TEST_MV_MODE:-}" = fail ] && [ "$target" = "$AI_SYNC_TEST_TASKS" ]; then
+  printf '%s\n' 'forced generated board write failure' >&2
+  exit 92
+fi
+
+/bin/mv "$@"
+
+if [ "${AI_SYNC_TEST_MV_MODE:-}" = watch ] && [ "$target" = "$AI_SYNC_TEST_TASKS" ]; then
+  [ -d "$AI_SYNC_TEST_REFRESH_LOCK" ] && [ ! -L "$AI_SYNC_TEST_REFRESH_LOCK" ] || {
+    printf '%s\n' 'refresh lock was absent during generated board write' >&2
+    exit 91
+  }
+  "$AI_SYNC_TEST_WATCHER" --hub "$AI_SYNC_TEST_HUB" --scope "$AI_SYNC_TEST_SCOPE" --vault "$AI_SYNC_TEST_VAULT" --once
+  [ ! -e "$AI_SYNC_TEST_PROPOSAL" ] && [ ! -L "$AI_SYNC_TEST_PROPOSAL" ] || {
+    printf '%s\n' 'watcher scanned a generated board write' >&2
+    exit 93
+  }
+fi
+EOF
+chmod +x "$TEST_BIN/mv"
 printf '%s\n' '# Project Registry' > "$HUB/ai/project-registry.md"
 
 add_project() {
@@ -102,13 +131,26 @@ assert_contains "$PROPOSAL" '"operation": "rename"'
 assert_equal "$(cat "$TMP_DIR/watcher-changed-before.txt")" "$(source_hashes)" 'watcher changed canonical sources'
 "$SYNC" dismiss --vault "$VAULT"
 
-mkdir -p "$RUNTIME"
-printf '%s\n' 'guarded architecture refresh' > "$RUNTIME/refresh.lock"
-source_hashes > "$TMP_DIR/watcher-locked-before.txt"
-"$WATCHER" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --once > "$TMP_DIR/watcher-locked.out"
-assert_not_exists "$PROPOSAL"
-assert_equal "$(cat "$TMP_DIR/watcher-locked-before.txt")" "$(source_hashes)" 'locked watcher scan changed canonical sources'
-rm -f "$RUNTIME/refresh.lock"
+# A guarded refresh owns a real lock while it replaces the task board. The mv
+# wrapper runs the watcher after the generated board move, which verifies both
+# that the watcher is suppressed during the write and that the lock is cleaned
+# afterwards. A forced move failure covers cleanup through the EXIT trap.
+reset_board
+printf '%s\n' $'Status: active\nTask ID: TASK-20260826-001\n\n## Goal\n\nRefresh lifecycle task' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+AI_SYNC_TEST_MV_MODE=watch AI_SYNC_TEST_TASKS="$TASKS" AI_SYNC_TEST_REFRESH_LOCK="$REFRESH_LOCK" AI_SYNC_TEST_WATCHER="$WATCHER" AI_SYNC_TEST_HUB="$HUB" AI_SYNC_TEST_SCOPE="$SCOPE" AI_SYNC_TEST_VAULT="$VAULT" AI_SYNC_TEST_PROPOSAL="$PROPOSAL" PATH="$TEST_BIN:$PATH" SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture > "$TMP_DIR/refresh-lifecycle.out"
+assert_contains "$TASKS" 'Refresh lifecycle task'
+assert_not_exists "$REFRESH_LOCK"
+assert_not_link "$REFRESH_LOCK"
+
+printf '%s\n' $'Status: active\nTask ID: TASK-20260826-001\n\n## Goal\n\nFailed refresh lifecycle task' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+if AI_SYNC_TEST_MV_MODE=fail AI_SYNC_TEST_TASKS="$TASKS" PATH="$TEST_BIN:$PATH" SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture > "$TMP_DIR/refresh-lifecycle-failure.out" 2>&1; then
+  fail 'guarded refresh accepted a forced generated board write failure'
+fi
+assert_contains "$TMP_DIR/refresh-lifecycle-failure.out" 'forced generated board write failure'
+assert_not_exists "$REFRESH_LOCK"
+assert_not_link "$REFRESH_LOCK"
+printf '%s\n' $'Status: active\nTask ID: TASK-20260826-001\n\n## Goal\n\nCurrent task' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture >/dev/null
 reset_board
 
 # Preview is read-only. Installing or unloading a user launchd job has its own
@@ -117,6 +159,15 @@ reset_board
 assert_contains "$TMP_DIR/installer-preview.out" '<key>StartInterval</key>'
 assert_contains "$TMP_DIR/installer-preview.out" '<integer>10</integer>'
 assert_contains "$TMP_DIR/installer-preview.out" 'obsidian-task-sync-watch.sh'
+rmdir "$RUNTIME"
+mkdir -p "$TMP_DIR/runtime-symlink-target"
+ln -s "$TMP_DIR/runtime-symlink-target" "$RUNTIME"
+if "$INSTALLER" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/installer-runtime-symlink.out" 2>&1; then
+  fail 'installer accepted a symlinked runtime directory'
+fi
+assert_contains "$TMP_DIR/installer-runtime-symlink.out" 'runtime directory is unsafe'
+rm -f "$RUNTIME"
+mkdir -p "$RUNTIME"
 if "$INSTALLER" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --install > "$TMP_DIR/installer-install-without-confirm.out" 2>&1; then
   fail 'installer accepted install without explicit confirmation'
 fi
