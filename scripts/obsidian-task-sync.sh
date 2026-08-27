@@ -208,6 +208,19 @@ add_promotion_replacement_sources() {
     add_affected_source "$source" "$(hash_file "$source")"
   done
 }
+record_kind() {
+  case "$1" in current-task.md) printf current;; future-tasks.md) printf future;; paused-tasks.md) printf paused;; *) return 1;; esac
+}
+# Only offer a transition that apply can actually perform. Otherwise the user
+# would confirm a proposal that fails halfway through the canonical write.
+transition_supported() {
+  case "$1" in
+    current-task.md) return 0;;
+    future-tasks.md) case "$2" in idea|ready|blocked|active) return 0;; *) return 1;; esac;;
+    paused-tasks.md) case "$2" in paused) return 0;; *) return 1;; esac;;
+  esac
+  return 1
+}
 find_known_title_project() {
   local title="$1" project="$2" i
   for i in "${!KNOWN_IDS[@]}"; do [ "${KNOWN_TITLES[$i]}" = "$title" ] && [ "${KNOWN_PROJECTS[$i]}" = "$project" ] && return 0; done
@@ -215,7 +228,7 @@ find_known_title_project() {
 }
 
 diff_cards() {
-  local i id known title project due column count project_index status future_source j k active_count future_active_count duplicate_project
+  local i id known title project due column count project_index status future_source j k active_count future_active_count duplicate_project known_base new_status
   for i in "${!KNOWN_IDS[@]}"; do
     count=0
     for id in "${BOARD_IDS[@]}"; do [ "$id" = "${KNOWN_IDS[$i]}" ] && count=$((count + 1)); done
@@ -227,11 +240,23 @@ diff_cards() {
       known=''; if known="$(known_index "$id")"; then
         [ "$project" = "${KNOWN_PROJECTS[$known]}" ] || BLOCK_REASONS+=("known task project changed or missing: $id")
         [ "$title" = "${KNOWN_TITLES[$known]}" ] || add_operation "$(/usr/bin/jq -cn --arg id "$id" --arg from "${KNOWN_TITLES[$known]}" --arg to "$title" '{operation:"rename", task_id:$id, from:$from, to:$to}')"
+        known_base="$(basename "${KNOWN_SOURCES[$known]}")"
         if [ "$column" != "${KNOWN_COLUMNS[$known]}" ]; then
-          add_operation "$(/usr/bin/jq -cn --arg id "$id" --arg from "${KNOWN_STATUSES[$known]}" --arg to "$(column_to_status "$column" || true)" '{operation:"set_status", task_id:$id, from:$from, to:$to}')"
-          [ "$column" != Active ] || [ "$(basename "${KNOWN_SOURCES[$known]}")" != future-tasks.md ] || add_promotion_replacement_sources "$known"
+          new_status="$(column_to_status "$column" || true)"
+          if transition_supported "$known_base" "$new_status"; then
+            add_operation "$(/usr/bin/jq -cn --arg id "$id" --arg from "${KNOWN_STATUSES[$known]}" --arg to "$new_status" '{operation:"set_status", task_id:$id, from:$from, to:$to}')"
+            [ "$column" != Active ] || [ "$known_base" != future-tasks.md ] || add_promotion_replacement_sources "$known"
+          else
+            BLOCK_REASONS+=("unsupported status transition for $(record_kind "$known_base") task: $id to column $column")
+          fi
         fi
-        [ "$due" = "${KNOWN_DUES[$known]}" ] || add_operation "$(/usr/bin/jq -cn --arg id "$id" --arg from "${KNOWN_DUES[$known]}" --arg to "$due" '{operation:"set_due", task_id:$id, from:$from, to:$to}')"
+        if [ "$due" != "${KNOWN_DUES[$known]}" ]; then
+          if [ "$known_base" = paused-tasks.md ] && [ -n "$due" ]; then
+            BLOCK_REASONS+=("due dates are not supported for paused task: $id")
+          else
+            add_operation "$(/usr/bin/jq -cn --arg id "$id" --arg from "${KNOWN_DUES[$known]}" --arg to "$due" '{operation:"set_due", task_id:$id, from:$from, to:$to}')"
+          fi
+        fi
         add_affected_source "${KNOWN_SOURCES[$known]}" "${KNOWN_SHAS[$known]}"
       else
         BLOCK_REASONS+=("unknown task ID: $id")
@@ -298,8 +323,10 @@ scan() { require_safe_paths; load_projects; load_scope_and_validate_vault; load_
 status() { require_safe_vault; [ -f "$PROPOSAL" ] || die 'no pending proposal'; /usr/bin/jq -e . "$PROPOSAL"; }
 dismiss() { require_safe_vault; rm -f -- "$PROPOSAL"; }
 
-APPLY_TARGETS=() APPLY_TEMPS=()
-cleanup_apply_temps() { local file; for file in "${APPLY_TEMPS[@]:-}"; do [ -z "$file" ] || rm -f -- "$file"; done; }
+APPLY_TARGETS=() APPLY_TEMPS=() APPLY_BACKUPS=()
+# Any exit after the canonical files were replaced must put them back, so a
+# failed generated refresh never leaves ai/ half-applied.
+cleanup_apply_state() { restore_replaced_source_files; local file; for file in "${APPLY_TEMPS[@]:-}"; do [ -z "$file" ] || rm -f -- "$file"; done; }
 
 source_is_safe_task_file() {
   local source="$1" base
@@ -517,6 +544,32 @@ validate_temporary_records() {
   done
 }
 
+back_up_named_source_files() {
+  local i backup
+  for i in "${!APPLY_TARGETS[@]}"; do
+    backup="$(mktemp "$(dirname "${APPLY_TARGETS[$i]}")/.$(basename "${APPLY_TARGETS[$i]}").backup.XXXXXX")"
+    cp "${APPLY_TARGETS[$i]}" "$backup"
+    APPLY_BACKUPS[$i]="$backup"
+  done
+}
+restore_replaced_source_files() {
+  local i
+  [ "${#APPLY_BACKUPS[@]}" -gt 0 ] || return 0
+  for i in "${!APPLY_BACKUPS[@]}"; do
+    [ -n "${APPLY_BACKUPS[$i]}" ] || continue
+    mv -f -- "${APPLY_BACKUPS[$i]}" "${APPLY_TARGETS[$i]}"
+    APPLY_BACKUPS[$i]=''
+  done
+}
+discard_source_backups() {
+  local i
+  [ "${#APPLY_BACKUPS[@]}" -gt 0 ] || return 0
+  for i in "${!APPLY_BACKUPS[@]}"; do
+    [ -n "${APPLY_BACKUPS[$i]}" ] || continue
+    rm -f -- "${APPLY_BACKUPS[$i]}"
+    APPLY_BACKUPS[$i]=''
+  done
+}
 replace_named_source_files() {
   local i
   for i in "${!APPLY_TARGETS[@]}"; do mv -f -- "${APPLY_TEMPS[$i]}" "${APPLY_TARGETS[$i]}"; APPLY_TEMPS[$i]=''; done
@@ -524,11 +577,16 @@ replace_named_source_files() {
 
 apply() {
   require_safe_paths; load_proposal; verify_board_hash; verify_manifest_hash; load_projects; load_scope_and_validate_vault; verify_every_affected_source_hash; load_known_cards
-  trap cleanup_apply_temps EXIT
-  apply_operations_to_temporary_files; validate_temporary_records; replace_named_source_files
+  trap cleanup_apply_state EXIT
+  apply_operations_to_temporary_files; validate_temporary_records
   GENERATOR="$(cd "$(dirname "$0")" && pwd -P)/generate-obsidian-projects-kanban.sh"
   [ -f "$GENERATOR" ] && [ ! -L "$GENERATOR" ] || die 'missing or unsafe generator'
-  "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture --replace-confirmed-board --confirm-generated-write
+  back_up_named_source_files; replace_named_source_files
+  if ! "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture --replace-confirmed-board --confirm-generated-write; then
+    restore_replaced_source_files
+    die 'generated view refresh failed; canonical records were rolled back and the proposal was kept'
+  fi
+  discard_source_backups
   rm -f -- "$PROPOSAL"; trap - EXIT
 }
 

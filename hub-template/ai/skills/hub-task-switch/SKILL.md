@@ -19,7 +19,14 @@ require or read duplicated project `AGENTS.md` or `CLAUDE.md` files.
 3. Require a separate explicit confirmation before pausing the current task,
    writing the replacement task, or promoting a future task.
 4. After confirmation, make only the approved memory changes in the selected
-   project. Never transfer task content to another project.
+   project. Never transfer task content to another project. Keep the paused
+   task's existing immutable `Task ID:` when moving it into
+   `ai/paused-tasks.md`. Give the replacement task
+   a concrete unique `Task ID:` in the `TASK-<UTC-date>-<NNN>` form, where
+   `<NNN>` is the next free three-digit number for that date across the
+   selected project's `ai/current-task.md` and `ai/paused-tasks.md`;
+   never leave the `TASK-YYYYMMDD-NNN` placeholder. A promoted future task keeps its own
+   immutable `FT-...` identifier in `ai/future-tasks.md`.
 5. After that approved selected-project task write, invoke the guarded trusted architecture-to-Obsidian refresh
    with `--write --refresh-from-architecture`.
    This direction is trusted only from canonical `ai/` records to generated

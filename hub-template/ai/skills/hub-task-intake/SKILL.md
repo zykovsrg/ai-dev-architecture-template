@@ -14,7 +14,10 @@ project `ai/` memory only; do not require or read duplicated project
 
 1. Read the selected project's `ai/current-task.md`.
 2. If it is empty, record the user's requested goal, scope, Done criteria, and
-   `Stage: intake` in that same file.
+   `Stage: intake` in that same file. Write a concrete unique `Task ID:` in the
+   `TASK-<UTC-date>-<NNN>` form, where `<NNN>` is the next free three-digit
+   number for that date across the selected project's `ai/current-task.md` and
+   `ai/paused-tasks.md`; never leave the `TASK-YYYYMMDD-NNN` placeholder.
 3. If it is unfinished, compare the request with its recorded Done criteria.
    Continue only when it fits; otherwise stop and require the hub-owned
    `hub-task-switch` workflow.

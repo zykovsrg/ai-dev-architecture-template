@@ -35,6 +35,18 @@ HUB="$(physical_dir "$HUB")"
 SCOPE="$(cd "$(dirname "$SCOPE")" && pwd -P)/$(basename "$SCOPE")"
 VAULT="$(physical_dir "$VAULT")"
 
+# The installed job is given these three paths verbatim, so validate the same
+# hub, scope, and vault relationships the generator and the synchronizer check.
+inside() { [[ "$1" == "$2" || "$1" == "$2"/* ]]; }
+inside "$SCOPE" "$HUB" || die 'scope must be inside hub'
+REGISTRY="$HUB/ai/project-registry.md"
+[ -f "$REGISTRY" ] && [ ! -L "$REGISTRY" ] || die 'missing or unsafe project registry'
+architecture_path="$(awk '$0 == "## ai-dev-architecture" {found=1; next} found && /^## / {exit} found {print}' "$REGISTRY" | sed -n 's/^Path: //p' | head -n 1)"
+[ -n "$architecture_path" ] && is_absolute "$architecture_path" && [ -d "$architecture_path" ] && [ ! -L "$architecture_path" ] || die 'missing or unsafe architecture project'
+architecture_real="$(physical_dir "$architecture_path")"
+inside "$architecture_real" "$HUB/projects" || die 'architecture project path escapes allowed root'
+[ "$VAULT" = "$architecture_real/obsidian-vault" ] || die 'vault must be the local vault under ai-dev-architecture/obsidian-vault'
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)"
 WATCHER="$SCRIPT_DIR/obsidian-task-sync-watch.sh"
 [ -f "$WATCHER" ] && [ ! -L "$WATCHER" ] || die 'missing or unsafe watcher command'

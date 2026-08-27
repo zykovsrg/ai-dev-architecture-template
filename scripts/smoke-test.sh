@@ -138,6 +138,15 @@ assert_contains "$ROOT/docs/update.md" 'update-installed-hub.sh'
 assert_contains "$ROOT/docs/file-roles.md" 'Hub-managed project memory'
 assert_contains "$ROOT/template/ai/current-task.md" 'Task ID: TASK-YYYYMMDD-NNN'
 assert_contains "$ROOT/template/ai/paused-tasks.md" 'Task ID: TASK-YYYYMMDD-NNN'
+# The paused template must show the exact field order the renderer and the
+# confirmed rename parser expect, or a real paused record becomes unreadable.
+paused_template_block="$(printf '%s\n' '### YYYY-MM-DD — Task title' '' 'Task ID: TASK-YYYYMMDD-NNN' '' 'Status: paused')"
+PAUSED_TEMPLATE_BLOCK="$paused_template_block" perl -0777 -ne 'exit(index($_, $ENV{PAUSED_TEMPLATE_BLOCK}) >= 0 ? 0 : 1)' \
+  "$ROOT/template/ai/paused-tasks.md" || fail 'paused template does not match the generated paused record format'
+for task_skill in hub-task-intake hub-task-switch; do
+  assert_contains "$ROOT/hub-template/ai/skills/$task_skill/SKILL.md" 'a concrete unique `Task ID:`'
+  assert_contains "$ROOT/hub-template/ai/skills/$task_skill/SKILL.md" 'never leave the `TASK-YYYYMMDD-NNN` placeholder'
+done
 for task_skill in hub-task-intake hub-task-switch hub-task-finish; do
   assert_contains "$ROOT/hub-template/ai/skills/$task_skill/SKILL.md" 'trusted architecture-to-Obsidian refresh'
   assert_contains "$ROOT/hub-template/ai/skills/$task_skill/SKILL.md" 'confirmed Obsidian-to-architecture proposal'

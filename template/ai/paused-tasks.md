@@ -12,9 +12,9 @@ Keep entries short.
 
 ### YYYY-MM-DD — Task title
 
-Status: paused
-
 Task ID: TASK-YYYYMMDD-NNN
+
+Status: paused
 
 Why paused:
 

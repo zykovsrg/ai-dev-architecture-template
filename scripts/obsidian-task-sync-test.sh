@@ -95,11 +95,17 @@ apply() {
 }
 assert_sources_unchanged() { assert_equal "$(cat "$TMP_DIR/source-before.txt")" "$(source_hashes)" 'scanner changed canonical source files'; }
 refresh_board() { SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture --replace-confirmed-board --confirm-generated-write >/dev/null; }
-move_future_card_to_active() {
-  local task_id="$1" title="$2" project="$3"
-  CARD_ID="$task_id" perl -0pi -e 's{^- \[ \] [^\n]* \^\Q$ENV{CARD_ID}\E\n(?:  - [^\n]*\n)*}{}mg' "$TASKS"
-  CARD_TEXT="$(printf '%s\n' "- [ ] $title ^$task_id" "  - project: $project")" perl -0pi -e 's{(## Active\n)}{$1 . "\n" . $ENV{CARD_TEXT}}e' "$TASKS"
+move_card_to_column() {
+  local task_id="$1" title="$2" project="$3" column="$4" due="${5:-}" card
+  # The generated board has no trailing newline, so the last column heading
+  # would otherwise never match the insertion pattern.
+  perl -0pi -e 's/(?<!\n)\z/\n/' "$TASKS"
+  CARD_ID="$task_id" perl -0pi -e 's{^- \[[ xX]\] [^\n]* \^\Q$ENV{CARD_ID}\E\n(?:  - [^\n]*\n)*}{}mg' "$TASKS"
+  card="$(printf '%s\n' "- [ ] $title ^$task_id" "  - project: $project")"
+  [ -z "$due" ] || card="$(printf '%s\n' "$card" "  - 📅 $due")"
+  CARD_TEXT="$card" COLUMN="$column" perl -0pi -e 's{(^## \Q$ENV{COLUMN}\E\n)}{$1 . "\n" . $ENV{CARD_TEXT}}me' "$TASKS"
 }
+move_future_card_to_active() { move_card_to_column "$1" "$2" "$3" Active; }
 prepare_promotion_fixture() {
   local status="$1" title="$2" task_id="$3" future_id="$4" future_title="$5"
   printf '%s\n' "Status: $status" "Task ID: $task_id" '' '## Goal' '' "$title" > "$ARCHITECTURE_PROJECT/ai/current-task.md"
@@ -407,5 +413,73 @@ assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" 'Completed current ta
 assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" 'Task ID: TASK-20260827-099'
 assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" 'Status: completed'
 assert_not_exists "$PROPOSAL"
+
+# The scanner must not offer a ready proposal for a move that apply refuses.
+# Every unsupported transition has to be blocked while it is still a proposal.
+prepare_transition_fixture() {
+  printf '%s\n' 'Status: active' 'Task ID: TASK-20260827-500' '' '## Goal' '' 'Transition guard current task' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
+  printf '%s\n' '### FT-20260827-501 — Future transition guard' '' 'Status: ready' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
+  printf '%s\n' '### 2026-08-20 — Paused transition guard' '' 'Task ID: TASK-20260820-500' '' 'Status: paused' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
+  refresh_board
+}
+assert_scan_blocked() {
+  local label="$1" needle="$2"
+  source_hashes > "$TMP_DIR/source-before.txt"
+  scan > "$TMP_DIR/transition-${label}-scan.out"
+  assert_file "$PROPOSAL"
+  /usr/bin/jq -e --arg needle "$needle" '.state == "blocked" and ([.blocked_reasons[] | select(contains($needle))] | length >= 1)' "$PROPOSAL" >/dev/null \
+    || fail "scanner did not block an unsupported transition: $label"
+  assert_sources_unchanged
+  rm -f "$PROPOSAL"
+}
+
+for guarded_column in Waiting Review Done Paused; do
+  prepare_transition_fixture
+  move_card_to_column FT-20260827-501 'Future transition guard' 'Architecture project' "$guarded_column"
+  assert_scan_blocked "future-$guarded_column" 'unsupported status transition for future task'
+done
+
+for guarded_column in Ideas Ready Active Waiting Blocked Review Done; do
+  prepare_transition_fixture
+  move_card_to_column TASK-20260820-500 'Paused transition guard' 'Architecture project' "$guarded_column"
+  assert_scan_blocked "paused-$guarded_column" 'unsupported status transition for paused task'
+done
+
+prepare_transition_fixture
+move_card_to_column TASK-20260820-500 'Paused transition guard' 'Architecture project' Paused 2026-09-09
+assert_scan_blocked 'paused-due' 'due dates are not supported for paused task'
+
+# A failing generator must not leave the canonical records already replaced.
+# Apply is atomic: either every named source and the board change, or neither.
+prepare_transition_fixture
+move_card_to_column FT-20260827-501 'Rolled back rename' 'Architecture project' Ready
+scan > "$TMP_DIR/rollback-scan.out"
+/usr/bin/jq -e '.state == "ready"' "$PROPOSAL" >/dev/null || fail 'rollback fixture did not produce a ready proposal'
+source_hashes > "$TMP_DIR/rollback-before.txt"
+if AI_SYNC_TEST_MV_MODE=fail AI_SYNC_TEST_TASKS="$TASKS" PATH="$TEST_BIN:$PATH" apply > "$TMP_DIR/rollback-apply.out" 2>&1; then
+  fail 'apply reported success after the generator failed'
+fi
+assert_contains "$TMP_DIR/rollback-apply.out" 'forced generated board write failure'
+assert_contains "$TMP_DIR/rollback-apply.out" 'canonical records were rolled back'
+assert_equal "$(cat "$TMP_DIR/rollback-before.txt")" "$(source_hashes)" 'failed generator left canonical sources replaced'
+[ -z "$(find "$ARCHITECTURE_PROJECT/ai" -name '.*.backup.*' -print -quit)" ] || fail 'rollback left a backup file behind'
+assert_file "$PROPOSAL"
+rm -f "$PROPOSAL"
+
+# The watcher installer must reject an inconsistent hub, scope, and vault triple
+# with the same checks the generator and the synchronizer already apply.
+printf '%s\n' 'ai-dev-architecture' > "$TMP_DIR/outside-scope.txt"
+if "$INSTALLER" --hub "$HUB" --scope "$TMP_DIR/outside-scope.txt" --vault "$VAULT" --preview > "$TMP_DIR/installer-outside-scope.out" 2>&1; then
+  fail 'installer accepted a scope file outside the hub'
+fi
+assert_contains "$TMP_DIR/installer-outside-scope.out" 'scope must be inside hub'
+mkdir -p "$TMP_DIR/foreign-vault"
+if "$INSTALLER" --hub "$HUB" --scope "$SCOPE" --vault "$TMP_DIR/foreign-vault" --preview > "$TMP_DIR/installer-foreign-vault.out" 2>&1; then
+  fail 'installer accepted a vault outside the local architecture project'
+fi
+assert_contains "$TMP_DIR/installer-foreign-vault.out" 'vault must be the local'
+if "$INSTALLER" --hub "$HUB" --scope "$SCOPE" --vault "$ARCHITECTURE_PROJECT" --preview > "$TMP_DIR/installer-wrong-vault.out" 2>&1; then
+  fail 'installer accepted a vault that is not the generated vault directory'
+fi
 
 printf 'PASS: Obsidian confirmed task sync contract\n'
