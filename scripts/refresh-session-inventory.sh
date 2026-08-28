@@ -3,7 +3,7 @@ set -eu
 
 project_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 transcript_dir=${SESSION_AUDIT_TRANSCRIPT_DIR:-/Users/zykovsrg/.claude/projects/-Users-zykovsrg-Documents-vibecode--ai-hub}
-output_path=${SESSION_AUDIT_OUTPUT_PATH:-$project_root/knowledge/session-audit/session-inventory.md}
+output_path=${SESSION_AUDIT_OUTPUT_PATH:-$project_root/knowledge/research/session-inventory.md}
 generated_at=${SESSION_AUDIT_NOW:-$(date -u '+%Y-%m-%dT%H:%M:%SZ')}
 
 if [ ! -d "$transcript_dir" ]; then

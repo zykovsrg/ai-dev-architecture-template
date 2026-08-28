@@ -1,6 +1,6 @@
 # AI Development Architecture
 
-Version: 7.3
+Version: 7.4
 
 This file is the reference for workflows and the rule hierarchy. It does not need to be loaded for every task. Read it only when a task concerns workflows, rule conflicts, architecture-update, or when a rule is unclear.
 
@@ -71,6 +71,18 @@ Use `review` when the agent only reads files, summarizes context, inspects proje
 Use `implementation` only when the agent is going to change application code, project files, tests, or task memory.
 
 If implementation or review suggests the current task may be complete, the agent must not declare the task closed. It must propose `task-finish` and wait for user confirmation.
+
+## Recurring session audit
+
+Every three days, a separate audit task may refresh only the safe inventory of
+session-file metadata. It then offers the inventory; it does not read a
+transcript by default. The user's exact session IDs authorize reading only those
+transcripts in the current audit and immediately writing safe results to the
+journal. Findings may propose changes, but never automatically change tasks,
+rules, settings, or architecture.
+
+Use `ai/skills/session-audit/SKILL.md` for the detailed procedure. The skill is
+loaded only for an audit, not for ordinary work.
 
 ## Session start check
 

@@ -46,8 +46,12 @@ captures, not a mandatory stop.
 Agents may analyse and propose. Every write of a task, deadline, note,
 Obsidian file, Calendar event, or migration requires a fresh explicit user
 confirmation. Calendar integration is deferred: use a selected test calendar,
-preview first, separate write confirmation, and no deletion. Session audits
-are proposals only and should be offered only when they find a material issue.
+preview first, separate write confirmation, and no deletion. A separate
+session-audit task starts every three days and may automatically refresh only
+the metadata inventory. The user's exact session IDs authorize reading only
+those transcripts and immediately writing safe audit results to the journal.
+Findings may propose changes, but never automatically change tasks, rules,
+settings, or architecture.
 
 Why: The user needs fast retrieval and planning across many projects without
 losing manual control, data ownership, or the hub's narrow routing boundary.
