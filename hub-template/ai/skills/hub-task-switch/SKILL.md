@@ -12,6 +12,11 @@ require or read duplicated project `AGENTS.md` or `CLAUDE.md` files.
 
 ## Procedure
 
+Use the central Obsidian vault at `<hub>/projects/ai-dev-architecture/obsidian-vault`, derived from the confirmed
+hub root. Select the board by the confirmed registered project ID and do not
+ask for a per-project vault path. Manual board edits are reviewable proposals
+only. Reverse scan and apply require the mandatory `--project-id <id>` selector.
+
 1. Read only the selected project's `ai/current-task.md` and
    `ai/paused-tasks.md`.
 2. Show the current goal, the requested replacement, and the exact project

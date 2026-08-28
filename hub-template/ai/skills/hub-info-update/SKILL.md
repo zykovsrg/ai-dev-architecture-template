@@ -37,6 +37,12 @@ authorize a project switch.
 
 ## Review-only procedure
 
+Obsidian uses the central Obsidian vault at `<hub>/projects/ai-dev-architecture/obsidian-vault`, derived from the confirmed
+hub root. Select the board by the confirmed registered project ID; do not ask
+for a per-project vault path. Any manual board edit is a proposal for review
+only and never a direct memory write. Reverse proposals require the mandatory
+`--project-id <id>` selector.
+
 Read only the supplied temporary text and the smallest selected-project `ai/`
 memory allowed by the hub-managed flow. Do not write while preparing the
 proposal. First present one meeting summary and a distinct `Affected projects`

@@ -196,6 +196,16 @@ project-local `knowledge/` paths. It cannot weaken hub confirmation,
 allowed-root, secret, personal/client-data, or memory-isolation rules. It never
 reads, writes, pauses, finishes, or copies another project's memory or records.
 
+## Central Obsidian Projection
+
+The hub has one central Obsidian vault at `<hub>/projects/ai-dev-architecture/obsidian-vault`.
+Workflows derive this path
+from the confirmed hub root; they must not ask for or accept a per-project
+vault path. A reverse proposal always selects exactly one confirmed project
+board by its registered project ID and must pass `--project-id <id>`; the ID is
+mandatory for both scan and apply. Manual Obsidian edits are never written to
+canonical records automatically: they produce a reviewable proposal only.
+
 ## Optional Project Knowledge
 
 `knowledge/` is optional local reference material, not default context and not

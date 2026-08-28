@@ -12,6 +12,12 @@ project `ai/` memory only; do not require or read duplicated project
 
 ## Procedure
 
+The central Obsidian vault is `<hub>/projects/ai-dev-architecture/obsidian-vault`, derived from the confirmed
+hub root. Select the board by the confirmed registered project ID; never ask
+for a per-project vault path. Manual Obsidian edits create a proposal only.
+Every reverse scan or apply proposal must include the mandatory
+`--project-id <id>` selector.
+
 1. Read the selected project's `ai/current-task.md`.
 2. If it is empty, record the user's requested goal, scope, Done criteria, and
    `Stage: intake` in that same file. Write a concrete unique `Task ID:` in the
