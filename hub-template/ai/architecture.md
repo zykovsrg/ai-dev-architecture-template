@@ -104,7 +104,8 @@ under the validated `<hub>/projects` root: only its `ai/` memory files (`current
 entry, and an active-project selection. The scaffold consists only of
 `knowledge/README.md`, `knowledge/record-template.md`, and the four empty
 directories `knowledge/research/`, `knowledge/decisions/`, `knowledge/risks/`,
-and `knowledge/runbooks/`. Git initialization is covered by Repository
+`knowledge/runbooks/`, and `knowledge/inbox/`. Inbox holds weak observations;
+it is not a durable knowledge category. Git initialization is covered by Repository
 Provisioning below. It must not create code, dependencies, services, duplicate
 registry entries, or any other project files. Use
 `hub-project-register` for an existing folder; it does not replace the new-project

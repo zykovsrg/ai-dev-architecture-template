@@ -46,13 +46,14 @@ valid_from: null
 
 ### Task 3: Add inbox to hub scaffolding
 
-**Files:** Modify `hub-template/ai/architecture.md:99-107`, `hub-template/ai/skills/hub-project-create/SKILL.md:75-150`, `hub-template/ai/skills/hub-knowledge-enable/SKILL.md:18-92`, and `scripts/hub-smoke-test.sh:289-327`.
+**Files:** Modify `hub-template/ai/architecture.md:99-107`, `hub-template/ai/skills/hub-project-create/SKILL.md:75-150`, `hub-template/ai/skills/hub-knowledge-enable/SKILL.md:18-92`, `hub-template/ai/skills/hub-knowledge-capture/SKILL.md:15-72`, `hub-template/ai/skills/hub-knowledge-review/SKILL.md:35-61`, and `scripts/hub-smoke-test.sh:289-327`.
 
 - [ ] Add `[[ "$text" == *'knowledge/inbox/'* ]]` to both hub scaffold validators; run `bash scripts/hub-smoke-test.sh` and expect failure first.
 - [ ] Add inbox to architecture, project-create preview, confirmed procedure, and canonical scaffold. State it is not a fifth durable category.
 - [ ] Add inbox to `hub-knowledge-enable` lstat checks, preview, and absent-path creation list, preserving no-read/no-overwrite rules.
+- [ ] Update hub capture and review with the same explicit origin, valid-from, inbox-boundary, and exact-confirmation rules as standalone workflows.
 - [ ] Run `bash scripts/check-consistency.sh && bash scripts/hub-smoke-test.sh`; expect success.
-- [ ] Commit: `git add hub-template/ai/architecture.md hub-template/ai/skills/hub-project-create/SKILL.md hub-template/ai/skills/hub-knowledge-enable/SKILL.md scripts/hub-smoke-test.sh && git commit -m "feat: scaffold knowledge inbox in hub projects"`.
+- [ ] Commit: `git add hub-template/ai/architecture.md hub-template/ai/skills/hub-project-create/SKILL.md hub-template/ai/skills/hub-knowledge-enable/SKILL.md hub-template/ai/skills/hub-knowledge-capture/SKILL.md hub-template/ai/skills/hub-knowledge-review/SKILL.md scripts/hub-smoke-test.sh && git commit -m "feat: add hub knowledge provenance and inbox"`.
 
 ### Task 4: Verify and enter review
 

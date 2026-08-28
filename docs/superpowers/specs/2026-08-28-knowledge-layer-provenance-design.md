@@ -17,9 +17,9 @@ the hub scaffold that creates project-local knowledge directories:
 - `ai/skills/knowledge-review/SKILL.md` and its template copy;
 - standalone and hub knowledge scaffolding and their installation tests.
 
-`hub-template/` changes only where it creates or validates the project-local
-knowledge scaffold. Its capture and review workflows continue to operate on the
-selected project's `knowledge/` directory and share the same record format.
+`hub-template/` changes where it creates, validates, captures, and reviews the
+project-local knowledge scaffold. Its capture and review workflows enforce the
+same record format.
 
 ## Data model
 
@@ -82,7 +82,7 @@ disposition but does not mutate anything before confirmation.
 ## Verification
 
 Tests will prove that standalone and hub scaffolding include the inbox,
-installation creates it, the standalone and template copies match, and the
-workflow text contains the new validation and confirmation rules. The full
+installation creates it, and workflow text contains the new validation and
+confirmation rules. The full
 regression commands are `bash scripts/check-consistency.sh`,
 `bash scripts/smoke-test.sh`, and `bash scripts/hub-smoke-test.sh`.

@@ -62,6 +62,10 @@ knowledge_capture_contract_valid() {
   text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
 
   knowledge_path_boundary_valid "$file" &&
+    [[ "$text" == *'explicit `origin` choice'* ]] &&
+    [[ "$text" == *'must not default to `stated`'* ]] &&
+    [[ "$text" == *'origin: observation'* ]] &&
+    [[ "$text" == *'knowledge/inbox/'* ]] &&
     [[ "$text" == *'The canonical target must remain beneath the directory mapped from the selected type'* ]] &&
     [[ "$text" == *'personal data or client data'* ]] &&
     [[ "$text" == *'without echoing the rejected value'* ]] &&
@@ -74,7 +78,11 @@ knowledge_review_contract_valid() {
   text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
 
   knowledge_path_boundary_valid "$file" &&
-    [[ "$text" == *'required frontmatter keys: `type`, `status`, `created`, `reviewed`, and `sources`'* ]] &&
+    [[ "$text" == *'`origin`'* ]] &&
+    [[ "$text" == *'`valid_from`'* ]] &&
+    [[ "$text" == *'origin: inferred'* ]] &&
+    [[ "$text" == *'observation outside the inbox'* ]] &&
+    [[ "$text" == *'required frontmatter keys: `type`, `status`, `origin`, `valid_from`, `created`, `reviewed`, and `sources`'* ]] &&
     [[ "$text" == *'exactly `research`, `decision`, `risk`, or `runbook`'* ]] &&
     [[ "$text" == *'type must match its category directory'* ]] &&
     [[ "$text" == *'exactly `draft`, `verified`, `needs-review`, `stale`, or `superseded`'* ]] &&
@@ -199,8 +207,11 @@ assert_dir "$PROJECT/knowledge/research"
 assert_dir "$PROJECT/knowledge/decisions"
 assert_dir "$PROJECT/knowledge/risks"
 assert_dir "$PROJECT/knowledge/runbooks"
+assert_dir "$PROJECT/knowledge/inbox"
 assert_file "$PROJECT/knowledge/README.md"
 assert_file "$PROJECT/knowledge/record-template.md"
+assert_contains "$PROJECT/knowledge/record-template.md" 'origin: stated'
+assert_contains "$PROJECT/knowledge/record-template.md" 'valid_from: null'
 assert_file "$PROJECT/ai/skills/knowledge-capture/SKILL.md"
 assert_file "$PROJECT/ai/skills/knowledge-review/SKILL.md"
 assert_contains "$PROJECT/knowledge/README.md" 'Knowledge records must be secret-free.'

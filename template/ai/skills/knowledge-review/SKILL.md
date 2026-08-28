@@ -35,12 +35,15 @@ confirmation never overrides this boundary.
 
 1. Read only selected records that passed the containment checks and only the
    task context needed to understand a task-linked set.
-2. Validate the required frontmatter keys: `type`, `status`, `created`, `reviewed`, and `sources`.
+2. Validate the required frontmatter keys: `type`, `status`, `origin`, `valid_from`, `created`, `reviewed`, and `sources`.
 3. Require `type` to be exactly `research`, `decision`, `risk`, or `runbook`;
    the type must match its category directory. Require `status` to be exactly `draft`, `verified`, `needs-review`, `stale`, or `superseded`.
 4. Validate `created` and `reviewed` as real `YYYY-MM-DD` dates. Report record
    freshness from `reviewed`, using `created` only when a review date is absent
    and reporting that missing field as a defect.
+   Validate `valid_from` as `null` or a real `YYYY-MM-DD` date.
+   Report `origin: inferred` separately from `origin: stated`; flag an
+   observation outside the inbox as a defect.
 5. For `sources`, distinguish missing or malformed citations from dated
    evidence. Inspect and report the publication or update date of each cited source separately from the record dates when that date is available; label an
    unavailable or unverifiable source date as unknown rather than inferring it.
@@ -55,6 +58,10 @@ confirmation never overrides this boundary.
 9. Propose concrete edits with exact paths, but do not apply them. Wait for
    explicit confirmation that names the intended record or set, for example:
    `Update knowledge/risks/deployment.md as proposed.`
+
+For an explicitly selected inbox scope, propose only: promote it into one
+selected durable category, retain it, or delete it. Each result still needs
+exact confirmation before a mutation.
 
 After confirmation, rerun containment checks, make only the confirmed edits,
 and report the changed paths. Redaction, retention links, and review-result

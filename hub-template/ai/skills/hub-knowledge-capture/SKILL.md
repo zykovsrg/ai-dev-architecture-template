@@ -26,6 +26,11 @@ memory-isolation rules.
    - runbook → `knowledge/runbooks/`
 4. Require explicit confirmation naming the exact write path before any write.
 
+Require an explicit `origin` choice: `stated`, `inferred`, or `observation`.
+Capture must not default to `stated`. Observation targets must be below
+`knowledge/inbox/`; stated and inferred targets stay below the selected durable
+category.
+
 ## Containment preflight
 
 Perform these checks before reading an existing target and again after
@@ -55,6 +60,8 @@ The type must be exactly `research`, `decision`, `risk`, or `runbook` and match
 the category directory. The status must be exactly `draft`, `verified`,
 `needs-review`, `stale`, or `superseded`. New records start as `draft` unless
 the selected evidence supports another allowed status.
+
+Require `valid_from` to be `null` or a real `YYYY-MM-DD` date.
 
 Never delete a stale or superseded record. Retain it at its original path and
 add a link to its replacement under `Related records`; each exact write still

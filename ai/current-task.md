@@ -10,7 +10,7 @@ Note: `paused` is a transient status used only while `task-switch` is moving thi
 task into `ai/paused-tasks.md`. After the switch this file holds the new task and
 the paused one lives in `ai/paused-tasks.md`.
 
-Stage: planning
+Stage: review
 
 Allowed stages: intake / spec / planning / implementation / review / task-finish
 

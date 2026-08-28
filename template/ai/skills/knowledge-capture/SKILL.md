@@ -24,6 +24,11 @@ Before proposing a write, confirm all three:
    - runbook → `knowledge/runbooks/`
 3. The user has explicitly confirmed the exact write.
 
+Require an explicit `origin` choice: `stated`, `inferred`, or `observation`.
+Capture must not default to `stated`. For `origin: observation`, require the
+exact target beneath `knowledge/inbox/`; for `stated` and `inferred`, require
+the category directory selected by type.
+
 Do not infer a type, create a record, or copy chat content into `knowledge/`
 without those inputs.
 
@@ -59,6 +64,8 @@ Use only these status values: `draft`, `verified`, `needs-review`, `stale`, or
 
 Use only these type values: `research`, `decision`, `risk`, or `runbook`, and
 require the type to match the selected category directory.
+
+Require `valid_from` to be `null` or a real `YYYY-MM-DD` date.
 
 Never delete a stale or superseded record. Retain it at its original path and
 add a link to its replacement under `Related records`; creating or changing the
