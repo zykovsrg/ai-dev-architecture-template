@@ -40,10 +40,10 @@ bash scripts/obsidian-task-sync.sh apply --project-id <confirmed-project-id> --c
    with `--write --refresh-from-architecture`.
    This direction is trusted only from canonical `ai/` records to generated
    Obsidian views. Keep manifest validation enabled. If it detects a manual
-   Obsidian edit, run the local `obsidian-task-sync scan` to create its pending
+   Obsidian edit, run the local `obsidian-task-sync scan --project-id <confirmed-project-id>` to create its pending
    proposal, report that proposal, and do not overwrite the board.
 7. Obsidian-to-`ai/` is a confirmed Obsidian-to-architecture proposal only:
-   show its exact status and require `apply --confirm-proposal <sha256>` before
+   show its exact status and require `apply --project-id <confirmed-project-id> --confirm-proposal <sha256>` before
    any canonical task write.
 
 This workflow cannot override hub confirmation, allowed roots, secret, or
