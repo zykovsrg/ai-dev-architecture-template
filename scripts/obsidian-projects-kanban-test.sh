@@ -10,17 +10,45 @@ assert_file() { [ -f "$1" ] || fail "missing file: $1"; }
 assert_not_exists() { [ ! -e "$1" ] || fail "unexpected path: $1"; }
 assert_contains() { grep -Fq -- "$2" "$1" || fail "expected '$2' in $1"; }
 assert_not_contains() { ! grep -Fq -- "$2" "$1" || fail "unexpected '$2' in $1"; }
+assert_board_isolated() {
+  local board="$1" project_id="$2" anchor
+  while IFS= read -r anchor; do
+    case "$anchor" in
+      "$project_id"--*) ;;
+      *) fail "board $board contains foreign anchor: $anchor" ;;
+    esac
+  done < <(sed -n 's/^.*\^//p' "$board")
+}
 
 HUB="$TMP_DIR/hub"
 PROJECTS="$HUB/projects"
 ARCHITECTURE_PROJECT="$PROJECTS/ai-dev-architecture"
 VAULT="$ARCHITECTURE_PROJECT/obsidian-vault"
 SCOPE="$HUB/scope.txt"
-TASKS="$VAULT/Obsidian/Tasks-Kanban.md"
 OVERVIEW="$VAULT/Obsidian/Projects-Overview.md"
+ARCHITECTURE_BOARD="$VAULT/Obsidian/Projects/ai-dev-architecture/Kanban.md"
+WAITING_BOARD="$VAULT/Obsidian/Projects/waiting-project/Kanban.md"
+EMPTY_BOARD="$VAULT/Obsidian/Projects/empty-project/Kanban.md"
+# Legacy assertions below exercise transactional refresh semantics against one
+# project board; the generated global Tasks-Kanban target must remain absent.
+TASKS="$ARCHITECTURE_BOARD"
 MANIFEST="$VAULT/Obsidian/AI-Architecture.manifest.json"
 mkdir -p "$HUB/ai/project-cards" "$PROJECTS" "$VAULT/Obsidian"
 printf '%s\n' '# Project Registry' > "$HUB/ai/project-registry.md"
+cat > "$HUB/ai/archiprojects.md" <<'EOF'
+# Archiprojects
+
+## дела
+
+```yaml
+id: дела
+name: Дела
+status: active
+target: 1
+unit: project
+due: none
+```
+EOF
 
 add_project() {
   local id="$1" name="$2" registry_status="$3" current="$4" future="$5" paused="$6"
@@ -34,6 +62,9 @@ add_project() {
 
 Project ID: $id
 Name: $name
+primary_archiproject: дела
+archiproject_contribution: architecture
+related_archiprojects: none
 Status: $registry_status
 Purpose: Synthetic fixture.
 EOF
@@ -48,7 +79,7 @@ EOF
   printf '%s\n' "$id" >> "$SCOPE"
 }
 
-add_project "ai-dev-architecture" "Architecture project" "active" \
+add_project "ai-dev-architecture" "AI Dev Architecture" "active" \
   $'Status: active\nTask ID: TASK-20260826-001\ndue: 2026-08-26\n\n## Goal\n\nCurrent architecture task' \
   $'### FT-20260826-001 — Idea task\n\nStatus: idea\n\n### FT-20260826-002 — Ready task\n\nStatus: ready\ndue: 2026-08-28\n\n### FT-20260826-003 — Blocked task\n\nStatus: blocked\n\n### FT-20260826-004 — Promoted task\n\nStatus: promoted\n\n### FT-20260826-005 — Dropped task\n\nStatus: dropped\n\n### FT-20260826-006 — Completed future task\n\nStatus: done' \
   $'### 2026-08-20 — Paused task\n\nTask ID: TASK-20260820-001\n\nStatus: paused'
@@ -58,13 +89,15 @@ add_project "review-project" "Review project" "active" \
   $'Status: review\nTask ID: TASK-20260826-003\n\n## Goal\n\nReview current task' $'No future tasks.' $'No paused tasks.'
 add_project "done-project" "Done project" "completed" \
   $'Status: done\nTask ID: TASK-20260826-004\n\n## Goal\n\nDone current task' $'No future tasks.' $'No paused tasks.'
+add_project "empty-project" "Empty project" "active" \
+  $'Status: backlog\n\n## Goal\n\nNo current task' $'No future tasks.' $'No paused tasks.'
 
 before_files="$(find "$VAULT" -type f -print | sort)"
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/preview.txt"
 [ "$before_files" = "$(find "$VAULT" -type f -print | sort)" ] || fail 'preview created files'
 for column in Ideas Ready Active Waiting Blocked Review Paused Done; do assert_contains "$TMP_DIR/preview.txt" "## $column"; done
 for title in 'Idea task' 'Ready task' 'Current architecture task' 'Waiting current task' 'Blocked task' 'Review current task' 'Paused task' 'Done current task'; do assert_contains "$TMP_DIR/preview.txt" "$title"; done
-assert_contains "$TMP_DIR/preview.txt" '  - project: Architecture project'
+assert_contains "$TMP_DIR/preview.txt" '  - project: AI Dev Architecture'
 assert_contains "$TMP_DIR/preview.txt" '- [ ] Current architecture task ^ai-dev-architecture--TASK-20260826-001'
 assert_contains "$TMP_DIR/preview.txt" '- [ ] Idea task ^ai-dev-architecture--FT-20260826-001'
 assert_contains "$TMP_DIR/preview.txt" '- [ ] Paused task ^ai-dev-architecture--TASK-20260820-001'
@@ -72,16 +105,38 @@ assert_not_contains "$TMP_DIR/preview.txt" 'Promoted task'
 assert_not_contains "$TMP_DIR/preview.txt" 'Dropped task'
 assert_not_contains "$TMP_DIR/preview.txt" 'Completed future task'
 assert_contains "$TMP_DIR/preview.txt" '--- projects overview ---'
-assert_contains "$TMP_DIR/preview.txt" '| Project | Status | Current task | Ready | Waiting | Due |'
-assert_contains "$TMP_DIR/preview.txt" '| Architecture project | active | Current architecture task | 1 | 0 | 2026-08-26 |'
-assert_contains "$TMP_DIR/preview.txt" '| Waiting project | active | Waiting current task | 0 | 1 | — |'
-assert_contains "$TMP_DIR/preview.txt" '"format_version": 3'
+assert_contains "$TMP_DIR/preview.txt" '| Проект | Архипроект | Текущая задача |'
+assert_contains "$TMP_DIR/preview.txt" '| --- | --- | --- |'
+assert_contains "$TMP_DIR/preview.txt" '| [[Projects/ai-dev-architecture/Kanban\\|AI Dev Architecture]] | Дела | Current architecture task |'
+assert_not_contains "$TMP_DIR/preview.txt" '| Project | Status | Current task | Ready | Waiting | Due |'
+assert_not_contains "$TMP_DIR/preview.txt" '| Проект | Статус | Текущая задача | Ready | Waiting | Due |'
+assert_not_contains "$TMP_DIR/preview.txt" '| Проект | Архипроект | Текущая задача | Status'
+assert_not_contains "$TMP_DIR/preview.txt" '| Проект | Архипроект | Текущая задача | Ready'
+assert_not_contains "$TMP_DIR/preview.txt" '| Проект | Архипроект | Текущая задача | Waiting'
+assert_not_contains "$TMP_DIR/preview.txt" '| Проект | Архипроект | Текущая задача | Due'
+assert_contains "$TMP_DIR/preview.txt" '"format_version": 4'
 
 if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write > "$TMP_DIR/no-confirm.txt" 2>&1; then fail 'write without confirmation succeeded'; fi
-assert_not_exists "$TASKS"; assert_not_exists "$OVERVIEW"; assert_not_exists "$MANIFEST"
+assert_not_exists "$ARCHITECTURE_BOARD"; assert_not_exists "$WAITING_BOARD"; assert_not_exists "$OVERVIEW"; assert_not_exists "$MANIFEST"
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write > "$TMP_DIR/write.txt"
-assert_file "$TASKS"; assert_file "$OVERVIEW"; assert_file "$MANIFEST"
-/usr/bin/jq -e '.format_version == 3 and (.views.tasks_kanban.target == "Obsidian/Tasks-Kanban.md") and (.views.projects_overview.target == "Obsidian/Projects-Overview.md") and ([.tasks[] | has("task_id") and has("project_id") and has("source_file") and has("source_sha256")] | all)' "$MANIFEST" >/dev/null || fail 'manifest contract is invalid'
+assert_file "$ARCHITECTURE_BOARD"; assert_file "$WAITING_BOARD"; assert_file "$OVERVIEW"; assert_file "$MANIFEST"
+assert_not_exists "$VAULT/Obsidian/Tasks-Kanban.md"
+assert_contains "$OVERVIEW" '| Проект | Архипроект | Текущая задача |'
+assert_contains "$OVERVIEW" '| [[Projects/ai-dev-architecture/Kanban\\|AI Dev Architecture]] | Дела | Current architecture task |'
+assert_contains "$ARCHITECTURE_BOARD" 'ai-dev-architecture--TASK-20260826-001'
+assert_contains "$WAITING_BOARD" 'waiting-project--TASK-20260826-002'
+assert_board_isolated "$ARCHITECTURE_BOARD" ai-dev-architecture
+assert_board_isolated "$WAITING_BOARD" waiting-project
+assert_file "$EMPTY_BOARD"
+for column in Ideas Ready Active Waiting Blocked Review Paused Done; do assert_contains "$EMPTY_BOARD" "## $column"; done
+if grep -Eq '^-[[:space:]]+\[[ x]\]' "$EMPTY_BOARD"; then fail 'empty project board contains task cards'; fi
+/usr/bin/jq -e '.format_version == 4 and (.views.projects_overview.target == "Obsidian/Projects-Overview.md") and ([.project_boards[] | has("project_id") and has("target") and has("sha256")] | all)' "$MANIFEST" >/dev/null || fail 'manifest contract is invalid'
+/usr/bin/jq -e '
+  ([.project_boards[] | .project_id] | sort) == ["ai-dev-architecture", "done-project", "empty-project", "review-project", "waiting-project"] and
+  ([.project_boards[] | select(.project_id == "ai-dev-architecture") | .target] == ["Obsidian/Projects/ai-dev-architecture/Kanban.md"]) and
+  ([.project_boards[] | select(.project_id == "waiting-project") | .target] == ["Obsidian/Projects/waiting-project/Kanban.md"]) and
+  ([.project_boards[] | select(.project_id == "empty-project") | .target] == ["Obsidian/Projects/empty-project/Kanban.md"])
+' "$MANIFEST" >/dev/null || fail 'manifest project board entries are invalid'
 /usr/bin/jq -e '.tasks | length == 8' "$MANIFEST" >/dev/null || fail 'manifest task count is invalid'
 current_sha="$(shasum -a 256 "$ARCHITECTURE_PROJECT/ai/current-task.md" | awk '{print $1}')"
 /usr/bin/jq -e --arg sha "$current_sha" '[.tasks[] | select(.task_id == "TASK-20260826-001") | .source_sha256] == [$sha]' "$MANIFEST" >/dev/null || fail 'manifest source hash is not the source file hash'
