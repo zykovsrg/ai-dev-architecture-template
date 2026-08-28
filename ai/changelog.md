@@ -14,6 +14,12 @@
 
 ## Текущий changelog
 
+### 2026-08-28 — Provenance и inbox knowledge-слоя
+
+- Change: Добавлены `origin`, `valid_from` и локальный `knowledge/inbox/` в standalone и hub scaffolds; capture/review требуют явного происхождения и подтверждения действий с inbox.
+- Impact: Слабые сигналы не становятся знаниями автоматически, а выводы агента отделены от прямых утверждений.
+- Manual checks: `bash scripts/check-consistency.sh`, `bash scripts/smoke-test.sh`, `bash scripts/hub-smoke-test.sh`, `git diff --check`.
+
 ### 2026-08-28 — Полуавтоматический self-audit архитектуры
 
 - Change: Механизм аудита перенесён из архивного `hub-session-audit` в архитектуру: добавлены безопасный индекс metadata, методика, журнал, скрипт, тест и skill. Отдельное расписание раз в три дня использует новый скрипт.
