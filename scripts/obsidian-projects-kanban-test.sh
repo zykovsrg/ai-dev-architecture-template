@@ -10,6 +10,7 @@ assert_file() { [ -f "$1" ] || fail "missing file: $1"; }
 assert_not_exists() { [ ! -e "$1" ] || fail "unexpected path: $1"; }
 assert_contains() { grep -Fq -- "$2" "$1" || fail "expected '$2' in $1"; }
 assert_not_contains() { ! grep -Fq -- "$2" "$1" || fail "unexpected '$2' in $1"; }
+assert_exact_line() { grep -Fxq -- "$2" "$1" || fail "expected exact line '$2' in $1"; }
 assert_board_isolated() {
   local board="$1" project_id="$2" anchor
   while IFS= read -r anchor; do
@@ -65,6 +66,7 @@ Name: $name
 primary_archiproject: дела
 archiproject_contribution: architecture
 related_archiprojects: none
+tags: дела
 Status: $registry_status
 Purpose: Synthetic fixture.
 EOF
@@ -91,10 +93,21 @@ add_project "done-project" "Done project" "completed" \
   $'Status: done\nTask ID: TASK-20260826-004\n\n## Goal\n\nDone current task' $'No future tasks.' $'No paused tasks.'
 add_project "empty-project" "Empty project" "active" \
   $'Status: backlog\n\n## Goal\n\nNo current task' $'No future tasks.' $'No paused tasks.'
+add_project "archived-project" "Archived project" "archived" \
+  $'Status: done\nTask ID: TASK-20260826-005\n\n## Goal\n\nArchived task' $'No future tasks.' $'No paused tasks.'
+
+# Seed legacy output and manually maintained project boards. Preview must not
+# change these bytes; migration may remove only the legacy generated board and
+# must preserve manual boards that are not explicit generated targets.
+mkdir -p "$VAULT/Obsidian/Projects/manual-project"
+printf '%s\n' 'legacy generated board' > "$VAULT/Obsidian/Tasks-Kanban.md"
+printf '%s\n' 'manual project board' > "$VAULT/Obsidian/Projects/manual-project/Kanban.md"
 
 before_files="$(find "$VAULT" -type f -print | sort)"
+before_bytes="$(find "$VAULT" -type f -print0 | xargs -0 shasum -a 256 | sort)"
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/preview.txt"
 [ "$before_files" = "$(find "$VAULT" -type f -print | sort)" ] || fail 'preview created files'
+[ "$before_bytes" = "$(find "$VAULT" -type f -print0 | xargs -0 shasum -a 256 | sort)" ] || fail 'preview changed fixture bytes'
 for column in Ideas Ready Active Waiting Blocked Review Paused Done; do assert_contains "$TMP_DIR/preview.txt" "## $column"; done
 for title in 'Idea task' 'Ready task' 'Current architecture task' 'Waiting current task' 'Blocked task' 'Review current task' 'Paused task' 'Done current task'; do assert_contains "$TMP_DIR/preview.txt" "$title"; done
 assert_contains "$TMP_DIR/preview.txt" '  - project: AI Dev Architecture'
@@ -105,8 +118,8 @@ assert_not_contains "$TMP_DIR/preview.txt" 'Promoted task'
 assert_not_contains "$TMP_DIR/preview.txt" 'Dropped task'
 assert_not_contains "$TMP_DIR/preview.txt" 'Completed future task'
 assert_contains "$TMP_DIR/preview.txt" '--- projects overview ---'
-assert_contains "$TMP_DIR/preview.txt" '| Проект | Архипроект | Текущая задача |'
-assert_contains "$TMP_DIR/preview.txt" '| --- | --- | --- |'
+assert_exact_line "$TMP_DIR/preview.txt" '| Проект | Архипроект | Текущая задача |'
+assert_exact_line "$TMP_DIR/preview.txt" '| --- | --- | --- |'
 assert_contains "$TMP_DIR/preview.txt" '| [[Projects/ai-dev-architecture/Kanban\\|AI Dev Architecture]] | Дела | Current architecture task |'
 assert_not_contains "$TMP_DIR/preview.txt" '| Project | Status | Current task | Ready | Waiting | Due |'
 assert_not_contains "$TMP_DIR/preview.txt" '| Проект | Статус | Текущая задача | Ready | Waiting | Due |'
@@ -121,7 +134,9 @@ assert_not_exists "$ARCHITECTURE_BOARD"; assert_not_exists "$WAITING_BOARD"; ass
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write > "$TMP_DIR/write.txt"
 assert_file "$ARCHITECTURE_BOARD"; assert_file "$WAITING_BOARD"; assert_file "$OVERVIEW"; assert_file "$MANIFEST"
 assert_not_exists "$VAULT/Obsidian/Tasks-Kanban.md"
-assert_contains "$OVERVIEW" '| Проект | Архипроект | Текущая задача |'
+assert_contains "$VAULT/Obsidian/Projects/manual-project/Kanban.md" 'manual project board'
+assert_exact_line "$OVERVIEW" '| Проект | Архипроект | Текущая задача |'
+assert_exact_line "$OVERVIEW" '| --- | --- | --- |'
 assert_contains "$OVERVIEW" '| [[Projects/ai-dev-architecture/Kanban\\|AI Dev Architecture]] | Дела | Current architecture task |'
 assert_contains "$ARCHITECTURE_BOARD" 'ai-dev-architecture--TASK-20260826-001'
 assert_contains "$WAITING_BOARD" 'waiting-project--TASK-20260826-002'
@@ -132,11 +147,27 @@ for column in Ideas Ready Active Waiting Blocked Review Paused Done; do assert_c
 if grep -Eq '^-[[:space:]]+\[[ x]\]' "$EMPTY_BOARD"; then fail 'empty project board contains task cards'; fi
 /usr/bin/jq -e '.format_version == 4 and (.views.projects_overview.target == "Obsidian/Projects-Overview.md") and ([.project_boards[] | has("project_id") and has("target") and has("sha256")] | all)' "$MANIFEST" >/dev/null || fail 'manifest contract is invalid'
 /usr/bin/jq -e '
-  ([.project_boards[] | .project_id] | sort) == ["ai-dev-architecture", "done-project", "empty-project", "review-project", "waiting-project"] and
+  ([.project_boards[] | .project_id] | sort) == ["ai-dev-architecture", "archived-project", "done-project", "empty-project", "review-project", "waiting-project"] and
   ([.project_boards[] | select(.project_id == "ai-dev-architecture") | .target] == ["Obsidian/Projects/ai-dev-architecture/Kanban.md"]) and
   ([.project_boards[] | select(.project_id == "waiting-project") | .target] == ["Obsidian/Projects/waiting-project/Kanban.md"]) and
   ([.project_boards[] | select(.project_id == "empty-project") | .target] == ["Obsidian/Projects/empty-project/Kanban.md"])
 ' "$MANIFEST" >/dev/null || fail 'manifest project board entries are invalid'
+/usr/bin/jq -e '[.project_boards[] | .sha256 | test("^[0-9a-f]{64}$")] | all' "$MANIFEST" >/dev/null || fail 'project board sha256 is invalid'
+for board_spec in \
+  'ai-dev-architecture Obsidian/Projects/ai-dev-architecture/Kanban.md' \
+  'waiting-project Obsidian/Projects/waiting-project/Kanban.md' \
+  'empty-project Obsidian/Projects/empty-project/Kanban.md' \
+  'review-project Obsidian/Projects/review-project/Kanban.md' \
+  'done-project Obsidian/Projects/done-project/Kanban.md' \
+  'archived-project Obsidian/Projects/archived-project/Kanban.md'; do
+  read -r board_id board_target <<EOF
+$board_spec
+EOF
+  board_sha="$(shasum -a 256 "$VAULT/$board_target" | awk '{print $1}')"
+  /usr/bin/jq -e --arg id "$board_id" --arg target "$board_target" --arg sha "$board_sha" \
+    '[.project_boards[] | select(.project_id == $id and .target == $target and .sha256 == $sha)] | length == 1' "$MANIFEST" >/dev/null \
+    || fail "project board hash mismatch: $board_id"
+done
 /usr/bin/jq -e '.tasks | length == 8' "$MANIFEST" >/dev/null || fail 'manifest task count is invalid'
 current_sha="$(shasum -a 256 "$ARCHITECTURE_PROJECT/ai/current-task.md" | awk '{print $1}')"
 /usr/bin/jq -e --arg sha "$current_sha" '[.tasks[] | select(.task_id == "TASK-20260826-001") | .source_sha256] == [$sha]' "$MANIFEST" >/dev/null || fail 'manifest source hash is not the source file hash'
@@ -150,7 +181,8 @@ SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault 
 assert_contains "$TASKS" 'Refreshed architecture task'
 
 # Replacing the generated view set is one transaction: a failed move at any
-# point must leave all three previously published files byte-for-byte intact.
+# point must leave every previously published board, overview, and manifest
+# byte-for-byte intact.
 mkdir -p "$TMP_DIR/fake-bin"
 cat > "$TMP_DIR/fake-bin/mv" <<'EOF'
 #!/bin/sh
@@ -164,19 +196,29 @@ fi
 exec /bin/mv "$@"
 EOF
 chmod +x "$TMP_DIR/fake-bin/mv"
-cp "$TASKS" "$TMP_DIR/published-tasks"
-cp "$OVERVIEW" "$TMP_DIR/published-overview"
-cp "$MANIFEST" "$TMP_DIR/published-manifest"
+PUBLISHED_FILES=(
+  "$ARCHITECTURE_BOARD" "$WAITING_BOARD" "$EMPTY_BOARD"
+  "$VAULT/Obsidian/Projects/review-project/Kanban.md"
+  "$VAULT/Obsidian/Projects/done-project/Kanban.md"
+  "$VAULT/Obsidian/Projects/archived-project/Kanban.md"
+  "$OVERVIEW" "$MANIFEST"
+)
+PUBLISHED_DIR="$TMP_DIR/published-set"
+mkdir -p "$PUBLISHED_DIR"
+for published_file in "${PUBLISHED_FILES[@]}"; do
+  cp "$published_file" "$PUBLISHED_DIR/$(basename "$(dirname "$published_file")")-$(basename "$published_file")"
+done
 printf '%s\n' $'Status: active\nTask ID: TASK-20260826-001\ndue: 2026-08-26\n\n## Goal\n\nTransactional architecture task' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
-for fail_at in 1 2 3; do
+for fail_at in 1 2 3 4 5 6 7 8; do
   state="$TMP_DIR/mv-state-$fail_at"
   if PATH="$TMP_DIR/fake-bin:$PATH" MV_FAIL_STATE="$state" MV_FAIL_AT="$fail_at" SOURCE_DATE_EPOCH=1700000000 \
     "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture > "$TMP_DIR/transaction-$fail_at.out" 2>&1; then
     fail "generated view transaction succeeded when mv $fail_at failed"
   fi
-  cmp -s "$TASKS" "$TMP_DIR/published-tasks" || fail "task board changed after mv $fail_at failed"
-  cmp -s "$OVERVIEW" "$TMP_DIR/published-overview" || fail "project overview changed after mv $fail_at failed"
-  cmp -s "$MANIFEST" "$TMP_DIR/published-manifest" || fail "manifest changed after mv $fail_at failed"
+  for published_file in "${PUBLISHED_FILES[@]}"; do
+    published_copy="$PUBLISHED_DIR/$(basename "$(dirname "$published_file")")-$(basename "$published_file")"
+    cmp -s "$published_file" "$published_copy" || fail "published set changed after mv $fail_at failed: $published_file"
+  done
 done
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture > "$TMP_DIR/transaction-success.out"
 assert_contains "$TASKS" 'Transactional architecture task'
@@ -298,6 +340,16 @@ printf '%s\n' $'### FT-20260826-050 — Shared number there\n\nStatus: idea' > "
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/shared-number.txt"
 assert_contains "$TMP_DIR/shared-number.txt" '- [ ] Shared number here ^ai-dev-architecture--FT-20260826-050'
 assert_contains "$TMP_DIR/shared-number.txt" '- [ ] Shared number there ^waiting-project--FT-20260826-050'
+
+# An explicit primary archiproject is required; tags and contribution metadata
+# must never be used as an implicit fallback.
+cp "$HUB/ai/project-cards/ai-dev-architecture.md" "$TMP_DIR/architecture-card.bak"
+sed -i '' '/^primary_archiproject: /d' "$HUB/ai/project-cards/ai-dev-architecture.md"
+if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/missing-primary-archiproject.txt" 2>&1; then
+  fail 'missing primary archiproject did not block generation'
+fi
+assert_contains "$TMP_DIR/missing-primary-archiproject.txt" 'primary_archiproject'
+cp "$TMP_DIR/architecture-card.bak" "$HUB/ai/project-cards/ai-dev-architecture.md"
 
 # The same number twice inside one project is still a real collision.
 printf '%s\n' $'### FT-20260826-050 — Shared number here\n\nStatus: idea\n\n### FT-20260826-050 — Same number again\n\nStatus: idea' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
