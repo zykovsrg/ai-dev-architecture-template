@@ -49,6 +49,39 @@ What to check before moving this task to `ai/current-task.md`.
 
 ## Future tasks
 
+### FT-20260827-001 — Три улучшения knowledge-слоя по мотивам статьи о personal brain
+
+Status: promoted
+
+Priority: medium
+
+Source: разбор статьи braintools.ru/article/34725, сессия 2026-08-27
+
+Created: 2026-08-27
+
+Context:
+
+Нужны три независимых улучшения: явное происхождение записи, безопасное место
+для слабых сигналов и дата начала действия правила.
+
+Proposed task:
+
+1. Добавить `origin` со значениями `stated`, `inferred`, `observation`.
+2. Добавить локальную корзину `knowledge/inbox/` для `observation`.
+3. Добавить `valid_from` отдельно от `created`.
+
+Acceptance criteria:
+
+- В шаблоне есть `origin` и `valid_from`; оба описаны в README.
+- `knowledge-capture` требует осознанно выбрать `origin`.
+- `knowledge-review` отдельно показывает `origin: inferred`.
+- У inbox есть правило разбора.
+- Корень и `template/` синхронизированы; проходит `bash scripts/check-consistency.sh`.
+
+Promotion notes:
+
+Promotion status: promoted to `ai/current-task.md` on 2026-08-28; user selected the full three-part implementation.
+
 ### FT-20260826-002 — Безопасный read-only пилот Apple Calendar MCP
 
 Status: idea

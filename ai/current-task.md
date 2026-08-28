@@ -1,8 +1,8 @@
 # Current Task
 
-Status: empty
+Status: active
 
-Task ID: TASK-YYYYMMDD-NNN
+Task ID: FT-20260827-001
 
 Allowed statuses: empty / active / review / blocked / done / paused
 
@@ -10,36 +10,47 @@ Note: `paused` is a transient status used only while `task-switch` is moving thi
 task into `ai/paused-tasks.md`. After the switch this file holds the new task and
 the paused one lives in `ai/paused-tasks.md`.
 
-Stage: intake
+Stage: spec
 
 Allowed stages: intake / spec / planning / implementation / review / task-finish
 
 ## Mode
 
-implementation / review / task-finish / architecture-update
+architecture-update
 
 ## Goal
 
-Что нужно изменить.
+Реализовать три улучшения knowledge-слоя: происхождение записи (`origin`),
+корзину для слабых сигналов и дату начала действия (`valid_from`).
 
 ## Use Superpowers
 
-no
+yes
 
 ## Relevant files
 
-unknown
+- knowledge/record-template.md
+- knowledge/README.md
+- ai/skills/knowledge-capture/SKILL.md
+- ai/skills/knowledge-review/SKILL.md
+- template/
 
 ## Done criteria
 
-- Как понять, что задача завершена.
+- В шаблоне есть `origin` со значениями `stated`, `inferred`, `observation` и
+  поле `valid_from`; оба поля описаны в README.
+- `knowledge-capture` требует осознанно выбрать `origin`.
+- `knowledge-review` отдельно показывает записи с `origin: inferred`.
+- Для слабых сигналов определены место хранения и правила разбора.
+- Корень и `template/` синхронизированы; проходит
+  `bash scripts/check-consistency.sh`.
 
 ## Agent handoff
 
-Last agent:
+Last agent: Codex
 
-What changed:
+What changed: FT-20260827-001 повышена из future task в текущую; пользователь выбрал полный вариант из трёх пунктов.
 
-Open risks:
+Open risks: Нужно сохранить изоляцию проектов и не продублировать назначение cross-project signals.
 
-Next agent should check:
+Next agent should check: Утверждённую спецификацию и план реализации knowledge-слоя.
