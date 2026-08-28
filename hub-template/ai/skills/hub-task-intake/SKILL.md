@@ -13,10 +13,16 @@ project `ai/` memory only; do not require or read duplicated project
 ## Procedure
 
 The central Obsidian vault is `<hub>/projects/ai-dev-architecture/obsidian-vault`, derived from the confirmed
-hub root. Select the board by the confirmed registered project ID; never ask
-for a per-project vault path. Manual Obsidian edits create a proposal only.
-Every reverse scan or apply proposal must include the mandatory
-`--project-id <id>` selector.
+hub root. The selected board is
+`Obsidian/Projects/<project-id>/Kanban.md` inside that vault. Select it by the
+confirmed registered project ID; never ask for a per-project vault path.
+Manual Obsidian edits create a proposal only. Use these reverse commands with
+the mandatory selector:
+
+```text
+bash scripts/obsidian-task-sync.sh scan --project-id <confirmed-project-id> --hub <hub> --scope <scope-file> --vault <hub>/projects/ai-dev-architecture/obsidian-vault
+bash scripts/obsidian-task-sync.sh apply --project-id <confirmed-project-id> --confirm-proposal <sha256> --hub <hub> --scope <scope-file> --vault <hub>/projects/ai-dev-architecture/obsidian-vault
+```
 
 1. Read the selected project's `ai/current-task.md`.
 2. If it is empty, record the user's requested goal, scope, Done criteria, and

@@ -13,9 +13,16 @@ require or read duplicated project `AGENTS.md` or `CLAUDE.md` files.
 ## Procedure
 
 Use the central Obsidian vault at `<hub>/projects/ai-dev-architecture/obsidian-vault`, derived from the confirmed
-hub root. Select the board by the confirmed registered project ID and do not
-ask for a per-project vault path. Manual board edits are reviewable proposals
-only. Reverse scan and apply require the mandatory `--project-id <id>` selector.
+hub root. The selected board is
+`Obsidian/Projects/<project-id>/Kanban.md` inside that vault. Select it by the
+confirmed registered project ID and do not ask for a per-project vault path.
+Manual board edits are reviewable proposals only. Use these reverse commands
+with the mandatory selector:
+
+```text
+bash scripts/obsidian-task-sync.sh scan --project-id <confirmed-project-id> --hub <hub> --scope <scope-file> --vault <hub>/projects/ai-dev-architecture/obsidian-vault
+bash scripts/obsidian-task-sync.sh apply --project-id <confirmed-project-id> --confirm-proposal <sha256> --hub <hub> --scope <scope-file> --vault <hub>/projects/ai-dev-architecture/obsidian-vault
+```
 
 1. Read only the selected project's `ai/current-task.md` and
    `ai/paused-tasks.md`.

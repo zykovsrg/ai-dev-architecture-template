@@ -13,10 +13,16 @@ project `ai/` memory only; do not require or read duplicated project
 ## Procedure
 
 Use the central Obsidian vault at `<hub>/projects/ai-dev-architecture/obsidian-vault`, derived from the confirmed
-hub root. Select the board by the confirmed registered project ID; never ask
-for a per-project vault path. Manual board edits remain reviewable proposals,
-not direct canonical writes. Reverse scan and apply require the mandatory
-`--project-id <id>` selector.
+hub root. The selected board is
+`Obsidian/Projects/<project-id>/Kanban.md` inside that vault. Select it by the
+confirmed registered project ID; never ask for a per-project vault path.
+Manual board edits remain reviewable proposals, not direct canonical writes.
+Use these reverse commands with the mandatory selector:
+
+```text
+bash scripts/obsidian-task-sync.sh scan --project-id <confirmed-project-id> --hub <hub> --scope <scope-file> --vault <hub>/projects/ai-dev-architecture/obsidian-vault
+bash scripts/obsidian-task-sync.sh apply --project-id <confirmed-project-id> --confirm-proposal <sha256> --hub <hub> --scope <scope-file> --vault <hub>/projects/ai-dev-architecture/obsidian-vault
+```
 
 1. Read the selected project's `ai/current-task.md` and the smallest relevant
    `ai/decisions.md`, `ai/changelog.md`, or `ai/future-tasks.md` file.

@@ -199,12 +199,20 @@ reads, writes, pauses, finishes, or copies another project's memory or records.
 ## Central Obsidian Projection
 
 The hub has one central Obsidian vault at `<hub>/projects/ai-dev-architecture/obsidian-vault`.
-Workflows derive this path
-from the confirmed hub root; they must not ask for or accept a per-project
-vault path. A reverse proposal always selects exactly one confirmed project
-board by its registered project ID and must pass `--project-id <id>`; the ID is
-mandatory for both scan and apply. Manual Obsidian edits are never written to
-canonical records automatically: they produce a reviewable proposal only.
+Workflows derive this path from the confirmed hub root; they must not ask for
+or accept a per-project vault path. The selected board is
+`Obsidian/Projects/<project-id>/Kanban.md` inside that vault. A reverse
+proposal always selects exactly one confirmed project board by its registered
+project ID. Use these commands with the real hub, scope, and vault values:
+
+```text
+bash scripts/obsidian-task-sync.sh scan --project-id <confirmed-project-id> --hub <hub> --scope <scope-file> --vault <hub>/projects/ai-dev-architecture/obsidian-vault
+bash scripts/obsidian-task-sync.sh apply --project-id <confirmed-project-id> --confirm-proposal <sha256> --hub <hub> --scope <scope-file> --vault <hub>/projects/ai-dev-architecture/obsidian-vault
+```
+
+The ID is mandatory for both scan and apply. Manual Obsidian edits are never
+written to canonical records automatically: they produce a reviewable
+proposal only.
 
 ## Optional Project Knowledge
 
