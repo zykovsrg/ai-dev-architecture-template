@@ -159,6 +159,7 @@ assert_board_isolated "$VAULT/Obsidian/Projects/archived-project/Kanban.md" arch
 assert_file "$EMPTY_BOARD"
 for column in Ideas Ready Active Waiting Blocked Review Paused Done; do assert_contains "$EMPTY_BOARD" "## $column"; done
 if grep -Eq '\^' "$EMPTY_BOARD"; then fail 'empty project board contains anchors'; fi
+if grep -Eq '^- \[[ xX]\] ' "$EMPTY_BOARD"; then fail 'empty project board contains task cards'; fi
 /usr/bin/jq -e '.format_version == 4 and (.views.projects_overview.target == "Obsidian/Projects-Overview.md") and ((.project_boards | length) > 0) and ([.project_boards[] | has("project_id") and has("target") and has("sha256")] | all)' "$MANIFEST" >/dev/null || fail 'manifest contract is invalid'
 /usr/bin/jq -e '
   ([.project_boards[] | .project_id] | sort) == ["ai-dev-architecture", "archived-project", "done-project", "empty-project", "review-project", "waiting-project"] and
