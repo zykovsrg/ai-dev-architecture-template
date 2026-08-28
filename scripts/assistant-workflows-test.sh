@@ -147,6 +147,14 @@ for workflow in day-plan evening-review weekly-review; do
   expect_read_only_header "$workflow_output"
 done
 
+# Project cards belong to the hub registry, not to each project's ai/ folder.
+# Planning must therefore work for a registered project without this legacy file.
+rm "$hub/projects/fixture-a/ai/project-card.md" "$hub/projects/fixture-b/ai/project-card.md"
+workflow_output=$(run day-plan --hub "$hub" --scope "$scope_file" --date 2026-08-26)
+expect_read_only_header "$workflow_output"
+printf '%s\n' 'fixture-a' > "$hub/projects/fixture-a/ai/project-card.md"
+printf '%s\n' 'fixture-b' > "$hub/projects/fixture-b/ai/project-card.md"
+
 if run_with_export '{not-json' capture --hub "$hub" --scope "$scope_file" --date 2026-08-26 --recorder-minutes 10 >/dev/null 2>&1; then
   printf 'FAIL: expected malformed export JSON to fail\n' >&2
   exit 1
@@ -288,12 +296,6 @@ ln -s "$hub/projects/fixture-a" "$hub/projects/linked-project"
 printf '%s\n' linked-project > "$fixture/symlink-project-scope.txt"
 expect_fail day-plan --hub "$hub" --scope "$fixture/symlink-project-scope.txt" --date 2026-08-26
 rm "$hub/projects/linked-project"
-
-mv "$hub/projects/fixture-a/ai/project-card.md" "$fixture/project-card.md"
-ln -s "$fixture/project-card.md" "$hub/projects/fixture-a/ai/project-card.md"
-expect_fail day-plan --hub "$hub" --scope "$scope_file" --date 2026-08-26
-rm "$hub/projects/fixture-a/ai/project-card.md"
-mv "$fixture/project-card.md" "$hub/projects/fixture-a/ai/project-card.md"
 
 printf '%s\n' 'Task: fixture' > "$fixture/current-task.md"
 ln -s "$fixture/current-task.md" "$hub/projects/fixture-a/ai/current-task.md"

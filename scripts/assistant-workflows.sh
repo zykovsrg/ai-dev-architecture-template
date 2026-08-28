@@ -120,7 +120,6 @@ for project_id in "${scope_ids[@]}"; do
     fail "registered path for $project_id must equal $hub/projects/$project_id"
   require_directory_not_symlink "project entry for $project_id" "$hub/projects/$project_id"
   require_directory_not_symlink "project ai directory for $project_id" "$hub/projects/$project_id/ai"
-  require_regular_not_symlink "project card for $project_id" "$hub/projects/$project_id/ai/project-card.md"
   [[ ",$scope_summary," != *",$project_id,"* ]] || fail "duplicate project id in --scope: $project_id"
   scope_summary+="${scope_summary:+,}$project_id"
 done
@@ -135,7 +134,7 @@ print_summary() {
 read_scoped_metadata() {
   local project_id file
   for project_id in "${scope_ids[@]}"; do
-    for file in project-card.md current-task.md future-tasks.md paused-tasks.md; do
+    for file in current-task.md future-tasks.md paused-tasks.md; do
       if [[ -e "$hub/projects/$project_id/ai/$file" || -L "$hub/projects/$project_id/ai/$file" ]]; then
         require_regular_not_symlink "$file for $project_id" "$hub/projects/$project_id/ai/$file"
         sed -n '1p' "$hub/projects/$project_id/ai/$file" >/dev/null

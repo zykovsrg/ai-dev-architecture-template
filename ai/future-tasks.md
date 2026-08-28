@@ -49,6 +49,58 @@ What to check before moving this task to `ai/current-task.md`.
 
 ## Future tasks
 
+### FT-20260827-001 — Три улучшения knowledge-слоя по мотивам статьи о personal brain
+
+Status: promoted
+
+Priority: medium
+
+Source: разбор статьи braintools.ru/article/34725, сессия 2026-08-27
+
+Created: 2026-08-27
+
+Context:
+
+Статья описывает личную систему памяти для агентов на Markdown-карточках. Большая
+часть её идей у нас уже есть: карточки, индекс, Git-история, статусы `stale` и
+`superseded`, запрет секретов, skills `knowledge-capture` и `knowledge-review`.
+Полезны три вещи, которых у нас нет. Перечислены по убыванию пользы, каждую можно
+делать отдельно.
+
+Proposed task:
+
+1. Поле `origin` в шаблоне записи знаний. Значения: `stated` (пользователь сказал
+   прямо), `inferred` (модель вывела из контекста), `observation` (слабый сигнал).
+   Даёт возможность отличить факт от догадки модели при чтении старой записи.
+   Правки: `knowledge/record-template.md`, раздел про формат в `knowledge/README.md`,
+   skills `knowledge-capture` и `knowledge-review` (заполнять и проверять поле).
+
+2. Корзина входящих для слабых сигналов. Отдельное место, куда `knowledge-capture`
+   складывает неподтверждённые наблюдения вместо записи их как знания или потери.
+   `knowledge-review` разбирает корзину: повысить до записи, оставить, выбросить.
+   Сначала решить, новый ли это файл или расширение `ai/cross-project-signals.md`.
+
+3. Поле `valid_from` в шаблоне записи. Дата, с которой правило действует, отдельно
+   от `created`. Нужно для записей типа `decisions`, где процесс менялся во времени.
+
+Acceptance criteria:
+
+- В `record-template.md` есть `origin` с перечисленными тремя значениями и
+  `valid_from`; оба описаны в `knowledge/README.md`.
+- `knowledge-capture` заполняет `origin` осознанно, а не ставит `stated` по умолчанию.
+- `knowledge-review` показывает записи с `origin: inferred` отдельно от `stated`.
+- Определено место корзины входящих и правило её разбора.
+- Изменения синхронизированы между корнем и `template/`; `bash scripts/check-consistency.sh` проходит.
+
+Promotion notes:
+
+Пункты 1–3 независимы. Если делать что-то одно, делать пункт 1 — остальные два
+дают заметно меньше. Перед пунктом 2 проверить, не покрывает ли задачу уже
+`ai/cross-project-signals.md`, чтобы не плодить сущность. Пункт 3 не начинать
+раньше пункта 1, чтобы не править шаблон дважды.
+
+Promotion status: promoted to `ai/current-task.md` on 2026-08-28; user selected the full three-part implementation.
+
 ### FT-20260826-002 — Безопасный read-only пилот Apple Calendar MCP
 
 Status: idea
@@ -83,6 +135,10 @@ Promotion notes:
 
 Не начинать без отдельного явного подтверждения установки MCP и доступа к
 Calendar. Сначала закончить workflows из FT-20260826-001.
+
+### FT-20260822-002 — Привести текущее хранилище Obsidian к формату архитектуры
+
+Status: idea
 
 Priority: medium
 
