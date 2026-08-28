@@ -158,7 +158,10 @@ for task_skill in hub-task-intake hub-task-switch hub-task-finish; do
   assert_contains "$ROOT/hub-template/ai/skills/$task_skill/SKILL.md" 'trusted architecture-to-Obsidian refresh'
   assert_contains "$ROOT/hub-template/ai/skills/$task_skill/SKILL.md" 'confirmed Obsidian-to-architecture proposal'
   assert_contains "$ROOT/hub-template/ai/skills/$task_skill/SKILL.md" 'do not overwrite'
+  assert_contains "$ROOT/hub-template/ai/skills/$task_skill/SKILL.md" 'central Obsidian vault'
 done
+assert_contains "$ROOT/hub-template/ai/skills/hub-info-update/SKILL.md" 'central Obsidian vault'
+assert_contains "$ROOT/hub-template/ai/architecture.md" 'Central Obsidian Projection'
 for sync_doc in docs/concepts.md docs/install.md docs/update.md; do
   assert_contains "$ROOT/$sync_doc" 'trusted architecture-to-Obsidian refresh'
   assert_contains "$ROOT/$sync_doc" 'confirmed Obsidian-to-architecture proposal'
