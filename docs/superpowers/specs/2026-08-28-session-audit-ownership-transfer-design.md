@@ -21,14 +21,14 @@
 
 ## Структура
 
-`knowledge/session-audit/` содержит три записи:
+Стандартные категории `knowledge/` содержат три записи:
 
-- `procedure.md` — методика девяти проверок и правила безопасного evidence;
-- `checked-sessions.md` — журнал уже проверенных сессий;
-- `session-inventory.md` — генерируемый индекс metadata.
+- `knowledge/runbooks/session-audit-procedure.md` — методика девяти проверок и правила безопасного evidence;
+- `knowledge/research/checked-sessions.md` — журнал уже проверенных сессий;
+- `knowledge/research/session-inventory.md` — генерируемый индекс metadata.
 
 `scripts/refresh-session-inventory.sh` создаёт индекс. По умолчанию он пишет
-в новый путь в проекте архитектуры; переменные окружения позволяют подменить
+в `knowledge/research/session-inventory.md`; переменные окружения позволяют подменить
 папку транскриптов, место вывода и время для теста.
 
 `scripts/test-refresh-session-inventory.sh` создаёт временные пустые файлы
