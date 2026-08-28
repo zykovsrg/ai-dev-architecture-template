@@ -162,7 +162,7 @@ for id in "${IDS[@]}"; do
   done < <(future_records "$future_file" "$id")
   paused_output="$(paused_records "$paused_file" "$id")"
   while IFS=$'\t' read -r paused_task_id paused_title; do [ -n "$paused_title" ] && add_task "$paused_task_id" Paused "$paused_title" "$name" "$id" '' ' ' "$paused_file" "$(hash_file "$paused_file")"; done <<< "$paused_output"
-  OVERVIEW_ROWS+="| [[Projects/$id/Kanban\\\\|$(table_cell "$name")]] | $(table_cell "$archiproject_name") | $(table_cell "$overview_current") |"$'\n'
+  OVERVIEW_ROWS+="| [[Projects/$id/Kanban\\|$(table_cell "$name")]] | $(table_cell "$archiproject_name") | $(table_cell "$overview_current") |"$'\n'
   SOURCE_IDS+=("$id"); SOURCE_PATHS+=("$path"); SOURCE_CARDS+=("$card"); SOURCE_HASHES+=("$(hash_files "$card" "$current_file" "$future_file" "$paused_file")")
 done
 
