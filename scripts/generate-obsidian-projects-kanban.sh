@@ -194,19 +194,17 @@ fi
 
 TARGET_DIR="$VAULT/Obsidian"; TARGET_LEGACY="$TARGET_DIR/Tasks-Kanban.md"; TARGET_OVERVIEW="$TARGET_DIR/Projects-Overview.md"; TARGET_MANIFEST="$TARGET_DIR/AI-Architecture.manifest.json"
 [ -d "$TARGET_DIR" ] && [ ! -L "$TARGET_DIR" ] || die 'target directory missing or symlinked'
-prepare_board_target_dirs() {
+validate_board_target_dirs() {
   local projects_dir project_dir id rel
   projects_dir="$TARGET_DIR/Projects"
-  if [ -e "$projects_dir" ] || [ -L "$projects_dir" ]; then [ -d "$projects_dir" ] && [ ! -L "$projects_dir" ] || die 'Projects directory must be a real non-symlink directory'
-  else mkdir "$projects_dir" || die 'cannot create Projects directory'; fi
+  if [ -e "$projects_dir" ] || [ -L "$projects_dir" ]; then [ -d "$projects_dir" ] && [ ! -L "$projects_dir" ] || die 'Projects directory must be a real non-symlink directory'; fi
   for id in "${IDS[@]}"; do
     project_dir="$projects_dir/$id"
-    if [ -e "$project_dir" ] || [ -L "$project_dir" ]; then [ -d "$project_dir" ] && [ ! -L "$project_dir" ] || die "project board directory is unsafe: $id"
-    else mkdir "$project_dir" || die "cannot create project board directory: $id"; fi
+    if [ -e "$project_dir" ] || [ -L "$project_dir" ]; then [ -d "$project_dir" ] && [ ! -L "$project_dir" ] || die "project board directory is unsafe: $id"; fi
     rel="Projects/$id/Kanban.md"; [ ! -L "$TARGET_DIR/$rel" ] || die 'generated targets must not be symlinks'
   done
 }
-prepare_board_target_dirs
+validate_board_target_dirs
 [ ! -L "$TARGET_LEGACY" ] && [ ! -L "$TARGET_OVERVIEW" ] && [ ! -L "$TARGET_MANIFEST" ] || die 'generated targets must not be symlinks'
 
 write_rename_proposal() {
@@ -228,6 +226,9 @@ if [ -e "$TARGET_MANIFEST" ] || [ -e "$TARGET_OVERVIEW" ]; then
   manifest_has_project_boards="$(/usr/bin/jq -r '(.project_boards | type == "array" and length > 0)' "$TARGET_MANIFEST" 2>/dev/null || true)"
   if [ "$manifest_format" != 4 ]; then
     [ "$manifest_format" = 3 ] && [ "$CONFIRM" -eq 1 ] || die 'proposal pending: manifest v3 requires a fresh confirmed rebuild'
+    [ -f "$TARGET_LEGACY" ] && [ ! -L "$TARGET_LEGACY" ] || die 'proposal pending: legacy task board is missing or unsafe'
+    recorded_legacy="$(/usr/bin/jq -r '.views.tasks_kanban.sha256 // empty' "$TARGET_MANIFEST")"
+    [ -n "$recorded_legacy" ] && [ "$recorded_legacy" = "$(hash_file "$TARGET_LEGACY")" ] || die 'proposal pending: manual legacy task board edit detected'
     if [ "$manifest_has_project_boards" != true ]; then
       for rel in "${BOARD_TARGETS[@]}"; do [ ! -e "$TARGET_DIR/$rel" ] || die 'proposal pending: manual project board exists outside generated manifest'; done
     fi
@@ -252,6 +253,7 @@ fi
 transaction_dir="$TARGET_DIR/.AI-Architecture.generated-write.transaction"
 if [ -e "$transaction_dir" ] || [ -L "$transaction_dir" ]; then die 'generated view recovery failed; transaction backup was preserved'; fi
 stage_dir="$(mktemp -d "$TARGET_DIR/.AI-Architecture.stage.XXXXXX")"; prepared=0
+CREATED_BOARD_DIRS=()
 PUBLISH_TARGETS=("${BOARD_TARGETS[@]}" 'Projects-Overview.md' 'AI-Architecture.manifest.json')
 restore_generated_set() {
   local existed rel
@@ -272,6 +274,7 @@ cleanup_project_write() {
   fi
   [ -z "$stage_dir" ] || rm -rf "$stage_dir"
   [ "$prepared" -eq 1 ] || [ ! -d "$transaction_dir" ] || rm -rf "$transaction_dir"
+  for ((i=${#CREATED_BOARD_DIRS[@]} - 1; i>=0; i--)); do rmdir "${CREATED_BOARD_DIRS[$i]}" 2>/dev/null || true; done
 }
 trap cleanup_project_write EXIT
 
@@ -286,6 +289,12 @@ printf '%s' "$MANIFEST_RENDER" > "$stage_dir/AI-Architecture.manifest.json"
 /usr/bin/jq -e '.format_version == 4' "$stage_dir/AI-Architecture.manifest.json" >/dev/null || die 'temporary manifest validation failed'
 
 mkdir "$transaction_dir" && mkdir "$transaction_dir/previous" || die 'generated view transaction already in progress'
+projects_dir="$TARGET_DIR/Projects"
+if [ ! -e "$projects_dir" ]; then mkdir "$projects_dir" || die 'cannot create Projects directory'; CREATED_BOARD_DIRS+=("$projects_dir"); fi
+for id in "${IDS[@]}"; do
+  project_dir="$projects_dir/$id"
+  if [ ! -e "$project_dir" ]; then mkdir "$project_dir" || die "cannot create project board directory: $id"; CREATED_BOARD_DIRS+=("$project_dir"); fi
+done
 for rel in "${PUBLISH_TARGETS[@]}"; do
   if [ -e "$TARGET_DIR/$rel" ]; then
     [ -f "$TARGET_DIR/$rel" ] && mkdir -p "$(dirname "$transaction_dir/previous/$rel")" && cp -p "$TARGET_DIR/$rel" "$transaction_dir/previous/$rel" || die 'generated target is unsafe'
@@ -296,13 +305,13 @@ for rel in "${PUBLISH_TARGETS[@]}"; do
 done
 : > "$transaction_dir/prepared"; prepared=1
 for rel in "${PUBLISH_TARGETS[@]}"; do
-  mkdir -p "$(dirname "$TARGET_DIR/$rel")"
   mv -f "$stage_dir/$rel" "$TARGET_DIR/$rel"
 done
 prepared=0
 rm -rf "$transaction_dir"; transaction_dir=''
 rm -rf "$stage_dir"; stage_dir=''
 [ ! -f "$TARGET_LEGACY" ] || rm -f "$TARGET_LEGACY"
+CREATED_BOARD_DIRS=()
 trap - EXIT
 printf 'wrote project boards, %s, and %s\n' "$TARGET_OVERVIEW" "$TARGET_MANIFEST"
 exit 0
