@@ -207,18 +207,25 @@ validate_board_target_dirs() {
 validate_board_target_dirs
 [ ! -L "$TARGET_LEGACY" ] && [ ! -L "$TARGET_OVERVIEW" ] && [ ! -L "$TARGET_MANIFEST" ] || die 'generated targets must not be symlinks'
 
-write_rename_proposal() {
-  local board_id="$1" board_file="$2" i actual task_id runtime
-  for i in "${!TASK_IDS[@]}"; do
-    [ "${TASK_PROJECT_IDS[$i]}" = "$board_id" ] || continue
-    actual="$(awk -v suffix=" ^$(card_key "$board_id" "${TASK_IDS[$i]}")" 'substr($0, length($0) - length(suffix) + 1) == suffix {line=$0; sub(/^- \[[ xX]\] /, "", line); sub(/[[:space:]]+\^[^[:space:]]+$/, "", line); print line; exit}' "$board_file")"
-    [ "$actual" = "${TASK_TITLES[$i]}" ] && continue
-    task_id="${TASK_IDS[$i]}"; break
-  done
-  [ -n "${task_id:-}" ] && [ -n "${actual:-}" ] || return 1
-  runtime="$VAULT/.ai-architecture-sync"; mkdir -p "$runtime"
-  { printf '{\n  \"state\": \"ready\",\n  \"operations\": [{\"operation\": \"rename\", \"task_id\": '; json_string "$task_id"; printf ', \"project_id\": '; json_string "$board_id"; printf ', \"from\": '; json_string "${TASK_TITLES[$i]}"; printf ', \"to\": '; json_string "$actual"; printf '}],\n  \"blocked_reasons\": []\n}\n'; } > "$runtime/pending-proposal.json"
+manifest_is_valid_v4() {
+  /usr/bin/jq -e '
+    .format_version == 4 and
+    (.views.projects_overview | type == "object") and
+    (.views.projects_overview.target == "Obsidian/Projects-Overview.md") and
+    (.views.projects_overview.sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
+    (.project_boards | type == "array") and
+    ([.project_boards[] |
+      (.project_id | type == "string" and test("^[a-z0-9][a-z0-9-]*$")) and
+      (.target | type == "string") and
+      (.target == ("Obsidian/Projects/" + .project_id + "/Kanban.md")) and
+      (.sha256 | type == "string" and test("^[0-9a-f]{64}$"))
+    ] | all) and
+    (([.project_boards[].project_id] | length) == ([.project_boards[].project_id] | unique | length)) and
+    (([.project_boards[].target] | length) == ([.project_boards[].target] | unique | length))
+  ' "$TARGET_MANIFEST" >/dev/null
 }
+
+DELETE_TARGETS=()
 
 if [ -e "$TARGET_MANIFEST" ] || [ -e "$TARGET_OVERVIEW" ]; then
   [ -f "$TARGET_MANIFEST" ] && [ -f "$TARGET_OVERVIEW" ] || die 'proposal pending: generated view set is incomplete'
@@ -227,11 +234,15 @@ if [ -e "$TARGET_MANIFEST" ] || [ -e "$TARGET_OVERVIEW" ]; then
   if [ "$manifest_format" != 4 ]; then
     [ "$manifest_format" = 3 ] && [ "$CONFIRM" -eq 1 ] || die 'proposal pending: manifest v3 requires a fresh confirmed rebuild'
     [ -f "$TARGET_LEGACY" ] && [ ! -L "$TARGET_LEGACY" ] || die 'proposal pending: legacy task board is missing or unsafe'
+    recorded_legacy_target="$(/usr/bin/jq -r '.views.tasks_kanban.target // empty' "$TARGET_MANIFEST")"
     recorded_legacy="$(/usr/bin/jq -r '.views.tasks_kanban.sha256 // empty' "$TARGET_MANIFEST")"
-    [ -n "$recorded_legacy" ] && [ "$recorded_legacy" = "$(hash_file "$TARGET_LEGACY")" ] || die 'proposal pending: manual legacy task board edit detected'
+    [ "$recorded_legacy_target" = 'Obsidian/Tasks-Kanban.md' ] && [[ "$recorded_legacy" =~ ^[0-9a-f]{64}$ ]] && [ "$recorded_legacy" = "$(hash_file "$TARGET_LEGACY")" ] || die 'proposal pending: manual legacy task board edit detected'
+    DELETE_TARGETS+=('Tasks-Kanban.md')
     if [ "$manifest_has_project_boards" != true ]; then
       for rel in "${BOARD_TARGETS[@]}"; do [ ! -e "$TARGET_DIR/$rel" ] || die 'proposal pending: manual project board exists outside generated manifest'; done
     fi
+  else
+    manifest_is_valid_v4 || die 'proposal pending: generated manifest is invalid'
   fi
   recorded_overview="$(/usr/bin/jq -r '.views.projects_overview.sha256 // empty' "$TARGET_MANIFEST")"
   [ "$recorded_overview" = "$(hash_file "$TARGET_OVERVIEW")" ] || die 'proposal pending: manual project overview edit detected'
@@ -241,10 +252,19 @@ if [ -e "$TARGET_MANIFEST" ] || [ -e "$TARGET_OVERVIEW" ]; then
       recorded_board="$(/usr/bin/jq -r --arg id "${IDS[$i]}" '[.project_boards[] | select(.project_id == $id) | .sha256] | if length == 1 then .[0] else empty end' "$TARGET_MANIFEST")"
       [ -n "$recorded_board" ] || die 'proposal pending: generated manifest is invalid'
       if [ "$REPLACE_CONFIRMED_BOARD" -eq 0 ] && [ "$recorded_board" != "$(hash_file "$board_file")" ]; then
-        [ "$REFRESH_FROM_ARCHITECTURE" -eq 0 ] || write_rename_proposal "${IDS[$i]}" "$board_file" || true
-        die 'proposal pending: manual task board edit detected'
+        die 'proposal pending: manual task board edit detected; run obsidian-task-sync.sh scan to create a proposal'
       fi
     done
+  fi
+
+  if [ "$manifest_format" = 4 ]; then
+    while IFS=$'\t' read -r previous_id previous_target previous_hash; do
+      [ -n "$previous_id" ] || continue
+      if ! printf '%s\n' "${IDS[@]}" | grep -Fxq -- "$previous_id"; then
+        previous_file="$VAULT/$previous_target"
+        [ -f "$previous_file" ] && [ ! -L "$previous_file" ] && [ "$previous_hash" = "$(hash_file "$previous_file")" ] && DELETE_TARGETS+=("${previous_target#Obsidian/}")
+      fi
+    done < <(/usr/bin/jq -r '.project_boards[] | [.project_id, .target, .sha256] | @tsv' "$TARGET_MANIFEST")
   fi
 else
   for rel in "${BOARD_TARGETS[@]}"; do [ ! -e "$TARGET_DIR/$rel" ] || die 'proposal pending: manual project board exists outside generated manifest'; done
@@ -254,7 +274,9 @@ transaction_dir="$TARGET_DIR/.AI-Architecture.generated-write.transaction"
 if [ -e "$transaction_dir" ] || [ -L "$transaction_dir" ]; then die 'generated view recovery failed; transaction backup was preserved'; fi
 stage_dir="$(mktemp -d "$TARGET_DIR/.AI-Architecture.stage.XXXXXX")"; prepared=0
 CREATED_BOARD_DIRS=()
-PUBLISH_TARGETS=("${BOARD_TARGETS[@]}" 'Projects-Overview.md' 'AI-Architecture.manifest.json')
+WRITE_TARGETS=("${BOARD_TARGETS[@]}" 'Projects-Overview.md' 'AI-Architecture.manifest.json')
+PUBLISH_TARGETS=("${WRITE_TARGETS[@]}")
+if [ "${#DELETE_TARGETS[@]}" -gt 0 ]; then PUBLISH_TARGETS+=("${DELETE_TARGETS[@]}"); fi
 restore_generated_set() {
   local existed rel
   [ -f "$transaction_dir/previous/paths" ] || return 1
@@ -304,13 +326,15 @@ for rel in "${PUBLISH_TARGETS[@]}"; do
   fi
 done
 : > "$transaction_dir/prepared"; prepared=1
-for rel in "${PUBLISH_TARGETS[@]}"; do
+for rel in "${WRITE_TARGETS[@]}"; do
   mv -f "$stage_dir/$rel" "$TARGET_DIR/$rel"
 done
+if [ "${#DELETE_TARGETS[@]}" -gt 0 ]; then
+  for rel in "${DELETE_TARGETS[@]}"; do rm -f "$TARGET_DIR/$rel"; done
+fi
 prepared=0
 rm -rf "$transaction_dir"; transaction_dir=''
 rm -rf "$stage_dir"; stage_dir=''
-[ ! -f "$TARGET_LEGACY" ] || rm -f "$TARGET_LEGACY"
 CREATED_BOARD_DIRS=()
 trap - EXIT
 printf 'wrote project boards, %s, and %s\n' "$TARGET_OVERVIEW" "$TARGET_MANIFEST"

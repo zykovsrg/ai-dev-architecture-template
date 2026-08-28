@@ -100,10 +100,12 @@ add_project "empty-project" "Empty project" "active" \
   $'Status: backlog\n\n## Goal\n\nNo current task' $'No future tasks.' $'No paused tasks.'
 add_project "archived-project" "Archived project" "archived" \
   $'Status: done\nTask ID: TASK-20260826-005\n\n## Goal\n\nArchived task' $'No future tasks.' $'No paused tasks.'
+add_project "removed-project" "Removed project" "active" \
+  $'Status: active\nTask ID: TASK-20260826-006\n\n## Goal\n\nRemoved task' $'No future tasks.' $'No paused tasks.'
 
 # Seed legacy output and manually maintained project boards. Preview must not
-# change these bytes; migration may remove only the legacy generated board and
-# must preserve manual boards that are not explicit generated targets.
+# change these bytes; without a verified v3 manifest the legacy board is
+# manual data and must be preserved alongside other manual boards.
 printf '%s\n' 'legacy generated board' > "$VAULT/Obsidian/Tasks-Kanban.md"
 cp "$VAULT/Obsidian/Tasks-Kanban.md" "$TMP_DIR/legacy-tasks-board"
 
@@ -165,7 +167,7 @@ cmp -s "$ARCHITECTURE_BOARD" "$TMP_DIR/manual-scoped-board" || fail 'migration c
 rm -f "$ARCHITECTURE_BOARD"
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write > "$TMP_DIR/write.txt"
 assert_file "$ARCHITECTURE_BOARD"; assert_file "$WAITING_BOARD"; assert_file "$OVERVIEW"; assert_file "$MANIFEST"
-assert_not_exists "$VAULT/Obsidian/Tasks-Kanban.md"
+cmp -s "$VAULT/Obsidian/Tasks-Kanban.md" "$TMP_DIR/legacy-tasks-board" || fail 'initial v4 publish changed unverified legacy board'
 cmp -s "$VAULT/Obsidian/Projects/manual-project/Kanban.md" "$TMP_DIR/manual-project-board" || fail 'migration changed manual project board'
 assert_exact_line "$OVERVIEW" '| Проект | Архипроект | Текущая задача |'
 assert_exact_line "$OVERVIEW" '| --- | --- | --- |'
@@ -184,7 +186,7 @@ if grep -Eq '\^' "$EMPTY_BOARD"; then fail 'empty project board contains anchors
 if grep -Eq '^- \[[ xX]\] ' "$EMPTY_BOARD"; then fail 'empty project board contains task cards'; fi
 /usr/bin/jq -e '.format_version == 4 and (.views.projects_overview.target == "Obsidian/Projects-Overview.md") and ((.project_boards | length) > 0) and ([.project_boards[] | has("project_id") and has("target") and has("sha256")] | all)' "$MANIFEST" >/dev/null || fail 'manifest contract is invalid'
 /usr/bin/jq -e '
-  ([.project_boards[] | .project_id] | sort) == ["ai-dev-architecture", "archived-project", "done-project", "empty-project", "review-project", "waiting-project"] and
+  ([.project_boards[] | .project_id] | sort) == ["ai-dev-architecture", "archived-project", "done-project", "empty-project", "removed-project", "review-project", "waiting-project"] and
   ([.project_boards[] | select(.project_id == "ai-dev-architecture") | .target] == ["Obsidian/Projects/ai-dev-architecture/Kanban.md"]) and
   ([.project_boards[] | select(.project_id == "waiting-project") | .target] == ["Obsidian/Projects/waiting-project/Kanban.md"]) and
   ([.project_boards[] | select(.project_id == "empty-project") | .target] == ["Obsidian/Projects/empty-project/Kanban.md"])
@@ -205,13 +207,27 @@ EOF
     '[.project_boards[] | select(.project_id == $id and .target == $target and .sha256 == $sha)] | length == 1' "$MANIFEST" >/dev/null \
     || fail "project board hash mismatch: $board_id"
 done
-/usr/bin/jq -e '.tasks | length == 9' "$MANIFEST" >/dev/null || fail 'manifest task count is invalid'
+/usr/bin/jq -e '.tasks | length == 10' "$MANIFEST" >/dev/null || fail 'manifest task count is invalid'
 current_sha="$(shasum -a 256 "$ARCHITECTURE_PROJECT/ai/current-task.md" | awk '{print $1}')"
 /usr/bin/jq -e --arg sha "$current_sha" '[.tasks[] | select(.task_id == "TASK-20260826-001") | .source_sha256] == [$sha]' "$MANIFEST" >/dev/null || fail 'manifest source hash is not the source file hash'
 future_sha="$(shasum -a 256 "$ARCHITECTURE_PROJECT/ai/future-tasks.md" | awk '{print $1}')"
 /usr/bin/jq -e --arg sha "$future_sha" '[.tasks[] | select(.task_id == "FT-20260826-001") | .source_sha256] == [$sha]' "$MANIFEST" >/dev/null || fail 'future task source hash is not the source file hash'
 paused_sha="$(shasum -a 256 "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" | awk '{print $1}')"
 /usr/bin/jq -e --arg sha "$paused_sha" '[.tasks[] | select(.task_id == "TASK-20260820-001") | .source_sha256] == [$sha]' "$MANIFEST" >/dev/null || fail 'paused task source hash is not the source file hash'
+
+# An old manifest authorizes deletion only for the exact listed board bytes.
+# Boards a user created outside the manifest must remain untouched.
+REMOVED_BOARD="$VAULT/Obsidian/Projects/removed-project/Kanban.md"
+assert_file "$REMOVED_BOARD"
+mkdir -p "$VAULT/Obsidian/Projects/unlisted-project"
+printf '%s\n' 'manual unlisted board' > "$VAULT/Obsidian/Projects/unlisted-project/Kanban.md"
+cp "$VAULT/Obsidian/Projects/unlisted-project/Kanban.md" "$TMP_DIR/manual-unlisted-board"
+sed -i '' '/^## removed-project$/,$d' "$HUB/ai/project-registry.md"
+sed -i '' '/^removed-project$/d' "$SCOPE"
+SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture > "$TMP_DIR/remove-project.out"
+assert_not_exists "$REMOVED_BOARD"
+cmp -s "$VAULT/Obsidian/Projects/unlisted-project/Kanban.md" "$TMP_DIR/manual-unlisted-board" || fail 'removed-project publish changed unlisted manual board'
+/usr/bin/jq -e '[.project_boards[] | select(.project_id == "removed-project")] | length == 0' "$MANIFEST" >/dev/null || fail 'removed project remained in manifest'
 
 # A v3 migration may remove the legacy board only after proving that it still
 # equals the manifest. A manual edit must block before publishing any v4 file.
@@ -252,6 +268,14 @@ fi
 exec /bin/mv "$@"
 EOF
 chmod +x "$TMP_DIR/fake-bin/mv"
+cat > "$TMP_DIR/fake-bin/rm" <<'EOF'
+#!/bin/sh
+for arg in "$@"; do
+  [ "${RM_FAIL_TARGET:-}" = "$arg" ] && exit 92
+done
+exec /bin/rm "$@"
+EOF
+chmod +x "$TMP_DIR/fake-bin/rm"
 PUBLISHED_FILES=("${GENERATED_FILES[@]}")
 PUBLISHED_DIR="$TMP_DIR/published-set"
 mkdir -p "$PUBLISHED_DIR"
@@ -278,20 +302,9 @@ cp "$TASKS" "$TMP_DIR/manual-edited-tasks"
 cp "$OVERVIEW" "$TMP_DIR/manual-edited-overview"
 cp "$MANIFEST" "$TMP_DIR/manual-edited-manifest"
 if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture > "$TMP_DIR/refresh-manual-task.txt" 2>&1; then fail 'manual task-board edit did not block architecture refresh'; fi
-assert_contains "$TMP_DIR/refresh-manual-task.txt" 'proposal pending: manual task board edit detected'
+assert_contains "$TMP_DIR/refresh-manual-task.txt" 'proposal pending: manual task board edit detected; run obsidian-task-sync.sh scan to create a proposal'
 PROPOSAL="$VAULT/.ai-architecture-sync/pending-proposal.json"
-assert_file "$PROPOSAL"
-/usr/bin/jq -e '
-  .state == "ready" and
-  (.operations == [{
-    "operation": "rename",
-    "task_id": "TASK-20260826-001",
-    "project_id": "ai-dev-architecture",
-    "from": "Transactional architecture task",
-    "to": "Manual Obsidian title"
-  }]) and
-  (.blocked_reasons == [])
-' "$PROPOSAL" >/dev/null || fail 'guarded refresh did not create the exact manual-board proposal'
+assert_not_exists "$PROPOSAL"
 cmp -s "$TASKS" "$TMP_DIR/manual-edited-tasks" || fail 'guarded refresh overwrote the manually edited task board'
 cmp -s "$OVERVIEW" "$TMP_DIR/manual-edited-overview" || fail 'guarded refresh changed the overview after a manual board edit'
 cmp -s "$MANIFEST" "$TMP_DIR/manual-edited-manifest" || fail 'guarded refresh changed the manifest after a manual board edit'
@@ -302,11 +315,29 @@ printf '%s\n' 'valid v3 migration board' > "$VAULT/Obsidian/Tasks-Kanban.md"
 legacy_sha="$(shasum -a 256 "$VAULT/Obsidian/Tasks-Kanban.md" | awk '{print $1}')"
 /usr/bin/jq --arg sha "$legacy_sha" '.format_version = 3 | .views.tasks_kanban = {target: "Obsidian/Tasks-Kanban.md", sha256: $sha}' "$MANIFEST" > "$TMP_DIR/v3-migration-manifest.json"
 mv "$TMP_DIR/v3-migration-manifest.json" "$MANIFEST"
+V3_PUBLISHED_DIR="$TMP_DIR/v3-published-set"
+mkdir -p "$V3_PUBLISHED_DIR"
+for published_file in "${GENERATED_FILES[@]}" "$VAULT/Obsidian/Tasks-Kanban.md"; do
+  cp "$published_file" "$V3_PUBLISHED_DIR/$(basename "$(dirname "$published_file")")-$(basename "$published_file")"
+done
+if PATH="$TMP_DIR/fake-bin:$PATH" RM_FAIL_TARGET="$VAULT/Obsidian/Tasks-Kanban.md" SOURCE_DATE_EPOCH=1700000000 \
+  "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write > "$TMP_DIR/v3-delete-failure.out" 2>&1; then
+  fail 'v3 migration succeeded when legacy deletion failed'
+fi
+for published_file in "${GENERATED_FILES[@]}" "$VAULT/Obsidian/Tasks-Kanban.md"; do
+  published_copy="$V3_PUBLISHED_DIR/$(basename "$(dirname "$published_file")")-$(basename "$published_file")"
+  cmp -s "$published_file" "$published_copy" || fail "v3 deletion failure changed published output: $published_file"
+done
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write > "$TMP_DIR/v3-migration.txt"
 /usr/bin/jq -e '.format_version == 4' "$MANIFEST" >/dev/null || fail 'confirmed v3 migration did not publish v4'
 assert_not_exists "$VAULT/Obsidian/Tasks-Kanban.md"
+printf '%s\n' 'manual post-v4 legacy board' > "$VAULT/Obsidian/Tasks-Kanban.md"
+cp "$VAULT/Obsidian/Tasks-Kanban.md" "$TMP_DIR/manual-post-v4-legacy-board"
+SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture > "$TMP_DIR/post-v4-legacy-refresh.out"
+cmp -s "$VAULT/Obsidian/Tasks-Kanban.md" "$TMP_DIR/manual-post-v4-legacy-board" || fail 'v4 refresh deleted a new manual legacy board'
 for generated_file in "${GENERATED_FILES[@]}"; do rm -f "$generated_file"; done
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write >/dev/null
+cmp -s "$VAULT/Obsidian/Tasks-Kanban.md" "$TMP_DIR/manual-post-v4-legacy-board" || fail 'fresh v4 publish deleted a manual legacy board'
 
 printf '\nmanual task edit\n' >> "$TASKS"
 if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write > "$TMP_DIR/manual-task.txt" 2>&1; then fail 'manual task-board edit did not block write'; fi
