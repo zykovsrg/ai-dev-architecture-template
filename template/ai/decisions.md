@@ -19,3 +19,15 @@ Impact:
 ## Текущие решения
 
 No project decisions yet.
+
+### 2026-08-28 — Archiproject groups
+
+Status: active
+
+Decision: Overview grouping uses only a group record's `primary_archiproject`.
+
+Why: Groups organize projects without inventing numeric targets or
+contributions.
+
+Impact: Group-linked cards use `archiproject_contribution: none`; goal-linked
+cards retain numeric contribution.

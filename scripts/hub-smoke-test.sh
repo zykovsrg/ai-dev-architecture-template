@@ -659,6 +659,7 @@ printf '%s\n' '' \
   'id: unified-assistant' \
   'name: Unified assistant' \
   'status: active' \
+  'kind: goal' \
   'target: 100' \
   'unit: percent' \
   'due: none' \
@@ -670,6 +671,40 @@ archiproject_card_fields_valid "$WORK_MODEL_HUB/ai/project-cards/none-project.md
 assert_not_contains "$WORK_MODEL_HUB/ai/project-cards/legacy-project.md" 'primary_archiproject:'
 bash "$ROOT/scripts/check-hub-registry.sh" "$WORK_MODEL_HUB" > "$TMP_DIR/work-model-registry.out"
 assert_contains "$TMP_DIR/work-model-registry.out" 'Registry check passed: 3 projects'
+
+# Task 1: group-only archiprojects have identity/status only and may be the
+# primary grouping for a project with no numeric contribution.
+GROUP_ONLY_ARCHIPROJECT="$TMP_DIR/group-only-archiproject"
+cp -R "$WORK_MODEL_HUB" "$GROUP_ONLY_ARCHIPROJECT"
+perl -pi -e "s#\\Q$WORK_MODEL_HUB\\E#$GROUP_ONLY_ARCHIPROJECT#g" \
+  "$GROUP_ONLY_ARCHIPROJECT/ai/allowed-roots.md" \
+  "$GROUP_ONLY_ARCHIPROJECT/ai/project-registry.md" \
+  "$GROUP_ONLY_ARCHIPROJECT/ai/project-cards/primary-project.md" \
+  "$GROUP_ONLY_ARCHIPROJECT/ai/project-cards/none-project.md" \
+  "$GROUP_ONLY_ARCHIPROJECT/ai/project-cards/legacy-project.md"
+sed -i '' \
+  -e 's/^primary_archiproject: unified-assistant$/primary_archiproject: hadassah/' \
+  -e 's/^archiproject_contribution: 25$/archiproject_contribution: none/' \
+  "$GROUP_ONLY_ARCHIPROJECT/ai/project-cards/primary-project.md"
+printf '%s\n' '' '## hadassah' '```yaml' 'id: hadassah' 'name: Хадасса' \
+  'status: active' 'kind: group' '```' >> "$GROUP_ONLY_ARCHIPROJECT/ai/archiprojects.md"
+bash "$ROOT/scripts/check-hub-registry.sh" "$GROUP_ONLY_ARCHIPROJECT" > "$TMP_DIR/group-only.out"
+assert_contains "$TMP_DIR/group-only.out" 'Registry check passed: 3 projects'
+
+# Group records must reject goal-only metrics; goals must retain all metrics;
+# unknown kinds are invalid.
+for group_invalid in target goal_missing_target unknown_kind; do
+  GROUP_INVALID="$TMP_DIR/group-invalid-$group_invalid"
+  cp -R "$GROUP_ONLY_ARCHIPROJECT" "$GROUP_INVALID"
+  case "$group_invalid" in
+    target) perl -0pi -e 's/kind: group\n/kind: group\ntarget: 100\n/' "$GROUP_INVALID/ai/archiprojects.md" ;;
+    goal_missing_target) sed -i '' 's/^kind: group$/kind: goal/' "$GROUP_INVALID/ai/archiprojects.md" ;;
+    unknown_kind) sed -i '' 's/^kind: group$/kind: portfolio/' "$GROUP_INVALID/ai/archiprojects.md" ;;
+  esac
+  if bash "$ROOT/scripts/check-hub-registry.sh" "$GROUP_INVALID" > "$TMP_DIR/group-invalid.out" 2>&1; then
+    fail "validator accepted invalid archiproject fixture: $group_invalid"
+  fi
+done
 
 copy_work_model_hub() {
   local destination="$1"

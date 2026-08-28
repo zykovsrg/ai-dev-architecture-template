@@ -162,22 +162,29 @@ validate_project_memory() {
 }
 
 archiproject_ids=""
+archiproject_group_ids=""
 archiproject_registry_loaded=0
 
 archiproject_id_known() {
   printf '%s\n' "$archiproject_ids" | grep -Fxq "$1"
 }
 
+archiproject_group_known() {
+  printf '%s\n' "$archiproject_group_ids" | grep -Fxq "$1"
+}
+
 reset_archiproject_entry_fields() {
   archiproject_id_count=0
   archiproject_name_count=0
   archiproject_status_count=0
+  archiproject_kind_count=0
   archiproject_target_count=0
   archiproject_unit_count=0
   archiproject_due_count=0
   archiproject_value_id=""
   archiproject_value_name=""
   archiproject_value_status=""
+  archiproject_value_kind=""
   archiproject_value_target=""
   archiproject_value_unit=""
   archiproject_value_due=""
@@ -188,6 +195,7 @@ archiproject_field_count() {
     id) printf '%s\n' "$archiproject_id_count" ;;
     name) printf '%s\n' "$archiproject_name_count" ;;
     status) printf '%s\n' "$archiproject_status_count" ;;
+    kind) printf '%s\n' "$archiproject_kind_count" ;;
     target) printf '%s\n' "$archiproject_target_count" ;;
     unit) printf '%s\n' "$archiproject_unit_count" ;;
     due) printf '%s\n' "$archiproject_due_count" ;;
@@ -199,6 +207,7 @@ increment_archiproject_field() {
     id) archiproject_id_count=$((archiproject_id_count + 1)) ;;
     name) archiproject_name_count=$((archiproject_name_count + 1)) ;;
     status) archiproject_status_count=$((archiproject_status_count + 1)) ;;
+    kind) archiproject_kind_count=$((archiproject_kind_count + 1)) ;;
     target) archiproject_target_count=$((archiproject_target_count + 1)) ;;
     unit) archiproject_unit_count=$((archiproject_unit_count + 1)) ;;
     due) archiproject_due_count=$((archiproject_due_count + 1)) ;;
@@ -210,7 +219,7 @@ validate_archiproject_entry() {
   [ -n "$archiproject_entry_id" ] || return 0
   [ "$archiproject_fence_open" = 1 ] && die "unterminated archiproject registry entry: $archiproject_entry_id"
   [ "$archiproject_fence_closed" = 1 ] || die "missing YAML block for archiproject registry entry: $archiproject_entry_id"
-  for field in id name status target unit due; do
+  for field in id name status kind; do
     [ "$(archiproject_field_count "$field")" -eq 1 ] \
       || die "missing or duplicate $field in archiproject registry entry: $archiproject_entry_id"
   done
@@ -222,14 +231,33 @@ validate_archiproject_entry() {
     || die "invalid archiproject name: $archiproject_entry_id"
   status_ok "$archiproject_value_status" \
     || die "invalid archiproject status: $archiproject_entry_id"
-  [[ "$archiproject_value_target" =~ ^[0-9]+([.][0-9]+)?$ ]] \
-    || die "invalid archiproject target: $archiproject_entry_id"
-  [ -n "$archiproject_value_unit" ] \
-    || die "invalid archiproject unit: $archiproject_entry_id"
-  iso_date_or_none_ok "$archiproject_value_due" \
-    || die "invalid archiproject due: $archiproject_entry_id"
+  case "$archiproject_value_kind" in
+    group)
+      for field in target unit due; do
+        [ "$(archiproject_field_count "$field")" -eq 0 ] \
+          || die "group archiproject must not contain $field: $archiproject_entry_id"
+      done
+      ;;
+    goal)
+      for field in target unit due; do
+        [ "$(archiproject_field_count "$field")" -eq 1 ] \
+          || die "goal archiproject requires exactly one $field: $archiproject_entry_id"
+      done
+      [[ "$archiproject_value_target" =~ ^[0-9]+([.][0-9]+)?$ ]] \
+        || die "invalid archiproject target: $archiproject_entry_id"
+      [ -n "$archiproject_value_unit" ] \
+        || die "invalid archiproject unit: $archiproject_entry_id"
+      iso_date_or_none_ok "$archiproject_value_due" \
+        || die "invalid archiproject due: $archiproject_entry_id"
+      ;;
+    *) die "invalid archiproject kind: $archiproject_entry_id" ;;
+  esac
   archiproject_id_known "$archiproject_entry_id" \
     && die "duplicate archiproject registry ID: $archiproject_entry_id"
+  if [ "$archiproject_value_kind" = group ]; then
+    archiproject_group_ids="${archiproject_group_ids}${archiproject_entry_id}"
+    archiproject_group_ids+=$'\n'
+  fi
   archiproject_ids="${archiproject_ids}${archiproject_entry_id}
 "
 }
@@ -289,6 +317,10 @@ load_archiproject_registry() {
             increment_archiproject_field status
             archiproject_value_status="${line#status: }"
             ;;
+          'kind: '*)
+            increment_archiproject_field kind
+            archiproject_value_kind="${line#kind: }"
+            ;;
           'target: '*)
             increment_archiproject_field target
             archiproject_value_target="${line#target: }"
@@ -336,8 +368,13 @@ validate_archiproject_metadata() {
   else
     archiproject_id_known "$primary" \
       || die "unknown primary archiproject for $current_id: $primary"
-    [[ "$contribution" =~ ^[0-9]+([.][0-9]+)?$ ]] && awk "BEGIN { exit !($contribution >= 0) }" \
-      || die "archiproject contribution must be a nonnegative number for $current_id"
+    if archiproject_group_known "$primary"; then
+      [ "$contribution" = none ] \
+        || die "archiproject contribution must be none for group primary archiproject for $current_id"
+    else
+      [[ "$contribution" =~ ^[0-9]+([.][0-9]+)?$ ]] && awk "BEGIN { exit !($contribution >= 0) }" \
+        || die "archiproject contribution must be a nonnegative number for $current_id"
+    fi
   fi
 
   [ "$related" = none ] && return 0
