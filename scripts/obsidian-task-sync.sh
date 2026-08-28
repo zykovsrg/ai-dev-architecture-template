@@ -193,12 +193,16 @@ load_known_cards() {
   while IFS=$'\t' read -r task_id project_id source source_sha; do
     [ -n "$task_id" ] && [ -n "$project_id" ] && [ -n "$source" ] && [ -n "$source_sha" ] || die 'invalid manifest task entry'
     task_id_is_readable_for_project "$task_id" "$project_id" || die "invalid manifest task ID for project $project_id: $task_id"
-    [ -f "$source" ] && [ ! -L "$source" ] || die "unsafe manifest source: $task_id"
-    inside "$source" "$HUB/projects/$project_id/ai" || die "manifest source outside registered task memory: $task_id"
-    scope_contains "$project_id" || die "manifest task project is outside scope: $project_id"
-    actual_sha="$(hash_file "$source")"; [ "$actual_sha" = "$source_sha" ] || die "canonical source differs from manifest: $source"
     project_index=''; for project_index in "${!PROJECT_IDS[@]}"; do [ "${PROJECT_IDS[$project_index]}" = "$project_id" ] && break; done
     [ -n "$project_index" ] && [ "${PROJECT_IDS[$project_index]}" = "$project_id" ] || die "manifest task has unknown project: $task_id"
+    scope_contains "$project_id" || die "manifest task project is outside scope: $project_id"
+    # The manifest is editable input.  Resolve the source and require its exact
+    # registered ai/ task-file location before any content operation can touch
+    # it; a lexical ai/../ path must never be hashed or parsed.
+    source_is_registered_task_file "$source" "$project_index" || die "manifest source is not a registered task file: $task_id"
+    source="${PROJECT_PATHS[$project_index]}/ai/$(basename "$source")"
+    [[ "$source_sha" =~ ^[0-9a-f]{64}$ ]] || die "invalid manifest source hash: $task_id"
+    actual_sha="$(hash_file "$source")"; [ "$actual_sha" = "$source_sha" ] || die "canonical source differs from manifest: $source"
     record="$(source_record "$source" "$task_id")" || die "manifest task is not a unique canonical record: $task_id"
     IFS=$'\t' read -r status title due <<< "$record"
     column="$(status_to_column "$status")" || die "unsupported canonical status for $task_id: $status"

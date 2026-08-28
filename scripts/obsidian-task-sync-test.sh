@@ -64,6 +64,20 @@ if [ "${AI_SYNC_TEST_MV_MODE:-}" = watch ] && [ "$target" = "$AI_SYNC_TEST_TASKS
 fi
 EOF
 chmod +x "$TEST_BIN/mv"
+cat > "$TEST_BIN/shasum" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+for argument in "$@"; do
+  if [ -n "${AI_SYNC_TEST_FORBID_HASH_PATH:-}" ] && [ "$argument" = "$AI_SYNC_TEST_FORBID_HASH_PATH" ]; then
+    printf '%s\n' "unexpected hash of $argument" >> "$AI_SYNC_TEST_HASH_LOG"
+    exit 94
+  fi
+done
+
+/usr/bin/shasum "$@"
+EOF
+chmod +x "$TEST_BIN/shasum"
 printf '%s\n' '# Project Registry' > "$HUB/ai/project-registry.md"
 
 add_project() {
@@ -333,8 +347,8 @@ assert_contains "$TASKS" 'Renamed idea ^ai-dev-architecture--FT-20260826-001'
 assert_not_exists "$PROPOSAL"
 
 # A manifest is editable input. A lexical path below ai/ may use ../ to target
-# a same-named file outside the registered project task memory. Confirmed apply
-# must reject it before creating a staged copy or changing any source.
+# a same-named file outside the registered project task memory. Scan must
+# reject it before hashing or reading that external file.
 reset_board
 ESCAPED_SOURCE="$ARCHITECTURE_PROJECT/current-task.md"
 ESCAPED_MANIFEST_SOURCE="$ARCHITECTURE_PROJECT/ai/../current-task.md"
@@ -347,15 +361,14 @@ escaped_sha="$(shasum -a 256 "$ESCAPED_SOURCE" | awk '{print $1}')"
 ' "$MANIFEST" > "$TMP_DIR/escaped-manifest.json"
 mv "$TMP_DIR/escaped-manifest.json" "$MANIFEST"
 perl -0pi -e 's/Current task \^ai-dev-architecture--TASK-20260826-001/Escaped manifest rename ^ai-dev-architecture--TASK-20260826-001/' "$TASKS"
-scan > "$TMP_DIR/escaped-manifest-scan.out"
-source_hashes > "$TMP_DIR/escaped-manifest-before.txt"
-escaped_before="$(shasum -a 256 "$ESCAPED_SOURCE" | awk '{print $1}')"
-if apply > "$TMP_DIR/escaped-manifest-apply.out" 2>&1; then fail 'apply accepted a manifest source that escapes registered ai memory'; fi
-assert_contains "$TMP_DIR/escaped-manifest-apply.out" 'manifest source is not a registered task file'
-assert_equal "$escaped_before" "$(shasum -a 256 "$ESCAPED_SOURCE" | awk '{print $1}')" 'escaped manifest source changed before rejection'
-assert_equal "$(cat "$TMP_DIR/escaped-manifest-before.txt")" "$(source_hashes)" 'escaped manifest source rejection changed canonical files'
-assert_file "$PROPOSAL"
-rm -f "$PROPOSAL" "$ESCAPED_SOURCE"
+HASH_LOG="$TMP_DIR/escaped-manifest-hash.log"
+if AI_SYNC_TEST_FORBID_HASH_PATH="$ESCAPED_SOURCE" AI_SYNC_TEST_HASH_LOG="$HASH_LOG" PATH="$TEST_BIN:$PATH" scan > "$TMP_DIR/escaped-manifest-scan.out" 2>&1; then
+  fail 'scanner accepted a manifest source that escapes registered ai memory'
+fi
+assert_contains "$TMP_DIR/escaped-manifest-scan.out" 'manifest source is not a registered task file'
+assert_not_exists "$HASH_LOG"
+assert_not_exists "$PROPOSAL"
+rm -f "$ESCAPED_SOURCE"
 cp "$TMP_DIR/manifest-before-escape.json" "$MANIFEST"
 refresh_board
 
