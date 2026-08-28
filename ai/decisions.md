@@ -18,6 +18,16 @@ Impact:
 
 ## Текущие решения
 
+### 2026-08-28 — Provenance и inbox локальных знаний
+
+Status: active
+
+Decision: Каждый record хранит `origin` и `valid_from`; слабые наблюдения живут только в project-local `knowledge/inbox/` до явного review.
+
+Why: Это отделяет прямые факты от вывода агента и не превращает слабые сигналы в долговременное знание автоматически.
+
+Impact: Capture не выбирает origin по умолчанию; review отдельно показывает inferred и требует точного подтверждения для promotion, retention или удаления inbox-записей.
+
 ### 2026-08-24 — Unified assistant: canonical data and safe human control
 
 Status: active

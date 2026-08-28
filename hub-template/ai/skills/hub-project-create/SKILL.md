@@ -81,6 +81,7 @@ Knowledge scaffold:
 - <canonical-path>/knowledge/decisions/
 - <canonical-path>/knowledge/risks/
 - <canonical-path>/knowledge/runbooks/
+- <canonical-path>/knowledge/inbox/
 
 Card: ai/project-cards/<project-id>.md
 Project ID: <project-id>
@@ -129,7 +130,8 @@ The preview also explicitly excludes `ai/architecture.md`,
    `ai/architecture.md` or `ai/external-tools.md`.
 3. Create only the absent knowledge scaffold at `<canonical-path>/knowledge/`:
    `README.md`, `record-template.md`, and the empty `research/`, `decisions/`,
-   `risks/`, and `runbooks/` directories. Use the canonical contents below for
+   `risks/`, `runbooks/`, and `inbox/` directories. Inbox holds weak
+   observations and is not a durable category. Use the canonical contents below for
    the two files. It must never overwrite records or any existing scaffold
    file. The created project uses the hub-owned `hub-knowledge-capture` and
    hub-owned `hub-knowledge-review` workflows; do not copy generic workflow skills,

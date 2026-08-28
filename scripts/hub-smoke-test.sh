@@ -295,6 +295,7 @@ project_create_knowledge_scaffold_valid() {
     [[ "$text" == *'knowledge/decisions/'* ]] &&
     [[ "$text" == *'knowledge/risks/'* ]] &&
     [[ "$text" == *'knowledge/runbooks/'* ]] &&
+    [[ "$text" == *'knowledge/inbox/'* ]] &&
     [[ "$text" == *'only the absent knowledge scaffold'* ]] &&
     [[ "$text" == *'never overwrite records'* ]] &&
     [[ "$text" == *'hub-owned `hub-knowledge-capture`'* ]] &&
@@ -318,6 +319,7 @@ knowledge_enable_contract_valid() {
     [[ "$text" == *'knowledge/decisions/'* ]] &&
     [[ "$text" == *'knowledge/risks/'* ]] &&
     [[ "$text" == *'knowledge/runbooks/'* ]] &&
+    [[ "$text" == *'knowledge/inbox/'* ]] &&
     [[ "$text" == *'only absent scaffold files'* ]] &&
     [[ "$text" == *'never overwrite records'* ]] &&
     [[ "$text" == *'confirmed project path itself must be a real directory'* ]] &&
@@ -342,6 +344,9 @@ hub_knowledge_capture_contract_valid() {
   text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
 
   hub_knowledge_path_boundary_valid "$file" &&
+    [[ "$text" == *'explicit `origin` choice'* ]] &&
+    [[ "$text" == *'must not default to `stated`'* ]] &&
+    [[ "$text" == *'knowledge/inbox/'* ]] &&
     [[ "$text" == *'name: hub-knowledge-capture'* ]] &&
     [[ "$text" == *'selected project `ai/` memory'* ]] &&
     [[ "$text" == *'explicit confirmation'* ]] &&
@@ -356,10 +361,14 @@ hub_knowledge_review_contract_valid() {
   text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
 
   hub_knowledge_path_boundary_valid "$file" &&
+    [[ "$text" == *'`origin`'* ]] &&
+    [[ "$text" == *'`valid_from`'* ]] &&
+    [[ "$text" == *'origin: inferred'* ]] &&
+    [[ "$text" == *'observation outside the inbox'* ]] &&
     [[ "$text" == *'name: hub-knowledge-review'* ]] &&
     [[ "$text" == *'selected project `ai/` memory'* ]] &&
     [[ "$text" == *'explicit confirmation'* ]] &&
-    [[ "$text" == *'required frontmatter keys: `type`, `status`, `created`, `reviewed`, and `sources`'* ]] &&
+    [[ "$text" == *'required frontmatter keys: `type`, `status`, `origin`, `valid_from`, `created`, `reviewed`, and `sources`'* ]] &&
     [[ "$text" == *'exactly `research`, `decision`, `risk`, or `runbook`'* ]] &&
     [[ "$text" == *'type must match its category directory'* ]] &&
     [[ "$text" == *'exactly `draft`, `verified`, `needs-review`, `stale`, or `superseded`'* ]] &&

@@ -29,6 +29,7 @@ register, move, import, copy, or transform a project or its records.
 4. Inspect metadata only for these exact paths: `knowledge/README.md`,
    `knowledge/record-template.md`, `knowledge/research/`,
    `knowledge/decisions/`, `knowledge/risks/`, and `knowledge/runbooks/`.
+   Also inspect `knowledge/inbox/` as an exact scaffold path.
    Do not read unrelated project content, enumerate directories, or read an
    existing knowledge record.
 5. Never follow a symlink. Stop with no writes if the hub root, projects root,
@@ -55,6 +56,7 @@ Mode: knowledge-enable
 - <exact-registered-path>/knowledge/decisions/
 - <exact-registered-path>/knowledge/risks/
 - <exact-registered-path>/knowledge/runbooks/
+- <exact-registered-path>/knowledge/inbox/
 
 Не будет прочитано: существующие records, код, task memory и иной контент проекта.
 Не будет изменено: существующие records, Git, инструкции проекта, skills,
@@ -74,6 +76,7 @@ symlink stops the workflow with no writes.
 2. Create only absent scaffold files and directories: `knowledge/README.md`,
    `knowledge/record-template.md`, `knowledge/research/`,
    `knowledge/decisions/`, `knowledge/risks/`, and `knowledge/runbooks/`.
+   Also create only an absent `knowledge/inbox/` directory.
 3. Write the canonical README and record template below only when that exact
    file is absent. It must never overwrite records, an existing README, or an existing
    record template; do not merge, rename, delete, or inspect existing records.

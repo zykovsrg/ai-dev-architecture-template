@@ -1,6 +1,8 @@
 ---
 type: research
 status: draft
+origin: stated
+valid_from: null
 created: YYYY-MM-DD
 reviewed: YYYY-MM-DD
 sources: []

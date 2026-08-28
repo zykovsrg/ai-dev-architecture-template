@@ -36,12 +36,15 @@ path traversal, symlink access, another project, or an unregistered path.
 
 For every selected record:
 
-1. Validate the required frontmatter keys: `type`, `status`, `created`, `reviewed`, and `sources`.
+1. Validate the required frontmatter keys: `type`, `status`, `origin`, `valid_from`, `created`, `reviewed`, and `sources`.
 2. Require `type` to be exactly `research`, `decision`, `risk`, or `runbook`;
    the type must match its category directory. Require `status` to be exactly `draft`, `verified`, `needs-review`, `stale`, or `superseded`.
 3. Validate `created` and `reviewed` as real `YYYY-MM-DD` dates. Report record
    freshness from `reviewed`, using `created` only if review date is absent and
    flagging the missing field.
+   Validate `valid_from` as `null` or a real `YYYY-MM-DD` date. Report
+   `origin: inferred` separately from stated records and flag an observation
+   outside the inbox.
 4. Inspect and report the publication or update date of each cited source separately from record metadata when available. Report missing, malformed,
    unavailable, or unverifiable source dates without inferring them.
 5. Report explicit contradictions among selected records and distinguish
@@ -52,6 +55,10 @@ For every selected record:
 7. Never delete a stale or superseded record. Require it to remain at its
    original path with a link to its replacement under `Related records`; a
    missing replacement link is a review defect.
+
+For an explicitly selected inbox scope, propose only promotion to a selected
+durable category, retention, or deletion; make no mutation before exact
+confirmation.
 
 ## Edit gate
 

@@ -14,6 +14,19 @@ Store records in the category that matches their purpose:
 Create and update records through `knowledge-capture` or `knowledge-review`
 after the required confirmation.
 
+## Provenance and inbox
+
+Every durable record declares `origin`: `stated` for a direct user or source
+claim, `inferred` for an agent conclusion, or `observation` for a weak signal.
+It also declares `valid_from`, either `null` or the `YYYY-MM-DD` date when its
+claim starts to apply; this is separate from `created`.
+
+The four categories above remain the only durable knowledge categories.
+`knowledge/inbox/` is a temporary holding area for records with
+`origin: observation`. Review an explicitly selected inbox scope before
+promoting, retaining, or deleting an observation; never do any of these
+automatically.
+
 ## Safety and status
 
 Knowledge records must be secret-free. They must contain no personal data or client data. Never store credentials, passwords, tokens, private keys, raw
