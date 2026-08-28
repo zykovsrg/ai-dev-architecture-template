@@ -79,14 +79,8 @@ resolve_archiproject_group() {
   block="$(awk -v heading="## $requested" '$0 == heading {found=1; next} found && /^## / {exit} found {print}' "$ARCHIPROJECTS")"
   kind="$(printf '%s\n' "$block" | sed -n 's/^kind: //p')"
   [ "$(printf '%s\n' "$kind" | sed '/^$/d' | wc -l | tr -d ' ')" -le 1 ] || die "duplicate archiproject kind: $requested"
-  # The project-board migration must read the new explicit group records. The
-  # old fixture form had no kind and used unit: project; retain it only as a
-  # read-compatible input while explicit non-group records remain rejected.
-  if [ -n "$kind" ]; then
-    [ "$kind" = group ] || die "primary_archiproject is not a group: $requested"
-  else
-    printf '%s\n' "$block" | grep -Fxq 'unit: project' || die "primary_archiproject is not a group: $requested"
-  fi
+  [ -n "$kind" ] || die "primary_archiproject kind is missing: $requested"
+  [ "$kind" = group ] || die "primary_archiproject is not a group: $requested"
   name="$(printf '%s\n' "$block" | sed -n 's/^name: //p')"
   [ "$(printf '%s\n' "$name" | sed '/^$/d' | wc -l | tr -d ' ')" -eq 1 ] && [ -n "$name" ] || die "invalid archiproject name: $requested"
   printf '%s' "$name"
@@ -144,7 +138,6 @@ for id in "${IDS[@]}"; do
   [ -n "$path" ] && [ -n "$raw_card" ] && is_absolute "$path" && [ -d "$path" ] && [ ! -L "$path" ] && [ -d "$path/ai" ] && [ ! -L "$path/ai" ] || die "registry entry incomplete or unsafe: $id"
   path="$(physical_dir "$path")"; inside "$path" "$HUB/projects" || die "registry project path outside allowed root: $id"; card="$(resolve_card "$raw_card")"
   [ -f "$card" ] && [ ! -L "$card" ] || die "missing or symlinked project card: $id"
-  render_tasks=1; [ "$registry_status" = archived ] && render_tasks=0
   current_file="$path/ai/current-task.md"; future_file="$path/ai/future-tasks.md"; paused_file="$path/ai/paused-tasks.md"
   for source in "$current_file" "$future_file" "$paused_file"; do [ -f "$source" ] && [ ! -L "$source" ] || die "missing or symlinked allowed task file: $id"; validate_task_source "$source"; done
   name="$(read_field "$card" Name)"; [ -n "$name" ] || name=$id
@@ -160,15 +153,15 @@ for id in "${IDS[@]}"; do
     # every later scan would propose a rename the user never made.
     [ -n "$title" ] || die "renderable current task must have a goal line: $current_file"
     current_task_id="$(current_task_id "$current_file" "$id")"
-    [ "$render_tasks" -eq 0 ] || add_task "$current_task_id" "$current_column" "$title" "$name" "$id" "$due" "$current_done" "$current_file" "$(hash_file "$current_file")"
+    add_task "$current_task_id" "$current_column" "$title" "$name" "$id" "$due" "$current_done" "$current_file" "$(hash_file "$current_file")"
     overview_current="$title"
   fi
   while IFS=$'\t' read -r future_task_id future_status future_title future_due; do
     [ -n "$future_status" ] || continue
-    [ "$render_tasks" -eq 0 ] || case "$future_status" in idea) add_task "$future_task_id" Ideas "$future_title" "$name" "$id" "$future_due" ' ' "$future_file" "$(hash_file "$future_file")";; ready) add_task "$future_task_id" Ready "$future_title" "$name" "$id" "$future_due" ' ' "$future_file" "$(hash_file "$future_file")";; blocked) add_task "$future_task_id" Blocked "$future_title" "$name" "$id" "$future_due" ' ' "$future_file" "$(hash_file "$future_file")";; esac
+    case "$future_status" in idea) add_task "$future_task_id" Ideas "$future_title" "$name" "$id" "$future_due" ' ' "$future_file" "$(hash_file "$future_file")";; ready) add_task "$future_task_id" Ready "$future_title" "$name" "$id" "$future_due" ' ' "$future_file" "$(hash_file "$future_file")";; blocked) add_task "$future_task_id" Blocked "$future_title" "$name" "$id" "$future_due" ' ' "$future_file" "$(hash_file "$future_file")";; esac
   done < <(future_records "$future_file" "$id")
   paused_output="$(paused_records "$paused_file" "$id")"
-  while IFS=$'\t' read -r paused_task_id paused_title; do [ "$render_tasks" -eq 1 ] && [ -n "$paused_title" ] && add_task "$paused_task_id" Paused "$paused_title" "$name" "$id" '' ' ' "$paused_file" "$(hash_file "$paused_file")"; done <<< "$paused_output"
+  while IFS=$'\t' read -r paused_task_id paused_title; do [ -n "$paused_title" ] && add_task "$paused_task_id" Paused "$paused_title" "$name" "$id" '' ' ' "$paused_file" "$(hash_file "$paused_file")"; done <<< "$paused_output"
   OVERVIEW_ROWS+="| [[Projects/$id/Kanban\\\\|$(table_cell "$name")]] | $(table_cell "$archiproject_name") | $(table_cell "$overview_current") |"$'\n'
   SOURCE_IDS+=("$id"); SOURCE_PATHS+=("$path"); SOURCE_CARDS+=("$card"); SOURCE_HASHES+=("$(hash_files "$card" "$current_file" "$future_file" "$paused_file")")
 done
@@ -202,7 +195,19 @@ fi
 
 TARGET_DIR="$VAULT/Obsidian"; TARGET_LEGACY="$TARGET_DIR/Tasks-Kanban.md"; TARGET_OVERVIEW="$TARGET_DIR/Projects-Overview.md"; TARGET_MANIFEST="$TARGET_DIR/AI-Architecture.manifest.json"
 [ -d "$TARGET_DIR" ] && [ ! -L "$TARGET_DIR" ] || die 'target directory missing or symlinked'
-for rel in "${BOARD_TARGETS[@]}"; do [ ! -L "$TARGET_DIR/$rel" ] || die 'generated targets must not be symlinks'; done
+prepare_board_target_dirs() {
+  local projects_dir project_dir id rel
+  projects_dir="$TARGET_DIR/Projects"
+  if [ -e "$projects_dir" ] || [ -L "$projects_dir" ]; then [ -d "$projects_dir" ] && [ ! -L "$projects_dir" ] || die 'Projects directory must be a real non-symlink directory'
+  else mkdir "$projects_dir" || die 'cannot create Projects directory'; fi
+  for id in "${IDS[@]}"; do
+    project_dir="$projects_dir/$id"
+    if [ -e "$project_dir" ] || [ -L "$project_dir" ]; then [ -d "$project_dir" ] && [ ! -L "$project_dir" ] || die "project board directory is unsafe: $id"
+    else mkdir "$project_dir" || die "cannot create project board directory: $id"; fi
+    rel="Projects/$id/Kanban.md"; [ ! -L "$TARGET_DIR/$rel" ] || die 'generated targets must not be symlinks'
+  done
+}
+prepare_board_target_dirs
 [ ! -L "$TARGET_LEGACY" ] && [ ! -L "$TARGET_OVERVIEW" ] && [ ! -L "$TARGET_MANIFEST" ] || die 'generated targets must not be symlinks'
 
 write_rename_proposal() {
@@ -221,18 +226,28 @@ write_rename_proposal() {
 if [ -e "$TARGET_MANIFEST" ] || [ -e "$TARGET_OVERVIEW" ]; then
   [ -f "$TARGET_MANIFEST" ] && [ -f "$TARGET_OVERVIEW" ] || die 'proposal pending: generated view set is incomplete'
   manifest_format="$(/usr/bin/jq -r '.format_version // empty' "$TARGET_MANIFEST" 2>/dev/null || true)"
-  [ "$manifest_format" = 4 ] || { [ "$manifest_format" = 3 ] && die 'proposal pending: manifest v3 requires a fresh confirmed rebuild'; die 'proposal pending: generated manifest is invalid'; }
+  manifest_has_project_boards="$(/usr/bin/jq -r '(.project_boards | type == "array" and length > 0)' "$TARGET_MANIFEST" 2>/dev/null || true)"
+  if [ "$manifest_format" != 4 ]; then
+    [ "$manifest_format" = 3 ] && [ "$CONFIRM" -eq 1 ] || die 'proposal pending: manifest v3 requires a fresh confirmed rebuild'
+    if [ "$manifest_has_project_boards" != true ]; then
+      for rel in "${BOARD_TARGETS[@]}"; do [ ! -e "$TARGET_DIR/$rel" ] || die 'proposal pending: manual project board exists outside generated manifest'; done
+    fi
+  fi
   recorded_overview="$(/usr/bin/jq -r '.views.projects_overview.sha256 // empty' "$TARGET_MANIFEST")"
   [ "$recorded_overview" = "$(hash_file "$TARGET_OVERVIEW")" ] || die 'proposal pending: manual project overview edit detected'
-  for i in "${!BOARD_TARGETS[@]}"; do
-    board_file="$TARGET_DIR/${BOARD_TARGETS[$i]}"; [ -f "$board_file" ] || die 'proposal pending: generated view set is incomplete'
-    recorded_board="$(/usr/bin/jq -r --arg id "${IDS[$i]}" '[.project_boards[] | select(.project_id == $id) | .sha256] | if length == 1 then .[0] else empty end' "$TARGET_MANIFEST")"
-    [ -n "$recorded_board" ] || die 'proposal pending: generated manifest is invalid'
-    if [ "$REPLACE_CONFIRMED_BOARD" -eq 0 ] && [ "$recorded_board" != "$(hash_file "$board_file")" ]; then
-      [ "$REFRESH_FROM_ARCHITECTURE" -eq 0 ] || write_rename_proposal "${IDS[$i]}" "$board_file" || true
-      die 'proposal pending: manual task board edit detected'
-    fi
-  done
+  if [ "$manifest_format" = 4 ] || [ "$manifest_has_project_boards" = true ]; then
+    for i in "${!BOARD_TARGETS[@]}"; do
+      board_file="$TARGET_DIR/${BOARD_TARGETS[$i]}"; [ -f "$board_file" ] || die 'proposal pending: generated view set is incomplete'
+      recorded_board="$(/usr/bin/jq -r --arg id "${IDS[$i]}" '[.project_boards[] | select(.project_id == $id) | .sha256] | if length == 1 then .[0] else empty end' "$TARGET_MANIFEST")"
+      [ -n "$recorded_board" ] || die 'proposal pending: generated manifest is invalid'
+      if [ "$REPLACE_CONFIRMED_BOARD" -eq 0 ] && [ "$recorded_board" != "$(hash_file "$board_file")" ]; then
+        [ "$REFRESH_FROM_ARCHITECTURE" -eq 0 ] || write_rename_proposal "${IDS[$i]}" "$board_file" || true
+        die 'proposal pending: manual task board edit detected'
+      fi
+    done
+  fi
+else
+  for rel in "${BOARD_TARGETS[@]}"; do [ ! -e "$TARGET_DIR/$rel" ] || die 'proposal pending: manual project board exists outside generated manifest'; done
 fi
 
 transaction_dir="$TARGET_DIR/.AI-Architecture.generated-write.transaction"

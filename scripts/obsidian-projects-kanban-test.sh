@@ -52,9 +52,7 @@ cat > "$HUB/ai/archiprojects.md" <<'EOF'
 id: дела
 name: Дела
 status: active
-target: 1
-unit: project
-due: none
+kind: group
 ```
 EOF
 
@@ -142,6 +140,28 @@ if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write > "$TMP_D
 assert_file "$VAULT/Obsidian/Tasks-Kanban.md"
 cmp -s "$VAULT/Obsidian/Tasks-Kanban.md" "$TMP_DIR/legacy-tasks-board" || fail 'unconfirmed write changed legacy board'
 assert_not_exists "$ARCHITECTURE_BOARD"; assert_not_exists "$WAITING_BOARD"; assert_not_exists "$OVERVIEW"; assert_not_exists "$MANIFEST"
+mv "$VAULT/Obsidian/Projects" "$TMP_DIR/projects-real"
+ln -s /private/tmp "$VAULT/Obsidian/Projects"
+if SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write > "$TMP_DIR/symlink-projects-dir.txt" 2>&1; then fail 'migration accepted symlinked Projects directory'; fi
+assert_contains "$TMP_DIR/symlink-projects-dir.txt" 'Projects directory must be a real non-symlink directory'
+rm "$VAULT/Obsidian/Projects"
+mv "$TMP_DIR/projects-real" "$VAULT/Obsidian/Projects"
+ln -s /private/tmp "$VAULT/Obsidian/Projects/empty-project"
+if SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write > "$TMP_DIR/symlink-project-dir.txt" 2>&1; then fail 'migration accepted symlinked project board directory'; fi
+assert_contains "$TMP_DIR/symlink-project-dir.txt" 'project board directory is unsafe'
+rm "$VAULT/Obsidian/Projects/empty-project"
+mkdir "$VAULT/Obsidian/Projects/empty-project"
+ln -s /private/tmp "$EMPTY_BOARD"
+if SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write > "$TMP_DIR/symlink-board.txt" 2>&1; then fail 'migration accepted symlinked board target'; fi
+assert_contains "$TMP_DIR/symlink-board.txt" 'generated targets must not be symlinks'
+rm "$EMPTY_BOARD"
+mkdir -p "$(dirname "$ARCHITECTURE_BOARD")"
+printf '%s\n' 'manual scoped board' > "$ARCHITECTURE_BOARD"
+cp "$ARCHITECTURE_BOARD" "$TMP_DIR/manual-scoped-board"
+if SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write > "$TMP_DIR/manual-scoped.txt" 2>&1; then fail 'migration overwrote manual scoped board'; fi
+assert_contains "$TMP_DIR/manual-scoped.txt" 'manual project board exists outside generated manifest'
+cmp -s "$ARCHITECTURE_BOARD" "$TMP_DIR/manual-scoped-board" || fail 'migration changed manual scoped board'
+rm -f "$ARCHITECTURE_BOARD"
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write > "$TMP_DIR/write.txt"
 assert_file "$ARCHITECTURE_BOARD"; assert_file "$WAITING_BOARD"; assert_file "$OVERVIEW"; assert_file "$MANIFEST"
 assert_not_exists "$VAULT/Obsidian/Tasks-Kanban.md"
@@ -156,6 +176,7 @@ assert_board_isolated "$WAITING_BOARD" waiting-project
 assert_board_isolated "$VAULT/Obsidian/Projects/review-project/Kanban.md" review-project
 assert_board_isolated "$VAULT/Obsidian/Projects/done-project/Kanban.md" done-project
 assert_board_isolated "$VAULT/Obsidian/Projects/archived-project/Kanban.md" archived-project
+assert_contains "$VAULT/Obsidian/Projects/archived-project/Kanban.md" 'archived-project--TASK-20260826-005'
 assert_file "$EMPTY_BOARD"
 for column in Ideas Ready Active Waiting Blocked Review Paused Done; do assert_contains "$EMPTY_BOARD" "## $column"; done
 if grep -Eq '\^' "$EMPTY_BOARD"; then fail 'empty project board contains anchors'; fi
@@ -183,7 +204,7 @@ EOF
     '[.project_boards[] | select(.project_id == $id and .target == $target and .sha256 == $sha)] | length == 1' "$MANIFEST" >/dev/null \
     || fail "project board hash mismatch: $board_id"
 done
-/usr/bin/jq -e '.tasks | length == 8' "$MANIFEST" >/dev/null || fail 'manifest task count is invalid'
+/usr/bin/jq -e '.tasks | length == 9' "$MANIFEST" >/dev/null || fail 'manifest task count is invalid'
 current_sha="$(shasum -a 256 "$ARCHITECTURE_PROJECT/ai/current-task.md" | awk '{print $1}')"
 /usr/bin/jq -e --arg sha "$current_sha" '[.tasks[] | select(.task_id == "TASK-20260826-001") | .source_sha256] == [$sha]' "$MANIFEST" >/dev/null || fail 'manifest source hash is not the source file hash'
 future_sha="$(shasum -a 256 "$ARCHITECTURE_PROJECT/ai/future-tasks.md" | awk '{print $1}')"
@@ -256,9 +277,10 @@ cmp -s "$OVERVIEW" "$TMP_DIR/manual-edited-overview" || fail 'guarded refresh ch
 cmp -s "$MANIFEST" "$TMP_DIR/manual-edited-manifest" || fail 'guarded refresh changed the manifest after a manual board edit'
 rm -f "$PROPOSAL"
 
+sed -i '' 's/Manual Obsidian title/Transactional architecture task/' "$TASKS"
 sed -i '' 's/"format_version": 4/"format_version": 3/' "$MANIFEST"
-if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write > "$TMP_DIR/v2-manifest.txt" 2>&1; then fail 'v2 manifest did not block write'; fi
-assert_contains "$TMP_DIR/v2-manifest.txt" 'manifest v3 requires a fresh confirmed rebuild'
+SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write > "$TMP_DIR/v3-migration.txt"
+/usr/bin/jq -e '.format_version == 4' "$MANIFEST" >/dev/null || fail 'confirmed v3 migration did not publish v4'
 for generated_file in "${GENERATED_FILES[@]}"; do rm -f "$generated_file"; done
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write >/dev/null
 
