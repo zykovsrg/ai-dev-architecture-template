@@ -1,3 +1,5 @@
+<!-- Superseded by the implemented format-4 contract in [2026-08-28-projects-overview-and-project-boards-design.md](2026-08-28-projects-overview-and-project-boards-design.md). This historical design is preserved unchanged below. -->
+
 # Obsidian projection — phase 2 design
 
 ## Status and scope
