@@ -34,6 +34,13 @@ EMPTY_BOARD="$VAULT/Obsidian/Projects/empty-project/Kanban.md"
 # project board; the generated global Tasks-Kanban target must remain absent.
 TASKS="$ARCHITECTURE_BOARD"
 MANIFEST="$VAULT/Obsidian/AI-Architecture.manifest.json"
+GENERATED_FILES=(
+  "$ARCHITECTURE_BOARD" "$WAITING_BOARD" "$EMPTY_BOARD"
+  "$VAULT/Obsidian/Projects/review-project/Kanban.md"
+  "$VAULT/Obsidian/Projects/done-project/Kanban.md"
+  "$VAULT/Obsidian/Projects/archived-project/Kanban.md"
+  "$OVERVIEW" "$MANIFEST"
+)
 mkdir -p "$HUB/ai/project-cards" "$PROJECTS" "$VAULT/Obsidian"
 printf '%s\n' '# Project Registry' > "$HUB/ai/project-registry.md"
 cat > "$HUB/ai/archiprojects.md" <<'EOF'
@@ -102,6 +109,8 @@ add_project "archived-project" "Archived project" "archived" \
 mkdir -p "$VAULT/Obsidian/Projects/manual-project"
 printf '%s\n' 'legacy generated board' > "$VAULT/Obsidian/Tasks-Kanban.md"
 printf '%s\n' 'manual project board' > "$VAULT/Obsidian/Projects/manual-project/Kanban.md"
+cp "$VAULT/Obsidian/Tasks-Kanban.md" "$TMP_DIR/legacy-tasks-board"
+cp "$VAULT/Obsidian/Projects/manual-project/Kanban.md" "$TMP_DIR/manual-project-board"
 
 before_files="$(find "$VAULT" -type f -print | sort)"
 before_bytes="$(find "$VAULT" -type f -print0 | xargs -0 shasum -a 256 | sort)"
@@ -130,11 +139,13 @@ assert_not_contains "$TMP_DIR/preview.txt" '| Проект | Архипроек�
 assert_contains "$TMP_DIR/preview.txt" '"format_version": 4'
 
 if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write > "$TMP_DIR/no-confirm.txt" 2>&1; then fail 'write without confirmation succeeded'; fi
+assert_file "$VAULT/Obsidian/Tasks-Kanban.md"
+cmp -s "$VAULT/Obsidian/Tasks-Kanban.md" "$TMP_DIR/legacy-tasks-board" || fail 'unconfirmed write changed legacy board'
 assert_not_exists "$ARCHITECTURE_BOARD"; assert_not_exists "$WAITING_BOARD"; assert_not_exists "$OVERVIEW"; assert_not_exists "$MANIFEST"
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write > "$TMP_DIR/write.txt"
 assert_file "$ARCHITECTURE_BOARD"; assert_file "$WAITING_BOARD"; assert_file "$OVERVIEW"; assert_file "$MANIFEST"
 assert_not_exists "$VAULT/Obsidian/Tasks-Kanban.md"
-assert_contains "$VAULT/Obsidian/Projects/manual-project/Kanban.md" 'manual project board'
+cmp -s "$VAULT/Obsidian/Projects/manual-project/Kanban.md" "$TMP_DIR/manual-project-board" || fail 'migration changed manual project board'
 assert_exact_line "$OVERVIEW" '| Проект | Архипроект | Текущая задача |'
 assert_exact_line "$OVERVIEW" '| --- | --- | --- |'
 assert_contains "$OVERVIEW" '| [[Projects/ai-dev-architecture/Kanban\\|AI Dev Architecture]] | Дела | Current architecture task |'
@@ -142,10 +153,13 @@ assert_contains "$ARCHITECTURE_BOARD" 'ai-dev-architecture--TASK-20260826-001'
 assert_contains "$WAITING_BOARD" 'waiting-project--TASK-20260826-002'
 assert_board_isolated "$ARCHITECTURE_BOARD" ai-dev-architecture
 assert_board_isolated "$WAITING_BOARD" waiting-project
+assert_board_isolated "$VAULT/Obsidian/Projects/review-project/Kanban.md" review-project
+assert_board_isolated "$VAULT/Obsidian/Projects/done-project/Kanban.md" done-project
+assert_board_isolated "$VAULT/Obsidian/Projects/archived-project/Kanban.md" archived-project
 assert_file "$EMPTY_BOARD"
 for column in Ideas Ready Active Waiting Blocked Review Paused Done; do assert_contains "$EMPTY_BOARD" "## $column"; done
-if grep -Eq '^-[[:space:]]+\[[ x]\]' "$EMPTY_BOARD"; then fail 'empty project board contains task cards'; fi
-/usr/bin/jq -e '.format_version == 4 and (.views.projects_overview.target == "Obsidian/Projects-Overview.md") and ([.project_boards[] | has("project_id") and has("target") and has("sha256")] | all)' "$MANIFEST" >/dev/null || fail 'manifest contract is invalid'
+if grep -Eq '\^' "$EMPTY_BOARD"; then fail 'empty project board contains anchors'; fi
+/usr/bin/jq -e '.format_version == 4 and (.views.projects_overview.target == "Obsidian/Projects-Overview.md") and ((.project_boards | length) > 0) and ([.project_boards[] | has("project_id") and has("target") and has("sha256")] | all)' "$MANIFEST" >/dev/null || fail 'manifest contract is invalid'
 /usr/bin/jq -e '
   ([.project_boards[] | .project_id] | sort) == ["ai-dev-architecture", "archived-project", "done-project", "empty-project", "review-project", "waiting-project"] and
   ([.project_boards[] | select(.project_id == "ai-dev-architecture") | .target] == ["Obsidian/Projects/ai-dev-architecture/Kanban.md"]) and
@@ -196,13 +210,7 @@ fi
 exec /bin/mv "$@"
 EOF
 chmod +x "$TMP_DIR/fake-bin/mv"
-PUBLISHED_FILES=(
-  "$ARCHITECTURE_BOARD" "$WAITING_BOARD" "$EMPTY_BOARD"
-  "$VAULT/Obsidian/Projects/review-project/Kanban.md"
-  "$VAULT/Obsidian/Projects/done-project/Kanban.md"
-  "$VAULT/Obsidian/Projects/archived-project/Kanban.md"
-  "$OVERVIEW" "$MANIFEST"
-)
+PUBLISHED_FILES=("${GENERATED_FILES[@]}")
 PUBLISHED_DIR="$TMP_DIR/published-set"
 mkdir -p "$PUBLISHED_DIR"
 for published_file in "${PUBLISHED_FILES[@]}"; do
@@ -247,10 +255,10 @@ cmp -s "$OVERVIEW" "$TMP_DIR/manual-edited-overview" || fail 'guarded refresh ch
 cmp -s "$MANIFEST" "$TMP_DIR/manual-edited-manifest" || fail 'guarded refresh changed the manifest after a manual board edit'
 rm -f "$PROPOSAL"
 
-sed -i '' 's/"format_version": 3/"format_version": 2/' "$MANIFEST"
+sed -i '' 's/"format_version": 4/"format_version": 3/' "$MANIFEST"
 if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write > "$TMP_DIR/v2-manifest.txt" 2>&1; then fail 'v2 manifest did not block write'; fi
-assert_contains "$TMP_DIR/v2-manifest.txt" 'manifest v2 requires a fresh confirmed rebuild'
-rm -f "$TASKS" "$OVERVIEW" "$MANIFEST"
+assert_contains "$TMP_DIR/v2-manifest.txt" 'manifest v3 requires a fresh confirmed rebuild'
+for generated_file in "${GENERATED_FILES[@]}"; do rm -f "$generated_file"; done
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write >/dev/null
 
 printf '\nmanual task edit\n' >> "$TASKS"
@@ -260,7 +268,7 @@ if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm
 assert_contains "$TMP_DIR/unguarded-replace.txt" '--replace-confirmed-board requires --write --refresh-from-architecture'
 if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture --replace-confirmed-board > "$TMP_DIR/unconfirmed-replace.txt" 2>&1; then fail 'unconfirmed board replacement succeeded'; fi
 assert_contains "$TMP_DIR/unconfirmed-replace.txt" '--replace-confirmed-board requires --write --refresh-from-architecture --confirm-generated-write'
-rm -f "$TASKS" "$OVERVIEW" "$MANIFEST"
+for generated_file in "${GENERATED_FILES[@]}"; do rm -f "$generated_file"; done
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write >/dev/null
 printf '\nmanual overview edit\n' >> "$OVERVIEW"
 if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write > "$TMP_DIR/manual-overview.txt" 2>&1; then fail 'manual overview edit did not block write'; fi
