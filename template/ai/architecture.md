@@ -802,6 +802,7 @@ Closing a task means both:
 Default save behavior:
 
 - If a GitHub remote is configured, create a commit and push the branch to GitHub after confirmed `task-finish` cleanup.
+- For shared high-churn files, merge `main` before implementation and before review. Keep feature branches short and merge a verified branch promptly. If two tasks need the same file, finish one before starting the other or split the file first.
 - If Git is available but GitHub is not configured, create a local commit and tell the user that the work is saved only on this computer.
 - If Git is unavailable, create a clear local fallback such as a patch or archive and tell the user where it is.
 
