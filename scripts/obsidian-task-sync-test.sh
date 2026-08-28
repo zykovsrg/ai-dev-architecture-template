@@ -24,7 +24,12 @@ ARCHITECTURE_PROJECT="$PROJECTS/ai-dev-architecture"
 EXTRA_PROJECT="$PROJECTS/extra-project"
 VAULT="$ARCHITECTURE_PROJECT/obsidian-vault"
 SCOPE="$HUB/scope.txt"
-TASKS="$VAULT/Obsidian/Tasks-Kanban.md"
+ARCHITECTURE_BOARD="$VAULT/Obsidian/Projects/ai-dev-architecture/Kanban.md"
+EXTRA_BOARD="$VAULT/Obsidian/Projects/extra-project/Kanban.md"
+# Most legacy fixtures exercise architecture tasks.  Keeping this short alias
+# makes their intent clear while the explicit multi-board fixtures below cover
+# the new cross-project contract.
+TASKS="$ARCHITECTURE_BOARD"
 MANIFEST="$VAULT/Obsidian/AI-Architecture.manifest.json"
 RUNTIME="$VAULT/.ai-architecture-sync"
 PROPOSAL="$RUNTIME/pending-proposal.json"
@@ -33,6 +38,7 @@ TEST_BIN="$TMP_DIR/test-bin"
 
 mkdir -p "$HUB/ai/project-cards" "$VAULT/Obsidian"
 mkdir -p "$TEST_BIN"
+printf '%s\n' '# Archiprojects' '' '## dela' 'name: Дела' 'status: active' 'kind: group' > "$HUB/ai/archiprojects.md"
 cat > "$TEST_BIN/mv" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -67,7 +73,7 @@ add_project() {
   printf '%s\n' "$current" > "$project/ai/current-task.md"
   printf '%s\n' "$future" > "$project/ai/future-tasks.md"
   printf '%s\n' "$paused" > "$project/ai/paused-tasks.md"
-  printf '%s\n' "# Project Card" "" "Project ID: $id" "Name: $name" "Status: active" > "$HUB/ai/project-cards/$id.md"
+  printf '%s\n' "# Project Card" "" "Project ID: $id" "Name: $name" "Status: active" 'primary_archiproject: dela' > "$HUB/ai/project-cards/$id.md"
   printf '\n## %s\nName: %s\nStatus: active\nPath: %s\nCard: ai/project-cards/%s.md\n' "$id" "$name" "$project" "$id" >> "$HUB/ai/project-registry.md"
   printf '%s\n' "$id" >> "$SCOPE"
 }
@@ -81,10 +87,12 @@ add_project "extra-project" "Extra project" \
   'No future tasks.' 'No paused tasks.'
 
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --confirm-generated-write >/dev/null
-cp "$TASKS" "$TMP_DIR/original-board.md"
+cp "$ARCHITECTURE_BOARD" "$TMP_DIR/original-architecture-board.md"
+cp "$EXTRA_BOARD" "$TMP_DIR/original-extra-board.md"
 
 reset_board() {
-  cp "$TMP_DIR/original-board.md" "$TASKS"
+  cp "$TMP_DIR/original-architecture-board.md" "$ARCHITECTURE_BOARD"
+  cp "$TMP_DIR/original-extra-board.md" "$EXTRA_BOARD"
   rm -f "$PROPOSAL"
 }
 source_hashes() { find "$PROJECTS" -path '*/ai/*.md' -type f -exec shasum -a 256 {} + | sort; }
@@ -105,16 +113,24 @@ fixture_project_id() {
     *) fail "unknown fixture project: $1";;
   esac
 }
+fixture_board() {
+  case "$1" in
+    'Architecture project') printf '%s' "$ARCHITECTURE_BOARD";;
+    'Extra project') printf '%s' "$EXTRA_BOARD";;
+    *) fail "unknown fixture project: $1";;
+  esac
+}
 move_card_to_column() {
-  local task_id="$1" title="$2" project="$3" column="$4" due="${5:-}" card key
+  local task_id="$1" title="$2" project="$3" column="$4" due="${5:-}" card key board
   key="$(fixture_project_id "$project")--$task_id"
+  board="$(fixture_board "$project")"
   # The generated board has no trailing newline, so the last column heading
   # would otherwise never match the insertion pattern.
-  perl -0pi -e 's/(?<!\n)\z/\n/' "$TASKS"
-  CARD_ID="$key" perl -0pi -e 's{^- \[[ xX]\] [^\n]* \^\Q$ENV{CARD_ID}\E\n(?:  - [^\n]*\n)*}{}mg' "$TASKS"
+  perl -0pi -e 's/(?<!\n)\z/\n/' "$board"
+  CARD_ID="$key" perl -0pi -e 's{^- \[[ xX]\] [^\n]* \^\Q$ENV{CARD_ID}\E\n(?:  - [^\n]*\n)*}{}mg' "$board"
   card="$(printf '%s\n' "- [ ] $title ^$key" "  - project: $project")"
   [ -z "$due" ] || card="$(printf '%s\n' "$card" "  - 📅 $due")"
-  CARD_TEXT="$card" COLUMN="$column" perl -0pi -e 's{(^## \Q$ENV{COLUMN}\E\n)}{$1 . "\n" . $ENV{CARD_TEXT}}me' "$TASKS"
+  CARD_TEXT="$card" COLUMN="$column" perl -0pi -e 's{(^## \Q$ENV{COLUMN}\E\n)}{$1 . "\n" . $ENV{CARD_TEXT}}me' "$board"
 }
 move_future_card_to_active() { move_card_to_column "$1" "$2" "$3" Active; }
 prepare_promotion_fixture() {
@@ -133,6 +149,39 @@ run_and_check() {
   assert_sources_unchanged
 }
 
+# One scan must retain both project identities and every board hash.  This is
+# intentionally placed before the watcher contract: the pre-v4 scanner should
+# fail here because it still looks for one legacy Tasks-Kanban.md board.
+reset_board
+perl -0pi -e 's/Idea task \^ai-dev-architecture--FT-20260826-001/Renamed architecture idea ^ai-dev-architecture--FT-20260826-001/' "$ARCHITECTURE_BOARD"
+move_card_to_column TASK-20260826-010 'Extra current task' 'Extra project' Blocked
+source_hashes > "$TMP_DIR/multi-board-before.txt"
+scan > "$TMP_DIR/multi-board-scan.out"
+assert_file "$PROPOSAL"
+/usr/bin/jq -e '[.operations[] | select(.operation == "rename" and .project_id == "ai-dev-architecture")] | length == 1' "$PROPOSAL" >/dev/null || fail 'multi-board proposal missed architecture rename'
+/usr/bin/jq -e '[.operations[] | select(.operation == "set_status" and .project_id == "extra-project")] | length == 1' "$PROPOSAL" >/dev/null || fail 'multi-board proposal missed extra-project move'
+/usr/bin/jq -e '.board_sha256 | type == "object" and (keys | sort) == ["ai-dev-architecture", "extra-project"]' "$PROPOSAL" >/dev/null || fail 'proposal did not bind every project board hash'
+assert_equal "$(cat "$TMP_DIR/multi-board-before.txt")" "$(source_hashes)" 'multi-board scanner changed canonical sources'
+"$SYNC" dismiss --vault "$VAULT"
+
+# Anchors are scoped to the manifest board, not merely to any known project.
+reset_board
+perl -0pi -e 's/\^ai-dev-architecture--FT-20260826-001/^extra-project--FT-20260826-001/' "$ARCHITECTURE_BOARD"
+scan > "$TMP_DIR/wrong-board-anchor.out"
+/usr/bin/jq -e '.state == "blocked" and ([.blocked_reasons[] | select(contains("anchor project does not match board"))] | length == 1)' "$PROPOSAL" >/dev/null || fail 'wrong-board anchor was not blocked'
+"$SYNC" dismiss --vault "$VAULT"
+
+# The manifest is the only authority for board targets; an arbitrary sibling
+# path must not be scanned or bound to a proposal.
+reset_board
+cp "$MANIFEST" "$TMP_DIR/manifest-before-unlisted-board.json"
+/usr/bin/jq --arg target 'Obsidian/Projects/extra-project/Other.md' '(.project_boards[] | select(.project_id == "extra-project") | .target) = $target' "$MANIFEST" > "$TMP_DIR/unlisted-board-manifest.json"
+mv "$TMP_DIR/unlisted-board-manifest.json" "$MANIFEST"
+if scan > "$TMP_DIR/unlisted-board-scan.out" 2>&1; then fail 'scanner accepted an unlisted project board path'; fi
+assert_contains "$TMP_DIR/unlisted-board-scan.out" 'invalid project board target'
+cp "$TMP_DIR/manifest-before-unlisted-board.json" "$MANIFEST"
+reset_board
+
 # The optional watcher only creates a local proposal. It must not alter canonical
 # task files, skip a matching board, and respect a guarded architecture refresh.
 source_hashes > "$TMP_DIR/watcher-matching-before.txt"
@@ -148,13 +197,12 @@ assert_contains "$PROPOSAL" '"operation": "rename"'
 assert_equal "$(cat "$TMP_DIR/watcher-changed-before.txt")" "$(source_hashes)" 'watcher changed canonical sources'
 "$SYNC" dismiss --vault "$VAULT"
 
-# A guarded refresh owns a real lock while it replaces the task board. The mv
-# wrapper runs the watcher after the generated board move, which verifies both
-# that the watcher is suppressed during the write and that the lock is cleaned
-# afterwards. A forced move failure covers cleanup through the EXIT trap.
+# Refresh still publishes a generated board transaction.  Watcher exclusion is
+# covered in the dedicated watcher contract; this fixture only checks that a
+# normal refresh and a failed generated move leave no stale runtime lock.
 reset_board
 printf '%s\n' $'Status: active\nTask ID: TASK-20260826-001\n\n## Goal\n\nRefresh lifecycle task' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
-AI_SYNC_TEST_MV_MODE=watch AI_SYNC_TEST_TASKS="$TASKS" AI_SYNC_TEST_REFRESH_LOCK="$REFRESH_LOCK" AI_SYNC_TEST_WATCHER="$WATCHER" AI_SYNC_TEST_HUB="$HUB" AI_SYNC_TEST_SCOPE="$SCOPE" AI_SYNC_TEST_VAULT="$VAULT" AI_SYNC_TEST_PROPOSAL="$PROPOSAL" PATH="$TEST_BIN:$PATH" SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture > "$TMP_DIR/refresh-lifecycle.out"
+SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture > "$TMP_DIR/refresh-lifecycle.out"
 assert_contains "$TASKS" 'Refresh lifecycle task'
 assert_not_exists "$REFRESH_LOCK"
 assert_not_link "$REFRESH_LOCK"
@@ -212,7 +260,7 @@ perl -0pi -e 's/(Idea task \^ai-dev-architecture--FT-20260826-001\n  - project: 
 run_and_check '"operation": "set_due"'
 
 reset_board
-cat >> "$TASKS" <<'EOF'
+cat >> "$EXTRA_BOARD" <<'EOF'
 
 ## Ideas
 
@@ -329,7 +377,10 @@ cp "$SOURCE_BACKUP" "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
 reset_board
 perl -0pi -e 's/Renamed idea \^ai-dev-architecture--FT-20260826-001/Stale board edit ^ai-dev-architecture--FT-20260826-001/' "$TASKS"
 scan > "$TMP_DIR/stale-board-scan.out"
-printf '\nManual board change after scan\n' >> "$TASKS"
+# The edited architecture board is unchanged here.  Apply must still reject a
+# later change to another manifest-listed board because proposal evidence binds
+# the complete generated board set.
+printf '\nManual board change after scan\n' >> "$EXTRA_BOARD"
 source_hashes > "$TMP_DIR/stale-board-before.txt"
 if apply > "$TMP_DIR/stale-board-apply.out" 2>&1; then fail 'stale board proposal applied'; fi
 assert_file "$PROPOSAL"
@@ -364,7 +415,7 @@ assert_contains "$TASKS" 'Promoted renamed idea ^ai-dev-architecture--FT-2026082
 assert_not_exists "$PROPOSAL"
 
 # A valid unblocked card is appended to the project's canonical future tasks.
-cat >> "$TASKS" <<'EOF'
+cat >> "$EXTRA_BOARD" <<'EOF'
 
 ## Ideas
 
@@ -375,7 +426,7 @@ EOF
 scan > "$TMP_DIR/create-scan.out"
 apply > "$TMP_DIR/create-apply.out"
 assert_contains "$EXTRA_PROJECT/ai/future-tasks.md" 'Applied new future task'
-assert_contains "$TASKS" 'Applied new future task'
+assert_contains "$EXTRA_BOARD" 'Applied new future task'
 assert_not_exists "$PROPOSAL"
 
 # Promotion writes current-task.md and paused-tasks.md as well as its future
@@ -750,9 +801,11 @@ printf '%s\n' "Status: active" "Task ID: TASK-extra-project-${id_date}-999" '' '
 printf '%s\n' 'No paused tasks.' > "$PROJECTS/unregistered-shadow/ai/paused-tasks.md"
 refresh_board
 perl -0pi -e 's/(?<!\n)\z/\n/' "$TASKS"
+perl -0pi -e 's/(?<!\n)\z/\n/' "$EXTRA_BOARD"
 NEW_ARCH_CARD="$(printf '%s\n' '- [ ] Stable architecture future' '  - project: Architecture project')" \
+  perl -0pi -e 's{(^## Ideas\n)}{$1 . "\n" . $ENV{NEW_ARCH_CARD} . "\n"}me' "$TASKS"
 NEW_EXTRA_CARD="$(printf '%s\n' '- [ ] Stable extra future' '  - project: Extra project')" \
-perl -0pi -e 's{(^## Ideas\n)}{$1 . "\n" . $ENV{NEW_ARCH_CARD} . "\n" . $ENV{NEW_EXTRA_CARD} . "\n"}me' "$TASKS"
+  perl -0pi -e 's{(^## Ideas\n)}{$1 . "\n" . $ENV{NEW_EXTRA_CARD} . "\n"}me' "$EXTRA_BOARD"
 scan > "$TMP_DIR/namespaced-create-scan.out"
 architecture_stable_id="TASK-ai-dev-architecture-${id_date}-001"
 extra_stable_id="TASK-extra-project-${id_date}-001"
@@ -765,7 +818,7 @@ apply > "$TMP_DIR/namespaced-create-apply.out"
 assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" "### $architecture_stable_id — Stable architecture future"
 assert_contains "$EXTRA_PROJECT/ai/future-tasks.md" "### $extra_stable_id — Stable extra future"
 assert_contains "$TASKS" "Stable architecture future ^ai-dev-architecture--$architecture_stable_id"
-assert_contains "$TASKS" "Stable extra future ^extra-project--$extra_stable_id"
+assert_contains "$EXTRA_BOARD" "Stable extra future ^extra-project--$extra_stable_id"
 assert_not_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" "${id_date}-999"
 assert_not_contains "$EXTRA_PROJECT/ai/future-tasks.md" "${id_date}-999"
 
@@ -816,12 +869,12 @@ printf '%s\n' $'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
 printf '%s\n' $'### FT-20260828-050 — Shared number there\n\nStatus: idea' > "$EXTRA_PROJECT/ai/future-tasks.md"
 refresh_board
 assert_contains "$TASKS" '- [ ] Shared number here ^ai-dev-architecture--FT-20260828-050'
-assert_contains "$TASKS" '- [ ] Shared number there ^extra-project--FT-20260828-050'
+assert_contains "$EXTRA_BOARD" '- [ ] Shared number there ^extra-project--FT-20260828-050'
 scan > "$TMP_DIR/shared-number-rescan.out"
 assert_contains "$TMP_DIR/shared-number-rescan.out" 'board matches canonical task records'
 assert_not_exists "$PROPOSAL"
 
-perl -0pi -e 's/Shared number there \^extra-project--FT-20260828-050/Renamed only there ^extra-project--FT-20260828-050/' "$TASKS"
+perl -0pi -e 's/Shared number there \^extra-project--FT-20260828-050/Renamed only there ^extra-project--FT-20260828-050/' "$EXTRA_BOARD"
 scan > "$TMP_DIR/shared-number-scan.out"
 /usr/bin/jq -e '
   .state == "ready" and
@@ -849,7 +902,7 @@ scan > "$TMP_DIR/missing-project-id-scan.out"
 /usr/bin/jq 'del(.proposal_sha256) | .operations = [.operations[] | del(.project_id)]' "$PROPOSAL" > "$TMP_DIR/tampered-payload.json"
 tampered_payload="$(/usr/bin/jq -n \
   --arg state "$(/usr/bin/jq -r '.state' "$TMP_DIR/tampered-payload.json")" \
-  --arg board_sha256 "$(/usr/bin/jq -r '.board_sha256' "$TMP_DIR/tampered-payload.json")" \
+  --argjson board_sha256 "$(/usr/bin/jq -c '.board_sha256' "$TMP_DIR/tampered-payload.json")" \
   --arg manifest_sha256 "$(/usr/bin/jq -r '.manifest_sha256' "$TMP_DIR/tampered-payload.json")" \
   --argjson affected_sources "$(/usr/bin/jq -c '.affected_sources' "$TMP_DIR/tampered-payload.json")" \
   --argjson operations "$(/usr/bin/jq -c '.operations' "$TMP_DIR/tampered-payload.json")" \

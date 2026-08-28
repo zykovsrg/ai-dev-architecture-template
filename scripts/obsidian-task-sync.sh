@@ -36,7 +36,6 @@ require_safe_vault() {
   [ -n "$VAULT" ] && is_absolute "$VAULT" || die 'vault must be an absolute path'
   [ -d "$VAULT" ] && [ ! -L "$VAULT" ] || die 'vault must be a non-symlink directory'
   VAULT="$(physical_dir "$VAULT")"
-  TASKS="$VAULT/Obsidian/Tasks-Kanban.md"
   MANIFEST="$VAULT/Obsidian/AI-Architecture.manifest.json"
   RUNTIME="$VAULT/.ai-architecture-sync"
   PROPOSAL="$RUNTIME/pending-proposal.json"
@@ -53,10 +52,9 @@ require_safe_paths() {
   SCOPE="$(cd "$(dirname "$SCOPE")" && pwd -P)/$(basename "$SCOPE")"
   inside "$SCOPE" "$HUB" || die 'scope must be inside hub'
   require_safe_vault
-  [ -f "$TASKS" ] && [ ! -L "$TASKS" ] || die 'missing or unsafe task board'
   [ -f "$MANIFEST" ] && [ ! -L "$MANIFEST" ] || die 'missing or unsafe manifest'
   [ -f "$HUB/ai/project-registry.md" ] && [ ! -L "$HUB/ai/project-registry.md" ] || die 'missing or unsafe project registry'
-  /usr/bin/jq -e '.format_version == 3 and (.tasks | type == "array")' "$MANIFEST" >/dev/null || die 'manifest must be format version 3'
+  /usr/bin/jq -e '.format_version == 4 and (.tasks | type == "array") and (.project_boards | type == "array")' "$MANIFEST" >/dev/null || die 'manifest must be format version 4'
   [ "$COMMAND" != scan ] || [ ! -e "$PROPOSAL" ] || die 'pending proposal exists; dismiss it before scanning again'
 }
 
@@ -109,6 +107,41 @@ scope_contains() {
   local wanted="$1" id
   for id in "${SCOPE_IDS[@]}"; do [ "$id" = "$wanted" ] && return 0; done
   return 1
+}
+
+MANIFEST_BOARD_PROJECT_IDS=() MANIFEST_BOARD_FILES=()
+load_project_boards() {
+  local project_id target expected sha projects_dir project_dir i found project_known
+  [ -d "$VAULT/Obsidian" ] && [ ! -L "$VAULT/Obsidian" ] || die 'missing or unsafe Obsidian directory'
+  projects_dir="$VAULT/Obsidian/Projects"
+  [ -d "$projects_dir" ] && [ ! -L "$projects_dir" ] || die 'missing or unsafe project boards directory'
+  while IFS=$'\t' read -r project_id target sha; do
+    [ -n "$project_id" ] && [ -n "$target" ] && [ -n "$sha" ] || die 'invalid manifest project board entry'
+    [[ "$project_id" =~ ^[a-z0-9][a-z0-9-]*$ ]] || die "invalid manifest project board ID: $project_id"
+    [[ "$sha" =~ ^[0-9a-f]{64}$ ]] || die "invalid manifest project board hash: $project_id"
+    expected="Obsidian/Projects/$project_id/Kanban.md"
+    [ "$target" = "$expected" ] || die "invalid project board target: $target"
+    scope_contains "$project_id" || die "manifest project board is outside scope: $project_id"
+    project_known=0
+    for i in "${!PROJECT_IDS[@]}"; do [ "${PROJECT_IDS[$i]}" != "$project_id" ] || { project_known=1; break; }; done
+    [ "$project_known" -eq 1 ] || die "manifest project board has unknown project: $project_id"
+    for i in "${!MANIFEST_BOARD_PROJECT_IDS[@]}"; do
+      [ "${MANIFEST_BOARD_PROJECT_IDS[$i]}" != "$project_id" ] || die "duplicate manifest project board ID: $project_id"
+      [ "${MANIFEST_BOARD_FILES[$i]}" != "$VAULT/$target" ] || die "duplicate manifest project board target: $target"
+    done
+    project_dir="$projects_dir/$project_id"
+    [ -d "$project_dir" ] && [ ! -L "$project_dir" ] || die "missing or unsafe project board directory: $project_id"
+    [ -f "$VAULT/$target" ] && [ ! -L "$VAULT/$target" ] || die "missing or unsafe project board: $project_id"
+    MANIFEST_BOARD_PROJECT_IDS+=("$project_id"); MANIFEST_BOARD_FILES+=("$VAULT/$target")
+  done < <(/usr/bin/jq -r '.project_boards[] | [.project_id, .target, .sha256] | @tsv' "$MANIFEST")
+  [ "${#MANIFEST_BOARD_PROJECT_IDS[@]}" -gt 0 ] || die 'manifest contains no project boards'
+  for project_id in "${SCOPE_IDS[@]}"; do
+    found=0
+    for i in "${!MANIFEST_BOARD_PROJECT_IDS[@]}"; do
+      [ "${MANIFEST_BOARD_PROJECT_IDS[$i]}" != "$project_id" ] || { found=1; break; }
+    done
+    [ "$found" -eq 1 ] || die "manifest is missing project board: $project_id"
+  done
 }
 
 project_index_for_name() {
@@ -174,9 +207,9 @@ load_known_cards() {
   [ "${#KNOWN_IDS[@]}" -gt 0 ] || die 'manifest contains no tasks'
 }
 
-BOARD_COLUMNS=() BOARD_IDS=() BOARD_PROJECT_IDS=() BOARD_TITLES=() BOARD_PROJECTS=() BOARD_DUES=() BOARD_DONE=() BOARD_ERRORS=()
+BOARD_COLUMNS=() BOARD_IDS=() BOARD_PROJECT_IDS=() BOARD_TITLES=() BOARD_PROJECTS=() BOARD_DUES=() BOARD_DONE=() BOARD_FILES_FOR_CARDS=() BOARD_ERRORS=()
 parse_cards() {
-  local row column key id project_id title project due done_mark extra
+  local board_project_id="$1" board_file="$2" row column key id project_id title project due done_mark extra
   while IFS=$'\034' read -r column key title project due done_mark extra; do
     id=''; project_id=''
     if [ -n "$key" ]; then
@@ -186,10 +219,11 @@ parse_cards() {
         BOARD_ERRORS+=("card anchor is not a project and task ID pair: $key")
       fi
     fi
-    BOARD_COLUMNS+=("$column"); BOARD_IDS+=("$id"); BOARD_PROJECT_IDS+=("$project_id"); BOARD_TITLES+=("$title"); BOARD_PROJECTS+=("$project"); BOARD_DUES+=("$due"); BOARD_DONE+=("$done_mark")
+    BOARD_COLUMNS+=("$column"); BOARD_IDS+=("$id"); BOARD_PROJECT_IDS+=("$project_id"); BOARD_TITLES+=("$title"); BOARD_PROJECTS+=("$project"); BOARD_DUES+=("$due"); BOARD_DONE+=("$done_mark"); BOARD_FILES_FOR_CARDS+=("$board_project_id")
     valid_column "$column" || BOARD_ERRORS+=("unknown column: $column")
     [ -n "$title" ] || BOARD_ERRORS+=("card title is empty in column: $column")
     [ -z "$due" ] || [[ "$due" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || BOARD_ERRORS+=("invalid due date for card: $title")
+    [ -z "$id" ] || [ "$project_id" = "$board_project_id" ] || BOARD_ERRORS+=("anchor project does not match board: $key")
     # A field the synchronizer cannot model would be reverted without ever
     # appearing in the confirmed diff, so refuse the whole board instead.
     [ "$extra" -eq 0 ] || BOARD_ERRORS+=("card has an unsupported field: $title")
@@ -205,8 +239,7 @@ parse_cards() {
     card && /^  - 📅 / { due=$0; sub(/^  - 📅 /, "", due); next }
     card && /^[[:space:]]/ { extra=1; next }
     END { flush() }
-  ' "$TASKS")
-  [ "${#BOARD_COLUMNS[@]}" -gt 0 ] || die 'board contains no task cards'
+  ' "$board_file")
 }
 
 known_index() {
@@ -320,7 +353,7 @@ find_known_title_project() {
 }
 
 diff_cards() {
-  local i id board_project_id known title project due column count project_index status future_source new_task_id j k active_count future_active_count duplicate_project known_base new_status expected_done
+  local i id board_project_id card_board_project_id known title project due column count project_index status future_source new_task_id j k active_count future_active_count duplicate_project known_base new_status expected_done
   for i in "${!KNOWN_IDS[@]}"; do
     count=0
     for j in "${!BOARD_IDS[@]}"; do
@@ -329,7 +362,7 @@ diff_cards() {
     [ "$count" -eq 1 ] || BLOCK_REASONS+=("missing or duplicate known task ID: $(card_key "${KNOWN_PROJECT_IDS[$i]}" "${KNOWN_IDS[$i]}")")
   done
   for i in "${!BOARD_IDS[@]}"; do
-    id="${BOARD_IDS[$i]}"; board_project_id="${BOARD_PROJECT_IDS[$i]}"; title="${BOARD_TITLES[$i]}"; project="${BOARD_PROJECTS[$i]}"; due="${BOARD_DUES[$i]}"; column="${BOARD_COLUMNS[$i]}"
+    id="${BOARD_IDS[$i]}"; board_project_id="${BOARD_PROJECT_IDS[$i]}"; card_board_project_id="${BOARD_FILES_FOR_CARDS[$i]}"; title="${BOARD_TITLES[$i]}"; project="${BOARD_PROJECTS[$i]}"; due="${BOARD_DUES[$i]}"; column="${BOARD_COLUMNS[$i]}"
     [ -z "$id" ] || {
       known=''; if known="$(known_index "$board_project_id" "$id")"; then
         [ "$project" = "${KNOWN_PROJECTS[$known]}" ] || BLOCK_REASONS+=("known task project changed or missing: $id")
@@ -367,6 +400,7 @@ diff_cards() {
     [ -n "$project" ] || { BLOCK_REASONS+=("new card has no project: $title"); continue; }
     project_index="$(project_index_for_name "$project")" || { BLOCK_REASONS+=("new card has unknown or ambiguous project: $project"); continue; }
     scope_contains "${PROJECT_IDS[$project_index]}" || { BLOCK_REASONS+=("new card project is outside scope: $project"); continue; }
+    [ "${PROJECT_IDS[$project_index]}" = "$card_board_project_id" ] || { BLOCK_REASONS+=("new card project does not match board: $title"); continue; }
     find_known_title_project "$title" "$project" && { BLOCK_REASONS+=("new card duplicates a known title without its block ID: $title"); continue; }
     case "$column" in Ideas|Ready|Blocked) ;; *) BLOCK_REASONS+=("new card uses unsupported future status: $column"); continue;; esac
     future_source="${PROJECT_PATHS[$project_index]}/ai/future-tasks.md"
@@ -403,7 +437,7 @@ diff_cards() {
 }
 
 write_proposal() {
-  local state operations affected reasons payload proposal_sha tmp
+  local state operations affected reasons board_hashes payload proposal_sha tmp i
   if [ "${#OPERATION_LINES[@]}" -eq 0 ] && [ "${#BLOCK_REASONS[@]}" -eq 0 ]; then
     printf 'board matches canonical task records\n'
     return 0
@@ -411,7 +445,8 @@ write_proposal() {
   if [ "${#OPERATION_LINES[@]}" -eq 0 ]; then operations='[]'; else operations="$(printf '%s\n' "${OPERATION_LINES[@]}" | /usr/bin/jq -s .)"; fi
   if [ "${#AFFECTED_LINES[@]}" -eq 0 ]; then affected='[]'; else affected="$(printf '%s\n' "${AFFECTED_LINES[@]}" | sort -u | /usr/bin/jq -R 'split("\t") | {source_file: .[0], source_sha256: .[1]}' | /usr/bin/jq -s .)"; fi
   if [ "${#BLOCK_REASONS[@]}" -eq 0 ]; then state='ready'; reasons='[]'; else state='blocked'; reasons="$(printf '%s\n' "${BLOCK_REASONS[@]}" | sed '/^$/d' | /usr/bin/jq -R . | /usr/bin/jq -s .)"; fi
-  payload="$(/usr/bin/jq -n --arg state "$state" --arg board_sha256 "$(hash_file "$TASKS")" --arg manifest_sha256 "$(hash_file "$MANIFEST")" --argjson affected_sources "$affected" --argjson operations "$operations" --argjson blocked_reasons "$reasons" '{state:$state, board_sha256:$board_sha256, manifest_sha256:$manifest_sha256, affected_sources:$affected_sources, operations:$operations, blocked_reasons:$blocked_reasons}')"
+  board_hashes="$(for i in "${!MANIFEST_BOARD_PROJECT_IDS[@]}"; do /usr/bin/jq -cn --arg key "${MANIFEST_BOARD_PROJECT_IDS[$i]}" --arg value "$(hash_file "${MANIFEST_BOARD_FILES[$i]}")" '{key:$key,value:$value}'; done | /usr/bin/jq -s 'sort_by(.key) | from_entries')"
+  payload="$(/usr/bin/jq -n --arg state "$state" --argjson board_sha256 "$board_hashes" --arg manifest_sha256 "$(hash_file "$MANIFEST")" --argjson affected_sources "$affected" --argjson operations "$operations" --argjson blocked_reasons "$reasons" '{state:$state, board_sha256:$board_sha256, manifest_sha256:$manifest_sha256, affected_sources:$affected_sources, operations:$operations, blocked_reasons:$blocked_reasons}')"
   proposal_sha="$(printf '%s' "$payload" | shasum -a 256 | awk '{print $1}')"
   mkdir -p "$RUNTIME"; [ -d "$RUNTIME" ] && [ ! -L "$RUNTIME" ] || die 'cannot create safe runtime directory'
   tmp="$(mktemp "$RUNTIME/.pending-proposal.json.XXXXXX")"
@@ -422,7 +457,12 @@ write_proposal() {
   printf 'created %s (%s)\n' "$PROPOSAL" "$proposal_sha"
 }
 
-scan() { require_safe_paths; load_projects; load_scope_and_validate_vault; load_known_cards; parse_cards; diff_cards; write_proposal; }
+scan() {
+  local i
+  require_safe_paths; load_projects; load_scope_and_validate_vault; load_project_boards; load_known_cards
+  for i in "${!MANIFEST_BOARD_PROJECT_IDS[@]}"; do parse_cards "${MANIFEST_BOARD_PROJECT_IDS[$i]}" "${MANIFEST_BOARD_FILES[$i]}"; done
+  diff_cards; write_proposal
+}
 status() { require_safe_vault; [ -f "$PROPOSAL" ] || die 'no pending proposal'; /usr/bin/jq -e . "$PROPOSAL"; }
 dismiss() { require_safe_vault; rm -f -- "$PROPOSAL"; }
 
@@ -478,7 +518,7 @@ temp_for_source() {
 proposal_payload() {
   /usr/bin/jq -n \
     --arg state "$(/usr/bin/jq -r '.state' "$PROPOSAL")" \
-    --arg board_sha256 "$(/usr/bin/jq -r '.board_sha256' "$PROPOSAL")" \
+    --argjson board_sha256 "$(/usr/bin/jq -c '.board_sha256' "$PROPOSAL")" \
     --arg manifest_sha256 "$(/usr/bin/jq -r '.manifest_sha256' "$PROPOSAL")" \
     --argjson affected_sources "$(/usr/bin/jq -c '.affected_sources' "$PROPOSAL")" \
     --argjson operations "$(/usr/bin/jq -c '.operations' "$PROPOSAL")" \
@@ -491,7 +531,7 @@ load_proposal() {
   /usr/bin/jq -e '
     .state == "ready" and
     (.proposal_sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
-    (.board_sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
+    (.board_sha256 | type == "object" and all(.[]; type == "string" and test("^[0-9a-f]{64}$"))) and
     (.manifest_sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
     (.affected_sources | type == "array") and
     (.operations | type == "array") and
@@ -499,9 +539,16 @@ load_proposal() {
   PROPOSAL_SHA="$(/usr/bin/jq -r '.proposal_sha256' "$PROPOSAL")"
   [ "$CONFIRM_PROPOSAL" = "$PROPOSAL_SHA" ] || die 'confirmation does not match proposal'
   [ "$(printf '%s' "$(proposal_payload)" | shasum -a 256 | awk '{print $1}')" = "$PROPOSAL_SHA" ] || die 'proposal hash is invalid'
+  /usr/bin/jq -e --argjson expected "$(printf '%s\n' "${MANIFEST_BOARD_PROJECT_IDS[@]}" | /usr/bin/jq -R . | /usr/bin/jq -s 'sort')" '(.board_sha256 | keys | sort) == $expected' "$PROPOSAL" >/dev/null || die 'proposal does not bind every project board'
 }
 
-verify_board_hash() { [ "$(hash_file "$TASKS")" = "$(/usr/bin/jq -r '.board_sha256' "$PROPOSAL")" ] || die 'proposal is stale: board changed'; }
+verify_board_hash() {
+  local i expected
+  for i in "${!MANIFEST_BOARD_PROJECT_IDS[@]}"; do
+    expected="$(/usr/bin/jq -r --arg project_id "${MANIFEST_BOARD_PROJECT_IDS[$i]}" '.board_sha256[$project_id]' "$PROPOSAL")"
+    [ "$(hash_file "${MANIFEST_BOARD_FILES[$i]}")" = "$expected" ] || die "proposal is stale: board changed: ${MANIFEST_BOARD_PROJECT_IDS[$i]}"
+  done
+}
 verify_manifest_hash() { [ "$(hash_file "$MANIFEST")" = "$(/usr/bin/jq -r '.manifest_sha256' "$PROPOSAL")" ] || die 'proposal is stale: manifest changed'; }
 verify_every_affected_source_hash() {
   local source expected
@@ -705,7 +752,7 @@ replace_named_source_files() {
 
 apply() {
   trap cleanup_apply_state EXIT
-  require_safe_paths; load_proposal; verify_board_hash; verify_manifest_hash; load_projects; load_scope_and_validate_vault; verify_manifest_sources_are_registered; verify_every_affected_source_hash; load_known_cards
+  require_safe_paths; load_projects; load_scope_and_validate_vault; load_project_boards; load_proposal; verify_board_hash; verify_manifest_hash; verify_manifest_sources_are_registered; verify_every_affected_source_hash; load_known_cards
   apply_operations_to_temporary_files; validate_temporary_records
   GENERATOR="$(cd "$(dirname "$0")" && pwd -P)/generate-obsidian-projects-kanban.sh"
   [ -f "$GENERATOR" ] && [ ! -L "$GENERATOR" ] || die 'missing or unsafe generator'
