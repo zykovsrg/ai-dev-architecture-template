@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- Обновлена проекция Obsidian: обзор проектов теперь содержит ровно три
+  колонки, а для каждого зарегистрированного проекта создаётся отдельная
+  доска `Obsidian/Projects/<project-id>/Kanban.md`.
+- Манифест повышен до формата `4`. Старый сгенерированный
+  `Obsidian/Tasks-Kanban.md` удаляется только при подтверждённой миграции и
+  совпадении его контрольной суммы; ручные файлы не затрагиваются.
+- Правки Obsidian остаются proposal-only. Группы архипроектов задаются явно
+  через `kind: group` и `primary_archiproject`.
+
 ## v6.18 — 2026-08-20
 
 - Strengthened the user communication rule in both architectures and all entry files: very simple words, a short answer by default, long explanations only on request. Added that the rule also governs output produced under external methodologies (Superpowers, `code-review-graph`, plugin skills) — their internal process may be verbose, the user-facing reply may not.

@@ -179,6 +179,19 @@ After the update, open the project in Codex or Claude Code and ask the agent:
 Run environment-check.
 ```
 
+## Optional Obsidian project boards
+
+After updating the architecture, a separately confirmed local refresh can
+regenerate the format-4 Obsidian projection. A preview may use a selected
+scope, reading only the registered project cards and `ai/current-task.md`,
+`ai/future-tasks.md`, and `ai/paused-tasks.md` from those projects. A confirmed
+write requires the scope to contain all registered projects; it writes the
+three-column `Projects-Overview.md`, one `Projects/<project-id>/Kanban.md` per
+project, and the manifest. Edits in Obsidian are proposal signals only; they do
+not update project files automatically. The old generated `Tasks-Kanban.md` is
+removed only when its recorded hash is unchanged and the migration write is
+explicitly confirmed.
+
 The final menu after `hub-environment-check` is informational. It does not mean the agent should automatically run `hub-task-switch`, `hub-task-finish`, `architecture-update`, or other workflows.
 
 Before the next working task, the agent must use `hub-task-intake`.

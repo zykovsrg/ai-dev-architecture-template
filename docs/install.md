@@ -36,9 +36,12 @@ the hub repository.
 ## Optional confirmed Obsidian task sync
 
 For a hub whose `ai-dev-architecture` project has a local `obsidian-vault/`,
-the trusted architecture-to-Obsidian refresh creates the generated Kanban
-only from canonical `ai/` task records. It keeps manifest validation: a manual
-Obsidian edit creates a pending proposal and the refresh does not overwrite it.
+the trusted architecture-to-Obsidian refresh creates `Obsidian/Projects-Overview.md`
+and one `Obsidian/Projects/<project-id>/Kanban.md` per registered project. The
+overview has exactly `Проект`, `Архипроект`, and `Текущая задача` columns. The
+manifest is format `4`; the old generated `Tasks-Kanban.md` is not current.
+A manual Obsidian edit creates a pending proposal and the refresh does not
+overwrite it.
 The reverse path is a confirmed Obsidian-to-architecture proposal and never
 writes canonical records until its exact SHA-256 is confirmed.
 
@@ -66,6 +69,9 @@ bash scripts/install-obsidian-task-sync.sh --hub /path/to/_ai-hub --scope /path/
 
 To inspect or deliberately apply a manual board edit, use `scan`, `status`, and
 then `apply --confirm-proposal <sha256>` from `scripts/obsidian-task-sync.sh`.
+The sync tool checks every project board in the format-4 manifest. It can only
+apply a reviewed proposal; it never writes a canonical task directly from a
+Markdown edit.
 
 Do not use hub installation to convert or move an existing standalone project.
 From the installed hub, use `hub-project-migrate`: it inventories only direct-child
