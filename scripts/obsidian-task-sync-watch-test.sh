@@ -32,6 +32,10 @@ set -euo pipefail
 : "${AI_SYNC_TEST_STARTED:?}"
 : "${AI_SYNC_TEST_CONTINUE:?}"
 : "${AI_SYNC_TEST_RUNTIME:?}"
+[ "${1:-}" = scan ] && [ "${2:-}" = --project-id ] && [ "${3:-}" = ai-dev-architecture ] || {
+  printf '%s\n' 'watcher did not select its scoped project' >&2
+  exit 95
+}
 touch "$AI_SYNC_TEST_STARTED"
 while [ ! -e "$AI_SYNC_TEST_CONTINUE" ]; do sleep 0.01; done
 printf '%s\n' '{"state":"ready","stale":true}' > "$AI_SYNC_TEST_RUNTIME/pending-proposal.json"

@@ -21,16 +21,32 @@ card_key_project() { printf '%s' "${1%%--*}"; }
 card_key_task() { printf '%s' "${1#*--}"; }
 card_key_is_wellformed() { [[ "$1" == *--* ]] && [ -n "$(card_key_project "$1")" ] && [ -n "$(card_key_task "$1")" ]; }
 
-HUB='' SCOPE='' VAULT='' COMMAND='' CONFIRM_PROPOSAL=''
+HUB='' SCOPE='' VAULT='' COMMAND='' CONFIRM_PROPOSAL='' PROJECT_ID='' ALL_PROJECTS=0
 while [ "$#" -gt 0 ]; do
   case "$1" in
     scan|status|dismiss|apply) [ -z "$COMMAND" ] || die 'choose one command'; COMMAND="$1"; shift;;
     --hub|--scope|--vault) [ "$#" -ge 2 ] || die "missing value for $1"; case "$1" in --hub) HUB=$2;; --scope) SCOPE=$2;; --vault) VAULT=$2;; esac; shift 2;;
+    --project-id) [ "$#" -ge 2 ] || die 'missing value for --project-id'; PROJECT_ID=$2; shift 2;;
+    --all-projects) ALL_PROJECTS=1; shift;;
     --confirm-proposal) [ "$#" -ge 2 ] || die 'missing value for --confirm-proposal'; CONFIRM_PROPOSAL=$2; shift 2;;
     *) die "unknown argument: $1";;
   esac
 done
-[ -n "$COMMAND" ] || die 'usage: scan --hub <absolute-path> --scope <absolute-path> --vault <absolute-path> | apply --hub <absolute-path> --scope <absolute-path> --vault <absolute-path> --confirm-proposal <sha256> | status --vault <absolute-path> | dismiss --vault <absolute-path>'
+[ -n "$COMMAND" ] || die 'usage: scan --project-id <id> --hub <absolute-path> --scope <absolute-path> --vault <absolute-path> | apply --project-id <id> --hub <absolute-path> --scope <absolute-path> --vault <absolute-path> --confirm-proposal <sha256> | status --vault <absolute-path> | dismiss --vault <absolute-path>'
+
+require_project_selector() {
+  case "$COMMAND" in
+    scan|apply)
+      [ "$ALL_PROJECTS" -eq 0 ] || {
+        [ -z "$PROJECT_ID" ] && [ "${AI_SYNC_INTERNAL_WATCHER:-}" = 1 ] || die '--all-projects is reserved for the task watcher'
+        return
+      }
+      [ -n "$PROJECT_ID" ] || die "$COMMAND requires --project-id"
+      [[ "$PROJECT_ID" =~ ^[a-z0-9][a-z0-9-]*$ ]] || die 'invalid --project-id'
+      ;;
+    *) [ -z "$PROJECT_ID" ] && [ "$ALL_PROJECTS" -eq 0 ] || die '--project-id is only valid for scan and apply';;
+  esac
+}
 
 require_safe_vault() {
   [ -n "$VAULT" ] && is_absolute "$VAULT" || die 'vault must be an absolute path'
@@ -44,6 +60,7 @@ require_safe_vault() {
 }
 
 require_safe_paths() {
+  require_project_selector
   [ -n "$HUB" ] && [ -n "$SCOPE" ] || die 'scan requires --hub and --scope'
   is_absolute "$HUB" && is_absolute "$SCOPE" || die 'hub and scope must be absolute paths'
   [ -d "$HUB" ] && [ ! -L "$HUB" ] || die 'hub must be a non-symlink directory'
@@ -72,7 +89,7 @@ status_to_column() {
 }
 valid_column() { column_to_status "$1" >/dev/null; }
 
-PROJECT_IDS=() PROJECT_NAMES=() PROJECT_PATHS=()
+PROJECT_IDS=() PROJECT_NAMES=() PROJECT_PATHS=() ARCHITECTURE_PROJECT_PATH=''
 load_projects() {
   local registry="$HUB/ai/project-registry.md" id block name path
   while IFS= read -r id; do
@@ -80,27 +97,39 @@ load_projects() {
     name="$(printf '%s\n' "$block" | sed -n 's/^Name: //p' | head -n 1)"
     path="$(printf '%s\n' "$block" | sed -n 's/^Path: //p' | head -n 1)"
     [ -n "$name" ] && [ -n "$path" ] && is_absolute "$path" || die "incomplete registry entry: $id"
+    [ "$id" != ai-dev-architecture ] || ARCHITECTURE_PROJECT_PATH="$path"
+    [ "$ALL_PROJECTS" -eq 1 ] || [ "$id" = "$PROJECT_ID" ] || continue
     [ -d "$path/ai" ] && [ ! -L "$path" ] && [ ! -L "$path/ai" ] || die "unsafe project path: $id"
     path="$(physical_dir "$path")"
     inside "$path" "$HUB/projects" || die "project path outside hub projects: $id"
     PROJECT_IDS+=("$id"); PROJECT_NAMES+=("$name"); PROJECT_PATHS+=("$path")
   done < <(sed -nE 's/^## ([a-z0-9][a-z0-9-]*)$/\1/p' "$registry")
-  [ "${#PROJECT_IDS[@]}" -gt 0 ] || die 'registry is empty'
+  [ "${#PROJECT_IDS[@]}" -gt 0 ] || {
+    [ "$ALL_PROJECTS" -eq 1 ] && die 'registry is empty' || die "unknown project ID: $PROJECT_ID"
+  }
 }
 
 SCOPE_IDS=()
 load_scope_and_validate_vault() {
-  local id i architecture_index=''
+  local id i selected_in_scope=0
   while IFS= read -r id; do
     id="$(trim "$id")"; [ -n "$id" ] || continue
     [[ "$id" =~ ^[a-z0-9][a-z0-9-]*$ ]] || die "invalid project ID in scope: $id"
     for i in "${!SCOPE_IDS[@]}"; do [ "${SCOPE_IDS[$i]}" = "$id" ] && die "duplicate project ID in scope: $id"; done
-    SCOPE_IDS+=("$id")
+    if [ "$ALL_PROJECTS" -eq 1 ]; then
+      SCOPE_IDS+=("$id")
+    elif [ "$id" = "$PROJECT_ID" ]; then
+      selected_in_scope=1
+      SCOPE_IDS+=("$id")
+    fi
   done < "$SCOPE"
-  [ "${#SCOPE_IDS[@]}" -gt 0 ] || die 'scope is empty'
-  for i in "${!PROJECT_IDS[@]}"; do [ "${PROJECT_IDS[$i]}" = ai-dev-architecture ] && architecture_index="$i"; done
-  [ -n "$architecture_index" ] || die 'registry has no ai-dev-architecture project'
-  [ "$VAULT" = "${PROJECT_PATHS[$architecture_index]}/obsidian-vault" ] || die 'vault must be the local ai-dev-architecture vault'
+  if [ "$ALL_PROJECTS" -eq 1 ]; then
+    [ "${#SCOPE_IDS[@]}" -gt 0 ] || die 'scope is empty'
+  else
+    [ "$selected_in_scope" -eq 1 ] || die "project ID is outside scope: $PROJECT_ID"
+  fi
+  [ -n "$ARCHITECTURE_PROJECT_PATH" ] || die 'registry has no ai-dev-architecture project'
+  [ "$VAULT" = "$(physical_dir "$ARCHITECTURE_PROJECT_PATH")/obsidian-vault" ] || die 'vault must be the local ai-dev-architecture vault'
 }
 
 scope_contains() {
@@ -118,6 +147,7 @@ load_project_boards() {
   while IFS=$'\t' read -r project_id target sha; do
     [ -n "$project_id" ] && [ -n "$target" ] && [ -n "$sha" ] || die 'invalid manifest project board entry'
     [[ "$project_id" =~ ^[a-z0-9][a-z0-9-]*$ ]] || die "invalid manifest project board ID: $project_id"
+    [ "$ALL_PROJECTS" -eq 1 ] || [ "$project_id" = "$PROJECT_ID" ] || continue
     [[ "$sha" =~ ^[0-9a-f]{64}$ ]] || die "invalid manifest project board hash: $project_id"
     expected="Obsidian/Projects/$project_id/Kanban.md"
     [ "$target" = "$expected" ] || die "invalid project board target: $target"
@@ -192,6 +222,7 @@ load_known_cards() {
   local task_id project_id source source_sha project_index record status title due column actual_sha
   while IFS=$'\t' read -r task_id project_id source source_sha; do
     [ -n "$task_id" ] && [ -n "$project_id" ] && [ -n "$source" ] && [ -n "$source_sha" ] || die 'invalid manifest task entry'
+    [ "$ALL_PROJECTS" -eq 1 ] || [ "$project_id" = "$PROJECT_ID" ] || continue
     task_id_is_readable_for_project "$task_id" "$project_id" || die "invalid manifest task ID for project $project_id: $task_id"
     project_index=''; for project_index in "${!PROJECT_IDS[@]}"; do [ "${PROJECT_IDS[$project_index]}" = "$project_id" ] && break; done
     [ -n "$project_index" ] && [ "${PROJECT_IDS[$project_index]}" = "$project_id" ] || die "manifest task has unknown project: $task_id"
@@ -450,7 +481,7 @@ write_proposal() {
   if [ "${#AFFECTED_LINES[@]}" -eq 0 ]; then affected='[]'; else affected="$(printf '%s\n' "${AFFECTED_LINES[@]}" | sort -u | /usr/bin/jq -R 'split("\t") | {source_file: .[0], source_sha256: .[1]}' | /usr/bin/jq -s .)"; fi
   if [ "${#BLOCK_REASONS[@]}" -eq 0 ]; then state='ready'; reasons='[]'; else state='blocked'; reasons="$(printf '%s\n' "${BLOCK_REASONS[@]}" | sed '/^$/d' | /usr/bin/jq -R . | /usr/bin/jq -s .)"; fi
   board_hashes="$(for i in "${!MANIFEST_BOARD_PROJECT_IDS[@]}"; do /usr/bin/jq -cn --arg key "${MANIFEST_BOARD_PROJECT_IDS[$i]}" --arg value "$(hash_file "${MANIFEST_BOARD_FILES[$i]}")" '{key:$key,value:$value}'; done | /usr/bin/jq -s 'sort_by(.key) | from_entries')"
-  payload="$(/usr/bin/jq -n --arg state "$state" --argjson board_sha256 "$board_hashes" --arg manifest_sha256 "$(hash_file "$MANIFEST")" --argjson affected_sources "$affected" --argjson operations "$operations" --argjson blocked_reasons "$reasons" '{state:$state, board_sha256:$board_sha256, manifest_sha256:$manifest_sha256, affected_sources:$affected_sources, operations:$operations, blocked_reasons:$blocked_reasons}')"
+  payload="$(/usr/bin/jq -n --arg state "$state" --arg project_id "$PROJECT_ID" --argjson board_sha256 "$board_hashes" --arg manifest_sha256 "$(hash_file "$MANIFEST")" --argjson affected_sources "$affected" --argjson operations "$operations" --argjson blocked_reasons "$reasons" '{state:$state, project_id:$project_id, board_sha256:$board_sha256, manifest_sha256:$manifest_sha256, affected_sources:$affected_sources, operations:$operations, blocked_reasons:$blocked_reasons}')"
   proposal_sha="$(printf '%s' "$payload" | shasum -a 256 | awk '{print $1}')"
   mkdir -p "$RUNTIME"; [ -d "$RUNTIME" ] && [ ! -L "$RUNTIME" ] || die 'cannot create safe runtime directory'
   tmp="$(mktemp "$RUNTIME/.pending-proposal.json.XXXXXX")"
@@ -496,6 +527,7 @@ source_is_registered_task_file() {
 verify_manifest_sources_are_registered() {
   local task_id project_id source i project_index
   while IFS=$'\t' read -r task_id project_id source; do
+    [ "$ALL_PROJECTS" -eq 1 ] || [ "$project_id" = "$PROJECT_ID" ] || continue
     project_index=''
     for i in "${!PROJECT_IDS[@]}"; do [ "${PROJECT_IDS[$i]}" = "$project_id" ] && project_index="$i"; done
     [ -n "$project_index" ] || die "manifest task has unknown project: $task_id"
@@ -522,28 +554,30 @@ temp_for_source() {
 proposal_payload() {
   /usr/bin/jq -n \
     --arg state "$(/usr/bin/jq -r '.state' "$PROPOSAL")" \
+    --arg project_id "$(/usr/bin/jq -r '.project_id' "$PROPOSAL")" \
     --argjson board_sha256 "$(/usr/bin/jq -c '.board_sha256' "$PROPOSAL")" \
     --arg manifest_sha256 "$(/usr/bin/jq -r '.manifest_sha256' "$PROPOSAL")" \
     --argjson affected_sources "$(/usr/bin/jq -c '.affected_sources' "$PROPOSAL")" \
     --argjson operations "$(/usr/bin/jq -c '.operations' "$PROPOSAL")" \
     --argjson blocked_reasons "$(/usr/bin/jq -c '.blocked_reasons' "$PROPOSAL")" \
-    '{state:$state, board_sha256:$board_sha256, manifest_sha256:$manifest_sha256, affected_sources:$affected_sources, operations:$operations, blocked_reasons:$blocked_reasons}'
+    '{state:$state, project_id:$project_id, board_sha256:$board_sha256, manifest_sha256:$manifest_sha256, affected_sources:$affected_sources, operations:$operations, blocked_reasons:$blocked_reasons}'
 }
 
 load_proposal() {
   [ -f "$PROPOSAL" ] || die 'no pending proposal'
-  /usr/bin/jq -e '
+  /usr/bin/jq -e --arg project_id "$PROJECT_ID" '
     .state == "ready" and
+    .project_id == $project_id and
     (.proposal_sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
     (.board_sha256 | type == "object" and all(.[]; type == "string" and test("^[0-9a-f]{64}$"))) and
     (.manifest_sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
     (.affected_sources | type == "array") and
-    (.operations | type == "array") and
+    (.operations | type == "array" and all(.[]; .project_id == $project_id)) and
     (.blocked_reasons | type == "array")' "$PROPOSAL" >/dev/null || die 'proposal is blocked or malformed'
   PROPOSAL_SHA="$(/usr/bin/jq -r '.proposal_sha256' "$PROPOSAL")"
   [ "$CONFIRM_PROPOSAL" = "$PROPOSAL_SHA" ] || die 'confirmation does not match proposal'
   [ "$(printf '%s' "$(proposal_payload)" | shasum -a 256 | awk '{print $1}')" = "$PROPOSAL_SHA" ] || die 'proposal hash is invalid'
-  /usr/bin/jq -e --argjson expected "$(printf '%s\n' "${MANIFEST_BOARD_PROJECT_IDS[@]}" | /usr/bin/jq -R . | /usr/bin/jq -s 'sort')" '(.board_sha256 | keys | sort) == $expected' "$PROPOSAL" >/dev/null || die 'proposal does not bind every project board'
+  /usr/bin/jq -e --arg project_id "$PROJECT_ID" '(.board_sha256 | keys | sort) == [$project_id]' "$PROPOSAL" >/dev/null || die 'proposal does not bind the selected project board'
 }
 
 verify_board_hash() {

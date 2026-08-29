@@ -37,6 +37,7 @@ SYNC="$SCRIPT_DIR/obsidian-task-sync.sh"
 require_safe_vault
 if [ ! -e "$RUNTIME" ] && [ ! -L "$RUNTIME" ]; then mkdir "$RUNTIME" 2>/dev/null || true; fi
 [ -d "$RUNTIME" ] && [ ! -L "$RUNTIME" ] || die 'runtime directory is unsafe'
+PROPOSAL="$RUNTIME/pending-proposal.json"
 
 # The generator and watcher share one atomic directory lock. A plain check is
 # not enough: the generator could create the lock after the check and replace
@@ -49,6 +50,14 @@ fi
 cleanup_watch_lock() { rmdir "$REFRESH_LOCK" 2>/dev/null || true; }
 trap cleanup_watch_lock EXIT
 
-"$SYNC" scan --hub "$HUB" --scope "$SCOPE" --vault "$VAULT"
+# Each scan is still scoped to one project, so a pending proposal can be
+# reviewed and applied by that project's agent. Stop at the first proposal;
+# further scans would be refused until it is reviewed or dismissed.
+while IFS= read -r project_id; do
+  project_id="$(printf '%s' "$project_id" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+  [ -n "$project_id" ] || continue
+  "$SYNC" scan --project-id "$project_id" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT"
+  [ ! -e "$PROPOSAL" ] && [ ! -L "$PROPOSAL" ] || break
+done < "$SCOPE"
 cleanup_watch_lock
 trap - EXIT

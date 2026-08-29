@@ -110,11 +110,11 @@ reset_board() {
   rm -f "$PROPOSAL"
 }
 source_hashes() { find "$PROJECTS" -path '*/ai/*.md' -type f -exec shasum -a 256 {} + | sort; }
-scan() { "$SYNC" scan --hub "$HUB" --scope "$SCOPE" --vault "$VAULT"; }
+scan() { "$SYNC" scan --project-id "${1:-ai-dev-architecture}" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT"; }
 apply() {
-  local proposal_hash
+  local project_id="${1:-ai-dev-architecture}" proposal_hash
   proposal_hash="$(/usr/bin/jq -r '.proposal_sha256' "$PROPOSAL")"
-  "$SYNC" apply --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --confirm-proposal "$proposal_hash"
+  "$SYNC" apply --project-id "$project_id" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --confirm-proposal "$proposal_hash"
 }
 assert_sources_unchanged() { assert_equal "$(cat "$TMP_DIR/source-before.txt")" "$(source_hashes)" 'scanner changed canonical source files'; }
 refresh_board() { SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture --replace-confirmed-board --confirm-generated-write >/dev/null; }
@@ -163,19 +163,35 @@ run_and_check() {
   assert_sources_unchanged
 }
 
-# One scan must retain both project identities and every board hash.  This is
-# intentionally placed before the watcher contract: the pre-v4 scanner should
-# fail here because it still looks for one legacy Tasks-Kanban.md board.
+# A selected-project scan is isolated: a change to a second board stays outside
+# both the proposal and every hash/read operation. The pending proposal is also
+# inseparable from that selected project at apply time.
 reset_board
 perl -0pi -e 's/Idea task \^ai-dev-architecture--FT-20260826-001/Renamed architecture idea ^ai-dev-architecture--FT-20260826-001/' "$ARCHITECTURE_BOARD"
 move_card_to_column TASK-20260826-010 'Extra current task' 'Extra project' Blocked
 source_hashes > "$TMP_DIR/multi-board-before.txt"
-scan > "$TMP_DIR/multi-board-scan.out"
+HASH_LOG="$TMP_DIR/scoped-hash.log"
+if AI_SYNC_TEST_FORBID_HASH_PATH="$EXTRA_BOARD" AI_SYNC_TEST_HASH_LOG="$HASH_LOG" PATH="$TEST_BIN:$PATH" \
+  "$SYNC" scan --project-id ai-dev-architecture --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" > "$TMP_DIR/multi-board-scan.out" 2>&1; then
+  :
+else
+  cat "$TMP_DIR/multi-board-scan.out" >&2
+  fail 'selected-project scan failed'
+fi
 assert_file "$PROPOSAL"
-/usr/bin/jq -e '[.operations[] | select(.operation == "rename" and .project_id == "ai-dev-architecture")] | length == 1' "$PROPOSAL" >/dev/null || fail 'multi-board proposal missed architecture rename'
-/usr/bin/jq -e '[.operations[] | select(.operation == "set_status" and .project_id == "extra-project")] | length == 1' "$PROPOSAL" >/dev/null || fail 'multi-board proposal missed extra-project move'
-/usr/bin/jq -e '.board_sha256 | type == "object" and (keys | sort) == ["ai-dev-architecture", "extra-project"]' "$PROPOSAL" >/dev/null || fail 'proposal did not bind every project board hash'
+/usr/bin/jq -e '
+  .project_id == "ai-dev-architecture" and
+  (.board_sha256 | keys) == ["ai-dev-architecture"] and
+  ([.operations[] | .project_id] | unique) == ["ai-dev-architecture"] and
+  ([.operations[] | select(.operation == "rename")] | length) == 1
+' "$PROPOSAL" >/dev/null || fail 'proposal was not isolated to ai-dev-architecture'
+assert_not_exists "$HASH_LOG"
 assert_equal "$(cat "$TMP_DIR/multi-board-before.txt")" "$(source_hashes)" 'multi-board scanner changed canonical sources'
+proposal_hash="$(/usr/bin/jq -r '.proposal_sha256' "$PROPOSAL")"
+if "$SYNC" apply --project-id extra-project --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --confirm-proposal "$proposal_hash" > "$TMP_DIR/wrong-project-apply.out" 2>&1; then
+  fail 'apply accepted a proposal for another project'
+fi
+assert_contains "$TMP_DIR/wrong-project-apply.out" 'proposal is blocked or malformed'
 "$SYNC" dismiss --vault "$VAULT"
 
 # Anchors are scoped to the manifest board, not merely to any known project.
@@ -189,7 +205,7 @@ scan > "$TMP_DIR/wrong-board-anchor.out"
 # path must not be scanned or bound to a proposal.
 reset_board
 cp "$MANIFEST" "$TMP_DIR/manifest-before-unlisted-board.json"
-/usr/bin/jq --arg target 'Obsidian/Projects/extra-project/Other.md' '(.project_boards[] | select(.project_id == "extra-project") | .target) = $target' "$MANIFEST" > "$TMP_DIR/unlisted-board-manifest.json"
+/usr/bin/jq --arg target 'Obsidian/Projects/ai-dev-architecture/Other.md' '(.project_boards[] | select(.project_id == "ai-dev-architecture") | .target) = $target' "$MANIFEST" > "$TMP_DIR/unlisted-board-manifest.json"
 mv "$TMP_DIR/unlisted-board-manifest.json" "$MANIFEST"
 if scan > "$TMP_DIR/unlisted-board-scan.out" 2>&1; then fail 'scanner accepted an unlisted project board path'; fi
 assert_contains "$TMP_DIR/unlisted-board-scan.out" 'invalid project board target'
@@ -282,7 +298,11 @@ cat >> "$EXTRA_BOARD" <<'EOF'
   - project: Extra project
   - 📅 2026-09-02
 EOF
-run_and_check '"operation": "create_future"'
+source_hashes > "$TMP_DIR/source-before.txt"
+scan extra-project > "$TMP_DIR/extra-create-scan.out"
+assert_file "$PROPOSAL"
+assert_contains "$PROPOSAL" '"operation": "create_future"'
+assert_sources_unchanged
 
 assert_blocked() {
   reset_board
@@ -337,7 +357,7 @@ reset_board
 perl -0pi -e 's/Idea task \^ai-dev-architecture--FT-20260826-001/Renamed idea \^ai-dev-architecture--FT-20260826-001/' "$TASKS"
 scan > "$TMP_DIR/apply-scan.out"
 source_hashes > "$TMP_DIR/wrong-confirm-before.txt"
-if "$SYNC" apply --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --confirm-proposal "$(printf '0%.0s' {1..64})" > "$TMP_DIR/wrong-confirm.out" 2>&1; then fail 'apply accepted a different proposal hash'; fi
+if "$SYNC" apply --project-id ai-dev-architecture --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --confirm-proposal "$(printf '0%.0s' {1..64})" > "$TMP_DIR/wrong-confirm.out" 2>&1; then fail 'apply accepted a different proposal hash'; fi
 assert_file "$PROPOSAL"
 assert_contains "$TMP_DIR/wrong-confirm.out" 'confirmation does not match proposal'
 assert_equal "$(cat "$TMP_DIR/wrong-confirm-before.txt")" "$(source_hashes)" 'wrong confirmation changed canonical files'
@@ -390,10 +410,9 @@ cp "$SOURCE_BACKUP" "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
 reset_board
 perl -0pi -e 's/Renamed idea \^ai-dev-architecture--FT-20260826-001/Stale board edit ^ai-dev-architecture--FT-20260826-001/' "$TASKS"
 scan > "$TMP_DIR/stale-board-scan.out"
-# The edited architecture board is unchanged here.  Apply must still reject a
-# later change to another manifest-listed board because proposal evidence binds
-# the complete generated board set.
-printf '\nManual board change after scan\n' >> "$EXTRA_BOARD"
+# A selected proposal binds only its own board. Changing that selected board
+# after scan must make apply reject the proposal.
+printf '\nManual board change after scan\n' >> "$TASKS"
 source_hashes > "$TMP_DIR/stale-board-before.txt"
 if apply > "$TMP_DIR/stale-board-apply.out" 2>&1; then fail 'stale board proposal applied'; fi
 assert_file "$PROPOSAL"
@@ -436,8 +455,8 @@ cat >> "$EXTRA_BOARD" <<'EOF'
   - project: Extra project
   - 📅 2026-09-02
 EOF
-scan > "$TMP_DIR/create-scan.out"
-apply > "$TMP_DIR/create-apply.out"
+scan extra-project > "$TMP_DIR/create-scan.out"
+apply extra-project > "$TMP_DIR/create-apply.out"
 assert_contains "$EXTRA_PROJECT/ai/future-tasks.md" 'Applied new future task'
 assert_contains "$EXTRA_BOARD" 'Applied new future task'
 assert_not_exists "$PROPOSAL"
@@ -473,19 +492,17 @@ assert_contains "$TMP_DIR/empty-current-promotion-apply.out" 'proposal is stale:
 assert_equal "$(cat "$TMP_DIR/empty-current-promotion-before.txt")" "$(source_hashes)" 'stale empty current promotion rewrote sources'
 rm -f "$PROPOSAL"
 
-# Two projects can promote in one proposal. Legacy FT identities remain
-# readable and are not silently converted during promotion.
+# A scoped proposal promotes only its selected project's task.
 prepare_promotion_fixture active 'Architecture previous task' TASK-20260827-010 FT-20260827-201 'Architecture simultaneous promotion'
 printf '%s\n' 'Status: waiting' 'Task ID: TASK-20260827-011' '' '## Goal' '' 'Extra previous task' > "$EXTRA_PROJECT/ai/current-task.md"
 printf '%s\n' '### FT-20260827-202 — Extra simultaneous promotion' '' 'Status: ready' > "$EXTRA_PROJECT/ai/future-tasks.md"
 printf '%s\n' 'No paused tasks.' > "$EXTRA_PROJECT/ai/paused-tasks.md"
 refresh_board
 move_future_card_to_active FT-20260827-201 'Architecture simultaneous promotion' 'Architecture project'
-move_future_card_to_active FT-20260827-202 'Extra simultaneous promotion' 'Extra project'
 scan > "$TMP_DIR/multiple-promotions-scan.out"
 apply > "$TMP_DIR/multiple-promotions-apply.out"
 assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Task ID: FT-20260827-201'
-assert_contains "$EXTRA_PROJECT/ai/current-task.md" 'Task ID: FT-20260827-202'
+assert_contains "$EXTRA_PROJECT/ai/current-task.md" 'Task ID: TASK-20260827-011'
 assert_not_exists "$PROPOSAL"
 
 # Replacing a current task must preserve every unfinished state as a paused
@@ -670,7 +687,7 @@ assert_not_exists "$PROPOSAL"
 # A refused apply must not leave staged copies inside controlled ai/ memory.
 perl -0pi -e 's/Well formed goal \^ai-dev-architecture--TASK-20260827-901/Renamed well formed goal ^ai-dev-architecture--TASK-20260827-901/' "$TASKS"
 scan > "$TMP_DIR/temp-leak-scan.out"
-printf '\nManual canonical change\n' >> "$EXTRA_PROJECT/ai/current-task.md"
+printf '\nManual canonical change\n' >> "$ARCHITECTURE_PROJECT/ai/current-task.md"
 if apply > "$TMP_DIR/temp-leak-apply.out" 2>&1; then fail 'stale apply reported success'; fi
 [ -z "$(find "$PROJECTS" -path '*/ai/*' -name '.*.apply.*' -print -quit)" ] || fail 'refused apply leaked staged copies into ai/'
 rm -f "$PROPOSAL"
@@ -799,8 +816,7 @@ for goal_space in $'\v' $'\f'; do
 done
 
 # A new Obsidian card receives its permanent project-namespaced ID in the
-# confirmed proposal. Each project owns its own sequence, so the same date and
-# number are globally unique without reading unregistered project memory.
+# confirmed proposal. Its allocation must ignore unregistered project memory.
 id_date="$(date -u +%Y%m%d)"
 printf '%s\n' 'Status: active' 'Task ID: TASK-20260827-970' '' '## Goal' '' 'Current before stable promotion' > "$ARCHITECTURE_PROJECT/ai/current-task.md"
 printf '%s\n' 'No future tasks.' > "$ARCHITECTURE_PROJECT/ai/future-tasks.md"
@@ -817,23 +833,16 @@ perl -0pi -e 's/(?<!\n)\z/\n/' "$TASKS"
 perl -0pi -e 's/(?<!\n)\z/\n/' "$EXTRA_BOARD"
 NEW_ARCH_CARD="$(printf '%s\n' '- [ ] Stable architecture future' '  - project: Architecture project')" \
   perl -0pi -e 's{(^## Ideas\n)}{$1 . "\n" . $ENV{NEW_ARCH_CARD} . "\n"}me' "$TASKS"
-NEW_EXTRA_CARD="$(printf '%s\n' '- [ ] Stable extra future' '  - project: Extra project')" \
-  perl -0pi -e 's{(^## Ideas\n)}{$1 . "\n" . $ENV{NEW_EXTRA_CARD} . "\n"}me' "$EXTRA_BOARD"
 scan > "$TMP_DIR/namespaced-create-scan.out"
 architecture_stable_id="TASK-ai-dev-architecture-${id_date}-001"
-extra_stable_id="TASK-extra-project-${id_date}-001"
-/usr/bin/jq -e --arg architecture_id "$architecture_stable_id" --arg extra_id "$extra_stable_id" '
+ /usr/bin/jq -e --arg architecture_id "$architecture_stable_id" '
   .state == "ready" and
-  ([.operations[] | select(.operation == "create_future") | .task_id] | sort) == ([$architecture_id, $extra_id] | sort)
-' "$PROPOSAL" >/dev/null || { /usr/bin/jq . "$PROPOSAL" >&2; fail 'new cards did not receive exact project-namespaced IDs in the proposal'; }
-[ "$architecture_stable_id" != "$extra_stable_id" ] || fail 'project namespaces did not make new task IDs globally unique'
+  ([.operations[] | select(.operation == "create_future") | .task_id]) == [$architecture_id]
+' "$PROPOSAL" >/dev/null || { /usr/bin/jq . "$PROPOSAL" >&2; fail 'new card did not receive an exact project-namespaced ID in the proposal'; }
 apply > "$TMP_DIR/namespaced-create-apply.out"
 assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" "### $architecture_stable_id — Stable architecture future"
-assert_contains "$EXTRA_PROJECT/ai/future-tasks.md" "### $extra_stable_id — Stable extra future"
 assert_contains "$TASKS" "Stable architecture future ^ai-dev-architecture--$architecture_stable_id"
-assert_contains "$EXTRA_BOARD" "Stable extra future ^extra-project--$extra_stable_id"
 assert_not_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" "${id_date}-999"
-assert_not_contains "$EXTRA_PROJECT/ai/future-tasks.md" "${id_date}-999"
 
 # Promotion keeps exactly the same ID. The proposal must name every canonical
 # source change: preserve the old current record, replace current, and mark the
@@ -888,7 +897,7 @@ assert_contains "$TMP_DIR/shared-number-rescan.out" 'board matches canonical tas
 assert_not_exists "$PROPOSAL"
 
 perl -0pi -e 's/Shared number there \^extra-project--FT-20260828-050/Renamed only there ^extra-project--FT-20260828-050/' "$EXTRA_BOARD"
-scan > "$TMP_DIR/shared-number-scan.out"
+scan extra-project > "$TMP_DIR/shared-number-scan.out"
 /usr/bin/jq -e '
   .state == "ready" and
   (.operations == [{
@@ -900,7 +909,7 @@ scan > "$TMP_DIR/shared-number-scan.out"
   }])
 ' "$PROPOSAL" >/dev/null || { /usr/bin/jq . "$PROPOSAL" >&2; fail 'shared task number did not resolve to exactly one project record'; }
 shared_other_before="$(shasum -a 256 "$ARCHITECTURE_PROJECT/ai/future-tasks.md" | awk '{print $1}')"
-apply > "$TMP_DIR/shared-number-apply.out"
+apply extra-project > "$TMP_DIR/shared-number-apply.out"
 assert_contains "$EXTRA_PROJECT/ai/future-tasks.md" '### FT-20260828-050 — Renamed only there'
 assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" '### FT-20260828-050 — Shared number here'
 assert_equal "$shared_other_before" "$(shasum -a 256 "$ARCHITECTURE_PROJECT/ai/future-tasks.md" | awk '{print $1}')" \
@@ -915,19 +924,20 @@ scan > "$TMP_DIR/missing-project-id-scan.out"
 /usr/bin/jq 'del(.proposal_sha256) | .operations = [.operations[] | del(.project_id)]' "$PROPOSAL" > "$TMP_DIR/tampered-payload.json"
 tampered_payload="$(/usr/bin/jq -n \
   --arg state "$(/usr/bin/jq -r '.state' "$TMP_DIR/tampered-payload.json")" \
+  --arg project_id "$(/usr/bin/jq -r '.project_id' "$TMP_DIR/tampered-payload.json")" \
   --argjson board_sha256 "$(/usr/bin/jq -c '.board_sha256' "$TMP_DIR/tampered-payload.json")" \
   --arg manifest_sha256 "$(/usr/bin/jq -r '.manifest_sha256' "$TMP_DIR/tampered-payload.json")" \
   --argjson affected_sources "$(/usr/bin/jq -c '.affected_sources' "$TMP_DIR/tampered-payload.json")" \
   --argjson operations "$(/usr/bin/jq -c '.operations' "$TMP_DIR/tampered-payload.json")" \
   --argjson blocked_reasons "$(/usr/bin/jq -c '.blocked_reasons' "$TMP_DIR/tampered-payload.json")" \
-  '{state:$state, board_sha256:$board_sha256, manifest_sha256:$manifest_sha256, affected_sources:$affected_sources, operations:$operations, blocked_reasons:$blocked_reasons}')"
+  '{state:$state, project_id:$project_id, board_sha256:$board_sha256, manifest_sha256:$manifest_sha256, affected_sources:$affected_sources, operations:$operations, blocked_reasons:$blocked_reasons}')"
 tampered_sha="$(printf '%s' "$tampered_payload" | shasum -a 256 | awk '{print $1}')"
 /usr/bin/jq --arg sha "$tampered_sha" '. + {proposal_sha256:$sha}' "$TMP_DIR/tampered-payload.json" > "$PROPOSAL"
 source_hashes > "$TMP_DIR/missing-project-id-before.txt"
-if "$SYNC" apply --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --confirm-proposal "$tampered_sha" > "$TMP_DIR/missing-project-id-apply.out" 2>&1; then
+if "$SYNC" apply --project-id ai-dev-architecture --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --confirm-proposal "$tampered_sha" > "$TMP_DIR/missing-project-id-apply.out" 2>&1; then
   fail 'apply accepted an operation without a project ID'
 fi
-assert_contains "$TMP_DIR/missing-project-id-apply.out" 'proposal operation has no project ID'
+assert_contains "$TMP_DIR/missing-project-id-apply.out" 'proposal is blocked or malformed'
 assert_equal "$(cat "$TMP_DIR/missing-project-id-before.txt")" "$(source_hashes)" 'refused proposal changed canonical source files'
 rm -f "$PROPOSAL"
 
