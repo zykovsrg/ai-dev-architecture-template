@@ -66,10 +66,13 @@ hub_workflows_skill_contract_valid() {
     [[ "$text" == *'fresh exact diff'*'named proposal confirmation'* ]] &&
     [[ "$text" == *'unknown target'*'action: create_project'* ]] &&
     [[ "$text" == *'Never write or apply a proposal automatically'* ]] &&
-    [[ "$text" == *'Calendar MCP'*'vault migration'*'session audit'* ]] &&
+    [[ "$text" == *'guarded `hub_calendar` MCP'*'read tools'* ]] &&
+    [[ "$text" == *'Never call `preview_change` or `apply_change` here'* ]] &&
+    [[ "$text" == *'vault migration'*'session audit'* ]] &&
     [[ "$text" == *'## Сегодня: контекст'*'## Три главных действия'*'## Остальные действия'*'## Ожидания и follow-up'*'## Риски и сроки'*'## Календарь'*'## Нужны решения'* ]] &&
     [[ "$text" == *'at most three ranked executable results'* ]] &&
-    [[ "$text" == *'Недоступен в этом этапе: Calendar не подключён.'* ]] &&
+    [[ "$text" == *'render the schedule for the requested date'*'read_events'* ]] &&
+    [[ "$text" == *'never claim a free day you could not read'* ]] &&
     [[ "$text" == *'## Сделано'*'## Перенос'*'## Ожидания'*'## Follow-ups'*'## Завтрашний Calendar'*'## Три главных действия завтра'*'## Подтвердить'* ]] &&
     [[ "$text" == *'## Архипроекты'*'### <archiproject-id> — <name>'*'#### Детали проектов'*'## Три результата недели'*'## Нужны решения'* ]] &&
     [[ "$text" == *'exactly three proposed weekly results'* ]] &&
@@ -922,6 +925,18 @@ done
 HUB_WORKFLOWS_SKILL="$ROOT/hub-template/ai/skills/hub-workflows/SKILL.md"
 hub_workflows_skill_contract_valid "$HUB_WORKFLOWS_SKILL" \
   || fail 'hub-workflows proposal-only contract is incomplete'
+
+# A day plan that cannot read the calendar must say so, never show an empty day.
+HUB_WORKFLOWS_WITHOUT_CALENDAR_HONESTY="$TMP_DIR/hub-workflows-without-calendar-honesty.md"
+sed '/never claim a free day/d' "$HUB_WORKFLOWS_SKILL" \
+  > "$HUB_WORKFLOWS_WITHOUT_CALENDAR_HONESTY"
+assert_rejected hub_workflows_skill_contract_valid "$HUB_WORKFLOWS_WITHOUT_CALENDAR_HONESTY"
+
+# The workflow reads the schedule; it never previews or applies a change.
+HUB_WORKFLOWS_WITHOUT_WRITE_BAN="$TMP_DIR/hub-workflows-without-calendar-write-ban.md"
+sed '/Never call `preview_change` or `apply_change` here/d' "$HUB_WORKFLOWS_SKILL" \
+  > "$HUB_WORKFLOWS_WITHOUT_WRITE_BAN"
+assert_rejected hub_workflows_skill_contract_valid "$HUB_WORKFLOWS_WITHOUT_WRITE_BAN"
 
 HUB_WORKFLOWS_WITHOUT_NO_AUTO_WRITE="$TMP_DIR/hub-workflows-without-no-auto-write.md"
 sed '/Never write or apply a proposal automatically/d' "$HUB_WORKFLOWS_SKILL" \

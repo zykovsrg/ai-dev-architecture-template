@@ -13,9 +13,12 @@ description: |
 Use this skill for `day-plan`, `evening-review`, `weekly-review`, or `capture`.
 It is proposal-only. Never write or apply a proposal automatically.
 
-Do not run Calendar MCP, perform a vault migration, start a session audit, scan
-for arbitrary transcripts, or copy source text into project memory. Do not add
-an apply command or a persistent proposal queue.
+Read the schedule only through the guarded `hub_calendar` MCP, and only with
+its read tools. Never call `preview_change` or `apply_change` here: a calendar
+change belongs to `hub-calendar` and its own confirmation. Do not perform a
+vault migration, start a session audit, scan for arbitrary transcripts, or copy
+source text into project memory. Do not add an apply command or a persistent
+proposal queue.
 
 ## Personal-assistant scope
 
@@ -148,9 +151,14 @@ not vague themes or waiting items. Number them `1.` through `3.` and use
 Put remaining actionable work under `## Остальные действия`. Keep waiting and
 due or overdue follow-ups together under `## Ожидания и follow-up`; put unknown
 states, missing waiting fields, blockers, and dated risks under `## Риски и
-сроки`. Under `## Календарь`, always render exactly `Недоступен в этом этапе:
-Calendar не подключён.` Ranking is read-only and never becomes a proposal by
-itself.
+сроки`. Under `## Календарь`, render the schedule for the requested date: read
+it with `read_events` over exactly the calendar IDs in the local allowlist,
+using the calendar timezone, and render one line per event as
+`<HH:MM>–<HH:MM> — <title>; календарь: <name>` in start order. State plainly
+that the day holds no event when it holds none. If the MCP is unreachable, the
+permission is missing, or the allowlist is empty, say which of those it is
+instead of rendering an empty schedule; never claim a free day you could not
+read. Ranking is read-only and never becomes a proposal by itself.
 
 ### Evening review format
 
@@ -169,7 +177,7 @@ only from `## Carry over`, and the user-stated part of `## Ожидания` onl
 `## Waiting`; append separately cited canonical waiting records from confirmed
 scope. Derive `## Follow-ups` and tomorrow's at-most-three ranked executable
 results only from structured canonical fields. Under `## Завтрашний Calendar`,
-always render exactly `Недоступен в этом этапе: Calendar не подключён.` A stated
+render tomorrow's schedule by the same rule as the day plan. A stated
 completion, carry-over, waiting, or due-date change is a user fact in this
 report, not a canonical change; any possible write remains an independent
 proposal listed for confirmation under `## Подтвердить`.
