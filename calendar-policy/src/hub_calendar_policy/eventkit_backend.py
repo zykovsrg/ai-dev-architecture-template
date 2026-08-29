@@ -16,7 +16,9 @@ class BridgeError(RuntimeError):
 class EventKitBackend:
     """Adapter for the pinned local EventKit bridge only."""
 
-    def __init__(self, bridge: Path, *, interpreter: Sequence[str] = ("swift",)) -> None:
+    # The bridge is a signed bundle executable, so it is run directly. The
+    # interpreter seam exists only so tests can drive a stub process.
+    def __init__(self, bridge: Path, *, interpreter: Sequence[str] = ()) -> None:
         self._bridge = bridge.resolve()
         self._interpreter = tuple(interpreter)
 

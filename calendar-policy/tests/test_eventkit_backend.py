@@ -57,6 +57,12 @@ def event_payload(event_id: str = "event-1", title: str = "Standup") -> dict:
     }
 
 
+def test_the_bridge_is_run_directly_by_default(tmp_path: Path) -> None:
+    backend = EventKitBackend(tmp_path / "HubCalendarBridge")
+
+    assert backend._interpreter == ()
+
+
 def test_adapter_satisfies_the_backend_contract(tmp_path: Path) -> None:
     backend, _ = make_bridge(tmp_path, envelope(None))
 

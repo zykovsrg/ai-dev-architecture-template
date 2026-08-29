@@ -40,6 +40,13 @@ tool="$hub/tools/apple-calendar-policy"
 [ -f "$tool/bridge/SHA256SUMS" ] || fail "bridge manifest was not installed"
 [ -f "$tool/pyproject.toml" ] || fail "manifest was not installed"
 grep -Fqx '.venv/' "$tool/.gitignore" || fail "the runtime environment is not ignored"
+grep -Fqx 'bridge/HubCalendarBridge.app/' "$tool/.gitignore" \
+  || fail "the built bundle is not ignored"
+[ -x "$tool/bridge/HubCalendarBridge.app/Contents/MacOS/HubCalendarBridge" ] \
+  || fail "the bridge bundle was not built during install"
+/usr/libexec/PlistBuddy -c 'Print :NSCalendarsFullAccessUsageDescription' \
+  "$tool/bridge/HubCalendarBridge.app/Contents/Info.plist" >/dev/null 2>&1 \
+  || fail "the installed bundle cannot ask for Calendar access"
 [ -f "$hub/.local/apple-calendar/allowlist.json" ] || fail "allowlist was not created"
 grep -Fq '"calendar_ids": []' "$hub/.local/apple-calendar/allowlist.json" \
   || fail "installed allowlist is not empty"

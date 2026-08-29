@@ -81,8 +81,12 @@ rsync -a --delete --delete-excluded "${RSYNC_EXCLUDES[@]}" "$POLICY_SRC/src/" "$
 rsync -a --delete --delete-excluded "${RSYNC_EXCLUDES[@]}" "$POLICY_SRC/bridge/" "$TOOL_DIR/bridge/"
 cp "$POLICY_SRC/pyproject.toml" "$TOOL_DIR/pyproject.toml"
 
-# The runtime environment is built on this machine and never committed.
-printf '%s\n' '.venv/' > "$TOOL_DIR/.gitignore"
+# The runtime environment and the locally built bundle are never committed.
+printf '%s\n' '.venv/' 'bridge/HubCalendarBridge.app/' > "$TOOL_DIR/.gitignore"
+
+# Building the bundle requests nothing; it only compiles and signs.
+BRIDGE_EXECUTABLE="$(bash "$(dirname "$0")/build-calendar-bridge.sh" --bridge-dir "$TOOL_DIR/bridge" | tail -1)"
+[ -x "$BRIDGE_EXECUTABLE" ] || die "the bridge bundle was not built"
 
 # Runtime selection is hub memory, not shipped code: create it only if absent.
 mkdir -p "$ALLOWLIST_DIR"
@@ -98,4 +102,5 @@ if ! grep -Fqx '/.local/' "$HUB_DIR/.gitignore" 2>/dev/null; then
 fi
 
 echo "Installed guarded Calendar policy MCP into $TOOL_DIR"
+echo "Bridge executable: $BRIDGE_EXECUTABLE"
 echo "No calendar is selected and no Calendar access was requested."

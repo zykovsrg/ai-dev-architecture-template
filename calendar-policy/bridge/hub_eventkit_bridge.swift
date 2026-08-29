@@ -25,6 +25,42 @@ func parseDate(_ text: String) -> Date? {
 func isoText(_ date: Date) -> String { plain.string(from: date) }
 
 let operation = CommandLine.arguments.dropFirst().first ?? ""
+
+// macOS attributes a Calendar decision to the responsible process, which for a
+// spawned bridge is the MCP client, not this bundle. Re-spawn ourselves once
+// with the disclaim attribute set: the child becomes responsible for itself, so
+// the grant stored against this bundle identifier is the one that applies.
+// Standard streams are inherited, so the payload protocol is unchanged.
+//
+// The disclaim attribute has no public symbol; it is resolved at run time and
+// the bridge still works without it, falling back to the client's own Calendar
+// permission.
+typealias SetDisclaim = @convention(c) (UnsafeMutablePointer<posix_spawnattr_t?>, Int32) -> Int32
+
+if ProcessInfo.processInfo.environment["HUB_BRIDGE_DISCLAIMED"] == nil,
+   let symbol = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "responsibility_spawnattrs_setdisclaim") {
+    let setDisclaim = unsafeBitCast(symbol, to: SetDisclaim.self)
+    var attributes: posix_spawnattr_t?
+    posix_spawnattr_init(&attributes)
+    defer { posix_spawnattr_destroy(&attributes) }
+    guard setDisclaim(&attributes, 1) == 0 else { exit(2) }
+
+    let executable = CommandLine.arguments[0]
+    var arguments = CommandLine.arguments.map { strdup($0) }
+    arguments.append(nil)
+    var environment = ProcessInfo.processInfo.environment
+    environment["HUB_BRIDGE_DISCLAIMED"] = "1"
+    var environmentEntries = environment.map { strdup("\($0.key)=\($0.value)") }
+    environmentEntries.append(nil)
+
+    var childPID: pid_t = 0
+    let spawned = posix_spawn(&childPID, executable, nil, &attributes, &arguments, &environmentEntries)
+    guard spawned == 0 else { exit(2) }
+    var childStatus: Int32 = 0
+    waitpid(childPID, &childStatus, 0)
+    exit((childStatus & 0x7f) == 0 ? (childStatus >> 8) & 0xff : 2)
+}
+
 let store = EKEventStore()
 
 // `status` must never trigger the macOS access prompt.
@@ -36,6 +72,17 @@ if operation == "status" {
     default: value = "denied"
     }
     ok(["permission": value])
+}
+
+// `request` exists only for the one-time grant run started through
+// LaunchServices, so this bundle — not the client that spawns it later — is the
+// process macOS attributes the Calendar prompt to. It reads no payload.
+if operation == "request" {
+    let grantSemaphore = DispatchSemaphore(value: 0)
+    var grantResult = false
+    store.requestFullAccessToEvents { granted, _ in grantResult = granted; grantSemaphore.signal() }
+    grantSemaphore.wait()
+    ok(["granted": grantResult])
 }
 
 let knownOperations: Set<String> = ["calendars", "events", "event", "create", "update", "delete"]
