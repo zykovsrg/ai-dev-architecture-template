@@ -102,7 +102,13 @@ The approved implementation plan will define exact code within these units:
   rules;
 - `calendar-policy/preview.py`: expiring single-use preview grants;
 - `calendar-policy/models.py`: strict request and response models;
+- `calendar-policy/bridge/hub_eventkit_bridge.swift`: the hub-authored local
+  EventKit process boundary, kept outside `vendor/` so the upstream checksum
+  manifest still answers whether upstream is unmodified;
+- `calendar-policy/bridge/SHA256SUMS`: checksum of the hub-authored bridge;
 - `scripts/apple-calendar-policy-test.sh`: isolated contract tests;
+- `scripts/apple-calendar-bridge-test.sh`: bridge presence, checksum, and
+  compilation check that never runs the bridge;
 - `hub-template/ai/skills/hub-calendar/SKILL.md`: assistant workflow;
 - hub architecture, entry rules, installer, updater, consistency checks, smoke
   tests, and install/uninstall documentation.
@@ -170,6 +176,15 @@ confirmation.
   exact reread, single-use confirmation, and no automatic rollback claim.
 - Event content may contain prompt injection. Mitigation: treat all event
   content strictly as untrusted data.
+
+## Known limitations
+
+EventKit gives every occurrence of a recurring series the same
+`calendarItemIdentifier`. A lookup by identifier therefore resolves to the
+series, not to one chosen occurrence. The `this` and `future` scopes still
+apply, but a single middle occurrence cannot be addressed by identifier alone.
+Until this is solved, treat a recurring change as affecting the series from its
+resolved occurrence onward, and state that in the preview.
 
 ## Disable and removal
 

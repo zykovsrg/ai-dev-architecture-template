@@ -107,6 +107,11 @@ mkdir -p "$HUB_DIR/scripts"
 [ -e "$HUB_DIR/scripts/generate-obsidian-projects-kanban.sh" ] \
   || cp "$SCRIPT_DIR/generate-obsidian-projects-kanban.sh" "$HUB_DIR/scripts/generate-obsidian-projects-kanban.sh"
 
+if [ -d "$SCRIPT_DIR/../calendar-policy" ]; then
+  bash "$SCRIPT_DIR/sync-calendar-policy.sh" \
+    --source "$(cd "$SCRIPT_DIR/.." && pwd -P)" --hub "$HUB_DIR"
+fi
+
 ROOTS_FILE="$HUB_DIR/ai/allowed-roots.md"
 printf '%s\n' '# Allowed Roots' '' "- $PROJECTS_ROOT" > "$ROOTS_FILE"
 
