@@ -6,6 +6,7 @@ REF="main"
 MODE="dry-run"
 DO_COMMIT="false"
 ALLOW_DIRTY="false"
+PRESERVE_AGENTS="false"
 CHECK="false"
 OFFER_HUB="false"
 PROJECT_DIR="$PWD"
@@ -34,6 +35,7 @@ Options:
   --source DIR       Local template repository or template directory. Optional.
   --ref REF          GitHub ref to download when --source is omitted. Default: main.
   --allow-dirty      Allow apply when the project has uncommitted changes.
+  --preserve-agents  Keep the project's AGENTS.md unchanged (for legacy custom rules).
   --offer-hub        Print an informational personal hub installation and migration preview.
   -h, --help         Show this help.
 
@@ -110,6 +112,9 @@ while [ "$#" -gt 0 ]; do
       ;;
     --allow-dirty)
       ALLOW_DIRTY="true"
+      ;;
+    --preserve-agents)
+      PRESERVE_AGENTS="true"
       ;;
     --check)
       CHECK="true"
@@ -233,6 +238,12 @@ changes_found=0
 
 show_file_diff() {
   local rel="$1"
+  if [ "$PRESERVE_AGENTS" = "true" ] && [ "$rel" = "AGENTS.md" ]; then
+    echo ""
+    echo "### AGENTS.md"
+    echo "Preserved by request (--preserve-agents)."
+    return 0
+  fi
   local src="$SOURCE_TEMPLATE/$rel"
   local dst="$PROJECT_DIR/$rel"
 
@@ -271,6 +282,9 @@ show_missing_memory_file() {
 
 copy_file() {
   local rel="$1"
+  if [ "$PRESERVE_AGENTS" = "true" ] && [ "$rel" = "AGENTS.md" ]; then
+    return 0
+  fi
   local src="$SOURCE_TEMPLATE/$rel"
   local dst="$PROJECT_DIR/$rel"
 
