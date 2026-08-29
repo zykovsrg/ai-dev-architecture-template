@@ -209,5 +209,5 @@ The check should report:
 
 The final list of commands and skills is a menu, not an instruction to run everything.
 
-The start screen is in `getting-started/getting-started.md`.
+Help is in `getting-started/help.md`.
 Ready-made prompts are in `docs/prompts.md` and `docs/start-prompts.md`.
