@@ -17,6 +17,17 @@ self-contained and does not require a hub. An optional personal AI hub is a
 separate installation that starts in `_ai-hub`; use its own entry file and
 `ai/architecture.md` for routing before a project is confirmed.
 
+## Hub Obsidian Bridge
+
+When this repository is the registered project child of a valid personal AI
+hub, requests to import updates from Obsidian use the hub's central vault.
+Verify the registry maps the project ID to this exact path, then run the
+existing central `obsidian-task-sync.sh` with that ID, the hub's
+`ai/tmp/obsidian-scope.txt`, and `projects/ai-dev-architecture/obsidian-vault`.
+Show the proposal first and apply it only after explicit confirmation of its
+proposal hash. Outside a valid hub layout, retain standalone behavior and
+never guess a vault path.
+
 ## Core Principles
 
 - Talk to the user in Russian and explain unfamiliar technical terms simply.

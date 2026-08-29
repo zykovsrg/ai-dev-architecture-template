@@ -2,14 +2,14 @@
 name: start-screen
 type: knowledge
 description: |
-  Show a short plain-language introduction to the AI development architecture and the current project task.
-  Activates when the user explicitly asks "покажи стартовый экран", "с чего начать", "как работать с архитектурой", "что умеет эта архитектура", or similar.
+  Show short plain-language Help for the AI development architecture and the current project task.
+  Activates when the user explicitly asks "помощь", "что умеешь", "как работать", "покажи стартовый экран", "с чего начать", "как работать с архитектурой", or similar.
   Does NOT activate automatically at session start, during environment-check, or for a request to list every installed skill or tool.
 ---
 
-# Start Screen
+# Help
 
-Use this skill only after an explicit user request. It is a read-only orientation screen, not a workflow and not an environment audit.
+Use this skill only after an explicit user request. Present it as `Помощь`. `start-screen` is only the internal compatibility name. This is a read-only orientation screen, not a workflow and not an environment audit.
 
 ## Read
 
@@ -55,7 +55,7 @@ Show no more than six useful commands:
 - `task-switch` — pause, resume, or switch work;
 - `task-finish` — verify and finish the current task after confirmation;
 - `environment-check` — check architecture files and external capabilities;
-- `start-screen` — show this screen again;
+- `Помощь`, `что умеешь`, or `как работать` — show Help again;
 - "Покажи все skills и инструменты" — show the full catalog separately.
 
 ### Что доступно
@@ -70,7 +70,7 @@ Do not print every skill name. Offer the full-catalog request instead.
 
 ### Как удалить
 
-Say that removal is a separate confirmed operation. Tell the user to ask "Помоги удалить архитектуру". Before deletion, the agent must show the affected files, offer to preserve or back up project memory, distinguish rules from task history, and request explicit confirmation. Link to `docs/uninstall.md` when it exists. Never delete anything while showing the start screen.
+Say that removal is a separate confirmed operation. Tell the user to ask "Помоги удалить архитектуру". Before deletion, the agent must show the affected files, offer to preserve or back up project memory, distinguish rules from task history, and request explicit confirmation. Link to `docs/uninstall.md` when it exists. Never delete anything while showing Help.
 
 ### Сейчас в проекте
 

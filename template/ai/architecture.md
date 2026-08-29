@@ -1,6 +1,6 @@
 # AI Development Architecture
 
-Version: 7.3
+Version: 7.4
 
 This file is the reference for workflows and the rule hierarchy. It does not need to be loaded for every task. Read it only when a task concerns workflows, rule conflicts, architecture-update, or when a rule is unclear.
 
@@ -119,11 +119,11 @@ After `environment-check`, continue in one of the work modes:
 
 Before the first real task after `environment-check`, run `task-intake`.
 
-### On-demand start screen
+### On-demand Help
 
-The start screen is separate from `environment-check`. Show it only after an explicit user request such as "покажи стартовый экран", "с чего начать", or "как работать с архитектурой". Never show it automatically at a session boundary or during a repeated environment check.
+Help is separate from `environment-check`. Show it only after an explicit user request such as "помощь", "что умеешь", "как работать", "покажи стартовый экран", "с чего начать", or "как работать с архитектурой". Never show it automatically at a session boundary or during a repeated environment check.
 
-Use `ai/skills/start-screen/SKILL.md`. The screen is read-only, uses plain Russian for a non-developer, stays close to one normal screen, and ends with the current task goal, `Status`, `Stage`, and next step or blocker. It shows skill/tool categories only; the full catalog is a separate request.
+Use `ai/skills/start-screen/SKILL.md`. Help is read-only, uses plain Russian for a non-developer, stays close to one normal screen, and ends with the current task goal, `Status`, `Stage`, and next step or blocker. It shows skill/tool categories only; the full catalog is a separate request.
 
 ### Task boundary
 
@@ -411,7 +411,7 @@ Base skills:
 - `task-switch` — switching between unfinished tasks without losing context; may promote confirmed future tasks into current work.
 - `architecture-update` — updating development architecture after user approval.
 - `environment-check` — checking architecture installation, tool availability, and printing the available next commands/skills menu.
-- `start-screen` — short read-only orientation shown only after an explicit user request.
+- `start-screen` — internal compatibility name for short read-only Help shown only after an explicit user request.
 
 Use skills by trigger. Do not apply skills from memory. Open the current `ai/skills/*/SKILL.md` before using that workflow.
 
