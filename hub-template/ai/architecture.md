@@ -176,6 +176,7 @@ Label hypotheses as hypotheses and preserve their source when recording them.
 A project switch changes the selected project. It always returns to
 `Mode: routing`, shows the new exact registered path, and requires a new
 explicit confirmation before any read of the new project's memory or code.
+Use the hub-owned `hub-project-switch` workflow for this operation.
 
 A task switch happens inside an already confirmed project. Use that project's
 hub-owned `hub-task-switch` workflow and selected-project `ai/` memory; it is not

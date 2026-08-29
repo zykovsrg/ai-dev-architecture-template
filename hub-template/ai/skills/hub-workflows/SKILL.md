@@ -74,7 +74,8 @@ implementation work retain the normal exact confirmed scope.
    proposal package. A package confirmation may authorize only unchanged named
    proposals that remain selected; the user may exclude individual proposal
    IDs. Every proposal retains its exact target and diff, and any changed diff
-   needs new confirmation.
+   needs new confirmation. Outside that package, show a fresh exact diff and
+   wait for named proposal confirmation.
 
 ## Capture rules
 

@@ -1127,11 +1127,11 @@ sed '/3\. <project-id-3>/d' "$ROUTER_SKILL" > "$ROUTER_WITHOUT_THIRD_SLOT"
 assert_rejected router_multiple_candidates_template_valid "$ROUTER_WITHOUT_THIRD_SLOT"
 
 ROUTER_WITHOUT_ASSISTANT_SCOPE="$TMP_DIR/router-without-assistant-scope.md"
-sed '/all active registered projects/d' "$ROUTER_SKILL" > "$ROUTER_WITHOUT_ASSISTANT_SCOPE"
+sed '/active registered projects/d' "$ROUTER_SKILL" > "$ROUTER_WITHOUT_ASSISTANT_SCOPE"
 assert_rejected personal_assistant_router_contract_valid "$ROUTER_WITHOUT_ASSISTANT_SCOPE"
 
 HUB_WORKFLOWS_WITHOUT_PACKAGE="$TMP_DIR/hub-workflows-without-package.md"
-sed '/one selectable proposal package/d' "$HUB_WORKFLOWS_SKILL" > "$HUB_WORKFLOWS_WITHOUT_PACKAGE"
+sed '/one selectable/d; /proposal package/d' "$HUB_WORKFLOWS_SKILL" > "$HUB_WORKFLOWS_WITHOUT_PACKAGE"
 assert_rejected hub_workflows_skill_contract_valid "$HUB_WORKFLOWS_WITHOUT_PACKAGE"
 
 SWITCH_SKILL="$ROOT/hub-template/ai/skills/hub-project-switch/SKILL.md"
