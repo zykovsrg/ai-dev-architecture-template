@@ -10,11 +10,17 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 assert_contains() { grep -Fq -- "$2" "$1" || fail "expected '$2' in $1"; }
 assert_not_contains() { ! grep -Fq -- "$2" "$1" || fail "unexpected '$2' in $1"; }
 assert_equals() { [ "$1" = "$2" ] || fail "expected '$1' to equal '$2'"; }
-assert_matching_entries() { cmp -s <(sed '1d' "$1") <(sed '1d' "$2") || fail "entry bodies differ: $1 $2"; }
+assert_matching_entries() {
+  cmp -s \
+    <(sed '1d' "$1" | sed 's/point for Codex; `CLAUDE\.md` is the matching Claude Code entry file\./point for <tool>; `<matching-entry-file>` is the matching <matching-tool> entry file./' | sed 's/point for Claude Code; `AGENTS\.md` is the matching Codex entry file\./point for <tool>; `<matching-entry-file>` is the matching <matching-tool> entry file./') \
+    <(sed '1d' "$2" | sed 's/point for Codex; `CLAUDE\.md` is the matching Claude Code entry file\./point for <tool>; `<matching-entry-file>` is the matching <matching-tool> entry file./' | sed 's/point for Claude Code; `AGENTS\.md` is the matching Codex entry file\./point for <tool>; `<matching-entry-file>` is the matching <matching-tool> entry file./') \
+    || fail "entry bodies differ: $1 $2"
+}
 
 HUB="$TMP_DIR/hub"
 PROJECTS="$HUB/projects"
 LEGACY="$PROJECTS/legacy-project"
+RECIPROCAL="$PROJECTS/reciprocal-entry-project"
 MODERN="$PROJECTS/modern-project"
 BROKEN="$PROJECTS/broken-project"
 UNREGISTERED="$PROJECTS/unregistered-project"
@@ -30,6 +36,7 @@ git -C "$HUB" init -q
 printf '%s\n' '# Project Registry' > "$HUB/ai/project-registry.md"
 printf '%s\n' \
   'legacy-project' \
+  'reciprocal-entry-project' \
   'broken-project' \
   'invalid-header-project' \
   'malformed-bridge-project' \
@@ -49,6 +56,7 @@ EOF
 }
 
 add_project legacy-project 7.3
+add_project reciprocal-entry-project 7.3
 add_project modern-project 7.4
 add_project broken-project 7.3
 add_project out-of-scope-project 7.3
@@ -83,6 +91,16 @@ Standalone mode.
 Keep this content.
 EOF
 sed '1s/Codex/Claude Code/' "$LEGACY/AGENTS.md" > "$LEGACY/CLAUDE.md"
+cp "$LEGACY/AGENTS.md" "$RECIPROCAL/AGENTS.md"
+sed '1s/Codex/Claude Code/' "$RECIPROCAL/AGENTS.md" > "$RECIPROCAL/CLAUDE.md"
+cat >> "$RECIPROCAL/AGENTS.md" <<'EOF'
+
+point for Codex; `CLAUDE.md` is the matching Claude Code entry file.
+EOF
+cat >> "$RECIPROCAL/CLAUDE.md" <<'EOF'
+
+point for Claude Code; `AGENTS.md` is the matching Codex entry file.
+EOF
 sed '1s/legacy-project/modern-project/' "$LEGACY/AGENTS.md" > "$MODERN/AGENTS.md"
 sed '1s/Codex/Claude Code/' "$MODERN/AGENTS.md" > "$MODERN/CLAUDE.md"
 printf '%s\n' '# AI Development Entry Point — Codex' '## Installation Mode' 'Agents-only rule.' > "$BROKEN/AGENTS.md"
@@ -121,6 +139,9 @@ if ! grep -Fq 'legacy-project' "$TMP_DIR/dry-run.out"; then
   cat "$TMP_DIR/dry-run.err" >&2
   fail 'expected legacy-project in dry-run output'
 fi
+# This fixture reproduces the legacy reciprocal sentence that the old
+# normalizer skipped; the exact-pair normalization must now select it.
+assert_contains "$TMP_DIR/dry-run.out" 'reciprocal-entry-project'
 assert_contains "$TMP_DIR/dry-run.out" 'AGENTS.md'
 assert_contains "$TMP_DIR/dry-run.out" 'CLAUDE.md'
 assert_not_contains "$TMP_DIR/dry-run.out" 'modern-project'
@@ -141,6 +162,9 @@ assert_contains "$LEGACY/AGENTS.md" '## Hub Obsidian Bridge'
 assert_contains "$LEGACY/AGENTS.md" 'obsidian-task-sync.sh scan --project-id <project-id>'
 assert_contains "$LEGACY/AGENTS.md" 'never guess a vault path.'
 assert_matching_entries "$LEGACY/AGENTS.md" "$LEGACY/CLAUDE.md"
+assert_contains "$RECIPROCAL/AGENTS.md" '## Hub Obsidian Bridge'
+assert_contains "$RECIPROCAL/CLAUDE.md" '## Hub Obsidian Bridge'
+assert_matching_entries "$RECIPROCAL/AGENTS.md" "$RECIPROCAL/CLAUDE.md"
 assert_not_contains "$MODERN/AGENTS.md" '## Hub Obsidian Bridge'
 assert_not_contains "$BROKEN/AGENTS.md" '## Hub Obsidian Bridge'
 assert_not_contains "$UNREGISTERED/AGENTS.md" '## Hub Obsidian Bridge'
