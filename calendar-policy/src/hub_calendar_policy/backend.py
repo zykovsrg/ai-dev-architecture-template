@@ -2,11 +2,12 @@
 
 from collections.abc import Awaitable
 from datetime import datetime
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from .models import CalendarRef, ChangeRequest, EventRef
 
 
+@runtime_checkable
 class CalendarBackend(Protocol):
     def permission_status(self) -> Awaitable[str]: ...
     def list_calendars(self) -> Awaitable[list[CalendarRef]]: ...

@@ -51,7 +51,11 @@ def test_unavailable_calendar_is_denied(policy: CalendarPolicy) -> None:
 
 def test_read_only_calendar_is_denied_for_change(policy: CalendarPolicy) -> None:
     calendar = CalendarRef(id="calendar-1", name="Read only", timezone=ZONE, writable=False)
-    request = ChangeRequest(action="create", calendar_id="calendar-1", title="Review")
+    request = ChangeRequest(
+        action="create", calendar_id="calendar-1", title="Review",
+        start=datetime(2026, 8, 29, 10, 0, tzinfo=ZoneInfo(ZONE)),
+        end=datetime(2026, 8, 29, 11, 0, tzinfo=ZoneInfo(ZONE)),
+    )
 
     with pytest.raises(PolicyError, match="CALENDAR_READ_ONLY"):
         policy.authorize_change(calendar, request)

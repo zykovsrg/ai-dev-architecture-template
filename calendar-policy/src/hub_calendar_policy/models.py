@@ -71,6 +71,8 @@ class ChangeRequest(BaseModel):
     def validate_request(self) -> "ChangeRequest":
         if self.action in {"update", "delete"} and self.event_id is None:
             raise ValueError("event_id is required for update and delete")
+        if self.action == "create" and (self.title is None or self.start is None):
+            raise ValueError("create requires title, start and end")
         if self.recurring and self.recurrence_scope is None:
             raise ValueError("recurrence_scope is required for recurring events")
         if (self.start is None) != (self.end is None):
