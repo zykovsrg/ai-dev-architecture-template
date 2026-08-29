@@ -102,6 +102,8 @@ mkdir -p "$HUB_DIR/scripts"
   || cp "$SCRIPT_DIR/check-hub-registry.sh" "$HUB_DIR/scripts/check-hub-registry.sh"
 [ -e "$HUB_DIR/scripts/read-compact-project-index.sh" ] \
   || cp "$SCRIPT_DIR/read-compact-project-index.sh" "$HUB_DIR/scripts/read-compact-project-index.sh"
+[ -e "$HUB_DIR/scripts/obsidian-task-sync.sh" ] \
+  || cp "$SCRIPT_DIR/obsidian-task-sync.sh" "$HUB_DIR/scripts/obsidian-task-sync.sh"
 
 ROOTS_FILE="$HUB_DIR/ai/allowed-roots.md"
 printf '%s\n' '# Allowed Roots' '' "- $PROJECTS_ROOT" > "$ROOTS_FILE"
