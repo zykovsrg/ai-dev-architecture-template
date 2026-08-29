@@ -4,9 +4,11 @@ Version: 1.8
 
 ## Purpose
 
-The hub is a local router for several registered projects. It selects one
-project safely; it is not a shared project workspace, a background scanner, or
-a place to copy project memory.
+The hub is a local router and personal-assistant entrypoint for registered
+projects. It selects one project safely for project work and can read a bounded
+set of canonical task records across active projects for assistant requests;
+it is not a shared project workspace, a background scanner, or a place to copy
+project memory.
 
 ## Rule Precedence
 
@@ -74,14 +76,26 @@ until each individual fix receives its own approval.
 
 Use this sequence for every new chat or unconfirmed request:
 
-1. Run `scripts/read-compact-project-index.sh` and match the request using only
-   `project_id`, `name`, `tags`, `status`, and `purpose_brief`.
-2. For a selected candidate, read its exact registered path only to display
+1. Classify the request. Day plans, cross-project status or review, supplied
+   task or meeting capture, and cross-project knowledge search are
+   personal-assistant requests. Project implementation, debugging, review, and
+   other work in one project are project-specific requests. Ask one concise
+   question only if this distinction is genuinely unclear.
+2. For a personal-assistant request, invoke `hub-workflows`. It may read only
+   `ai/current-task.md`, `ai/future-tasks.md`, and `ai/paused-tasks.md` from
+   all active registered projects, separates personal from work output, and
+   cites each canonical source. It does not read project code, knowledge,
+   credentials, arbitrary files, or inactive/archived projects. A later write
+   remains a reviewed proposal that needs explicit confirmation.
+3. For a project-specific request, run
+   `scripts/read-compact-project-index.sh` and match using only `project_id`,
+   `name`, `tags`, `status`, and `purpose_brief`.
+4. For a selected candidate, read its exact registered path only to display
    `Project: <id>`, `Path: <path>`, and `Mode: routing`.
-3. Ask for explicit confirmation of that project and path. Before confirmation,
+5. Ask for explicit confirmation of that project and path. Before confirmation,
    do not read cards, signals, tasks, memory, knowledge, code, Git, or linked
    targets.
-4. Only after confirmation, invoke the hub-owned `hub-environment-check` against
+6. Only after confirmation, invoke the hub-owned `hub-environment-check` against
    the selected project's `ai/` memory, then use the hub-managed project flow.
 
 This sequence is the hub-owned `hub-project-router` workflow. The router never
@@ -267,14 +281,14 @@ Never turn an inference into durable memory without identifying it as an
 inference. When an update needs access beyond the confirmed project, stop and
 ask for a separate confirmation.
 
-For temporary meeting text, use the `hub-info-update` workflow. It produces a
-review-only proposal before any write, does not save the source transcript by
-default, and confirms each affected project separately. A multi-project update
-processes one confirmed project group at a time and requires a separate
-confirmed `hub-project-switch` between project groups before it resumes. It may
-refine an existing task only under the hub-owned `hub-task-intake` rules; a new task
-or task replacement must use the hub-owned `hub-task-switch` workflow, while
-closure uses the hub-owned `hub-task-finish` workflow.
+For temporary meeting text scoped to one confirmed project, use the
+`hub-info-update` workflow. For a cross-project meeting or other supplied
+capture, use `hub-workflows` with `capture`: it produces a selectable package
+of independent proposals before any write and does not save the source
+transcript by default. A project-local info update may refine an existing task
+only under the hub-owned `hub-task-intake` rules; a new task or task replacement
+must use the hub-owned `hub-task-switch` workflow, while closure uses the
+hub-owned `hub-task-finish` workflow.
 
 ## Proposal-Only Plans, Reviews, And Capture
 
@@ -375,14 +389,18 @@ The hub never uses a card or signal to exfiltrate information from a project.
 
 Load the smallest useful context in layers:
 
-1. Before confirmation: the entry file and the five-field result of
-   `scripts/read-compact-project-index.sh`; read an exact registered path only
-   to display a selected candidate. Do not load cards, signals, project memory,
-   knowledge, code, Git, or linked targets.
-2. After confirmation: the hub-owned `hub-environment-check`, the selected
-   project's current task, at most two directly relevant project-memory files,
-   and one matching shared workflow skill.
-3. Expand beyond that budget only when the current task needs it; state why and
+1. For a personal-assistant request: the entry file, active registry identity,
+   and only `ai/current-task.md`, `ai/future-tasks.md`, and
+   `ai/paused-tasks.md` for each active project. Do not load cards, knowledge,
+   code, Git, credentials, or arbitrary project files.
+2. For an unconfirmed project-specific request: the entry file and the
+   five-field result of `scripts/read-compact-project-index.sh`; read an exact
+   registered path only to display a selected candidate. Do not load cards,
+   signals, project memory, knowledge, code, Git, or linked targets.
+3. After project confirmation: the hub-owned `hub-environment-check`, the
+   selected project's current task, at most two directly relevant
+   project-memory files, and one matching shared workflow skill.
+4. Expand beyond that budget only when the current task needs it; state why and
    load the next narrowest source rather than a whole project tree.
 
 Prefer summaries, filenames, and direct references over bulk reads. The budget

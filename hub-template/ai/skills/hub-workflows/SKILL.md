@@ -17,6 +17,21 @@ Do not run Calendar MCP, perform a vault migration, start a session audit, scan
 for arbitrary transcripts, or copy source text into project memory. Do not add
 an apply command or a persistent proposal queue.
 
+## Personal-assistant scope
+
+When `hub-project-router` classifies a personal-assistant request, this skill
+may read `ai/current-task.md`, `ai/future-tasks.md`, and `ai/paused-tasks.md`
+from all active registered projects without project-by-project confirmation.
+This is a read-only all-active-project scope, not a general project grant: do
+not read project code, knowledge records, credentials, arbitrary files, or
+inactive/archived projects. Separate personal and work results, and cite the
+project ID plus canonical path for each factual item.
+
+The personal-assistant scope applies to day plans, overdue or blocked-work
+overviews, evening or weekly reviews, and capture after its selected source is
+received. Richer project reads, explicit knowledge paths, and any project-local
+implementation work retain the normal exact confirmed scope.
+
 ## Fixed sequence
 
 1. **Select one source.** Receive exactly one user-selected source and name its
@@ -37,11 +52,13 @@ an apply command or a persistent proposal queue.
    evidence for each match, and the intended purpose of any later read. A card,
    link, or inferred match is not permission to read project memory, knowledge,
    code, Git, or linked targets.
-4. **Confirm scope before full reads.** Wait for an explicit confirmation of a
-   confirmed project or named confirmed set. Repeat every project ID and exact
-   registered path. Only then may you read the smallest required canonical
-   `ai/` records for that scope and explicitly selected project-local
-   `knowledge/` paths. Never widen the confirmed set silently.
+4. **Confirm scope before full reads.** For a personal-assistant request, use
+   the all-active-project scope above and read only its three canonical task
+   records. Otherwise wait for an explicit confirmation of a confirmed project
+   or named confirmed set. Repeat every project ID and exact registered path.
+   Only then may you read the smallest required canonical `ai/` records for
+   that scope and explicitly selected project-local `knowledge/` paths. Never
+   widen the confirmed set silently.
 5. **Perform semantic analysis.** The AI agent, not the Bash guardrail, extracts
    meaning, classifies records, ranks work, and renders the deterministic output
    below. Bash may validate paths, flags, and structured field syntax only. For
@@ -53,10 +70,11 @@ an apply command or a persistent proposal queue.
    per possible write, followed by one exact per-file diff or replacement
    block. Keep proposals independent; if an exact allowed target file is not
    known, ask a question instead of guessing or emitting an actionable
-   proposal. Before any later write, show a fresh exact diff for that proposal
-   and wait for explicit confirmation that repeats the named proposal ID and
-   exact target. A named proposal confirmation authorizes only that exact diff;
-   any changed diff needs new confirmation.
+   proposal. For one capture result, present the envelopes as one selectable
+   proposal package. A package confirmation may authorize only unchanged named
+   proposals that remain selected; the user may exclude individual proposal
+   IDs. Every proposal retains its exact target and diff, and any changed diff
+   needs new confirmation.
 
 ## Capture rules
 
@@ -93,12 +111,18 @@ the main ranked list. A waiting follow-up is due when `follow_up` equals the
 requested date and overdue when it is earlier. Missing structured waiting
 fields are risks, not inferred values.
 
-Every successful workflow output starts with these exact lines:
+Every successful non-personal workflow output starts with these exact lines:
 
 ```text
 Read-only workflow: no changes were made.
 Requested date: <YYYY-MM-DD>
 Confirmed scope: <project-id>[, <project-id>...]
+```
+
+For a personal-assistant result, replace the last line with:
+
+```text
+Scope: all active registered projects
 ```
 
 Within every section, keep canonical ranking order and render `- Нет.` when the
@@ -197,17 +221,18 @@ requires_confirmation: true
 ```
 
 After the envelopes, state that apply is unavailable. A possible project,
-task, meeting, knowledge, deadline, waiting, or Calendar write must never be
-combined with another write to reduce confirmation count. Immediately after
-each envelope, show the exact proposed diff or full replacement block for its
-single `target_path`. A create-project proposal must name the exact proposed
-direct-child path and list each planned scaffold, registry, and card file, but
-must not create or inspect that target.
+task, meeting, knowledge, deadline, waiting, or Calendar write remains an
+independent proposal with its own exact diff and `target_path`. A capture may
+render all independent envelopes as one selectable proposal package; this
+reduces confirmation count without combining their writes. A create-project
+proposal must name the exact proposed direct-child path and list each planned
+scaffold, registry, and card file, but must not create or inspect that target.
 
 ## Confirmation boundary
 
 Source selection, recorder export consent, scope confirmation, and proposal
-confirmation are separate gates. None substitutes for another. A proposal can
-be applied only by its owning confirmed project workflow after a fresh exact
-diff and named proposal confirmation. Unknown, pending, failed, or ambiguous
-targets remain read-only proposals or questions.
+confirmation are separate gates. None substitutes for another. A one selectable
+proposal package can be applied only by its owning confirmed project workflow
+after one confirmation that names the unchanged named proposals still selected.
+Unknown, pending, failed, or ambiguous targets remain read-only proposals or
+questions.
