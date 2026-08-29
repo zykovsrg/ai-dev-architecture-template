@@ -81,6 +81,9 @@ rsync -a --delete --delete-excluded "${RSYNC_EXCLUDES[@]}" "$POLICY_SRC/src/" "$
 rsync -a --delete --delete-excluded "${RSYNC_EXCLUDES[@]}" "$POLICY_SRC/bridge/" "$TOOL_DIR/bridge/"
 cp "$POLICY_SRC/pyproject.toml" "$TOOL_DIR/pyproject.toml"
 
+# The runtime environment is built on this machine and never committed.
+printf '%s\n' '.venv/' > "$TOOL_DIR/.gitignore"
+
 # Runtime selection is hub memory, not shipped code: create it only if absent.
 mkdir -p "$ALLOWLIST_DIR"
 if [ ! -e "$ALLOWLIST" ]; then
