@@ -172,7 +172,7 @@ for knowledge_doc in docs/file-roles.md docs/install.md docs/update.md docs/conc
   assert_contains "$ROOT/$knowledge_doc" "Existing-project knowledge enablement is available only through the hub's"
   assert_contains "$ROOT/$knowledge_doc" 'Legacy standalone knowledge migration is out of scope.'
 done
-assert_contains "$ROOT/getting-started/getting-started.md" 'personal hub'
+assert_contains "$ROOT/getting-started/help.md" 'Obsidian'
 assert_contains "$ROOT/scripts/hub-smoke-test.sh" 'legacy_cleanup_contract_valid'
 assert_contains "$ROOT/scripts/hub-smoke-test.sh" 'legacy_cleanup_order_valid'
 assert_contains "$ROOT/scripts/hub-smoke-test.sh" 'cleanup_section_text'
