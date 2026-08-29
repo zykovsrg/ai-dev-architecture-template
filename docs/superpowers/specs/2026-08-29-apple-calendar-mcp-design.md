@@ -177,14 +177,14 @@ confirmation.
 - Event content may contain prompt injection. Mitigation: treat all event
   content strictly as untrusted data.
 
-## Known limitations
+## Recurring occurrences
 
 EventKit gives every occurrence of a recurring series the same
-`calendarItemIdentifier`. A lookup by identifier therefore resolves to the
-series, not to one chosen occurrence. The `this` and `future` scopes still
-apply, but a single middle occurrence cannot be addressed by identifier alone.
-Until this is solved, treat a recurring change as affecting the series from its
-resolved occurrence onward, and state that in the preview.
+`calendarItemIdentifier`, so an identifier alone resolves to the series. A
+recurring change therefore also carries `occurrence_start`, and the bridge
+resolves the instance by searching a day-wide window and matching that exact
+start. The policy layer refuses a resolved event whose start differs from the
+one requested, so a series can never stand in for the occurrence that was named.
 
 ## Disable and removal
 

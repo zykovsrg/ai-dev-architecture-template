@@ -9,6 +9,7 @@ class FakeCalendarBackend:
         self.events = {event.id: event for event in events}
         self.permission = permission
         self.writes: list[tuple[str, str | None, str | None]] = []
+        self.lookups: list[tuple[str, datetime | None]] = []
 
     async def permission_status(self) -> str:
         return self.permission
@@ -22,8 +23,15 @@ class FakeCalendarBackend:
             if event.calendar_id in calendar_ids and event.start < end and event.end > start
         ]
 
-    async def get_event(self, event_id: str) -> EventRef | None:
-        return self.events.get(event_id)
+    async def get_event(self, event_id: str, occurrence_start: datetime | None = None) -> EventRef | None:
+        self.lookups.append((event_id, occurrence_start))
+        if occurrence_start is None:
+            return self.events.get(event_id)
+        return next(
+            (event for event in self.events.values()
+             if event.id == event_id and event.start == occurrence_start),
+            None,
+        )
 
     async def create(self, request: ChangeRequest) -> EventRef:
         assert request.start is not None and request.end is not None and request.title is not None

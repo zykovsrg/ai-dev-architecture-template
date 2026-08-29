@@ -126,11 +126,15 @@ class GuardedCalendarServer:
         if request.action == "create":
             return None
         assert request.event_id is not None
-        event = await self._backend.get_event(request.event_id)
+        event = await self._backend.get_event(request.event_id, request.occurrence_start)
         if event is None:
             raise PolicyError("EVENT_UNAVAILABLE")
         if event.calendar_id != request.calendar_id:
             raise PolicyError("CALENDAR_MISMATCH")
+        # The backend resolved by identifier and start; refuse anything else,
+        # so a series can never stand in for the occurrence that was named.
+        if request.occurrence_start is not None and event.start != request.occurrence_start:
+            raise PolicyError("OCCURRENCE_UNAVAILABLE")
         return event
 
     def _authorize_existing(self, request: ChangeRequest, event: EventRef | None) -> None:
@@ -172,6 +176,7 @@ class GuardedCalendarServer:
             "end": request.end.isoformat() if request.end else (event.end.isoformat() if event else None),
             "event_id": event.id if event else None,
             "recurrence_scope": request.recurrence_scope,
+            "occurrence_start": request.occurrence_start.isoformat() if request.occurrence_start else None,
             "effect": "No change has been made. Apply requires this exact preview confirmation.",
         }
 

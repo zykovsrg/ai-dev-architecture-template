@@ -56,8 +56,11 @@ class EventKitBackend:
         })
         return [EventRef.model_validate(item) for item in _as_list(result)]
 
-    async def get_event(self, event_id: str) -> EventRef | None:
-        result = await self._call("event", {"event_id": event_id})
+    async def get_event(self, event_id: str, occurrence_start: datetime | None = None) -> EventRef | None:
+        payload: dict[str, object] = {"event_id": event_id}
+        if occurrence_start is not None:
+            payload["occurrence_start"] = occurrence_start.isoformat()
+        result = await self._call("event", payload)
         return None if result is None else EventRef.model_validate(result)
 
     async def free_slots(self, calendar_ids: set[str], start: datetime, end: datetime) -> list[tuple[datetime, datetime]]:
@@ -81,6 +84,7 @@ class EventKitBackend:
         payload["event_id"] = event.id
         payload["calendar_id"] = event.calendar_id
         payload["recurrence_scope"] = scope
+        payload["occurrence_start"] = event.start.isoformat()
         result = await self._call("update", payload)
         return EventRef.model_validate(result)
 
@@ -89,6 +93,7 @@ class EventKitBackend:
             "event_id": event.id,
             "calendar_id": event.calendar_id,
             "recurrence_scope": scope,
+            "occurrence_start": event.start.isoformat(),
         })
 
 

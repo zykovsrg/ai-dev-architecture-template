@@ -36,7 +36,10 @@ no recovery from the client side.
 
 Impact: Calendar access is granted once, to `com.personal-ai-hub.calendar-bridge`,
 and works from any MCP client. Rebuilding changes the signature and requires
-running `scripts/grant-calendar-access.sh` again. The disclaim symbol is private
+running `scripts/grant-calendar-access.sh` again. Between a rebuild and that
+run, `calendar_status` reports `not_determined` even though a real operation
+would succeed: the stored decision is re-associated with the new signature by
+the first actual access request, not by reading the status. The disclaim symbol is private
 API resolved at run time; if it disappears the bridge keeps working and falls
 back to asking on behalf of the client.
 

@@ -66,6 +66,7 @@ class ChangeRequest(BaseModel):
     end: datetime | None = None
     recurring: bool = False
     recurrence_scope: Literal["this", "future"] | None = None
+    occurrence_start: datetime | None = None
 
     @model_validator(mode="after")
     def validate_request(self) -> "ChangeRequest":
@@ -75,6 +76,12 @@ class ChangeRequest(BaseModel):
             raise ValueError("create requires title, start and end")
         if self.recurring and self.recurrence_scope is None:
             raise ValueError("recurrence_scope is required for recurring events")
+        # Every occurrence of a series shares one identifier, so a recurring
+        # write must also name which occurrence it starts from.
+        if self.recurring and self.action in {"update", "delete"}:
+            if self.occurrence_start is None:
+                raise ValueError("occurrence_start is required for recurring changes")
+            _require_aware(self.occurrence_start, "occurrence_start")
         if (self.start is None) != (self.end is None):
             raise ValueError("start and end must be supplied together")
         if self.start is not None and self.end is not None:
