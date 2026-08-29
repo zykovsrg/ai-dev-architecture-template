@@ -155,11 +155,13 @@ resolve_source_template() {
       SOURCE_VALIDATOR="$SOURCE_DIR/scripts/check-hub-registry.sh"
       SOURCE_COMPACT_INDEX="$SOURCE_DIR/scripts/read-compact-project-index.sh"
       SOURCE_OBSIDIAN_SYNC="$SOURCE_DIR/scripts/obsidian-task-sync.sh"
+      SOURCE_OBSIDIAN_GENERATOR="$SOURCE_DIR/scripts/generate-obsidian-projects-kanban.sh"
     elif [ -d "$SOURCE_DIR/ai" ] && [ -f "$SOURCE_DIR/AGENTS.md" ]; then
       SOURCE_TEMPLATE="$SOURCE_DIR"
       SOURCE_VALIDATOR="$(cd "$SOURCE_DIR/.." && pwd)/scripts/check-hub-registry.sh"
       SOURCE_COMPACT_INDEX="$(cd "$SOURCE_DIR/.." && pwd)/scripts/read-compact-project-index.sh"
       SOURCE_OBSIDIAN_SYNC="$(cd "$SOURCE_DIR/.." && pwd)/scripts/obsidian-task-sync.sh"
+      SOURCE_OBSIDIAN_GENERATOR="$(cd "$SOURCE_DIR/.." && pwd)/scripts/generate-obsidian-projects-kanban.sh"
     else
       die "--source must point to the template repository or to its hub-template/ directory"
     fi
@@ -176,6 +178,7 @@ resolve_source_template() {
     SOURCE_VALIDATOR="$SOURCE_ROOT/scripts/check-hub-registry.sh"
     SOURCE_COMPACT_INDEX="$SOURCE_ROOT/scripts/read-compact-project-index.sh"
     SOURCE_OBSIDIAN_SYNC="$SOURCE_ROOT/scripts/obsidian-task-sync.sh"
+    SOURCE_OBSIDIAN_GENERATOR="$SOURCE_ROOT/scripts/generate-obsidian-projects-kanban.sh"
   fi
 
   [ -f "$SOURCE_TEMPLATE/AGENTS.md" ] || die "Source hub template is missing AGENTS.md"
@@ -193,6 +196,7 @@ resolve_source_template() {
   fi
   [ -f "$SOURCE_COMPACT_INDEX" ] || die "Source template is missing mandatory script: scripts/read-compact-project-index.sh"
   [ -f "$SOURCE_OBSIDIAN_SYNC" ] || die "Source template is missing mandatory script: scripts/obsidian-task-sync.sh"
+  [ -f "$SOURCE_OBSIDIAN_GENERATOR" ] || die "Source template is missing mandatory script: scripts/generate-obsidian-projects-kanban.sh"
   for mandatory_skill in hub-project-router hub-project-switch hub-project-register hub-registry-check hub-knowledge-capture hub-knowledge-review hub-workflows; do
     [ -f "$SOURCE_TEMPLATE/ai/skills/$mandatory_skill/SKILL.md" ] \
       || die "Source template missing mandatory hub skill: $mandatory_skill"
@@ -205,6 +209,7 @@ PROTECTED_FILES=(
   "ai/architecture.md"
   "scripts/read-compact-project-index.sh"
   "scripts/obsidian-task-sync.sh"
+  "scripts/generate-obsidian-projects-kanban.sh"
 )
 
 MEMORY_FILES=(
@@ -342,6 +347,7 @@ show_file_diff() {
   [ "$rel" = "scripts/check-hub-registry.sh" ] && src="$SOURCE_VALIDATOR"
   [ "$rel" = "scripts/read-compact-project-index.sh" ] && src="$SOURCE_COMPACT_INDEX"
   [ "$rel" = "scripts/obsidian-task-sync.sh" ] && src="$SOURCE_OBSIDIAN_SYNC"
+  [ "$rel" = "scripts/generate-obsidian-projects-kanban.sh" ] && src="$SOURCE_OBSIDIAN_GENERATOR"
 
   [ -f "$src" ] || return 0
 
@@ -384,6 +390,7 @@ copy_file() {
   [ "$rel" = "scripts/check-hub-registry.sh" ] && src="$SOURCE_VALIDATOR"
   [ "$rel" = "scripts/read-compact-project-index.sh" ] && src="$SOURCE_COMPACT_INDEX"
   [ "$rel" = "scripts/obsidian-task-sync.sh" ] && src="$SOURCE_OBSIDIAN_SYNC"
+  [ "$rel" = "scripts/generate-obsidian-projects-kanban.sh" ] && src="$SOURCE_OBSIDIAN_GENERATOR"
 
   [ -f "$src" ] || return 0
   mkdir -p "$(dirname "$dst")"

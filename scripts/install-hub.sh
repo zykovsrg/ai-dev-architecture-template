@@ -104,6 +104,8 @@ mkdir -p "$HUB_DIR/scripts"
   || cp "$SCRIPT_DIR/read-compact-project-index.sh" "$HUB_DIR/scripts/read-compact-project-index.sh"
 [ -e "$HUB_DIR/scripts/obsidian-task-sync.sh" ] \
   || cp "$SCRIPT_DIR/obsidian-task-sync.sh" "$HUB_DIR/scripts/obsidian-task-sync.sh"
+[ -e "$HUB_DIR/scripts/generate-obsidian-projects-kanban.sh" ] \
+  || cp "$SCRIPT_DIR/generate-obsidian-projects-kanban.sh" "$HUB_DIR/scripts/generate-obsidian-projects-kanban.sh"
 
 ROOTS_FILE="$HUB_DIR/ai/allowed-roots.md"
 printf '%s\n' '# Allowed Roots' '' "- $PROJECTS_ROOT" > "$ROOTS_FILE"

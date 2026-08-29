@@ -1759,6 +1759,7 @@ assert_file "$HUB_INSTALL/CLAUDE.md"
 assert_file "$HUB_INSTALL/ai/project-registry.md"
 assert_file "$HUB_INSTALL/scripts/read-compact-project-index.sh"
 assert_file "$HUB_INSTALL/scripts/obsidian-task-sync.sh"
+assert_file "$HUB_INSTALL/scripts/generate-obsidian-projects-kanban.sh"
 assert_file "$HUB_INSTALL/ai/archiprojects.md"
 assert_file "$HUB_INSTALL/scripts/check-hub-registry.sh"
 assert_file "$HUB_INSTALL/projects/.gitkeep"
@@ -1845,6 +1846,7 @@ cp -R "$ROOT/hub-template" "$INCOMPLETE_HUB_SOURCE/hub-template"
 mkdir -p "$INCOMPLETE_HUB_SOURCE/scripts"
 cp "$ROOT/scripts/read-compact-project-index.sh" "$INCOMPLETE_HUB_SOURCE/scripts/read-compact-project-index.sh"
 cp "$ROOT/scripts/obsidian-task-sync.sh" "$INCOMPLETE_HUB_SOURCE/scripts/obsidian-task-sync.sh"
+cp "$ROOT/scripts/generate-obsidian-projects-kanban.sh" "$INCOMPLETE_HUB_SOURCE/scripts/generate-obsidian-projects-kanban.sh"
 rm "$INCOMPLETE_HUB_SOURCE/hub-template/ai/skills/hub-project-router/SKILL.md"
 if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$INCOMPLETE_HUB_SOURCE" --dry-run > "$TMP_DIR/incomplete-hub-source.out" 2>&1; then
   fail 'hub updater accepted a source without a mandatory hub skill'
@@ -1857,6 +1859,7 @@ cp -R "$ROOT/hub-template" "$INCOMPLETE_KNOWLEDGE_SOURCE/hub-template"
 mkdir -p "$INCOMPLETE_KNOWLEDGE_SOURCE/scripts"
 cp "$ROOT/scripts/read-compact-project-index.sh" "$INCOMPLETE_KNOWLEDGE_SOURCE/scripts/read-compact-project-index.sh"
 cp "$ROOT/scripts/obsidian-task-sync.sh" "$INCOMPLETE_KNOWLEDGE_SOURCE/scripts/obsidian-task-sync.sh"
+cp "$ROOT/scripts/generate-obsidian-projects-kanban.sh" "$INCOMPLETE_KNOWLEDGE_SOURCE/scripts/generate-obsidian-projects-kanban.sh"
 rm "$INCOMPLETE_KNOWLEDGE_SOURCE/hub-template/ai/skills/hub-knowledge-review/SKILL.md"
 if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$INCOMPLETE_KNOWLEDGE_SOURCE" --dry-run > "$TMP_DIR/incomplete-knowledge-source.out" 2>&1; then
   fail 'hub updater accepted a source without the mandatory knowledge quality cycle'
@@ -1869,6 +1872,7 @@ cp -R "$ROOT/hub-template" "$INCOMPLETE_WORKFLOWS_SOURCE/hub-template"
 mkdir -p "$INCOMPLETE_WORKFLOWS_SOURCE/scripts"
 cp "$ROOT/scripts/read-compact-project-index.sh" "$INCOMPLETE_WORKFLOWS_SOURCE/scripts/read-compact-project-index.sh"
 cp "$ROOT/scripts/obsidian-task-sync.sh" "$INCOMPLETE_WORKFLOWS_SOURCE/scripts/obsidian-task-sync.sh"
+cp "$ROOT/scripts/generate-obsidian-projects-kanban.sh" "$INCOMPLETE_WORKFLOWS_SOURCE/scripts/generate-obsidian-projects-kanban.sh"
 rm "$INCOMPLETE_WORKFLOWS_SOURCE/hub-template/ai/skills/hub-workflows/SKILL.md"
 if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$INCOMPLETE_WORKFLOWS_SOURCE" --dry-run > "$TMP_DIR/incomplete-workflows-source.out" 2>&1; then
   fail 'hub updater accepted a source without hub-workflows'
@@ -1923,12 +1927,14 @@ printf '%s\n' 'stale hub entry' > "$HUB_INSTALL/AGENTS.md"
 printf '%s\n' 'stale validator' > "$HUB_INSTALL/scripts/check-hub-registry.sh"
 printf '%s\n' 'stale compact index' > "$HUB_INSTALL/scripts/read-compact-project-index.sh"
 printf '%s\n' 'stale Obsidian sync' > "$HUB_INSTALL/scripts/obsidian-task-sync.sh"
+printf '%s\n' 'stale Obsidian generator' > "$HUB_INSTALL/scripts/generate-obsidian-projects-kanban.sh"
 rm "$HUB_INSTALL/ai/skills/hub-workflows/SKILL.md"
 
 bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$ROOT" --dry-run > "$TMP_DIR/hub-dry-run.out"
 assert_contains "$TMP_DIR/hub-dry-run.out" '### AGENTS.md'
 assert_contains "$TMP_DIR/hub-dry-run.out" '### scripts/read-compact-project-index.sh'
 assert_contains "$TMP_DIR/hub-dry-run.out" '### scripts/obsidian-task-sync.sh'
+assert_contains "$TMP_DIR/hub-dry-run.out" '### scripts/generate-obsidian-projects-kanban.sh'
 assert_contains "$TMP_DIR/hub-dry-run.out" '### ai/skills/hub-workflows/SKILL.md'
 assert_contains "$TMP_DIR/hub-dry-run.out" 'Would create missing hub memory file without overwriting hub memory: ai/archive/.gitkeep'
 assert_contains "$TMP_DIR/hub-dry-run.out" 'Would create missing hub memory file without overwriting hub memory: ai/project-cards/.gitkeep'
@@ -2031,6 +2037,7 @@ cmp -s "$ROOT/hub-template/AGENTS.md" "$HUB_INSTALL/AGENTS.md" || fail 'hub upda
 cmp -s "$ROOT/scripts/check-hub-registry.sh" "$HUB_INSTALL/scripts/check-hub-registry.sh" || fail 'hub update did not replace protected validator'
 cmp -s "$ROOT/scripts/read-compact-project-index.sh" "$HUB_INSTALL/scripts/read-compact-project-index.sh" || fail 'hub update did not replace compact project index reader'
 cmp -s "$ROOT/scripts/obsidian-task-sync.sh" "$HUB_INSTALL/scripts/obsidian-task-sync.sh" || fail 'hub update did not replace Obsidian task sync'
+cmp -s "$ROOT/scripts/generate-obsidian-projects-kanban.sh" "$HUB_INSTALL/scripts/generate-obsidian-projects-kanban.sh" || fail 'hub update did not replace Obsidian generator'
 cmp -s "$ROOT/hub-template/ai/skills/hub-workflows/SKILL.md" "$HUB_INSTALL/ai/skills/hub-workflows/SKILL.md" || fail 'hub update did not install hub-workflows'
 cmp -s "$TMP_DIR/allowed-roots.before" "$HUB_INSTALL/ai/allowed-roots.md" || fail 'hub update overwrote allowed roots'
 cmp -s "$TMP_DIR/registry.before" "$HUB_INSTALL/ai/project-registry.md" || fail 'hub update overwrote registry'
@@ -2075,6 +2082,7 @@ mkdir -p "$COMMIT_SOURCE/scripts"
 cp -R "$ROOT/hub-template" "$COMMIT_SOURCE/hub-template"
 cp "$ROOT/scripts/read-compact-project-index.sh" "$COMMIT_SOURCE/scripts/read-compact-project-index.sh"
 cp "$ROOT/scripts/obsidian-task-sync.sh" "$COMMIT_SOURCE/scripts/obsidian-task-sync.sh"
+cp "$ROOT/scripts/generate-obsidian-projects-kanban.sh" "$COMMIT_SOURCE/scripts/generate-obsidian-projects-kanban.sh"
 printf '%s\n' '' '<!-- updater commit fixture -->' >> "$COMMIT_SOURCE/hub-template/AGENTS.md"
 printf '%s\n' '# New Archive Template' > "$COMMIT_SOURCE/hub-template/ai/archive/new-template.md"
 bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_COMMIT" --source "$COMMIT_SOURCE" --commit --allow-dirty > "$TMP_DIR/hub-commit.out"
@@ -2128,6 +2136,7 @@ mkdir -p "$OLD_SOURCE/scripts"
 cp -R "$ROOT/hub-template" "$OLD_SOURCE/hub-template"
 cp "$ROOT/scripts/read-compact-project-index.sh" "$OLD_SOURCE/scripts/read-compact-project-index.sh"
 cp "$ROOT/scripts/obsidian-task-sync.sh" "$OLD_SOURCE/scripts/obsidian-task-sync.sh"
+cp "$ROOT/scripts/generate-obsidian-projects-kanban.sh" "$OLD_SOURCE/scripts/generate-obsidian-projects-kanban.sh"
 perl -0pi -e 's/Version: [0-9]+\.[0-9]+/Version: 1.2/' "$OLD_SOURCE/hub-template/ai/architecture.md"
 mkdir -p "$OLD_SOURCE/hub-template/ai/skills/task-intake"
 printf '%s\n' '# Legacy fixture' > "$OLD_SOURCE/hub-template/ai/skills/task-intake/SKILL.md"
@@ -2154,6 +2163,7 @@ mkdir -p "$GATE_ORDER_SOURCE/scripts"
 cp -R "$ROOT/hub-template" "$GATE_ORDER_SOURCE/hub-template"
 cp "$ROOT/scripts/read-compact-project-index.sh" "$GATE_ORDER_SOURCE/scripts/read-compact-project-index.sh"
 cp "$ROOT/scripts/obsidian-task-sync.sh" "$GATE_ORDER_SOURCE/scripts/obsidian-task-sync.sh"
+cp "$ROOT/scripts/generate-obsidian-projects-kanban.sh" "$GATE_ORDER_SOURCE/scripts/generate-obsidian-projects-kanban.sh"
 perl -0pi -e 's/Version: [0-9]+\.[0-9]+/Version: 1.2/' "$GATE_ORDER_SOURCE/hub-template/ai/architecture.md"
 printf '%s\n' '' '<!-- must never land in the hub: version gate ran too late -->' >> "$GATE_ORDER_SOURCE/hub-template/AGENTS.md"
 GATE_ORDER_HUB="$TMP_DIR/gate-order-hub"
