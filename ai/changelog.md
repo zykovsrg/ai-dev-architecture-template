@@ -14,6 +14,12 @@
 
 ## Текущий changelog
 
+### 2026-08-29 — Адресация одного повтора в серии
+
+- Change: Изменение повторяющегося события теперь несёт `occurrence_start`. Мост ищет нужное вхождение в окне ±сутки и берёт то, что начинается ровно тогда; policy-слой отказывает, если найденное вхождение не совпало с запрошенным. Модель требует дату для любого recurring update или delete, предпросмотр её показывает.
+- Impact: Можно отменить или изменить один день серии, не трогая остальные. Раньше идентификатор указывал на всю серию, потому что EventKit даёт всем повторам один номер.
+- Manual checks: `bash scripts/apple-calendar-policy-test.sh` (62 теста), `bash scripts/apple-calendar-bridge-test.sh`, `bash scripts/calendar-policy-install-test.sh`, `bash scripts/check-consistency.sh`, `bash scripts/smoke-test.sh`, `bash scripts/hub-smoke-test.sh`. Живая проверка на серии «дела/приборка»: без даты возвращается начало серии 1 августа, с датой 5 и 12 сентября — соответствующие вхождения.
+
 ### 2026-08-29 — Guarded Apple Calendar MCP
 
 - Change: Локальный Apple Calendar MCP: закреплённая копия upstream v0.9.0 с проверкой checksum, fail-closed policy-слой, одноразовые preview и семь безопасных инструментов. Мост к EventKit собран как подписанный `HubCalendarBridge.app` со своим разрешением macOS, потому что клиент MCP не может его получить. Установщик и апдейтер разворачивают инструмент в хаб; allowlist по умолчанию пуст.
