@@ -52,3 +52,18 @@ class EventKitBackend:
             cursor = max(cursor, event.end)
         if cursor < end: slots.append((cursor, end))
         return slots
+
+    async def create(self, request: ChangeRequest) -> EventRef:
+        result = await self._call("create", request.model_dump(mode="json"))
+        return EventRef.model_validate(result)
+
+    async def update(self, event: EventRef, request: ChangeRequest, scope: str | None) -> EventRef:
+        payload = request.model_dump(mode="json", exclude_none=True)
+        payload["event_id"] = event.id; payload["recurrence_scope"] = scope
+        await self._call("update", payload)
+        updated = await self.get_event(event.id)
+        if updated is None: raise RuntimeError("EVENT_UNAVAILABLE")
+        return updated
+
+    async def delete(self, event: EventRef, scope: str | None) -> None:
+        await self._call("delete", {"event_id": event.id, "calendar_id": event.calendar_id, "recurrence_scope": scope})
