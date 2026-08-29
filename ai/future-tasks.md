@@ -103,7 +103,7 @@ Promotion status: promoted to `ai/current-task.md` on 2026-08-28; user selected 
 
 ### FT-20260826-002 — Безопасный read-only пилот Apple Calendar MCP
 
-Status: idea
+Status: promoted
 
 Priority: medium
 
@@ -135,6 +135,11 @@ Promotion notes:
 
 Не начинать без отдельного явного подтверждения установки MCP и доступа к
 Calendar. Сначала закончить workflows из FT-20260826-001.
+
+Promotion status: promoted to `ai/current-task.md` on 2026-08-29; user approved
+the expanded guarded Calendar implementation: local pinned source, selected
+calendar allowlist, read/free-time, guarded create/update/future-delete, and
+mandatory preview confirmation.
 
 ### FT-20260822-002 — Привести текущее хранилище Obsidian к формату архитектуры
 
