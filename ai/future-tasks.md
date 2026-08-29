@@ -101,45 +101,18 @@ Promotion notes:
 
 Promotion status: promoted to `ai/current-task.md` on 2026-08-28; user selected the full three-part implementation.
 
-### FT-20260826-002 — Безопасный read-only пилот Apple Calendar MCP
+### FT-20260829-001 — Воспроизводимое окружение для тестов calendar-policy
 
-Status: promoted
+Status: idea
 
 Priority: medium
 
-Source: утверждённая дорожная карта unified assistant, сессия 2026-08-26
+Idea: `scripts/apple-calendar-policy-test.sh` требует локальный `.venv`, которого
+нет в репозитории, поэтому на чистой копии тесты не запускаются и печатают
+`FAIL: test environment is missing`. Нужен скрипт, который создаёт окружение из
+`calendar-policy/pyproject.toml`, либо понятное сообщение с точной командой.
 
-Created: 2026-08-26
-
-Context:
-
-Calendar следует после рабочих workflows и требует отдельного разрешения:
-EventKit читает календарные данные с широким доступом. MCP сам по себе не
-заменяет policy wrapper и пользовательское подтверждение.
-
-Proposed task:
-
-После завершения FT-20260826-001 предложить установку и настройку Apple
-Calendar MCP только для выбранного тестового календаря. Сначала реализовать
-read-only preview событий и доступных слотов; create/update — отдельный этап,
-delete остаётся выключен.
-
-Acceptance criteria:
-
-- Пользователь отдельно подтвердил установку, доступ и тестовый календарь.
-- Read-only путь показывает timezone и точный источник данных.
-- Нет создания, изменения или удаления Calendar-событий.
-- Ошибки недоступного календаря и отсутствия разрешения проверены тестами.
-
-Promotion notes:
-
-Не начинать без отдельного явного подтверждения установки MCP и доступа к
-Calendar. Сначала закончить workflows из FT-20260826-001.
-
-Promotion status: promoted to `ai/current-task.md` on 2026-08-29; user approved
-the expanded guarded Calendar implementation: local pinned source, selected
-calendar allowlist, read/free-time, guarded create/update/future-delete, and
-mandatory preview confirmation.
+Found: при закрытии FT-20260826-002 на 2026-08-29.
 
 ### FT-20260822-002 — Привести текущее хранилище Obsidian к формату архитектуры
 

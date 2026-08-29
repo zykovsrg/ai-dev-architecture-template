@@ -14,6 +14,18 @@
 
 ## Текущий changelog
 
+### 2026-08-29 — Guarded Apple Calendar MCP
+
+- Change: Локальный Apple Calendar MCP: закреплённая копия upstream v0.9.0 с проверкой checksum, fail-closed policy-слой, одноразовые preview и семь безопасных инструментов. Мост к EventKit собран как подписанный `HubCalendarBridge.app` со своим разрешением macOS, потому что клиент MCP не может его получить. Установщик и апдейтер разворачивают инструмент в хаб; allowlist по умолчанию пуст.
+- Impact: Хаб читает только явно выбранные календари. Каждое изменение события требует свежий preview и отдельное подтверждение. Прошлое событие удалить или сдвинуть нельзя. Живая установка, разрешение macOS и выбор календарей прошли как три отдельных подтверждения; выбрано шесть календарей.
+- Manual checks: `bash scripts/apple-calendar-policy-test.sh` (58 тестов), `bash scripts/apple-calendar-bridge-test.sh`, `bash scripts/apple-calendar-upstream-test.sh`, `bash scripts/calendar-policy-install-test.sh`, `bash scripts/check-consistency.sh`, `bash scripts/smoke-test.sh`, `bash scripts/hub-smoke-test.sh`, живая проверка `calendar_status` и `read_events` через MCP.
+
+### 2026-08-29 — Слой личного AI-ассистента над хабом
+
+- Change: Закрыта задача проектирования ассистента: `hub-workflows` даёт day-plan, evening-review, weekly-review и capture; Bash-адаптер проверяет только механику, семантику делает агент. Записи не применяются без подтверждения.
+- Impact: Персональные запросы идут в `Mode: assistant` без выбора проекта, а изменения в проектах остаются предложениями.
+- Manual checks: `bash scripts/assistant-workflows-test.sh`, `bash scripts/check-consistency.sh`, `bash scripts/hub-smoke-test.sh`.
+
 ### 2026-08-29 — Обзор проектов и изолированная синхронизация Obsidian
 
 - Change: Созданы обзор всех 44 проектов и отдельные доски; `Tasks-Kanban.md` снят. Ссылки в обзоре исправлены. Обратная синхронизация теперь требует ID выбранного проекта и читает только его доску и память; наблюдатель создаёт предложение для одной доски за раз.

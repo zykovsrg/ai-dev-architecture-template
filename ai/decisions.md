@@ -18,6 +18,46 @@ Impact:
 
 ## Текущие решения
 
+### 2026-08-29 — The Calendar bridge owns its own macOS permission
+
+Status: active
+
+Decision: The EventKit bridge ships as a signed application bundle with its own
+`NSCalendarsFullAccessUsageDescription`, and re-spawns itself once with the
+disclaim attribute so macOS treats the bundle, not the MCP client, as the
+process responsible for Calendar access. Clients run the bundle executable
+directly; they never run a bare Swift script.
+
+Why: macOS attributes a Calendar decision to the responsible application. A
+bridge spawned by a client inherits that client's identity, and a client whose
+Info.plist lacks the usage description is refused silently, with no prompt and
+no recorded denial. The Calendars pane cannot be filled in by hand, so there is
+no recovery from the client side.
+
+Impact: Calendar access is granted once, to `com.personal-ai-hub.calendar-bridge`,
+and works from any MCP client. Rebuilding changes the signature and requires
+running `scripts/grant-calendar-access.sh` again. The disclaim symbol is private
+API resolved at run time; if it disappears the bridge keeps working and falls
+back to asking on behalf of the client.
+
+### 2026-08-29 — Calendar writes are never implicit
+
+Status: active
+
+Decision: Every create, update and delete goes through a preview grant that is
+single-use, expiring, bound to the exact request payload and to a fingerprint of
+the event as it currently stands. An event whose end is at or before now in the
+calendar timezone can be neither deleted nor moved. Reads require explicit
+calendar IDs; the allowlist has no default and no fallback to "all calendars".
+
+Why: A calendar change is hard to undo and easy to trigger by accident or by
+injected event content. Fail-closed defaults keep an unconfigured or confused
+agent harmless.
+
+Impact: One confirmation authorizes exactly one change. A stale preview, an
+edited payload, or an event that changed underneath is refused rather than
+applied.
+
 ### 2026-08-29 — Scoped Obsidian reverse proposals
 
 Status: active
