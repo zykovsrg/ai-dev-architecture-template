@@ -30,7 +30,7 @@
 - Consumes: `scripts/install-legacy-hub-obsidian-bridge.sh --hub <absolute-path> --dry-run|--apply`.
 - Produces: a repeatable fake hub fixture and `PASS: legacy hub Obsidian bridge contract`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create a temporary hub with `ai/project-registry.md`, `ai/tmp/obsidian-scope.txt`, and three direct-child projects: `legacy-project` at version 7.3 with matching `AGENTS.md` / `CLAUDE.md`; `modern-project` at version 7.4; and `broken-project` at version 7.3 with mismatched entry files. Invoke the missing installer in dry-run and apply modes.
 
@@ -44,13 +44,13 @@ cmp "$LEGACY/AGENTS.md" "$LEGACY/CLAUDE.md"
 assert_not_contains "$MODERN/AGENTS.md" '## Hub Obsidian Bridge'
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `bash scripts/legacy-hub-obsidian-bridge-test.sh`
 
 Expected: FAIL because `scripts/install-legacy-hub-obsidian-bridge.sh` does not exist.
 
-- [ ] **Step 3: Commit the failing test**
+- [x] **Step 3: Commit the failing test**
 
 ```bash
 git add scripts/legacy-hub-obsidian-bridge-test.sh
@@ -68,7 +68,7 @@ git commit -m "test: define legacy Obsidian bridge contract"
 - Consumes: `--hub DIR`, `--dry-run` (default), `--apply`.
 - Produces: bridge block inserted exactly once in both entry files or a non-zero error with no partial project update.
 
-- [ ] **Step 1: Implement argument and hub validation**
+- [x] **Step 1: Implement argument and hub validation**
 
 Implement `usage`, `die`, and `canonical_dir`. Require an absolute existing hub Git directory, regular non-symlink `ai/project-registry.md`, and regular `ai/tmp/obsidian-scope.txt`. Reject unknown arguments and missing option values.
 
@@ -81,11 +81,11 @@ case "$1" in
 esac
 ```
 
-- [ ] **Step 2: Implement registry-driven selection and paired-file checks**
+- [x] **Step 2: Implement registry-driven selection and paired-file checks**
 
 Read project IDs and exact absolute paths from registry headings. For every entry, require its canonical path to equal `<hub>/projects/<id>`, skip non-7.3 projects, and require matching regular `AGENTS.md` / `CLAUDE.md` before replacing either file. Ignore unregistered folders completely.
 
-- [ ] **Step 3: Insert the fixed bridge block idempotently**
+- [x] **Step 3: Insert the fixed bridge block idempotently**
 
 Add this block immediately after `## Installation Mode` section, exactly once in both entry files:
 
@@ -109,13 +109,13 @@ Use a sibling temporary file and `mv` only after both rendered entry files pass
 the paired equality check. Dry-run prints selected IDs and changed filenames
 without writing.
 
-- [ ] **Step 4: Run the focused contract test**
+- [x] **Step 4: Run the focused contract test**
 
 Run: `bash scripts/legacy-hub-obsidian-bridge-test.sh`
 
 Expected: `PASS: legacy hub Obsidian bridge contract`.
 
-- [ ] **Step 5: Commit the installer**
+- [x] **Step 5: Commit the installer**
 
 ```bash
 git add scripts/install-legacy-hub-obsidian-bridge.sh scripts/legacy-hub-obsidian-bridge-test.sh
@@ -133,19 +133,19 @@ git commit -m "feat: add legacy Obsidian bridge installer"
 - Consumes: verified installer from Task 2 and installed hub registry.
 - Produces: matching entry bridge blocks in all eligible legacy projects.
 
-- [ ] **Step 1: Preview exact targets**
+- [x] **Step 1: Preview exact targets**
 
 Run: `bash scripts/install-legacy-hub-obsidian-bridge.sh --hub /Users/zykovsrg/Documents/vibecode/_ai-hub --dry-run`
 
 Expected: exactly the registered 7.3 projects; no version 7.4 or unregistered directory.
 
-- [ ] **Step 2: Apply the migration**
+- [x] **Step 2: Apply the migration**
 
 Run: `bash scripts/install-legacy-hub-obsidian-bridge.sh --hub /Users/zykovsrg/Documents/vibecode/_ai-hub --apply`
 
 Expected: two entry files updated per eligible project and no other files changed.
 
-- [ ] **Step 3: Commit each modified project independently**
+- [x] **Step 3: Commit each modified project independently**
 
 For every selected project, verify only `AGENTS.md` and `CLAUDE.md` changed, then commit:
 
@@ -154,7 +154,7 @@ git -C "/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/<project-id>" add AG
 git -C "/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/<project-id>" commit -m 'chore: add hub Obsidian bridge'
 ```
 
-- [ ] **Step 4: Run installer test against the installed hub**
+- [x] **Step 4: Run installer test against the installed hub**
 
 Run: `bash scripts/legacy-hub-obsidian-bridge-test.sh`
 
@@ -171,7 +171,7 @@ Expected: `PASS: legacy hub Obsidian bridge contract`.
 - Consumes: migrated entry rules and central scoped sync.
 - Produces: verified, durable explanation of direct-project Obsidian behavior.
 
-- [ ] **Step 1: Record the durable hub decision and change summary**
+- [x] **Step 1: Record the durable hub decision and change summary**
 
 Add an `ai/decisions.md` entry stating that registered legacy projects may use
 the central vault only after validating their enclosing hub and exact registry
@@ -194,14 +194,14 @@ bash /Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/scr
 
 Expected: every command exits 0 and reports its PASS/success marker.
 
-- [ ] **Step 3: Verify a direct-project scan command is usable**
+- [x] **Step 3: Verify a direct-project scan command is usable**
 
 Run a non-writing scan for `zdorove-businki` only after manually editing a
 fixture copy of its board, not the live canonical board. Verify its proposal
 contains `.project_id == "zdorove-businki"`, has no canonical-record changes
 before confirmation, and rejects applying with any other project ID.
 
-- [ ] **Step 4: Commit central documentation and push only on request**
+- [x] **Step 4: Commit central documentation and push only on request**
 
 ```bash
 git add ai/changelog.md ai/decisions.md docs/superpowers/plans/2026-08-29-legacy-project-obsidian-bridge.md
