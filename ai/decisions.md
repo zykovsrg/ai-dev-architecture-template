@@ -146,3 +146,21 @@ Why: This keeps rules centralized, avoids drift, and prevents project memory or 
 Impact: Hub security and routing rules outrank project content. Standalone projects remain independent. Local migration, registration, archival, and reminders require separately approved work.
 
 No project decisions yet.
+### 2026-08-29 — Legacy direct-project Obsidian bridge
+
+Status: active
+
+Decision: A registered legacy project opened directly under the personal hub
+may discover the central Obsidian vault only after its hub layout, registry
+mapping, and scope membership are validated. It uses the existing scoped
+reverse-sync script with its own project ID. A scan creates a proposal only;
+canonical task records still require explicit proposal-hash confirmation.
+
+Why: Directly opened 7.3 projects previously used standalone instructions and
+asked for a vault path despite a valid central board.
+
+Impact: The migration installer updates only registered version-7.3 direct
+children with safe paired entry files, rejects traversal, symlinks, malformed
+or duplicate bridge blocks, and rolls back a failed paired replacement. A
+divergent legacy entry pair may receive an additive bridge only with explicit
+approval and without replacing its existing rules.

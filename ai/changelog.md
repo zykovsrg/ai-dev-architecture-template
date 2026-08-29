@@ -163,3 +163,18 @@
 - Change: Installed the architecture into this repository root so the architecture can be used to evolve itself.
 - Impact: Root `AGENTS.md`, `CLAUDE.md`, and `ai/*` now hold project-specific working memory; `template/` remains the distributable user template.
 - Manual checks: Installation completed with `scripts/install.sh .`; project context filled for self-development.
+### 2026-08-29 — Legacy project Obsidian bridge
+
+- Change: Added a guarded installer and contract test that add the central
+  Obsidian reverse-sync bridge to registered version-7.3 projects. The bridge
+  derives the enclosing hub, uses the scoped central board, and remains
+  proposal-only until the user confirms a proposal hash. All 33 installed
+  legacy projects now have the bridge; the divergent Goal Planner macOS entry
+  files received it without replacing their existing content.
+- Impact: A project opened directly from the hub no longer needs a manually
+  supplied vault path for the supported reverse-sync flow. Standalone copies
+  still do not infer a vault.
+- Manual checks: legacy bridge contract passed; all 33 version-7.3 projects
+  contain the bridge in both entry files; scoped scan command accepted the
+  `zdorove-businki` board and produced a validation-blocked proposal without
+  writing canonical records.
