@@ -107,7 +107,7 @@ echo "Smoke test workspace: $TMP_DIR"
 bash "$ROOT/scripts/check-consistency.sh" > "$TMP_DIR/consistency.out"
 assert_contains "$TMP_DIR/consistency.out" 'OK [standalone canonical blocks]'
 assert_contains "$TMP_DIR/consistency.out" 'OK [hub entry parity]'
-assert_contains "$TMP_DIR/consistency.out" 'OK [hub skill references] — 16 declared skills exist'
+assert_contains "$TMP_DIR/consistency.out" 'OK [hub skill references] — 17 declared skills exist'
 assert_contains "$TMP_DIR/consistency.out" 'OK [hub update classes]'
 assert_contains "$TMP_DIR/consistency.out" 'OK [standalone memory updater boundaries]'
 assert_contains "$TMP_DIR/consistency.out" 'OK [hub skill naming]'

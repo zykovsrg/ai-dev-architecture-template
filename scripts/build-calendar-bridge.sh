@@ -68,7 +68,7 @@ swiftc -O "$SOURCE" -o "$MACOS_DIR/$APP_NAME" \
 
 # An ad-hoc signature is enough for a locally built bundle, and TCC needs the
 # bundle to be signed before it will remember a decision about it.
-codesign --force --sign - --identifier "com.personal-ai-hub.calendar-bridge" "$APP" \
+codesign --force --sign - --identifier "com.personal-ai-hub.calendar-bridge" "$APP" 2>/dev/null \
   || die "could not sign the bridge bundle"
 
 printf '%s\n' "$MACOS_DIR/$APP_NAME"
