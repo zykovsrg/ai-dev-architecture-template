@@ -19,13 +19,31 @@ regular_file() {
   [ -f "$1" ] && [ ! -L "$1" ]
 }
 
+valid_project_id() {
+  [[ "$1" =~ ^[a-z0-9][a-z0-9-]*$ ]]
+}
+
 normalized_entry() {
   # AGENTS.md and CLAUDE.md are allowed to differ only in their tool heading.
   sed '1d' "$1"
 }
 
-has_bridge() {
-  grep -Fqx '## Hub Obsidian Bridge' "$1"
+bridge_block() {
+  cat <<'EOF'
+## Hub Obsidian Bridge
+
+When this repository is the registered `<project-id>` direct child of a valid
+personal AI hub, requests to import updates from Obsidian use the hub's central
+vault automatically. Derive `<hub>` from this repository's `../..` parent,
+verify its registry maps `<project-id>` to this exact project path, then run:
+
+`bash <hub>/projects/ai-dev-architecture/scripts/obsidian-task-sync.sh scan --project-id <project-id> --hub <hub> --scope <hub>/ai/tmp/obsidian-scope.txt --vault <hub>/projects/ai-dev-architecture/obsidian-vault`
+
+Show the resulting proposal. Apply it only after an explicit confirmation of
+its proposal hash, with the same `--project-id`, hub, scope, and vault. If the
+hub layout or registry mapping is absent, retain standalone behavior and ask
+for a source; never guess a vault path.
+EOF
 }
 
 render_bridge() {
@@ -60,6 +78,73 @@ render_bridge() {
   ' "$source" > "$destination"
 }
 
+has_exact_single_bridge() {
+  local entry="$1" count expected actual
+  count="$(grep -Fxc '## Hub Obsidian Bridge' "$entry" || true)"
+  [ "$count" -eq 1 ] || return 1
+  expected="$(bridge_block)"
+  actual="$(awk '
+    $0 == "## Hub Obsidian Bridge" {
+      count++
+      if (count == 1) collecting = 1
+    }
+    collecting {
+      if (count == 1 && seen && /^## /) exit
+      print
+      seen = 1
+    }
+  ' "$entry")"
+  [ "$actual" = "$expected" ]
+}
+
+has_valid_entry_pair() {
+  local agents="$1" claude="$2"
+  [ "$(head -n 1 "$agents")" = '# AI Development Entry Point — Codex' ] || return 1
+  [ "$(head -n 1 "$claude")" = '# AI Development Entry Point — Claude Code' ] || return 1
+  cmp -s <(normalized_entry "$agents") <(normalized_entry "$claude")
+}
+
+is_physical_direct_project_child() {
+  local project_id="$1" project_path="$2" projects_path projects_canonical parent_canonical
+  valid_project_id "$project_id" || return 1
+  projects_path="$HUB/projects"
+  [ -d "$projects_path" ] && [ ! -L "$projects_path" ] || return 1
+  [ -d "$project_path" ] && [ ! -L "$project_path" ] || return 1
+  projects_canonical="$(canonical_dir "$projects_path")" || return 1
+  parent_canonical="$(canonical_dir "$(dirname "$project_path")")" || return 1
+  [ "$parent_canonical" = "$projects_canonical" ]
+}
+
+update_pair_atomically() {
+  local agents="$1" agents_tmp="$2" claude="$3" claude_tmp="$4"
+  local agents_backup claude_backup
+  agents_backup="$(mktemp "${agents}.backup.XXXXXX")" || return 1
+  claude_backup="$(mktemp "${claude}.backup.XXXXXX")" || {
+    rm -f "$agents_backup"
+    return 1
+  }
+  if ! cp -p "$agents" "$agents_backup" || ! cp -p "$claude" "$claude_backup"; then
+    rm -f "$agents_backup" "$claude_backup"
+    return 1
+  fi
+  if ! mv "$agents_tmp" "$agents"; then
+    rm -f "$agents_backup" "$claude_backup"
+    return 1
+  fi
+  if ! mv "$claude_tmp" "$claude"; then
+    if ! mv "$agents_backup" "$agents"; then
+      die "failed to restore $agents after a paired update failure"
+    fi
+    rm -f "$claude_backup"
+    return 1
+  fi
+  rm -f "$agents_backup" "$claude_backup"
+}
+
+scope_contains() {
+  grep -Fqx "$1" "$HUB/ai/tmp/obsidian-scope.txt"
+}
+
 HUB=''
 MODE='dry-run'
 while [ "$#" -gt 0 ]; do
@@ -85,9 +170,24 @@ git -C "$HUB" rev-parse --is-inside-work-tree >/dev/null 2>&1 || die 'hub must b
 regular_file "$HUB/ai/project-registry.md" || die 'missing regular ai/project-registry.md'
 regular_file "$HUB/ai/tmp/obsidian-scope.txt" || die 'missing regular ai/tmp/obsidian-scope.txt'
 
+while IFS= read -r scope_id || [ -n "$scope_id" ]; do
+  [ -n "$scope_id" ] || continue
+  valid_project_id "$scope_id" || die "invalid project ID in scope: $scope_id"
+done < "$HUB/ai/tmp/obsidian-scope.txt"
+
 while IFS=$'\t' read -r project_id registered_path; do
   [ -n "$project_id" ] || continue
+  if ! valid_project_id "$project_id"; then
+    echo "SKIP: invalid registry project ID: $project_id" >&2
+    continue
+  fi
+  scope_contains "$project_id" || continue
+
   expected_path="$HUB/projects/$project_id"
+  if ! is_physical_direct_project_child "$project_id" "$expected_path"; then
+    echo "SKIP: $project_id is not a physical direct child of $HUB/projects" >&2
+    continue
+  fi
   project_path="$(canonical_dir "$registered_path" 2>/dev/null || true)"
   expected_canonical="$(canonical_dir "$expected_path" 2>/dev/null || true)"
   [ -n "$project_path" ] && [ "$project_path" = "$expected_canonical" ] || continue
@@ -102,15 +202,15 @@ while IFS=$'\t' read -r project_id registered_path; do
     echo "SKIP: $project_id has no regular AGENTS.md/CLAUDE.md pair" >&2
     continue
   fi
-  if ! cmp -s <(normalized_entry "$agents") <(normalized_entry "$claude"); then
-    echo "SKIP: $project_id AGENTS.md/CLAUDE.md differ beyond their tool heading" >&2
+  if ! has_valid_entry_pair "$agents" "$claude"; then
+    echo "SKIP: $project_id has invalid Codex/Claude headers or entry bodies" >&2
     continue
   fi
-  if has_bridge "$agents" && has_bridge "$claude"; then
+  if has_exact_single_bridge "$agents" && has_exact_single_bridge "$claude"; then
     continue
   fi
-  if has_bridge "$agents" || has_bridge "$claude"; then
-    echo "SKIP: $project_id has an incomplete bridge pair" >&2
+  if grep -Fqx '## Hub Obsidian Bridge' "$agents" || grep -Fqx '## Hub Obsidian Bridge' "$claude"; then
+    echo "SKIP: $project_id has an invalid bridge block" >&2
     continue
   fi
 
@@ -132,8 +232,11 @@ while IFS=$'\t' read -r project_id registered_path; do
     echo "would update $project_id: $agents $claude"
     cleanup_pair
   else
-    mv "$agents_tmp" "$agents"
-    mv "$claude_tmp" "$claude"
+    if ! update_pair_atomically "$agents" "$agents_tmp" "$claude" "$claude_tmp"; then
+      cleanup_pair
+      echo "SKIP: $project_id could not be updated atomically; original pair restored" >&2
+      continue
+    fi
     echo "updated $project_id: $agents $claude"
   fi
 done < <(
