@@ -18,6 +18,21 @@ Impact:
 
 ## Текущие решения
 
+### 2026-08-29 — Scoped Obsidian reverse proposals
+
+Status: active
+
+Decision: Format-4 Obsidian uses one Projects Overview table and one board per
+project. Reverse scan and apply require a confirmed project ID and may read only
+that project board and its canonical task files. The central vault is owned by
+ai-dev-architecture; the watcher scans project IDs one at a time and leaves one
+applicable proposal.
+
+Why: One shared vault must not weaken project-memory isolation.
+
+Impact: Project agents derive the central vault from the hub root, never ask
+for a per-project path, and preserve the separate proposal confirmation gate.
+
 ### 2026-08-28 — Archiproject groups
 
 Status: active

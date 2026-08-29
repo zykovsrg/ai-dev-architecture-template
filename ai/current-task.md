@@ -1,8 +1,8 @@
 # Current Task
 
-Status: active
+Status: empty
 
-Task ID: FT-20260828-001
+Task ID: TASK-YYYYMMDD-NNN
 
 Allowed statuses: empty / active / review / blocked / done / paused
 
@@ -10,42 +10,36 @@ Note: `paused` is a transient status used only while `task-switch` is moving thi
 task into `ai/paused-tasks.md`. After the switch this file holds the new task and
 the paused one lives in `ai/paused-tasks.md`.
 
-Stage: planning
+Stage: intake
 
 Allowed stages: intake / spec / planning / implementation / review / task-finish
 
 ## Mode
 
-architecture-update
+implementation / review / task-finish / architecture-update
 
 ## Goal
 
-Заменить перегруженный `Tasks-Kanban` компактным обзором всех проектов.
+Что нужно изменить.
 
 ## Use Superpowers
 
-yes
+no
 
 ## Relevant files
 
-- scripts/generate-obsidian-projects-kanban.sh
-- scripts/obsidian-projects-kanban-test.sh
-- hub-template/ai/archiprojects.md
+unknown
 
 ## Done criteria
 
-- Обзор содержит только название проекта со ссылкой на его отдельную
-  канбан-доску, архипроект и текущую задачу.
-- В обзоре представлены все зарегистрированные проекты.
-- Старый `Tasks-Kanban` больше не используется.
-- Автоматические тесты и проверки проекта проходят.
+- Как понять, что задача завершена.
 
 ## Agent handoff
 
-Last agent: Codex
+Last agent:
 
-What changed: задача создана по запросу пользователя; старая задача приостановлена через task-switch.
+What changed:
 
-Open risks: Нужно определить точный источник ссылок на отдельные канбан-доски и трактовку удаления старого `Tasks-Kanban`.
+Open risks:
 
-Next agent should check: текущий генератор обзора, тесты, реестр архипроектов и формат файлов Obsidian.
+Next agent should check:

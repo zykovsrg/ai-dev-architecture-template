@@ -14,6 +14,12 @@
 
 ## Текущий changelog
 
+### 2026-08-29 — Обзор проектов и изолированная синхронизация Obsidian
+
+- Change: Созданы обзор всех 44 проектов и отдельные доски; `Tasks-Kanban.md` снят. Ссылки в обзоре исправлены. Обратная синхронизация теперь требует ID выбранного проекта и читает только его доску и память; наблюдатель создаёт предложение для одной доски за раз.
+- Impact: Агент проекта больше не просит путь к Obsidian и не видит изменения чужих проектов. Любая правка всё ещё становится предложением и применяется только после отдельного подтверждения.
+- Manual checks: `bash scripts/obsidian-task-sync-test.sh`, `bash scripts/obsidian-task-sync-watch-test.sh`, `bash scripts/obsidian-projects-kanban-test.sh`, `bash scripts/hub-smoke-test.sh`, `bash scripts/check-consistency.sh`, `bash scripts/smoke-test.sh`, `git diff --check`, live `check-hub-registry.sh`.
+
 ### 2026-08-28 — Provenance и inbox knowledge-слоя
 
 - Change: Добавлены `origin`, `valid_from` и локальный `knowledge/inbox/` в standalone и hub scaffolds; capture/review требуют явного происхождения и подтверждения действий с inbox.
