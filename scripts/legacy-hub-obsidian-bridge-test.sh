@@ -12,8 +12,8 @@ assert_not_contains() { ! grep -Fq -- "$2" "$1" || fail "unexpected '$2' in $1";
 assert_equals() { [ "$1" = "$2" ] || fail "expected '$1' to equal '$2'"; }
 assert_matching_entries() {
   cmp -s \
-    <(sed '1d' "$1" | sed 's/point for Codex; `CLAUDE\.md` is the matching Claude Code entry file\./point for <tool>; `<matching-entry-file>` is the matching <matching-tool> entry file./' | sed 's/point for Claude Code; `AGENTS\.md` is the matching Codex entry file\./point for <tool>; `<matching-entry-file>` is the matching <matching-tool> entry file./') \
-    <(sed '1d' "$2" | sed 's/point for Codex; `CLAUDE\.md` is the matching Claude Code entry file\./point for <tool>; `<matching-entry-file>` is the matching <matching-tool> entry file./' | sed 's/point for Claude Code; `AGENTS\.md` is the matching Codex entry file\./point for <tool>; `<matching-entry-file>` is the matching <matching-tool> entry file./') \
+    <(sed '1d' "$1" | sed 's/point for Codex; `CLAUDE\.md` is the matching Claude Code entry file\./point for <tool>; `<matching-entry-file>` is the matching <matching-tool> entry file./' | sed 's/point for Claude Code; `AGENTS\.md` is the matching Codex entry file\./point for <tool>; `<matching-entry-file>` is the matching <matching-tool> entry file./' | sed "s/Codex does not auto-activate project skills\. Before using a workflow, open its current \`ai\\/skills\\/<name>\\/SKILL\.md\`\. Route by the user's request and the skill's \`name\` and \`description\`; do not load all skills\. Read extra project memory only when the selected task or skill requires it\./<tool> skill activation rule./" | sed "s/Claude Code may auto-activate skills by description\. Before using a workflow, open its current \`ai\\/skills\\/<name>\\/SKILL\.md\`\. Route by the user's request and the skill's \`name\` and \`description\`; do not load all skills\. Read extra project memory only when the selected task or skill requires it\./<tool> skill activation rule./") \
+    <(sed '1d' "$2" | sed 's/point for Codex; `CLAUDE\.md` is the matching Claude Code entry file\./point for <tool>; `<matching-entry-file>` is the matching <matching-tool> entry file./' | sed 's/point for Claude Code; `AGENTS\.md` is the matching Codex entry file\./point for <tool>; `<matching-entry-file>` is the matching <matching-tool> entry file./' | sed "s/Codex does not auto-activate project skills\. Before using a workflow, open its current \`ai\\/skills\\/<name>\\/SKILL\.md\`\. Route by the user's request and the skill's \`name\` and \`description\`; do not load all skills\. Read extra project memory only when the selected task or skill requires it\./<tool> skill activation rule./" | sed "s/Claude Code may auto-activate skills by description\. Before using a workflow, open its current \`ai\\/skills\\/<name>\\/SKILL\.md\`\. Route by the user's request and the skill's \`name\` and \`description\`; do not load all skills\. Read extra project memory only when the selected task or skill requires it\./<tool> skill activation rule./") \
     || fail "entry bodies differ: $1 $2"
 }
 
@@ -95,11 +95,11 @@ cp "$LEGACY/AGENTS.md" "$RECIPROCAL/AGENTS.md"
 sed '1s/Codex/Claude Code/' "$RECIPROCAL/AGENTS.md" > "$RECIPROCAL/CLAUDE.md"
 cat >> "$RECIPROCAL/AGENTS.md" <<'EOF'
 
-point for Codex; `CLAUDE.md` is the matching Claude Code entry file.
+Codex does not auto-activate project skills. Before using a workflow, open its current `ai/skills/<name>/SKILL.md`. Route by the user's request and the skill's `name` and `description`; do not load all skills. Read extra project memory only when the selected task or skill requires it.
 EOF
 cat >> "$RECIPROCAL/CLAUDE.md" <<'EOF'
 
-point for Claude Code; `AGENTS.md` is the matching Codex entry file.
+Claude Code may auto-activate skills by description. Before using a workflow, open its current `ai/skills/<name>/SKILL.md`. Route by the user's request and the skill's `name` and `description`; do not load all skills. Read extra project memory only when the selected task or skill requires it.
 EOF
 sed '1s/legacy-project/modern-project/' "$LEGACY/AGENTS.md" > "$MODERN/AGENTS.md"
 sed '1s/Codex/Claude Code/' "$MODERN/AGENTS.md" > "$MODERN/CLAUDE.md"
@@ -139,8 +139,8 @@ if ! grep -Fq 'legacy-project' "$TMP_DIR/dry-run.out"; then
   cat "$TMP_DIR/dry-run.err" >&2
   fail 'expected legacy-project in dry-run output'
 fi
-# This fixture reproduces the legacy reciprocal sentence that the old
-# normalizer skipped; the exact-pair normalization must now select it.
+# This fixture reproduces the legacy reciprocal skill-activation rules that
+# the old normalizer skipped; the exact-pair normalization must select it.
 assert_contains "$TMP_DIR/dry-run.out" 'reciprocal-entry-project'
 assert_contains "$TMP_DIR/dry-run.out" 'AGENTS.md'
 assert_contains "$TMP_DIR/dry-run.out" 'CLAUDE.md'

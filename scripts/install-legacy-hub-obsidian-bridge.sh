@@ -25,10 +25,12 @@ valid_project_id() {
 
 normalized_entry() {
   # AGENTS.md and CLAUDE.md may differ in their tool heading and this one
-  # standard reciprocal entry-file sentence.
+  # exact reciprocal skill-activation rule.
   sed '1d' "$1" \
     | sed 's/point for Codex; `CLAUDE\.md` is the matching Claude Code entry file\./point for <tool>; `<matching-entry-file>` is the matching <matching-tool> entry file./' \
-    | sed 's/point for Claude Code; `AGENTS\.md` is the matching Codex entry file\./point for <tool>; `<matching-entry-file>` is the matching <matching-tool> entry file./'
+    | sed 's/point for Claude Code; `AGENTS\.md` is the matching Codex entry file\./point for <tool>; `<matching-entry-file>` is the matching <matching-tool> entry file./' \
+    | sed "s/Codex does not auto-activate project skills\. Before using a workflow, open its current \`ai\\/skills\\/<name>\\/SKILL\.md\`\. Route by the user's request and the skill's \`name\` and \`description\`; do not load all skills\. Read extra project memory only when the selected task or skill requires it\./<tool> skill activation rule./" \
+    | sed "s/Claude Code may auto-activate skills by description\. Before using a workflow, open its current \`ai\\/skills\\/<name>\\/SKILL\.md\`\. Route by the user's request and the skill's \`name\` and \`description\`; do not load all skills\. Read extra project memory only when the selected task or skill requires it\./<tool> skill activation rule./"
 }
 
 bridge_block() {
