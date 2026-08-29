@@ -75,7 +75,24 @@ hub_workflows_skill_contract_valid() {
     [[ "$text" == *'exactly three proposed weekly results'* ]] &&
     [[ "$text" == *'Project detail appears only for a dated risk, blocker, or waiting record'* ]] &&
     [[ "$text" == *'ai/current-task.md'*'ai/future-tasks.md'*'ai/paused-tasks.md'*'ai/archiprojects.md'* ]] &&
-    [[ "$text" == *'Project cards supply identity and registered-path metadata only'* ]]
+    [[ "$text" == *'Project cards supply identity and registered-path metadata only'* ]] &&
+    [[ "$text" == *'all active registered projects'* ]] &&
+    [[ "$text" == *'personal and work'* ]] &&
+    [[ "$text" == *'one selectable proposal package'* ]] &&
+    [[ "$text" == *'unchanged named proposals'* ]]
+}
+personal_assistant_router_contract_valid() {
+  local file="$1" text
+  [ -f "$file" ] || return 1
+  text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
+
+  [[ "$text" == *'personal-assistant request'* ]] &&
+    [[ "$text" == *'day plan'*'capture'* ]] &&
+    [[ "$text" == *'all active registered projects'* ]] &&
+    [[ "$text" == *'ai/current-task.md'*'ai/future-tasks.md'*'ai/paused-tasks.md'* ]] &&
+    [[ "$text" == *'Do not read project code, knowledge records, credentials, or arbitrary files'* ]] &&
+    [[ "$text" == *'project-specific request'* ]] &&
+    [[ "$text" == *'explicit project confirmation'* ]]
 }
 # Registered active projects must carry the full memory scaffold; fixtures too.
 scaffold_project_memory() {
@@ -1098,6 +1115,8 @@ router_compact_index_reads_valid "$ROUTER_SKILL" \
   || fail 'router must use compact index fields before confirmation'
 router_multiple_candidates_template_valid "$ROUTER_SKILL" \
   || fail 'router multi-candidate template must include confidence for all three candidate slots'
+personal_assistant_router_contract_valid "$ROUTER_SKILL" \
+  || fail 'router personal-assistant contract is incomplete'
 
 ROUTER_WITHOUT_INDEX="$TMP_DIR/router-without-index.md"
 sed '/read-compact-project-index\.sh/d' "$ROUTER_SKILL" > "$ROUTER_WITHOUT_INDEX"
@@ -1106,6 +1125,14 @@ assert_rejected router_read_boundary_valid "$ROUTER_WITHOUT_INDEX"
 ROUTER_WITHOUT_THIRD_SLOT="$TMP_DIR/router-without-third-slot.md"
 sed '/3\. <project-id-3>/d' "$ROUTER_SKILL" > "$ROUTER_WITHOUT_THIRD_SLOT"
 assert_rejected router_multiple_candidates_template_valid "$ROUTER_WITHOUT_THIRD_SLOT"
+
+ROUTER_WITHOUT_ASSISTANT_SCOPE="$TMP_DIR/router-without-assistant-scope.md"
+sed '/all active registered projects/d' "$ROUTER_SKILL" > "$ROUTER_WITHOUT_ASSISTANT_SCOPE"
+assert_rejected personal_assistant_router_contract_valid "$ROUTER_WITHOUT_ASSISTANT_SCOPE"
+
+HUB_WORKFLOWS_WITHOUT_PACKAGE="$TMP_DIR/hub-workflows-without-package.md"
+sed '/one selectable proposal package/d' "$HUB_WORKFLOWS_SKILL" > "$HUB_WORKFLOWS_WITHOUT_PACKAGE"
+assert_rejected hub_workflows_skill_contract_valid "$HUB_WORKFLOWS_WITHOUT_PACKAGE"
 
 SWITCH_SKILL="$ROOT/hub-template/ai/skills/hub-project-switch/SKILL.md"
 assert_contains "$SWITCH_SKILL" 'must not modify the current task'
