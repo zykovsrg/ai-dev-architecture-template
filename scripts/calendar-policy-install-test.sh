@@ -42,6 +42,8 @@ tool="$hub/tools/apple-calendar-policy"
 grep -Fqx '.venv/' "$tool/.gitignore" || fail "the runtime environment is not ignored"
 grep -Fqx 'bridge/HubCalendarBridge.app/' "$tool/.gitignore" \
   || fail "the built bundle is not ignored"
+# Running the installed server writes caches back into the tool directory.
+grep -Fqx '__pycache__/' "$tool/.gitignore" || fail "runtime caches are not ignored"
 [ -x "$tool/bridge/HubCalendarBridge.app/Contents/MacOS/HubCalendarBridge" ] \
   || fail "the bridge bundle was not built during install"
 /usr/libexec/PlistBuddy -c 'Print :NSCalendarsFullAccessUsageDescription' \

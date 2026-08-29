@@ -82,7 +82,8 @@ rsync -a --delete --delete-excluded "${RSYNC_EXCLUDES[@]}" "$POLICY_SRC/bridge/"
 cp "$POLICY_SRC/pyproject.toml" "$TOOL_DIR/pyproject.toml"
 
 # The runtime environment and the locally built bundle are never committed.
-printf '%s\n' '.venv/' 'bridge/HubCalendarBridge.app/' > "$TOOL_DIR/.gitignore"
+printf '%s\n' '.venv/' 'bridge/HubCalendarBridge.app/' '__pycache__/' '*.pyc' \
+  > "$TOOL_DIR/.gitignore"
 
 # Building the bundle requests nothing; it only compiles and signs.
 BRIDGE_EXECUTABLE="$(bash "$(dirname "$0")/build-calendar-bridge.sh" --bridge-dir "$TOOL_DIR/bridge" | tail -1)"
