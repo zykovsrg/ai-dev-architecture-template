@@ -14,6 +14,7 @@ TMP_DIR=""
 SOURCE_TEMPLATE=""
 SOURCE_VALIDATOR=""
 SOURCE_COMPACT_INDEX=""
+SOURCE_REPO_ROOT=""
 CREATED_MEMORY_FILES=()
 REMOVED_PATHS=()
 
@@ -156,12 +157,14 @@ resolve_source_template() {
       SOURCE_COMPACT_INDEX="$SOURCE_DIR/scripts/read-compact-project-index.sh"
       SOURCE_OBSIDIAN_SYNC="$SOURCE_DIR/scripts/obsidian-task-sync.sh"
       SOURCE_OBSIDIAN_GENERATOR="$SOURCE_DIR/scripts/generate-obsidian-projects-kanban.sh"
+      SOURCE_REPO_ROOT="$SOURCE_DIR"
     elif [ -d "$SOURCE_DIR/ai" ] && [ -f "$SOURCE_DIR/AGENTS.md" ]; then
       SOURCE_TEMPLATE="$SOURCE_DIR"
       SOURCE_VALIDATOR="$(cd "$SOURCE_DIR/.." && pwd)/scripts/check-hub-registry.sh"
       SOURCE_COMPACT_INDEX="$(cd "$SOURCE_DIR/.." && pwd)/scripts/read-compact-project-index.sh"
       SOURCE_OBSIDIAN_SYNC="$(cd "$SOURCE_DIR/.." && pwd)/scripts/obsidian-task-sync.sh"
       SOURCE_OBSIDIAN_GENERATOR="$(cd "$SOURCE_DIR/.." && pwd)/scripts/generate-obsidian-projects-kanban.sh"
+      SOURCE_REPO_ROOT="$(cd "$SOURCE_DIR/.." && pwd)"
     else
       die "--source must point to the template repository or to its hub-template/ directory"
     fi
@@ -179,6 +182,7 @@ resolve_source_template() {
     SOURCE_COMPACT_INDEX="$SOURCE_ROOT/scripts/read-compact-project-index.sh"
     SOURCE_OBSIDIAN_SYNC="$SOURCE_ROOT/scripts/obsidian-task-sync.sh"
     SOURCE_OBSIDIAN_GENERATOR="$SOURCE_ROOT/scripts/generate-obsidian-projects-kanban.sh"
+    SOURCE_REPO_ROOT="$SOURCE_ROOT"
   fi
 
   [ -f "$SOURCE_TEMPLATE/AGENTS.md" ] || die "Source hub template is missing AGENTS.md"
@@ -420,6 +424,18 @@ ensure_projects_ignored() {
   fi
 }
 
+# The policy MCP is code, not hub memory, so it is refreshed like a protected
+# file. The script it calls never touches the ignored allowlist.
+sync_calendar_policy() {
+  local syncer="$SOURCE_REPO_ROOT/scripts/sync-calendar-policy.sh"
+  if [ -z "$SOURCE_REPO_ROOT" ] || [ ! -f "$syncer" ] \
+    || [ ! -d "$SOURCE_REPO_ROOT/calendar-policy" ]; then
+    [ "${1:-}" = "--dry-run" ] && echo "  Source has no calendar-policy; nothing to install."
+    return 0
+  fi
+  bash "$syncer" --source "$SOURCE_REPO_ROOT" --hub "$HUB_DIR" ${1:+"$1"}
+}
+
 for_each_protected_file() {
   local callback="$1"
   local rel
@@ -527,6 +543,10 @@ if [ "$MODE" = "dry-run" ]; then
   echo "Hub memory templates to create only if missing:"
   for_each_memory_file show_missing_memory_file
   echo ""
+  echo "Guarded Calendar policy MCP:"
+  sync_calendar_policy --dry-run
+
+  echo ""
   echo "Superseded paths to remove:"
   for_each_superseded_path show_superseded_path
 
@@ -553,6 +573,7 @@ fi
 
 for_each_protected_file copy_file
 ensure_projects_ignored
+sync_calendar_policy
 for_each_memory_file copy_missing_memory_file
 
 # Validate every superseded-path entry before deleting anything: an invalid
