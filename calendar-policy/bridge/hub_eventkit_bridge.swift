@@ -112,6 +112,31 @@ func describe(_ event: EKEvent) -> [String: Any] {
     ]
 }
 
+// EventKit gives every occurrence of a series the same calendarItemIdentifier,
+// so an identifier alone resolves to the series. When the caller names the
+// occurrence start, search a day-wide window and pick the instance that begins
+// exactly then; that instance is what EKSpan.thisEvent then acts on.
+func resolveEvent(_ eventID: String, _ occurrenceStart: Date?) -> EKEvent? {
+    guard let occurrenceStart else {
+        return store.calendarItem(withIdentifier: eventID) as? EKEvent
+    }
+    let window = store.predicateForEvents(
+        withStart: occurrenceStart.addingTimeInterval(-86400),
+        end: occurrenceStart.addingTimeInterval(86400),
+        calendars: nil
+    )
+    return store.events(matching: window).first {
+        $0.calendarItemIdentifier == eventID
+            && abs($0.startDate.timeIntervalSince(occurrenceStart)) < 1
+    }
+}
+
+func occurrenceStart(_ payload: [String: Any]) -> Date?? {
+    guard let text = payload["occurrence_start"] as? String else { return .some(nil) }
+    guard let date = parseDate(text) else { return nil }
+    return .some(date)
+}
+
 if operation == "calendars" {
     ok(store.calendars(for: .event).map {
         ["id": $0.calendarIdentifier, "name": $0.title, "timezone": localZone,
@@ -130,8 +155,9 @@ if operation == "events" {
 }
 
 if operation == "event" {
-    guard let eventID = payload["event_id"] as? String else { fail("INVALID_PAYLOAD") }
-    guard let event = store.calendarItem(withIdentifier: eventID) as? EKEvent else { ok(NSNull()) }
+    guard let eventID = payload["event_id"] as? String,
+          let requested = occurrenceStart(payload) else { fail("INVALID_PAYLOAD") }
+    guard let event = resolveEvent(eventID, requested) else { ok(NSNull()) }
     ok(describe(event))
 }
 
@@ -153,8 +179,9 @@ if operation == "create" {
 // update and delete resolve the event first, so a missing event and a calendar
 // mismatch report their own codes instead of looking like a bad operation.
 guard let eventID = payload["event_id"] as? String,
-      let calendarID = payload["calendar_id"] as? String else { fail("INVALID_PAYLOAD") }
-guard let event = store.calendarItem(withIdentifier: eventID) as? EKEvent else { fail("EVENT_NOT_FOUND") }
+      let calendarID = payload["calendar_id"] as? String,
+      let requestedOccurrence = occurrenceStart(payload) else { fail("INVALID_PAYLOAD") }
+guard let event = resolveEvent(eventID, requestedOccurrence) else { fail("EVENT_NOT_FOUND") }
 guard event.calendar.calendarIdentifier == calendarID else { fail("CALENDAR_MISMATCH") }
 
 let span: EKSpan = (payload["recurrence_scope"] as? String) == "future" ? .futureEvents : .thisEvent

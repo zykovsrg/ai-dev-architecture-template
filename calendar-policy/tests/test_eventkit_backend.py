@@ -165,7 +165,30 @@ async def test_delete_identifies_the_event_and_its_calendar(tmp_path: Path) -> N
     assert await backend.delete(original, None) is None
 
     payload = json.loads(calls(log)[0]["payload"])
-    assert payload == {"event_id": "event-1", "calendar_id": "calendar-1", "recurrence_scope": None}
+    assert payload == {
+        "event_id": "event-1", "calendar_id": "calendar-1", "recurrence_scope": None,
+        "occurrence_start": "2026-08-29T10:00:00+03:00",
+    }
+
+
+@pytest.mark.asyncio
+async def test_a_named_occurrence_is_passed_to_the_bridge(tmp_path: Path) -> None:
+    backend, log = make_bridge(tmp_path, envelope(event_payload()))
+    occurrence = datetime(2026, 9, 5, 10, 0, tzinfo=ZONE)
+
+    await backend.get_event("event-1", occurrence)
+
+    payload = json.loads(calls(log)[0]["payload"])
+    assert payload == {"event_id": "event-1", "occurrence_start": "2026-09-05T10:00:00+03:00"}
+
+
+@pytest.mark.asyncio
+async def test_an_unnamed_occurrence_leaves_the_lookup_alone(tmp_path: Path) -> None:
+    backend, log = make_bridge(tmp_path, envelope(event_payload()))
+
+    await backend.get_event("event-1")
+
+    assert json.loads(calls(log)[0]["payload"]) == {"event_id": "event-1"}
 
 
 @pytest.mark.asyncio

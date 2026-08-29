@@ -115,12 +115,41 @@ async def test_future_event_delete_runs_after_confirmation(server: GuardedCalend
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("scope", ["this", "future"])
-async def test_recurring_scope_is_explicit_and_preserved(server: GuardedCalendarServer, backend: FakeCalendarBackend, scope: str) -> None:
-    request = ChangeRequest(action="delete", calendar_id="calendar-1", event_id="event-1", recurring=True, recurrence_scope=scope)
+async def test_recurring_scope_is_explicit_and_preserved(server: GuardedCalendarServer, backend: FakeCalendarBackend, event: EventRef, scope: str) -> None:
+    request = ChangeRequest(
+        action="delete", calendar_id="calendar-1", event_id="event-1",
+        recurring=True, recurrence_scope=scope, occurrence_start=event.start,
+    )
     preview = await server.preview_change(request)
     assert preview["recurrence_scope"] == scope
+    assert preview["occurrence_start"] == event.start.isoformat()
     await server.apply_change(preview["preview_id"], request)
     assert backend.writes == [("delete", "event-1", scope)]
+    assert backend.lookups == [("event-1", event.start), ("event-1", event.start)]
+
+
+@pytest.mark.asyncio
+async def test_a_recurring_change_must_name_its_occurrence() -> None:
+    with pytest.raises(ValueError, match="occurrence_start is required"):
+        ChangeRequest(
+            action="delete", calendar_id="calendar-1", event_id="event-1",
+            recurring=True, recurrence_scope="this",
+        )
+
+
+@pytest.mark.asyncio
+async def test_a_series_may_not_stand_in_for_the_named_occurrence(
+    server: GuardedCalendarServer, event: EventRef
+) -> None:
+    # The backend answered with a different instance than the one requested.
+    request = ChangeRequest(
+        action="delete", calendar_id="calendar-1", event_id="event-1",
+        recurring=True, recurrence_scope="this",
+        occurrence_start=event.start + timedelta(days=7),
+    )
+
+    with pytest.raises(PolicyError, match="EVENT_UNAVAILABLE"):
+        await server.preview_change(request)
 
 
 @pytest.mark.asyncio

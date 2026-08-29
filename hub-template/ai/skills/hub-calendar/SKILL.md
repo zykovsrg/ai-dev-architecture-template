@@ -21,7 +21,9 @@ task-to-calendar transfers, or files containing events, secrets, or tokens.
 
 Delete only an event whose end is strictly after now in the calendar timezone.
 Reject past deletion, including through rescheduling or recurrence changes.
-For a recurring event require exactly `this` or `future` scope.
+For a recurring event require exactly `this` or `future` scope and the
+start of the occurrence being changed. Every occurrence of a series shares
+one identifier, so without that date the change would hit the series.
 
 macOS Calendar access is requested only after a separate user confirmation.
 The allowlist starts empty and is changed only after the user selects exact IDs.
