@@ -32,6 +32,7 @@ This is a multi-project hub. The hub registry defines what may be accessed.
 - Always show `Project: <project-id>` and `Mode: <mode>` before project work.
 - Use `Mode: assistant` for a personal-assistant request. Use `Mode: routing` only while a project-specific request awaits confirmation; use the selected project's mode after confirmation.
 - Route detailed procedures to `ai/architecture.md` and one matching skill. Do not copy detailed rules into this entry file.
+- Route Apple Calendar work only to `hub-calendar`; it uses a local guarded MCP, explicit calendar IDs, and one preview confirmation per change.
 - If the request is ambiguous, ask one concise question before selecting a route.
 
 ## Boundaries
