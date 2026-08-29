@@ -75,8 +75,10 @@ if [ "$MODE" = "dry-run" ]; then
 fi
 
 mkdir -p "$TOOL_DIR"
-rsync -a --delete "$POLICY_SRC/src/" "$TOOL_DIR/src/"
-rsync -a --delete "$POLICY_SRC/bridge/" "$TOOL_DIR/bridge/"
+# Compiled caches belong to the source checkout, never to an installed hub.
+RSYNC_EXCLUDES=(--exclude '__pycache__/' --exclude '*.pyc')
+rsync -a --delete --delete-excluded "${RSYNC_EXCLUDES[@]}" "$POLICY_SRC/src/" "$TOOL_DIR/src/"
+rsync -a --delete --delete-excluded "${RSYNC_EXCLUDES[@]}" "$POLICY_SRC/bridge/" "$TOOL_DIR/bridge/"
 cp "$POLICY_SRC/pyproject.toml" "$TOOL_DIR/pyproject.toml"
 
 # Runtime selection is hub memory, not shipped code: create it only if absent.

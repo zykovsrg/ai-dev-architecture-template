@@ -15,6 +15,8 @@ make_source() {
   local dest="$WORK/$1"
   mkdir -p "$dest/scripts" "$dest/calendar-policy"
   cp -R "$ROOT/calendar-policy/src" "$dest/calendar-policy/src"
+  mkdir -p "$dest/calendar-policy/src/hub_calendar_policy/__pycache__"
+  : > "$dest/calendar-policy/src/hub_calendar_policy/__pycache__/server.cpython-314.pyc"
   cp -R "$ROOT/calendar-policy/bridge" "$dest/calendar-policy/bridge"
   cp "$ROOT/calendar-policy/pyproject.toml" "$dest/calendar-policy/pyproject.toml"
   printf '%s\n' "$dest"
@@ -41,7 +43,16 @@ tool="$hub/tools/apple-calendar-policy"
 grep -Fq '"calendar_ids": []' "$hub/.local/apple-calendar/allowlist.json" \
   || fail "installed allowlist is not empty"
 grep -Fqx '/.local/' "$hub/.gitignore" || fail "ignore line was not added"
+[ -z "$(find "$tool" -name '__pycache__' -o -name '*.pyc')" ] \
+  || fail "compiled caches were installed"
 grep -Fqx 'my-own-entry/' "$hub/.gitignore" || fail "existing ignore entries were lost"
+
+# A rerun must also clear caches an earlier install already left behind:
+# rsync protects excluded files on the receiver unless they are deleted too.
+mkdir -p "$tool/src/hub_calendar_policy/__pycache__"
+: > "$tool/src/hub_calendar_policy/__pycache__/stale.cpython-314.pyc"
+bash "$SYNC" --source "$source_dir" --hub "$hub" >/dev/null
+[ -z "$(find "$tool" -name '*.pyc')" ] || fail "a stale cache survived a rerun"
 
 # A rerun must never overwrite a selection the user already made.
 printf '%s\n' '{"calendar_ids": ["chosen-calendar"]}' > "$hub/.local/apple-calendar/allowlist.json"
