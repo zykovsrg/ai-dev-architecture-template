@@ -98,12 +98,11 @@ async def test_update_runs_only_after_confirmation(server: GuardedCalendarServer
 
 
 @pytest.mark.asyncio
-async def test_past_event_delete_runs_after_confirmation(server: GuardedCalendarServer, backend: FakeCalendarBackend, now: datetime) -> None:
+async def test_past_event_delete_is_rejected(server: GuardedCalendarServer, backend: FakeCalendarBackend, now: datetime) -> None:
     backend.events["event-1"] = EventRef(id="event-1", calendar_id="calendar-1", title="Past", start=now - timedelta(hours=2), end=now, timezone=ZONE)
     request = ChangeRequest(action="delete", calendar_id="calendar-1", event_id="event-1")
-    preview = await server.preview_change(request)
-    await server.apply_change(preview["preview_id"], request)
-    assert backend.writes == [("delete", "event-1", None)]
+    with pytest.raises(PolicyError, match="PAST_EVENT_DELETE_DENIED"):
+        await server.preview_change(request)
 
 
 @pytest.mark.asyncio
