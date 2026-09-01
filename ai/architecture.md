@@ -57,7 +57,7 @@ If `ai/current-task.md` is empty, the new task must be recorded there before wor
 
 ## Work modes
 
-Before starting task work, the agent must explicitly state the mode as `Mode: ...`.
+Before starting task work, the agent must decide which mode applies. Do not print the mode label in the answer unless the user asks for it.
 
 - `implementation` — change code, project files, tests, or task memory.
 - `review` — read files, inspect project state or the diff, restate context, report problems, or suggest the next step; do not edit files.
