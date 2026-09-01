@@ -1,6 +1,5 @@
 """The only client-visible Calendar operations for the Personal AI Hub."""
 
-from collections.abc import Callable
 from datetime import datetime
 from hashlib import sha256
 import json
@@ -28,13 +27,10 @@ class GuardedCalendarServer:
         backend: CalendarBackend,
         policy: CalendarPolicy,
         previews: PreviewGrantStore,
-        *,
-        clock: Callable[[], datetime],
     ) -> None:
         self._backend = backend
         self._policy = policy
         self._previews = previews
-        self._clock = clock
 
     async def calendar_status(self) -> dict[str, object]:
         return {
@@ -140,10 +136,10 @@ class GuardedCalendarServer:
     def _authorize_existing(self, request: ChangeRequest, event: EventRef | None) -> None:
         if request.action == "delete":
             assert event is not None
-            self._policy.authorize_delete(event, request.recurrence_scope, self._now())
+            self._policy.authorize_delete(event, request.recurrence_scope)
         elif request.action == "update":
             assert event is not None
-            self._policy.authorize_update(event, request, self._now())
+            self._policy.authorize_update(event, request)
 
     @staticmethod
     def _validate_range(start: datetime, end: datetime, timezone: str) -> None:
@@ -155,12 +151,6 @@ class GuardedCalendarServer:
             raise ValueError("start and end must include timezone")
         if end <= start:
             raise ValueError("end must be later than start")
-
-    def _now(self) -> datetime:
-        now = self._clock()
-        if now.tzinfo is None or now.utcoffset() is None:
-            raise ValueError("clock must return a timezone-aware datetime")
-        return now
 
     @staticmethod
     def _preview_response(

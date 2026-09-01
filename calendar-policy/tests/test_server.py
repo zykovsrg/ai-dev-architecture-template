@@ -39,7 +39,6 @@ def server(backend: FakeCalendarBackend, now: datetime) -> GuardedCalendarServer
         backend=backend,
         policy=CalendarPolicy(allowed_calendar_ids=frozenset({"calendar-1"})),
         previews=PreviewGrantStore(clock=lambda: now, token_factory=lambda: "preview-1"),
-        clock=lambda: now,
     )
 
 
@@ -54,7 +53,7 @@ def test_exposes_only_safe_tools(server: GuardedCalendarServer) -> None:
 @pytest.mark.asyncio
 async def test_permission_denied_blocks_read(calendar: CalendarRef, event: EventRef, now: datetime) -> None:
     backend = FakeCalendarBackend([calendar], [event], permission="denied")
-    server = GuardedCalendarServer(backend, CalendarPolicy(allowed_calendar_ids=frozenset({calendar.id})), PreviewGrantStore(clock=lambda: now), clock=lambda: now)
+    server = GuardedCalendarServer(backend, CalendarPolicy(allowed_calendar_ids=frozenset({calendar.id})), PreviewGrantStore(clock=lambda: now))
     with pytest.raises(PolicyError, match="CALENDAR_PERMISSION_DENIED"):
         await server.read_events({calendar.id}, now, now + timedelta(days=1), ZONE)
 
@@ -75,7 +74,7 @@ async def test_wrong_timezone_is_denied(server: GuardedCalendarServer, now: date
 async def test_read_only_calendar_cannot_be_previewed(now: datetime) -> None:
     calendar = CalendarRef(id="calendar-1", name="Read only", timezone=ZONE, writable=False)
     backend = FakeCalendarBackend([calendar], [])
-    server = GuardedCalendarServer(backend, CalendarPolicy(allowed_calendar_ids=frozenset({calendar.id})), PreviewGrantStore(clock=lambda: now), clock=lambda: now)
+    server = GuardedCalendarServer(backend, CalendarPolicy(allowed_calendar_ids=frozenset({calendar.id})), PreviewGrantStore(clock=lambda: now))
     with pytest.raises(PolicyError, match="CALENDAR_READ_ONLY"):
         await server.preview_change(create_request(now))
 

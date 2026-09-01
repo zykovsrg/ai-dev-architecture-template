@@ -19,7 +19,6 @@ async def test_mcp_exposes_exactly_the_guarded_tool_set() -> None:
         FakeCalendarBackend([calendar], []),
         CalendarPolicy(allowed_calendar_ids=frozenset({calendar.id})),
         PreviewGrantStore(clock=lambda: now),
-        clock=lambda: now,
     )
 
     mcp = build_mcp(guarded)

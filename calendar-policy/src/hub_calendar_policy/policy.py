@@ -1,7 +1,5 @@
 """Strict authorization rules independent of EventKit and MCP transport."""
 
-from datetime import datetime
-
 from pydantic import BaseModel, ConfigDict, Field
 
 from .models import CalendarRef, ChangeRequest, EventRef, _require_timezone
@@ -37,16 +35,12 @@ class CalendarPolicy(BaseModel):
         if not calendar.writable:
             raise PolicyError("CALENDAR_READ_ONLY")
 
-    def authorize_delete(
-        self, event: EventRef, scope: str | None, now: datetime
-    ) -> None:
+    def authorize_delete(self, event: EventRef, scope: str | None) -> None:
         self.authorize_read(event.calendar_id, event.timezone)
         if scope not in {None, "this", "future"}:
             raise PolicyError("INVALID_RECURRENCE_SCOPE")
 
-    def authorize_update(
-        self, original: EventRef, request: ChangeRequest, now: datetime
-    ) -> None:
+    def authorize_update(self, original: EventRef, request: ChangeRequest) -> None:
         self.authorize_read(original.calendar_id, original.timezone)
         if request.action != "update" or request.event_id != original.id:
             raise PolicyError("EVENT_MISMATCH")

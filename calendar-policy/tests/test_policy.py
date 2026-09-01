@@ -80,7 +80,7 @@ def test_allowed_read_is_returned(policy: CalendarPolicy, allowed_calendar: Cale
 def test_past_delete_is_allowed_for_an_authorized_calendar(
     clock: datetime, policy: CalendarPolicy, past_event: EventRef
 ) -> None:
-    assert policy.authorize_delete(past_event, scope=None, now=clock) is None
+    assert policy.authorize_delete(past_event, scope=None) is None
 
 
 def test_future_delete_is_allowed(clock: datetime, policy: CalendarPolicy) -> None:
@@ -93,7 +93,7 @@ def test_future_delete_is_allowed(clock: datetime, policy: CalendarPolicy) -> No
         timezone=ZONE,
     )
 
-    assert policy.authorize_delete(event, scope=None, now=clock) is None
+    assert policy.authorize_delete(event, scope=None) is None
 
 
 def test_moving_a_past_event_is_allowed_for_an_authorized_calendar(
@@ -107,7 +107,7 @@ def test_moving_a_past_event_is_allowed_for_an_authorized_calendar(
         end=clock + timedelta(days=1, hours=1),
     )
 
-    assert policy.authorize_update(past_event, request, now=clock) is None
+    assert policy.authorize_update(past_event, request) is None
 
 
 def test_recurrence_scope_must_be_explicit_for_series() -> None:
