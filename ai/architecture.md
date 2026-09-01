@@ -581,16 +581,6 @@ For plan-driven or Superpowers tasks, read only relevant files:
 
 Do not read `ai/archive/` without a concrete reason.
 
-## Output format before changes
-
-Before editing, the agent should:
-
-1. State the mode: `Mode: ...`.
-2. Briefly explain in simple words what it will do next.
-3. Name important risk only if there is one.
-
-Do not list technical files before editing unless it helps the user understand the change or the user asked for file names.
-
 ## Scope control
 
 Do not expand user-confirmed scope.
@@ -610,26 +600,6 @@ In `review` mode, do not report a problem as fact until it is verified with read
 If not verified, label it as a hypothesis.
 
 Do not create work from stale assumptions. Re-check the file before saying that an issue still exists.
-
-## Output format after changes
-
-After editing, the agent should:
-
-1. Start the report with the used mode, for example `Mode: implementation`.
-2. Briefly describe what changed.
-3. List checks.
-4. Name risks or unfinished parts.
-5. Explicitly say whether task memory changed.
-6. If the task looks complete, propose `task-finish`, not declare the task closed.
-
-If task memory changed, list exact files:
-
-- `ai/current-task.md`
-- `ai/changelog.md`
-- `ai/decisions.md`
-- `ai/project-context.md`
-- `ai/paused-tasks.md`
-- `ai/future-tasks.md`
 
 ## Clean architecture principle
 
