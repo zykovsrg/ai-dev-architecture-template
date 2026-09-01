@@ -299,11 +299,11 @@ Apple Calendar uses only `hub-calendar` and the pinned local guarded MCP.
 Raw upstream tools are forbidden. The allowlist is empty by default and may
 contain only user-selected stable calendar IDs. Reads require explicit IDs and
 IANA timezone and return their EventKit source. Every write requires a fresh,
-single-use preview confirmation. Past events (end at or before now in calendar
-timezone) cannot be deleted or moved; recurring writes require `this` or
-`future`. No background checks, notifications, secrets, or calendar content are
-stored in architecture files. Updates are manual, audited, and separately
-confirmed.
+single-use preview confirmation. An authorized writable calendar may update or
+delete events regardless of whether they are past or future; recurring writes
+require `this` or `future`. No background checks, notifications, secrets, or
+calendar content are stored in architecture files. Updates are manual, audited,
+and separately confirmed.
 
 Use the hub-owned `hub-workflows` skill for `day-plan`, `evening-review`,
 `weekly-review`, and `capture`. The skill performs semantic AI analysis, while

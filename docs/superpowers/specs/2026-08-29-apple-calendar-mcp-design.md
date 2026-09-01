@@ -66,22 +66,18 @@ preview. It never resolves a missing ID by title or approximate matching.
 
 ## Delete and recurrence policy
 
-Delete is allowed only when the target occurrence is future. An event is past
-when its end is less than or equal to the current instant after interpreting
-the event in its calendar timezone.
-
-Past deletion is always denied, including after user instruction. A past event
-cannot be moved into the future, detached, or otherwise transformed to bypass
-this rule. Updating the time or recurrence of an already past event is denied.
+Update and delete are allowed for a target event in an architecture-authorized,
+writable calendar regardless of whether its occurrence is past or future. The
+same exact, single-use preview and separate user confirmation are required for
+every operation.
 
 For recurring events, the preview and confirmation must explicitly select one
 of the upstream-supported scopes:
 
-- `this`: only the named future occurrence;
-- `future`: the named future occurrence and later occurrences.
+- `this`: only the named occurrence;
+- `future`: the named occurrence and later occurrences.
 
-There is no implicit default and no claimed `all` scope. A series operation
-whose selected occurrence is past is denied.
+There is no implicit default and no claimed `all` scope.
 
 ## Stable identity
 
@@ -196,4 +192,3 @@ separate explicit deletion confirmation.
 No background checks, notifications, task-to-calendar transfer, secrets,
 calendar-content persistence, automatic updates, automatic writes, or implicit
 confirmation are part of this design.
-
