@@ -108,7 +108,7 @@ After installation:
 - change ai/external-tools.md only when the list of expected external tools or controlled methodologies changes.
 
 Important rules:
-- Communicate with me in concise Russian and explain unfamiliar technical terms simply.
+- Talk to me in Russian, in plain words. Default answer: at most 5 lines and at most 80 words; go longer only when I ask.
 - Separate verified facts from interpretations, hypotheses, and opinions; state uncertainty honestly.
 - Test material assumptions and prioritize accuracy over agreement.
 - Prefer the simplest sufficient solution. Do not add a new entity when existing means solve the problem adequately.

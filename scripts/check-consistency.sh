@@ -37,6 +37,58 @@ assistant_workflow_guardrail_check() {
   echo 'OK [assistant workflow guardrails] — executable source and hub rule'
 }
 
+extract_output_section() {
+  awk '
+    /^## Output/ { p=1; print; next }
+    /^## / { p=0 }
+    p { print }
+  ' "$1"
+}
+
+output_rule_check() {
+  local project_files="AGENTS.md CLAUDE.md template/AGENTS.md template/CLAUDE.md"
+  local hub_files="hub-template/AGENTS.md hub-template/CLAUDE.md"
+  local f
+  for f in $project_files $hub_files; do
+    if [ ! -f "$f" ]; then
+      echo "MISSING [output rule] — $f"
+      return 1
+    fi
+    if [ -z "$(extract_output_section "$f")" ]; then
+      echo "MISSING [output rule] — $f has no ## Output section"
+      return 1
+    fi
+  done
+
+  local ref
+  ref="$(extract_output_section AGENTS.md)"
+  for f in CLAUDE.md template/AGENTS.md template/CLAUDE.md; do
+    if [ "$(extract_output_section "$f")" != "$ref" ]; then
+      echo "MISMATCH [output rule] — $f differs from AGENTS.md"
+      return 1
+    fi
+  done
+
+  local hub_ref
+  hub_ref="$(extract_output_section hub-template/AGENTS.md)"
+  if [ "$(extract_output_section hub-template/CLAUDE.md)" != "$hub_ref" ]; then
+    echo "MISMATCH [output rule] — hub-template/CLAUDE.md differs from hub-template/AGENTS.md"
+    return 1
+  fi
+
+  echo "$ref" | grep -Fq -- '- Never declare a task closed.' \
+    || { echo 'MISMATCH [output rule] — project variant missing task-finish bullet'; return 1; }
+
+  local ref_trimmed
+  ref_trimmed="$(echo "$ref" | grep -Fv -- '- Never declare a task closed.')"
+  if [ "$ref_trimmed" != "$hub_ref" ]; then
+    echo "MISMATCH [output rule] — project variant (minus task-finish bullet) differs from hub variant"
+    return 1
+  fi
+
+  echo 'OK [output rule] — 6 copies consistent'
+}
+
 MARKERS="canon:protected-files canon:controlled-memory"
 fail=0
 
@@ -295,6 +347,7 @@ done
   || echo "OK [standalone memory updater boundaries] — neither updater overwrites controlled memory"
 
 assistant_workflow_guardrail_check || fail=1
+output_rule_check || fail=1
 
 if [ "$fail" -ne 0 ]; then
   echo ""

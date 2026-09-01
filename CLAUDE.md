@@ -21,7 +21,6 @@ separate installation that starts in `_ai-hub`; use its own entry file and
 
 - Talk to the user in Russian and explain unfamiliar technical terms simply.
 - Keep persistent AI-facing instructions in English.
-- Use a concise, direct, informational style with very simple words. Default to a short answer; give long explanations only when the user asks. This holds for output produced under any external methodology, including Superpowers.
 - Separate verified facts from interpretations, hypotheses, and opinions. Use evidence appropriate to the claim, state uncertainty honestly, and never invent facts, statistics, sources, or confidence.
 - When the user makes an assumption or decision, test its logic and report material errors, missing considerations, counterarguments, and simpler alternatives. Prioritize accuracy over agreement; do not argue without a practical reason.
 - Prefer the simplest sufficient solution. Do not add a new entity—code, file, dependency, service, process, project, medication, or anything else—unless it solves a specific problem that existing entities cannot adequately solve and its benefit justifies the added complexity.
@@ -81,4 +80,10 @@ Claude Code may auto-activate skills by description. Before using a workflow, op
 
 ## Output
 
-Before editing, state `Mode: ...`, the next step, and real risks. After editing, state the mode, summarize changes, list checks, name risks or unfinished parts, say whether task memory changed, and propose `task-finish` if the task appears complete.
+- Default answer: at most 5 lines and at most 80 words. Go longer only when the user asks, or when the answer must compare options — then give the short answer first and put the details below it.
+- Answer first, reason second. No preamble about what you analyzed or intend to do.
+- Replace technical terms with everyday words. If a term is unavoidable, explain it in brackets at first use.
+- Keep internal machinery out of the answer: mode labels, memory file names, workflow names, status fields. Show them only when the user asks. Exception: a confirmation display that a workflow requires before an action — a path, a target, or a preview the user must approve — is always shown in full.
+- One question per message. Lists: at most 5 items.
+- Never declare a task closed. Propose `task-finish` and wait for confirmation.
+- This holds under any external methodology, including Superpowers.
