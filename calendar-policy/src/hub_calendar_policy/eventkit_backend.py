@@ -84,17 +84,20 @@ class EventKitBackend:
         payload["event_id"] = event.id
         payload["calendar_id"] = event.calendar_id
         payload["recurrence_scope"] = scope
-        payload["occurrence_start"] = event.start.isoformat()
+        if request.recurring:
+            payload["occurrence_start"] = event.start.isoformat()
         result = await self._call("update", payload)
         return EventRef.model_validate(result)
 
     async def delete(self, event: EventRef, scope: str | None) -> None:
-        await self._call("delete", {
+        payload: dict[str, object] = {
             "event_id": event.id,
             "calendar_id": event.calendar_id,
             "recurrence_scope": scope,
-            "occurrence_start": event.start.isoformat(),
-        })
+        }
+        if scope is not None:
+            payload["occurrence_start"] = event.start.isoformat()
+        await self._call("delete", payload)
 
 
 def _unwrap(stdout: bytes) -> object:
