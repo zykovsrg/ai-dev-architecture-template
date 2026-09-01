@@ -1,6 +1,6 @@
 # AI Development Architecture
 
-Version: 7.4
+Version: 7.5
 
 This file is the reference for workflows and the rule hierarchy. It does not need to be loaded for every task. Read it only when a task concerns workflows, rule conflicts, architecture-update, or when a rule is unclear.
 
@@ -862,7 +862,7 @@ Superpowers must not override:
 - `environment-check` rules;
 - `architecture-update` rules;
 - clean architecture principle;
-- user communication style (short, very simple wording);
+- the `Output` rule in `AGENTS.md` and `CLAUDE.md`;
 - project-specific rules in `ai/project-context.md`.
 
 If Superpowers suggests a heavier workflow, first propose it to the user and ask for confirmation.

@@ -1,6 +1,6 @@
 # Personal AI Hub Architecture
 
-Version: 1.8
+Version: 1.9
 
 ## Purpose
 
