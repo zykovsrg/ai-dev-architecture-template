@@ -24,6 +24,24 @@ func parseDate(_ text: String) -> Date? {
 
 func isoText(_ date: Date) -> String { plain.string(from: date) }
 
+// EventKit stores the end of an all-day event inclusively: a single day ends on
+// that same day. The policy layer speaks the iCal convention, where the end is
+// exclusive and a single day ends on the next one. Convert on every crossing,
+// and do it in calendar days: a DST change makes a day shorter or longer than
+// 86400 seconds, which would move the boundary onto the wrong date.
+let dayCalendar = Calendar.current
+
+func shiftDay(_ date: Date, _ days: Int) -> Date? {
+    dayCalendar.date(byAdding: .day, value: days, to: date)
+}
+
+func inclusiveEnd(_ end: Date) -> Date? { shiftDay(end, -1) }
+
+// EventKit does not keep the inclusive end at midnight: it stores the last
+// instant of the closing day (23:59:59). Normalise to that day's start before
+// stepping forward, or the exclusive end would come back one second short.
+func exclusiveEnd(_ end: Date) -> Date? { shiftDay(dayCalendar.startOfDay(for: end), 1) }
+
 let operation = CommandLine.arguments.dropFirst().first ?? ""
 
 // macOS attributes a Calendar decision to the responsible process, which for a
@@ -107,7 +125,7 @@ func describe(_ event: EKEvent) -> [String: Any] {
         "calendar_id": event.calendar.calendarIdentifier,
         "title": event.title ?? "",
         "start": isoText(event.startDate),
-        "end": isoText(event.endDate),
+        "end": isoText(event.isAllDay ? (exclusiveEnd(event.endDate) ?? event.endDate) : event.endDate),
         "timezone": event.timeZone?.identifier ?? localZone,
         "all_day": event.isAllDay,
     ]
@@ -175,7 +193,12 @@ if operation == "create" {
     // before them and never after.
     event.isAllDay = (payload["all_day"] as? Bool) ?? false
     event.startDate = start
-    event.endDate = end
+    if event.isAllDay {
+        guard let inclusive = inclusiveEnd(end), inclusive >= start else { fail("INVALID_PAYLOAD") }
+        event.endDate = inclusive
+    } else {
+        event.endDate = end
+    }
     do { try store.save(event, span: .thisEvent) } catch { fail("SAVE_FAILED") }
     ok(describe(event))
 }
@@ -205,7 +228,9 @@ if let text = payload["start"] as? String {
 }
 if let text = payload["end"] as? String {
     guard let date = parseDate(text) else { fail("INVALID_PAYLOAD") }
-    event.endDate = date
+    guard let stored = event.isAllDay ? inclusiveEnd(date) : date else { fail("INVALID_PAYLOAD") }
+    guard stored >= event.startDate else { fail("INVALID_PAYLOAD") }
+    event.endDate = stored
 }
 do { try store.save(event, span: span) } catch { fail("SAVE_FAILED") }
 ok(describe(event))

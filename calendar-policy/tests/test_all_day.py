@@ -1,6 +1,7 @@
 import asyncio
 import json
-from datetime import datetime
+import sys
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -145,3 +146,77 @@ def test_preview_shows_that_the_change_is_all_day() -> None:
     )
 
     assert response["all_day"] is True
+
+
+# --- boundary semantics -----------------------------------------------------
+#
+# EventKit keeps the end of an all-day event inclusively (the last instant of
+# the closing day); the policy layer speaks the iCal convention, where the end
+# is exclusive. The bridge converts on both crossings. These tests pin that
+# contract with a stub that stores dates the way EventKit does, so a change on
+# either side of the wire has to keep create -> read stable.
+
+_EVENTKIT_STUB = '''
+import json, sys
+from datetime import datetime, timedelta
+
+payload = json.loads(sys.stdin.read() or "{}")
+start = datetime.fromisoformat(payload["start"])
+end = datetime.fromisoformat(payload["end"])
+if payload.get("all_day"):
+    # stored inclusively, and EventKit closes the day at 23:59:59
+    stored_end = (end - timedelta(days=1)).replace(hour=23, minute=59, second=59)
+    # read back exclusively, from the start of the closing day
+    reported_end = stored_end.replace(hour=0, minute=0, second=0) + timedelta(days=1)
+else:
+    stored_end = reported_end = end
+print(json.dumps({"ok": True, "data": {
+    "id": "event-1", "calendar_id": "calendar", "title": payload["title"],
+    "start": start.isoformat(), "end": reported_end.isoformat(),
+    "timezone": "Europe/Moscow", "all_day": bool(payload.get("all_day")),
+    "stored_end": stored_end.isoformat(),
+}}))
+'''
+
+
+def _eventkit_bridge(tmp_path: Path) -> EventKitBackend:
+    script = tmp_path / "eventkit_stub.py"
+    script.write_text(_EVENTKIT_STUB, encoding="utf-8")
+    return EventKitBackend(script, interpreter=(sys.executable,))
+
+
+def test_all_day_create_and_read_report_the_same_boundaries(tmp_path: Path) -> None:
+    backend = _eventkit_bridge(tmp_path)
+
+    created = asyncio.run(backend.create(create()))
+
+    assert created.all_day is True
+    assert created.start == DAY
+    assert created.end == NEXT_DAY
+
+
+def test_a_single_all_day_event_covers_exactly_one_day(tmp_path: Path) -> None:
+    backend = _eventkit_bridge(tmp_path)
+
+    created = asyncio.run(backend.create(create()))
+
+    assert created.end - created.start == timedelta(days=1)
+
+
+def test_timed_event_boundaries_are_passed_through_unchanged(tmp_path: Path) -> None:
+    backend = _eventkit_bridge(tmp_path)
+
+    created = asyncio.run(backend.create(create(start=START, end=END, all_day=False)))
+
+    assert (created.all_day, created.start, created.end) == (False, START, END)
+
+
+def test_the_exclusive_end_is_what_reaches_the_bridge(tmp_path: Path) -> None:
+    backend = _RecordingBackend()
+
+    asyncio.run(backend.create(create()))
+
+    _, payload = backend.sent[0]
+    # The policy layer never pre-converts; the bridge owns the EventKit rule.
+    assert payload is not None
+    assert datetime.fromisoformat(str(payload["end"])) == NEXT_DAY
