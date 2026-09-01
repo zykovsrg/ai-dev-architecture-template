@@ -77,11 +77,10 @@ def test_allowed_read_is_returned(policy: CalendarPolicy, allowed_calendar: Cale
     assert policy.authorize_read(allowed_calendar.id, allowed_calendar.timezone) is None
 
 
-def test_past_delete_is_always_denied(
+def test_past_delete_is_allowed_for_an_authorized_calendar(
     clock: datetime, policy: CalendarPolicy, past_event: EventRef
 ) -> None:
-    with pytest.raises(PolicyError, match="PAST_EVENT_DELETE_DENIED"):
-        policy.authorize_delete(past_event, scope=None, now=clock)
+    assert policy.authorize_delete(past_event, scope=None, now=clock) is None
 
 
 def test_future_delete_is_allowed(clock: datetime, policy: CalendarPolicy) -> None:
@@ -97,7 +96,7 @@ def test_future_delete_is_allowed(clock: datetime, policy: CalendarPolicy) -> No
     assert policy.authorize_delete(event, scope=None, now=clock) is None
 
 
-def test_moving_a_past_event_is_denied(
+def test_moving_a_past_event_is_allowed_for_an_authorized_calendar(
     clock: datetime, policy: CalendarPolicy, past_event: EventRef
 ) -> None:
     request = ChangeRequest(
@@ -108,8 +107,7 @@ def test_moving_a_past_event_is_denied(
         end=clock + timedelta(days=1, hours=1),
     )
 
-    with pytest.raises(PolicyError, match="PAST_EVENT_MUTATION_DENIED"):
-        policy.authorize_update(past_event, request, now=clock)
+    assert policy.authorize_update(past_event, request, now=clock) is None
 
 
 def test_recurrence_scope_must_be_explicit_for_series() -> None:

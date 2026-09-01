@@ -1,7 +1,6 @@
 """Strict authorization rules independent of EventKit and MCP transport."""
 
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -42,8 +41,6 @@ class CalendarPolicy(BaseModel):
         self, event: EventRef, scope: str | None, now: datetime
     ) -> None:
         self.authorize_read(event.calendar_id, event.timezone)
-        if self._is_past(event, now):
-            raise PolicyError("PAST_EVENT_DELETE_DENIED")
         if scope not in {None, "this", "future"}:
             raise PolicyError("INVALID_RECURRENCE_SCOPE")
 
@@ -55,12 +52,3 @@ class CalendarPolicy(BaseModel):
             raise PolicyError("EVENT_MISMATCH")
         if request.calendar_id != original.calendar_id:
             raise PolicyError("CALENDAR_MISMATCH")
-        if self._is_past(original, now):
-            raise PolicyError("PAST_EVENT_MUTATION_DENIED")
-
-    @staticmethod
-    def _is_past(event: EventRef, now: datetime) -> bool:
-        if now.tzinfo is None or now.utcoffset() is None:
-            raise ValueError("now must include timezone")
-        calendar_zone = ZoneInfo(event.timezone)
-        return event.end.astimezone(calendar_zone) <= now.astimezone(calendar_zone)
