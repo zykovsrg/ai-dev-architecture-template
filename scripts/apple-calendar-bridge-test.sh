@@ -20,6 +20,16 @@ grep -Fq 'authorizationStatus' "$BRIDGE/hub_eventkit_bridge.swift" || fail "brid
 grep -Fq 'responsibility_spawnattrs_setdisclaim' "$BRIDGE/hub_eventkit_bridge.swift" \
   || fail "bridge lost its own-identity re-spawn"
 
+# EventKit's all-day end is inclusive and the policy layer's is exclusive. Only
+# the bridge converts, and nothing above it can notice if that conversion goes
+# missing, so its presence is checked here.
+grep -Fq 'inclusiveEnd(end)' "$BRIDGE/hub_eventkit_bridge.swift" \
+  || fail "bridge lost the all-day end conversion on write"
+grep -Fq 'exclusiveEnd(event.endDate)' "$BRIDGE/hub_eventkit_bridge.swift" \
+  || fail "bridge lost the all-day end conversion on read"
+grep -Fq 'byAdding: .day' "$BRIDGE/hub_eventkit_bridge.swift" \
+  || fail "bridge shifts all-day boundaries by seconds instead of calendar days"
+
 # Without this key macOS refuses the Calendar prompt without ever showing it.
 /usr/libexec/PlistBuddy -c 'Print :NSCalendarsFullAccessUsageDescription' "$BRIDGE/Info.plist" >/dev/null 2>&1 \
   || fail "Info.plist is missing NSCalendarsFullAccessUsageDescription"

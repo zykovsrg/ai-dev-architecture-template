@@ -52,7 +52,7 @@ def test_unavailable_calendar_is_denied(policy: CalendarPolicy) -> None:
 def test_read_only_calendar_is_denied_for_change(policy: CalendarPolicy) -> None:
     calendar = CalendarRef(id="calendar-1", name="Read only", timezone=ZONE, writable=False)
     request = ChangeRequest(
-        action="create", calendar_id="calendar-1", title="Review",
+        action="create", calendar_id="calendar-1", title="работа/проект/ревью",
         start=datetime(2026, 8, 29, 10, 0, tzinfo=ZoneInfo(ZONE)),
         end=datetime(2026, 8, 29, 11, 0, tzinfo=ZoneInfo(ZONE)),
     )
@@ -77,11 +77,10 @@ def test_allowed_read_is_returned(policy: CalendarPolicy, allowed_calendar: Cale
     assert policy.authorize_read(allowed_calendar.id, allowed_calendar.timezone) is None
 
 
-def test_past_delete_is_always_denied(
+def test_past_delete_is_allowed_for_an_authorized_calendar(
     clock: datetime, policy: CalendarPolicy, past_event: EventRef
 ) -> None:
-    with pytest.raises(PolicyError, match="PAST_EVENT_DELETE_DENIED"):
-        policy.authorize_delete(past_event, scope=None, now=clock)
+    assert policy.authorize_delete(past_event, scope=None) is None
 
 
 def test_future_delete_is_allowed(clock: datetime, policy: CalendarPolicy) -> None:
@@ -94,10 +93,10 @@ def test_future_delete_is_allowed(clock: datetime, policy: CalendarPolicy) -> No
         timezone=ZONE,
     )
 
-    assert policy.authorize_delete(event, scope=None, now=clock) is None
+    assert policy.authorize_delete(event, scope=None) is None
 
 
-def test_moving_a_past_event_is_denied(
+def test_moving_a_past_event_is_allowed_for_an_authorized_calendar(
     clock: datetime, policy: CalendarPolicy, past_event: EventRef
 ) -> None:
     request = ChangeRequest(
@@ -108,8 +107,7 @@ def test_moving_a_past_event_is_denied(
         end=clock + timedelta(days=1, hours=1),
     )
 
-    with pytest.raises(PolicyError, match="PAST_EVENT_MUTATION_DENIED"):
-        policy.authorize_update(past_event, request, now=clock)
+    assert policy.authorize_update(past_event, request) is None
 
 
 def test_recurrence_scope_must_be_explicit_for_series() -> None:

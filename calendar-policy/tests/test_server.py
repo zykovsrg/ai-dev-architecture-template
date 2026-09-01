@@ -39,12 +39,11 @@ def server(backend: FakeCalendarBackend, now: datetime) -> GuardedCalendarServer
         backend=backend,
         policy=CalendarPolicy(allowed_calendar_ids=frozenset({"calendar-1"})),
         previews=PreviewGrantStore(clock=lambda: now, token_factory=lambda: "preview-1"),
-        clock=lambda: now,
     )
 
 
 def create_request(now: datetime) -> ChangeRequest:
-    return ChangeRequest(action="create", calendar_id="calendar-1", title="New", start=now + timedelta(hours=3), end=now + timedelta(hours=4))
+    return ChangeRequest(action="create", calendar_id="calendar-1", title="работа/проект/новая встреча", start=now + timedelta(hours=3), end=now + timedelta(hours=4))
 
 
 def test_exposes_only_safe_tools(server: GuardedCalendarServer) -> None:
@@ -54,7 +53,7 @@ def test_exposes_only_safe_tools(server: GuardedCalendarServer) -> None:
 @pytest.mark.asyncio
 async def test_permission_denied_blocks_read(calendar: CalendarRef, event: EventRef, now: datetime) -> None:
     backend = FakeCalendarBackend([calendar], [event], permission="denied")
-    server = GuardedCalendarServer(backend, CalendarPolicy(allowed_calendar_ids=frozenset({calendar.id})), PreviewGrantStore(clock=lambda: now), clock=lambda: now)
+    server = GuardedCalendarServer(backend, CalendarPolicy(allowed_calendar_ids=frozenset({calendar.id})), PreviewGrantStore(clock=lambda: now))
     with pytest.raises(PolicyError, match="CALENDAR_PERMISSION_DENIED"):
         await server.read_events({calendar.id}, now, now + timedelta(days=1), ZONE)
 
@@ -75,7 +74,7 @@ async def test_wrong_timezone_is_denied(server: GuardedCalendarServer, now: date
 async def test_read_only_calendar_cannot_be_previewed(now: datetime) -> None:
     calendar = CalendarRef(id="calendar-1", name="Read only", timezone=ZONE, writable=False)
     backend = FakeCalendarBackend([calendar], [])
-    server = GuardedCalendarServer(backend, CalendarPolicy(allowed_calendar_ids=frozenset({calendar.id})), PreviewGrantStore(clock=lambda: now), clock=lambda: now)
+    server = GuardedCalendarServer(backend, CalendarPolicy(allowed_calendar_ids=frozenset({calendar.id})), PreviewGrantStore(clock=lambda: now))
     with pytest.raises(PolicyError, match="CALENDAR_READ_ONLY"):
         await server.preview_change(create_request(now))
 
@@ -91,18 +90,19 @@ async def test_create_runs_only_after_confirmation(server: GuardedCalendarServer
 
 @pytest.mark.asyncio
 async def test_update_runs_only_after_confirmation(server: GuardedCalendarServer, backend: FakeCalendarBackend, now: datetime) -> None:
-    request = ChangeRequest(action="update", calendar_id="calendar-1", event_id="event-1", title="Changed")
+    request = ChangeRequest(action="update", calendar_id="calendar-1", event_id="event-1", title="работа/проект/изменённая задача")
     preview = await server.preview_change(request)
     await server.apply_change(preview["preview_id"], request)
     assert backend.writes == [("update", "event-1", None)]
 
 
 @pytest.mark.asyncio
-async def test_past_event_delete_is_rejected(server: GuardedCalendarServer, backend: FakeCalendarBackend, now: datetime) -> None:
+async def test_past_event_delete_runs_after_confirmation(server: GuardedCalendarServer, backend: FakeCalendarBackend, now: datetime) -> None:
     backend.events["event-1"] = EventRef(id="event-1", calendar_id="calendar-1", title="Past", start=now - timedelta(hours=2), end=now, timezone=ZONE)
     request = ChangeRequest(action="delete", calendar_id="calendar-1", event_id="event-1")
-    with pytest.raises(PolicyError, match="PAST_EVENT_DELETE_DENIED"):
-        await server.preview_change(request)
+    preview = await server.preview_change(request)
+    await server.apply_change(preview["preview_id"], request)
+    assert backend.writes == [("delete", "event-1", None)]
 
 
 @pytest.mark.asyncio
