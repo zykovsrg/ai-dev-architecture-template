@@ -207,3 +207,25 @@ children with safe paired entry files, rejects traversal, symlinks, malformed
 or duplicate bridge blocks, and rolls back a failed paired replacement. A
 divergent legacy entry pair may receive an additive bridge only with explicit
 approval and without replacing its existing rules.
+
+### 2026-09-01 — Calendar title rule and its tests move together
+
+Status: active
+
+Decision: Правило формата заголовка события `категория/проект/задача`
+(строчными, ровно три непустые части, без пробелов вокруг `/`) живёт в
+`calendar-policy/src/hub_calendar_policy/models.py`. Любое изменение этого
+правила обязано в том же шаге обновить фикстуры канонических тестов
+`calendar-policy/tests/`.
+
+Why: Правило ввели только в зеркале `tools/apple-calendar-policy/` вместе с
+`tests/test_title_validation.py`, а канонические тесты не тронули. Пока
+источники расходились, это не было видно. При переносе правки в канон
+`apple-calendar-policy-test.sh` дал 7 failed + 7 errors — фикстуры
+использовали заголовки вида `"Review"`, `"New"`, `"Changed"`, `"Renamed"`.
+
+Impact: Фикстуры приведены к правилу (`работа/проект/ревью` и т.п.), набор
+снова зелёный (84 passed). Правку calendar-policy делать только в
+каноническом `calendar-policy/` и раскатывать через
+`scripts/sync-calendar-policy.sh`; правка прямо в `tools/` создаёт скрытое
+расхождение и переживает ровно до следующего синка.

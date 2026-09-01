@@ -126,35 +126,36 @@ async def test_free_slots_are_derived_from_one_event_read(tmp_path: Path) -> Non
 
 @pytest.mark.asyncio
 async def test_create_returns_the_event_reported_by_the_bridge(tmp_path: Path) -> None:
-    backend, log = make_bridge(tmp_path, envelope(event_payload("created-1", "Review")))
+    backend, log = make_bridge(tmp_path, envelope(event_payload("created-1", "работа/проект/ревью")))
     request = ChangeRequest(
-        action="create", calendar_id="calendar-1", title="Review",
+        action="create", calendar_id="calendar-1", title="работа/проект/ревью",
         start=datetime(2026, 8, 29, 10, 0, tzinfo=ZONE),
         end=datetime(2026, 8, 29, 11, 0, tzinfo=ZONE),
     )
 
     created = await backend.create(request)
 
-    assert (created.id, created.title) == ("created-1", "Review")
-    assert json.loads(calls(log)[0]["payload"])["title"] == "Review"
+    assert (created.id, created.title) == ("created-1", "работа/проект/ревью")
+    assert json.loads(calls(log)[0]["payload"])["title"] == "работа/проект/ревью"
 
 
 @pytest.mark.asyncio
 async def test_update_uses_a_single_bridge_call_and_returns_its_event(tmp_path: Path) -> None:
-    backend, log = make_bridge(tmp_path, envelope(event_payload(title="Renamed")))
+    backend, log = make_bridge(tmp_path, envelope(event_payload(title="работа/проект/новое имя")))
     original = EventRef.model_validate(event_payload())
     request = ChangeRequest(
-        action="update", calendar_id="calendar-1", event_id="event-1", title="Renamed",
+        action="update", calendar_id="calendar-1", event_id="event-1", title="работа/проект/новое имя",
     )
 
-    updated = await backend.update(original, request, "future")
+    updated = await backend.update(original, request, None)
 
     assert [call["operation"] for call in calls(log)] == ["update"]
-    assert updated.title == "Renamed"
+    assert updated.title == "работа/проект/новое имя"
     payload = json.loads(calls(log)[0]["payload"])
     assert payload["event_id"] == "event-1"
     assert payload["calendar_id"] == "calendar-1"
-    assert payload["recurrence_scope"] == "future"
+    assert payload["recurrence_scope"] is None
+    assert "occurrence_start" not in payload
 
 
 @pytest.mark.asyncio
@@ -167,8 +168,18 @@ async def test_delete_identifies_the_event_and_its_calendar(tmp_path: Path) -> N
     payload = json.loads(calls(log)[0]["payload"])
     assert payload == {
         "event_id": "event-1", "calendar_id": "calendar-1", "recurrence_scope": None,
-        "occurrence_start": "2026-08-29T10:00:00+03:00",
     }
+
+
+@pytest.mark.asyncio
+async def test_recurring_delete_passes_its_occurrence_to_the_bridge(tmp_path: Path) -> None:
+    backend, log = make_bridge(tmp_path, envelope(event_payload()))
+    original = EventRef.model_validate(event_payload())
+
+    assert await backend.delete(original, "this") is None
+
+    payload = json.loads(calls(log)[0]["payload"])
+    assert payload["occurrence_start"] == "2026-08-29T10:00:00+03:00"
 
 
 @pytest.mark.asyncio

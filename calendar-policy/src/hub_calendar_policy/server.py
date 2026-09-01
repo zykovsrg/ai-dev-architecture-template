@@ -174,6 +174,9 @@ class GuardedCalendarServer:
             "title": request.title if request.title is not None else (event.title if event else None),
             "start": request.start.isoformat() if request.start else (event.start.isoformat() if event else None),
             "end": request.end.isoformat() if request.end else (event.end.isoformat() if event else None),
+            # A write always sends all_day, so the preview shows what the request
+            # asks for; a delete changes nothing and shows the event as it stands.
+            "all_day": event.all_day if (request.action == "delete" and event) else request.all_day,
             "event_id": event.id if event else None,
             "recurrence_scope": request.recurrence_scope,
             "occurrence_start": request.occurrence_start.isoformat() if request.occurrence_start else None,

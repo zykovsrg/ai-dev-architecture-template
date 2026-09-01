@@ -109,6 +109,7 @@ func describe(_ event: EKEvent) -> [String: Any] {
         "start": isoText(event.startDate),
         "end": isoText(event.endDate),
         "timezone": event.timeZone?.identifier ?? localZone,
+        "all_day": event.isAllDay,
     ]
 }
 
@@ -170,6 +171,9 @@ if operation == "create" {
     let event = EKEvent(eventStore: store)
     event.calendar = target
     event.title = title
+    // isAllDay reinterprets the dates EventKit already holds, so it is set
+    // before them and never after.
+    event.isAllDay = (payload["all_day"] as? Bool) ?? false
     event.startDate = start
     event.endDate = end
     do { try store.save(event, span: .thisEvent) } catch { fail("SAVE_FAILED") }
@@ -193,6 +197,8 @@ if operation == "delete" {
 }
 
 if let title = payload["title"] as? String { event.title = title }
+// An absent all_day key means "leave the event as it is".
+if let allDay = payload["all_day"] as? Bool { event.isAllDay = allDay }
 if let text = payload["start"] as? String {
     guard let date = parseDate(text) else { fail("INVALID_PAYLOAD") }
     event.startDate = date

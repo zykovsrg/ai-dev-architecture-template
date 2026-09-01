@@ -29,7 +29,7 @@ def change_request() -> ChangeRequest:
         action="update",
         calendar_id="calendar-1",
         event_id="event-1",
-        title="Review",
+        title="работа/проект/ревью",
     )
 
 
