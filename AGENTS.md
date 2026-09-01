@@ -80,10 +80,10 @@ Codex does not auto-activate project skills. Before using a workflow, open its c
 
 ## Output
 
-- Default answer: at most 5 lines. Go longer only when the user asks, or when comparing options — then give the 5-line answer first and put details below it.
+- Default answer: at most 5 lines and at most 80 words. Go longer only when the user asks, or when the answer must compare options — then give the short answer first and put the details below it.
 - Answer first, reason second. No preamble about what you analyzed or intend to do.
 - Replace technical terms with everyday words. If a term is unavoidable, explain it in brackets at first use.
-- Keep internal machinery out of the answer: mode labels, memory file names, workflow names, status fields. Show them only when the user asks.
+- Keep internal machinery out of the answer: mode labels, memory file names, workflow names, status fields. Show them only when the user asks. Exception: a confirmation display that a workflow requires before an action — a path, a target, or a preview the user must approve — is always shown in full.
 - One question per message. Lists: at most 5 items.
 - Never declare a task closed. Propose `task-finish` and wait for confirmation.
 - This holds under any external methodology, including Superpowers.

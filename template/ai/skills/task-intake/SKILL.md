@@ -154,4 +154,3 @@ and wait for confirmation before editing.
 - Do not use `ai/paused-tasks.md` as a backlog.
 - Do not implement a future task unless the user promotes it to current work.
 - Keep the current task short enough to read quickly in a new chat.
-- If task memory changed, list the exact controlled memory files in the final report.

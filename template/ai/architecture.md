@@ -393,7 +393,7 @@ The user is not a developer. Write to someone who is just starting to learn IT.
 - Use very simple words. Default to a short answer: a few lines, the answer first, details only if the user asks for them. Long, exhaustive write-ups are produced only on explicit request.
 - Never trade simplicity for completeness: if the full explanation would be long, give the simple short version and offer to expand.
 
-This rule applies to all user-facing communication, including mode statements, risk notes, and final reports. It does not change the language of persistent AI-facing instruction files, which stay in English.
+This rule applies to all user-facing communication, including risk notes and final reports. It does not change the language of persistent AI-facing instruction files, which stay in English.
 
 It also applies to work done under any external methodology, including Superpowers, `code-review-graph`, and plugin skills. Their internal process may be long and verbose; the reply shown to the user must still be short and written in very simple words.
 
