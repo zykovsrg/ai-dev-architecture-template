@@ -148,6 +148,10 @@ headings defined below.
 Under `## Три главных действия`, render at most three ranked executable results,
 not vague themes or waiting items. Number them `1.` through `3.` and use
 `<result> — <project-id>; срок: <YYYY-MM-DD|нет>; источник: <canonical-path>`.
+Prefer scheduling those three actions inside the user's peak focus window,
+09:00-13:00 local time, when the calendar leaves room. This is a soft
+preference, not a constraint: never drop, reorder, or delay a grounded item
+only to fit the window, and never invent a time for an item that has none.
 Put remaining actionable work under `## Остальные действия`. Keep waiting and
 due or overdue follow-ups together under `## Ожидания и follow-up`; put unknown
 states, missing waiting fields, blockers, and dated risks under `## Риски и
