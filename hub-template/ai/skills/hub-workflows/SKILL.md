@@ -4,7 +4,9 @@ type: worker
 description: |
   Use for proposal-only day plans, evening reviews, weekly reviews, and capture
   from one user-selected text, transcript, dictated task, review file, or
-  Rolling Audio Recorder period. Performs semantic analysis after scope
+  Rolling Audio Recorder period. An evening review may instead read the
+  requested date's calendar, link its events to projects, and propose task
+  status updates. Performs semantic analysis after scope
   confirmation and never applies a proposal automatically.
 ---
 
@@ -41,7 +43,10 @@ implementation work retain the normal exact confirmed scope.
    type and purpose. Allowed sources are pasted text, one explicitly selected
    regular non-symlink text file, a dictated task, one explicitly selected
    review file, or a requested Rolling Audio Recorder period. Do not discover
-   other files. Do not read project data yet.
+   other files. Do not read project data yet. `evening-review` may run without
+   a selected source: in that case the requested date's calendar is the only
+   source, and every fact it yields stays unverified until the user confirms
+   it.
 2. **Handle recorder JSON only.** For a requested period, the only allowed
    source-side write is the user's requested
    `rar export --minutes <1..120> --json`. Poll only with
@@ -168,23 +173,44 @@ read. Ranking is read-only and never becomes a proposal by itself.
 
 `evening-review` renders these headings in this exact order:
 
-1. `## Сделано`
-2. `## Перенос`
-3. `## Ожидания`
-4. `## Follow-ups`
-5. `## Завтрашний Calendar`
-6. `## Три главных действия завтра`
-7. `## Подтвердить`
+1. `## Сегодняшний календарь`
+2. `## События и проекты`
+3. `## Сделано`
+4. `## Перенос`
+5. `## Ожидания`
+6. `## Follow-ups`
+7. `## Завтрашний Calendar`
+8. `## Три главных действия завтра`
+9. `## Подтвердить`
 
-Fill `## Сделано` only from `--review-input` section `## Done`, `## Перенос`
+Under `## Сегодняшний календарь`, render the requested date's schedule by the
+same rule as the day plan, in start order. Under `## События и проекты`, map
+each rendered event to at most one registered project of the confirmed scope,
+using only the event title, the `категория/проект/задача` naming convention,
+and canonical task records as evidence. Render one line per event as
+`<HH:MM> <title> → <project-id|нет совпадения>; основание: <evidence>;
+уверенность: <высокая|низкая>`. A calendar match is an inference, never a
+canonical fact: it never proves a task was completed, never widens the
+confirmed scope, and never authorizes a read outside it. Leave an event
+unmatched rather than guessing between two projects.
+
+Fill `## Сделано` from `--review-input` section `## Done`, `## Перенос`
 only from `## Carry over`, and the user-stated part of `## Ожидания` only from
 `## Waiting`; append separately cited canonical waiting records from confirmed
-scope. Derive `## Follow-ups` and tomorrow's at-most-three ranked executable
+scope. When no `--review-input` was selected, fill `## Сделано` instead from
+past events of the requested date that matched a project above, mark every such
+line `предположение из календаря` with its event and project, and state plainly
+that the section was not confirmed by the user. Never render a
+calendar-derived line as a stated completion. Derive `## Follow-ups` and tomorrow's at-most-three ranked executable
 results only from structured canonical fields. Under `## Завтрашний Calendar`,
 render tomorrow's schedule by the same rule as the day plan. A stated
 completion, carry-over, waiting, or due-date change is a user fact in this
 report, not a canonical change; any possible write remains an independent
-proposal listed for confirmation under `## Подтвердить`.
+proposal listed for confirmation under `## Подтвердить`. Every matched event
+and every calendar-derived completion line may produce at most one
+`update_task` proposal for the matched project's canonical task record, each
+with its own exact target path and diff. Emit no proposal for an unmatched
+event, a low-confidence match, or a project outside the confirmed scope.
 
 ### Weekly review format
 

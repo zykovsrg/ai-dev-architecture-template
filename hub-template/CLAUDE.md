@@ -30,7 +30,7 @@ This is a multi-project hub. The hub registry defines what may be accessed.
 ## Work Header And Procedures
 
 - Route detailed procedures to `ai/architecture.md` and one matching skill. Do not copy detailed rules into this entry file.
-- Route Apple Calendar work only to `hub-calendar`; it uses a local guarded MCP, explicit calendar IDs, and one preview confirmation per change.
+- Route Apple Calendar work only to `hub-calendar`; it uses a local guarded MCP, explicit calendar IDs, and one preview confirmation per change. A task with a schedule updates the calendar in the same step: the task diff and the full event preview are confirmed together, once.
 - If the request is ambiguous, ask one concise question before selecting a route.
 
 ## Boundaries

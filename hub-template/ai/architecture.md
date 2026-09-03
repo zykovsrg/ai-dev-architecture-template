@@ -1,6 +1,6 @@
 # Personal AI Hub Architecture
 
-Version: 1.9
+Version: 1.11
 
 ## Purpose
 
@@ -305,6 +305,17 @@ require `this` or `future`. No background checks, notifications, secrets, or
 calendar content are stored in architecture files. Updates are manual, audited,
 and separately confirmed.
 
+Задача с расписанием ведёт своё событие. Расписание задаётся полем
+`Запланировано: <YYYY-MM-DD> <HH:MM>-<HH:MM>`, а при его отсутствии — полем
+`Due: <YYYY-MM-DD>`, которое даёт событие на весь день. `hub-task-intake`,
+`hub-task-switch` и `hub-task-finish` готовят правку памяти задачи и полное
+превью события вместе: создание задачи создаёт событие, смена расписания
+обновляет его, закрытие удаляет будущее событие и не трогает прошедшее. Оба
+изменения показываются одним экраном и подтверждаются один раз; подтверждение
+покрывает ровно показанную пару. Если превью построить нельзя, ни одна часть не
+применяется. Слияние касается только этого шлюза: превью остаётся полным, а
+любое непоказанное или изменённое событие требует своего подтверждения.
+
 Use the hub-owned `hub-workflows` skill for `day-plan`, `evening-review`,
 `weekly-review`, and `capture`. The skill performs semantic AI analysis, while
 the optional Bash adapter only validates mechanical scope, paths, and recorder
@@ -315,7 +326,14 @@ The fixed six-step contract is:
 
 1. Receive exactly one user-selected source: pasted text, a selected local
    transcript or review file, a dictated task, or a requested Rolling Audio
-   Recorder period.
+   Recorder period. `evening-review` may run with no source, using the
+   requested date's calendar alone.
+
+   For `evening-review`, the skill also reads the requested date's calendar,
+   links each event to at most one confirmed-scope project by title and
+   canonical task records, and turns a match into an independent task-status
+   proposal. A calendar match is an inference: it never proves completion,
+   never widens the confirmed scope, and never applies a change.
 2. For a recorder period, use only `rar export --minutes <1..120> --json` and
    `rar status <job-id> --json`. Report pending or failed state without reading
    any project data. A recorder export is the only source-side write.
