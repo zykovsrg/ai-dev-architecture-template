@@ -1,6 +1,6 @@
 # AI Development Architecture
 
-Version: 7.5
+Version: 7.6
 
 This file is the reference for workflows and the rule hierarchy. It does not need to be loaded for every task. Read it only when a task concerns workflows, rule conflicts, architecture-update, or when a rule is unclear.
 
@@ -61,7 +61,7 @@ Before starting task work, the agent must decide which mode applies. Do not prin
 
 - `implementation` — change code, project files, tests, or task memory.
 - `review` — read files, inspect project state or the diff, restate context, report problems, or suggest the next step; do not edit files.
-- `task-finish` — verify task completion and clean up the context only after confirmation.
+- `task-finish` — verify task completion and, when nothing blocks closure, clean up the context and save the result in the same step.
 - `architecture-update` — propose changes to the development architecture; change files only after confirmation.
 
 If the mode is unclear, the agent must ask or state the assumption before acting.
@@ -70,7 +70,7 @@ Use `review` when the agent only reads files, summarizes context, inspects proje
 
 Use `implementation` only when the agent is going to change application code, project files, tests, or task memory.
 
-If implementation or review suggests the current task may be complete, the agent must not declare the task closed. It must propose `task-finish` and wait for user confirmation.
+If implementation or review suggests the current task may be complete, the agent must not declare the task closed. It must run `task-finish`, which decides closure by its own checks.
 
 ## Session start check
 
@@ -102,7 +102,7 @@ The menu must include only available workflows/skills relevant to this architect
 - `environment-check` — re-run the installation and environment availability check.
 - `task-intake` — record the first task or decide whether a new request continues or switches the current task.
 - `task-switch` — pause the current task, resume a paused task, or promote a confirmed future task.
-- `task-finish` — verify whether the current task is complete and run cleanup only after confirmation.
+- `task-finish` — verify whether the current task is complete and, if it is, run cleanup and save the result without a separate confirmation.
 - `architecture-update` — propose and apply approved architecture changes.
 - `Superpowers` — required path for bugs and complex tasks when available.
 - `future-tasks` — record useful ideas that should not expand the current task scope.
@@ -169,7 +169,7 @@ Allowed edits:
 - `task-intake`: may create or update `ai/current-task.md` when it is empty and the user has provided a real task.
 - `task-switch`: may update `ai/current-task.md` and `ai/paused-tasks.md` only after explicit user confirmation.
 - `task-switch`: may promote an entry from `ai/future-tasks.md` into `ai/current-task.md` after explicit user confirmation.
-- `task-finish`: may update `ai/current-task.md`, `ai/changelog.md`, `ai/decisions.md`, and confirmed `ai/future-tasks.md` entries only after explicit user confirmation.
+- `task-finish`: may update `ai/current-task.md`, `ai/changelog.md`, `ai/decisions.md`, and `ai/future-tasks.md` entries once its own check finds no blocker to closure.
 - `architecture-update`: may update controlled memory files if the approved architecture change requires it.
 - `ai/project-context.md`: update only after confirmation when stack, commands, structure, data model, invariants, or fragile zones change.
 
@@ -407,7 +407,7 @@ Base skills:
 - `release-check` — pre-commit, pre-merge, build, or release review.
 - `copy-review` — user-facing text.
 - `write-tests` — test decision and tests for risky changes.
-- `task-finish` — closing a task and cleaning context after confirmation.
+- `task-finish` — closing a task, cleaning context, and saving the result.
 - `task-switch` — switching between unfinished tasks without losing context; may promote confirmed future tasks into current work.
 - `architecture-update` — updating development architecture after user approval.
 - `environment-check` — checking architecture installation, tool availability, and printing the available next commands/skills menu.
@@ -616,7 +616,7 @@ If TEMP diagnostics remain in main, create an explicit removal record in one of:
 
 - `ai/paused-tasks.md` if the active task is being paused through `task-switch`;
 - Done criteria of `ai/current-task.md`;
-- `ai/changelog.md` during confirmed `task-finish` cleanup.
+- `ai/changelog.md` during `task-finish` cleanup.
 
 The record must include:
 
@@ -771,7 +771,7 @@ Closing a task means both:
 
 Default save behavior:
 
-- If a GitHub remote is configured, create a commit and push the branch to GitHub after confirmed `task-finish` cleanup.
+- If a GitHub remote is configured, create a commit and push the branch to GitHub as part of `task-finish` cleanup.
 - For shared high-churn files, merge `main` before implementation and before review. Keep feature branches short and merge a verified branch promptly. If two tasks need the same file, finish one before starting the other or split the file first.
 - If Git is available but GitHub is not configured, create a local commit and tell the user that the work is saved only on this computer.
 - If Git is unavailable, create a clear local fallback such as a patch or archive and tell the user where it is.

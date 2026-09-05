@@ -12,7 +12,6 @@ description: |
   Does NOT activate for:
   - writing code
   - starting a new task
-  - cleanup before explicit user confirmation
   - tasks with unresolved blocking risks
 ---
 
@@ -20,7 +19,10 @@ description: |
 
 Open this skill before applying task-finish. Do not rely on memory.
 
-This skill has three phases.
+This skill has three phases. When Phase 1 concludes that the task can be
+closed, run Phase 2 and Phase 3 immediately in the same step, without asking
+for a separate confirmation. Stop and report instead of cleaning up only when
+Phase 1 finds a blocker.
 
 ## Phase 1 — Check
 
@@ -31,8 +33,6 @@ Read:
 - `ai/decisions.md` if the task touched architecture, data model, storage, signing, sandboxing, undo behavior, sync, new services, or durable invariants
 - `ai/future-tasks.md` only if the task produced out-of-scope follow-up ideas or the user asked to save future tasks
 
-Do not edit files without user confirmation.
-
 Answer:
 
 1. Are Done criteria completed?
@@ -41,8 +41,8 @@ Answer:
 4. What should be moved to `ai/changelog.md`?
 5. Should anything be added to `ai/decisions.md`?
 6. Are there TEMP diagnostics or workarounds that need a removal task?
-7. Which out-of-scope ideas, missing test seams, follow-up investigations, or non-blocking improvements should be proposed for `ai/future-tasks.md`?
-8. Can `ai/current-task.md` be cleaned after user confirmation?
+7. Which out-of-scope ideas, missing test seams, follow-up investigations, or non-blocking improvements belong in `ai/future-tasks.md`?
+8. Is anything blocking cleanup of `ai/current-task.md`?
 9. How should the result be saved: GitHub push, local commit, or local fallback archive/patch?
 10. Would a focused `knowledge-review` be useful? Offer it when relevant, but
     never start it automatically.
@@ -73,14 +73,14 @@ Do not add new scope to the completed task just because a future task was discov
 
 ## Rules
 
-- If implementation or review suggests the task is complete, propose this check instead of declaring the task closed.
+- If implementation or review suggests the task is complete, run this check instead of declaring the task closed.
 - Do not mark the task as done if manual UI checks are still required.
 - Do not mark the task as done if required automated tests were not added, not run, or not explicitly replaced with a justified manual checklist.
-- Do not clean `ai/current-task.md` without user confirmation.
+- Clean `ai/current-task.md` as soon as Phase 1 finds no blocker; do not wait for a separate confirmation.
 - If there are open risks, keep Status as review or blocked.
 - If the task created a durable architecture, product, workflow, data model, storage, signing, sandboxing, sync, or undo rule, suggest adding it to `ai/decisions.md`.
 - If an issue was only mitigated and root cause is unproven, record that clearly in `ai/changelog.md`.
-- If an idea is useful but outside the current task, propose adding it to `ai/future-tasks.md` instead of implementing it during cleanup.
+- If an idea is useful but outside the current task, add it to `ai/future-tasks.md` instead of implementing it during cleanup.
 - Offer `knowledge-review` only when selected knowledge records may need a
   focused review. Do not start it without an explicit request or selected scope.
 - Do not claim the task is closed until the result is saved.
@@ -89,7 +89,7 @@ Do not add new scope to the completed task just because a future task was discov
 
 ## Phase 2 — Cleanup
 
-Use only after explicit user confirmation.
+Run automatically when Phase 1 found no blocker.
 
 Do not change application code.
 
@@ -97,11 +97,11 @@ Steps:
 
 1. Add a short summary to `ai/changelog.md`.
 2. If the task introduced an important architecture, product, data model, workflow, storage, signing, sandboxing, sync, undo, or agent-process decision, add it to `ai/decisions.md`.
-3. If the user confirmed future task candidates, append them to `ai/future-tasks.md`.
+3. Append the identified future task candidates to `ai/future-tasks.md` and name them in the report.
 4. If the completed task was promoted from `ai/future-tasks.md`, delete its
    entry from that file. The history lives in `ai/changelog.md`; do not keep
    `promoted` or `done` entries in the backlog.
-5. If temporary diagnostics remain, keep removal criteria in `ai/current-task.md` Done criteria or handoff notes. Record retained diagnostics in `ai/changelog.md` only during confirmed cleanup if the retention is notable. Do not write TEMP diagnostics cleanup work to `ai/paused-tasks.md`.
+5. If temporary diagnostics remain, keep removal criteria in `ai/current-task.md` Done criteria or handoff notes. Record retained diagnostics in `ai/changelog.md` if the retention is notable. Do not write TEMP diagnostics cleanup work to `ai/paused-tasks.md`.
 6. Clean `ai/current-task.md`.
 7. Leave a blank template for the next task in `ai/current-task.md` with `Status: empty` and `Stage: intake`.
 
@@ -115,7 +115,7 @@ Rules:
 
 ## Phase 3 — Save result
 
-Use after Phase 2 cleanup, unless Phase 1 concluded that the task cannot close.
+Run automatically after Phase 2 cleanup.
 
 First inspect:
 
@@ -151,6 +151,7 @@ If Git is unavailable:
 Rules:
 
 - Do not push if the user explicitly chose local-only mode.
+- Report every automatic write and the commit in the answer, so the user sees what changed without asking.
 - Do not push secrets, temporary diagnostics, or unresolved workarounds.
 - If commit fails, do not claim the task is closed; report the reason and keep or restore enough task context for retry.
 - If local commit succeeds but push fails, report `Saved locally, not pushed to GitHub` and ask whether to retry push or accept local-only closure.
