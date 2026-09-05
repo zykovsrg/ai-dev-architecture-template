@@ -1,6 +1,6 @@
 # Personal AI Hub Architecture
 
-Version: 1.11
+Version: 1.12
 
 ## Purpose
 
@@ -197,9 +197,11 @@ validation, use these central hub-owned skills. They remove any need to copy
   project's `ai/current-task.md`.
 - `hub-task-switch` — changes an unfinished task only after a separate explicit
   confirmation, using only the selected project's `ai/` memory.
-- `hub-task-finish` — verifies and cleans selected-project task memory only after
-  a separate explicit confirmation; after its normal completion check it may
-  offer, but never start, a focused `hub-knowledge-review`.
+- `hub-task-finish` — verifies the selected project's task and, when its check
+  finds no blocker, cleans that project's task memory and saves the result in the
+  same step; only a task with a schedule keeps the joint task-and-calendar
+  confirmation. After its completion check it may offer, but never start, a
+  focused `hub-knowledge-review`.
 - `hub-knowledge-capture` — creates or updates one explicitly selected record in
   the confirmed project's local `knowledge/` tree after exact confirmation.
 - `hub-knowledge-review` — checks one explicit project-local record, folder, or

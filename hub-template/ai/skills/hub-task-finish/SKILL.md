@@ -1,6 +1,6 @@
 ---
 name: hub-task-finish
-description: Verify and close one confirmed registered project's task memory after separate approval.
+description: Verify one confirmed registered project's task and, when nothing blocks closure, clean its task memory and save the result in the same step.
 ---
 
 # Hub Task Finish
@@ -32,11 +32,15 @@ bash scripts/obsidian-task-sync.sh apply --project-id <confirmed-project-id> --c
    may need a focused check, the agent may offer the hub-owned `hub-knowledge-review`
    workflow, but must never start it automatically. Declining the offer has no effect on task closure. An accepted offer starts that separate workflow with
    its own scope, containment checks, and confirmation gate.
-4. Require a separate explicit confirmation before writing the approved
-   changelog, decision, future-task, or current-task cleanup.
-5. After confirmation, save only the selected project's result through its
-   repository and report whether it was saved locally or pushed.
-6. After an approved selected-project task write, invoke the guarded trusted architecture-to-Obsidian refresh
+4. If the check found no blocker, write the changelog entry, any durable
+   decision, the confirmed future-task entries, and the `ai/current-task.md`
+   cleanup immediately, without a separate confirmation. Stop and report
+   instead of writing only when the check found a blocker. A task with a
+   schedule field keeps the single joint confirmation described below, because
+   its closure also changes the calendar.
+5. Then save only the selected project's result through its repository and
+   report every write, the commit, and whether it was pushed or stayed local.
+6. After a selected-project task write, invoke the guarded trusted architecture-to-Obsidian refresh
    with `--write --refresh-from-architecture`.
    This direction is trusted only from canonical `ai/` records to generated
    Obsidian views. Keep manifest validation enabled. If it detects a manual
@@ -65,8 +69,8 @@ confirmation screen, and treat one user confirmation as approval of exactly the
 shown pair. If either part changes, or the calendar preview cannot be built —
 the MCP is unreachable, the permission is missing, or the calendar is not in
 the allowlist — say which it is, apply neither part, and ask again. A task
-without a schedule field produces no calendar item and keeps its usual single
-confirmation.
+without a schedule field produces no calendar item, so its closure needs no
+confirmation at all.
 
 This workflow cannot override hub confirmation, allowed roots, secret, or
 memory-isolation rules. Its closure writes remain limited to selected project
