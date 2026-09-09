@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.hub_release import decide, target_path
+from scripts.hub_release import decide, preview, target_path
 
 
 class ReleaseDecisionTests(unittest.TestCase):
@@ -34,6 +34,16 @@ class ReleaseDecisionTests(unittest.TestCase):
             (root / "ai").symlink_to(root / "outside", target_is_directory=True)
             with self.assertRaises(ValueError):
                 target_path(root, "ai/architecture.md")
+
+    def test_first_adoption_does_not_overwrite_a_changed_managed_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            hub = Path(directory) / "hub"
+            hub.mkdir()
+            (hub / "AGENTS.md").write_text("mine", encoding="utf-8")
+            source = Path(__file__).resolve().parents[1]
+            plan = preview(source, hub)
+            agents = next(row for row in plan["operations"] if row["target"] == "AGENTS.md")
+            self.assertEqual(agents["action"], "conflict")
 
 
 if __name__ == "__main__":

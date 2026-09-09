@@ -94,6 +94,29 @@ def emit(payload):
     print(json.dumps(payload, sort_keys=True, separators=(",", ":")))
 
 
+def preview(source, hub):
+    manifest = build_manifest(source)
+    hub = hub.resolve()
+    installed_file = hub / ".local" / "hub-release" / "installed.json"
+    installed = {}
+    if installed_file.is_file() and not installed_file.is_symlink():
+        installed = {entry["target"]: entry["sha256"]
+                     for entry in json.loads(installed_file.read_text(encoding="utf-8")).get("files", [])}
+    operations = []
+    for entry in manifest["files"]:
+        destination = target_path(hub, entry["target"])
+        current = digest(destination) if destination.is_file() else None
+        if entry["policy"] == "create-if-missing":
+            action = "create" if current is None else "keep"
+        else:
+            action = decide(current, installed.get(entry["target"]), entry["sha256"])
+        operations.append({"target": entry["target"], "action": action,
+                           "current_sha256": current, "incoming_sha256": entry["sha256"]})
+    payload = {"manifest": manifest, "operations": operations}
+    payload["plan_sha256"] = hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    return payload
+
+
 def main():
     parser = argparse.ArgumentParser()
     commands = parser.add_subparsers(dest="command", required=True)
@@ -102,7 +125,13 @@ def main():
         command.add_argument("--source", required=True, type=Path)
         if name == "check":
             command.add_argument("--manifest", required=True, type=Path)
+    preview_command = commands.add_parser("preview")
+    preview_command.add_argument("--source", required=True, type=Path)
+    preview_command.add_argument("--hub", required=True, type=Path)
     args = parser.parse_args()
+    if args.command == "preview":
+        emit(preview(args.source, args.hub))
+        return 0
     expected = build_manifest(args.source)
     if args.command == "build":
         emit(expected)
