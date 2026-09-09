@@ -371,6 +371,20 @@ show_file_diff() {
   fi
 }
 
+managed_file_differs() {
+  local rel="$1"
+  local src="$SOURCE_TEMPLATE/$rel"
+  local dst="$HUB_DIR/$rel"
+
+  [ "$rel" = "scripts/check-hub-registry.sh" ] && src="$SOURCE_VALIDATOR"
+  [ "$rel" = "scripts/read-compact-project-index.sh" ] && src="$SOURCE_COMPACT_INDEX"
+  [ "$rel" = "scripts/obsidian-task-sync.sh" ] && src="$SOURCE_OBSIDIAN_SYNC"
+  [ "$rel" = "scripts/generate-obsidian-projects-kanban.sh" ] && src="$SOURCE_OBSIDIAN_GENERATOR"
+
+  [ -f "$src" ] || return 0
+  [ -f "$dst" ] && cmp -s "$src" "$dst" || MANAGED_FILES_DIFFER=1
+}
+
 show_missing_memory_file() {
   local rel="$1"
   local src="$SOURCE_TEMPLATE/$rel"
@@ -384,6 +398,12 @@ show_missing_memory_file() {
     echo "### $rel"
     echo "Would create missing hub memory file without overwriting hub memory: $rel"
   fi
+}
+
+missing_memory_file_exists() {
+  local rel="$1"
+  [ -f "$SOURCE_TEMPLATE/$rel" ] || return 0
+  [ -e "$HUB_DIR/$rel" ] || MISSING_MEMORY_FILES=1
 }
 
 copy_file() {
@@ -527,9 +547,18 @@ if [ "$CHECK" = "true" ]; then
     echo "Run --apply to remove them. Preview below (no files are changed)."
     DRY_RUN_EXIT=1
   else
-    echo "Version numbers match (v$hub_version). This compares the version line only,"
-    echo "not file contents. Run --dry-run to compare the files themselves."
-    exit 0
+    MANAGED_FILES_DIFFER=0
+    MISSING_MEMORY_FILES=0
+    for_each_protected_file managed_file_differs
+    for_each_memory_file missing_memory_file_exists
+    if [ "$MANAGED_FILES_DIFFER" -eq 1 ] || [ "$MISSING_MEMORY_FILES" -eq 1 ]; then
+      echo "Version numbers match (v$hub_version), but Managed files differ or a required memory template is missing."
+      echo "Preview below (no files are changed)."
+      DRY_RUN_EXIT=1
+    else
+      echo "Version numbers and updater-managed files match (v$hub_version)."
+      exit 0
+    fi
   fi
 fi
 
