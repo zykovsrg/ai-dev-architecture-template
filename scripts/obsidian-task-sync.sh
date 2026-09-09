@@ -2,6 +2,9 @@
 # Create local, confirmable proposals for edits to the generated Obsidian board.
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+source "$SCRIPT_DIR/lib/calendar-date.sh"
+
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }
 is_absolute() { [[ "$1" = /* ]]; }
 inside() { [[ "$1" == "$2" || "$1" == "$2"/* ]]; }
@@ -736,7 +739,7 @@ apply_operations_to_temporary_files() {
     type="$(printf '%s' "$operation" | /usr/bin/jq -r '.operation')"
     case "$type" in
       rename) task_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.task_id')"; project_id="$(operation_project_id "$operation")"; to="$(printf '%s' "$operation" | /usr/bin/jq -r '.to')"; [ -n "$to" ] || die 'rename title is empty'; source="$(known_source_for "$project_id" "$task_id")"; rename_record "$source" "$task_id" "$to";;
-      set_due) task_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.task_id')"; project_id="$(operation_project_id "$operation")"; due="$(printf '%s' "$operation" | /usr/bin/jq -r '.to')"; [ -z "$due" ] || [[ "$due" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || die 'invalid due date'; if source="$(promoted_current_source_for "$(card_key "$project_id" "$task_id")")"; then :; else source="$(known_source_for "$project_id" "$task_id")"; fi; set_due_record "$source" "$task_id" "$due";;
+      set_due) task_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.task_id')"; project_id="$(operation_project_id "$operation")"; due="$(printf '%s' "$operation" | /usr/bin/jq -r '.to')"; [ -z "$due" ] || valid_calendar_date "$due" || die 'invalid due date'; if source="$(promoted_current_source_for "$(card_key "$project_id" "$task_id")")"; then :; else source="$(known_source_for "$project_id" "$task_id")"; fi; set_due_record "$source" "$task_id" "$due";;
       set_status) task_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.task_id')"; project_id="$(operation_project_id "$operation")"; to="$(printf '%s' "$operation" | /usr/bin/jq -r '.to')"; source="$(known_source_for "$project_id" "$task_id")"; set_status_record "$source" "$task_id" "$to";;
       promote_to_current) task_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.task_id')"; project_id="$(operation_project_id "$operation")"; source="$(known_source_for "$project_id" "$task_id")"; promote_to_active "$source" "$project_id" "$task_id" "$operation";;
       create_future) task_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.task_id')"; project_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.project_id')"; title="$(printf '%s' "$operation" | /usr/bin/jq -r '.title')"; to="$(printf '%s' "$operation" | /usr/bin/jq -r '.status')"; due="$(printf '%s' "$operation" | /usr/bin/jq -r '.due')"; [ -n "$title" ] || die 'future task title is empty'; create_future_record "$task_id" "$project_id" "$title" "$to" "$due";;
