@@ -235,6 +235,9 @@ load_known_cards() {
     # it; a lexical ai/../ path must never be hashed or parsed.
     source_is_registered_task_file "$source" "$project_index" || die "manifest source is not a registered task file: $task_id"
     source="${PROJECT_PATHS[$project_index]}/ai/$(basename "$source")"
+    case "$(basename "$source")" in current-task.md) record_kind=current;; future-tasks.md) record_kind=future;; paused-tasks.md) record_kind=paused;; esac
+    python3 "$SCRIPT_DIR/task_records.py" read --file "$source" --project-id "$project_id" --kind "$record_kind" >/dev/null \
+      || die "invalid canonical task record: $task_id"
     [[ "$source_sha" =~ ^[0-9a-f]{64}$ ]] || die "invalid manifest source hash: $task_id"
     actual_sha="$(hash_file "$source")"; [ "$actual_sha" = "$source_sha" ] || die "canonical source differs from manifest: $source"
     record="$(source_record "$source" "$task_id")" || die "manifest task is not a unique canonical record: $task_id"
