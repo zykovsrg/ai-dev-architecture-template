@@ -248,9 +248,16 @@ if [ -e "$TARGET_MANIFEST" ] || [ -e "$TARGET_OVERVIEW" ]; then
   [ "$recorded_overview" = "$(hash_file "$TARGET_OVERVIEW")" ] || die 'proposal pending: manual project overview edit detected'
   if [ "$manifest_format" = 4 ] || [ "$manifest_has_project_boards" = true ]; then
     for i in "${!BOARD_TARGETS[@]}"; do
-      board_file="$TARGET_DIR/${BOARD_TARGETS[$i]}"; [ -f "$board_file" ] || die 'proposal pending: generated view set is incomplete'
+      board_file="$TARGET_DIR/${BOARD_TARGETS[$i]}"
       recorded_board="$(/usr/bin/jq -r --arg id "${IDS[$i]}" '[.project_boards[] | select(.project_id == $id) | .sha256] | if length == 1 then .[0] else empty end' "$TARGET_MANIFEST")"
-      [ -n "$recorded_board" ] || die 'proposal pending: generated manifest is invalid'
+      # A project registered after the last generated write has no manifest entry
+      # yet. That is a new board, not a tampered one, so it may be created here.
+      # It must still not already exist on disk outside the generated manifest.
+      if [ -z "$recorded_board" ]; then
+        [ ! -e "$board_file" ] || die 'proposal pending: manual project board exists outside generated manifest'
+        continue
+      fi
+      [ -f "$board_file" ] || die 'proposal pending: generated view set is incomplete'
       if [ "$REPLACE_CONFIRMED_BOARD" -eq 0 ] && [ "$recorded_board" != "$(hash_file "$board_file")" ]; then
         die 'proposal pending: manual task board edit detected; run obsidian-task-sync.sh scan to create a proposal'
       fi

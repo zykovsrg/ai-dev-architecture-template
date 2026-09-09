@@ -199,10 +199,14 @@ validation, use these central hub-owned skills. They remove any need to copy
 - `hub-task-switch` — changes an unfinished task only after a separate explicit
   confirmation, using only the selected project's `ai/` memory.
 - `hub-task-finish` — verifies the selected project's task and, when its check
-  finds no blocker, cleans that project's task memory and saves the result in the
-  same step; only a task with a schedule keeps the joint task-and-calendar
-  confirmation. After its completion check it may offer, but never start, a
-  focused `hub-knowledge-review`.
+  finds no blocker, first saves an evidence-based review of the current agent
+  session, then cleans task memory and saves the result. Only a task with a
+  schedule keeps the joint task-and-calendar confirmation. It may offer, but
+  never start, a focused `hub-knowledge-review`.
+- `hub-session-review` — reviews a completed task's current session or an
+  explicitly selected session. Reviews live only in the selected project's
+  `ai/session-reviews/`; findings are proposals and require explicit approval
+  before any improvement is applied.
 - `hub-knowledge-capture` — creates or updates one explicitly selected record in
   the confirmed project's local `knowledge/` tree after exact confirmation.
 - `hub-knowledge-review` — checks one explicit project-local record, folder, or
