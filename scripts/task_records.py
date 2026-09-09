@@ -29,7 +29,9 @@ def read_records(project_id, kind, text):
         lines = text.splitlines()
         task_id = next((line[9:] for line in lines if line.startswith("Task ID: ")), None)
         status = next((line[8:] for line in lines if line.startswith("Status: ")), None)
-        if not task_id or not task_id.startswith(f"TASK-{project_id}-"):
+        if not task_id and status in {"empty", "backlog", None}:
+            return []
+        if not task_id or not (task_id.startswith(f"TASK-{project_id}-") or re.fullmatch(r"TASK-\d{8}-\d{3}|FT-\d{8}-\d+", task_id)):
             raise ValueError("invalid_current_task_id")
         if status not in {"active", "ready", "in_progress", "waiting", "blocked", "review", "paused", "done", "completed"}:
             raise ValueError("invalid_status")
@@ -45,7 +47,8 @@ def read_records(project_id, kind, text):
                 continue
             task_id = re.search(r"^Task ID: (.+)$", block, re.M)
             status = re.search(r"^Status: (.+)$", block, re.M)
-            if not task_id or not task_id.group(1).startswith(f"TASK-{project_id}-") or not status or status.group(1) != "paused":
+            valid_id = task_id and (task_id.group(1).startswith(f"TASK-{project_id}-") or re.fullmatch(r"TASK-\d{8}-\d{3}|FT-\d{8}-\d+", task_id.group(1)))
+            if not valid_id or not status or status.group(1) != "paused":
                 raise ValueError("invalid_paused_record")
             records.append({"task_id": task_id.group(1), "title": heading.group(1), "status": "paused", "due": read_due(block.splitlines())})
         return records
