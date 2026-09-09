@@ -26,7 +26,7 @@ current_task_id() {
   [[ "${ids[0]}" =~ ^TASK-[0-9]{8}-[0-9]{3}$ || "${ids[0]}" =~ ^FT-[0-9]{8}-[0-9]+$ || "${ids[0]}" =~ ^TASK-${project_id}-[0-9]{8}-[0-9]{3}$ ]] || die "invalid Task ID for project $project_id: $file"
   printf '%s' "${ids[0]}"
 }
-safe_due() { sed -nE 's/^[[:space:]]*due:[[:space:]]*([0-9]{4}-[0-9]{2}-[0-9]{2})[[:space:]]*$/\1/p' "$@" | sort -u | head -n 1; }
+safe_due() { sed -nE 's/^[[:space:]]*(Due|due):[[:space:]]*([0-9]{4}-[0-9]{2}-[0-9]{2})[[:space:]]*$/\2/p' "$@" | sort -u | head -n 1; }
 table_cell() { local text="$1"; text=${text//|/\\|}; text=${text//$'\n'/ }; printf '%s' "$text"; }
 
 future_records() {
@@ -46,7 +46,7 @@ future_records() {
     }
     /^### / { flush(); entry=0; state=""; due=""; title=""; next }
     entry && /^Status: / { state=substr($0, 9); next }
-    entry && /^[[:space:]]*due:[[:space:]]*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9][[:space:]]*$/ { due=$0; sub(/^[[:space:]]*due:[[:space:]]*/, "", due); sub(/[[:space:]]*$/, "", due) }
+    entry && /^[[:space:]]*(Due|due):[[:space:]]*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9][[:space:]]*$/ { due=$0; sub(/^[[:space:]]*(Due|due):[[:space:]]*/, "", due); sub(/[[:space:]]*$/, "", due) }
     END { flush(); exit invalid }
   ' "$1" | sed 's/[[:space:]]*$//'
 }

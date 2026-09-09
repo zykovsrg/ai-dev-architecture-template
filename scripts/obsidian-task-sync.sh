@@ -191,7 +191,7 @@ source_record() {
       [ "$id" = "$wanted_id" ] || return 1
       status="$(awk '/^## / {exit} /^Status: / {print substr($0, 9); exit}' "$source")"
       title="$(awk '/^## Goal[[:space:]]*$/ {goal=1; next} goal && /^## / {exit} goal && NF {print; exit}' "$source" | sed 's/[[:space:]]*$//')"
-      due="$(sed -nE 's/^[[:space:]]*due:[[:space:]]*([0-9]{4}-[0-9]{2}-[0-9]{2})[[:space:]]*$/\1/p' "$source" | head -n 1)"
+      due="$(sed -nE 's/^[[:space:]]*(Due|due):[[:space:]]*([0-9]{4}-[0-9]{2}-[0-9]{2})[[:space:]]*$/\2/p' "$source" | head -n 1)"
       printf '%s\t%s\t%s\n' "$status" "$title" "$due"
       ;;
     future-tasks.md)
@@ -199,7 +199,7 @@ source_record() {
         function flush() { if (entry && id == wanted) { sub(/[[:space:]]*$/, "", title); print status "\t" title "\t" due; count++ } }
         /^### / { flush(); entry=1; id=$2; status=""; due=""; title=$0; sub(/^### [^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]*/, "", title); next }
         entry && /^Status: / { status=substr($0, 9); next }
-        entry && /^[[:space:]]*due:[[:space:]]*[0-9]{4}-[0-9]{2}-[0-9]{2}[[:space:]]*$/ { due=$0; sub(/^[[:space:]]*due:[[:space:]]*/, "", due); sub(/[[:space:]]*$/, "", due) }
+        entry && /^[[:space:]]*(Due|due):[[:space:]]*[0-9]{4}-[0-9]{2}-[0-9]{2}[[:space:]]*$/ { due=$0; sub(/^[[:space:]]*(Due|due):[[:space:]]*/, "", due); sub(/[[:space:]]*$/, "", due) }
         END { flush(); if (count != 1) exit 1 }
       ' "$source")" || return 1
       printf '%s\n' "$result"
