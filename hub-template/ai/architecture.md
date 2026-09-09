@@ -52,6 +52,7 @@ Hub-owned files are the routing inventory:
   tags, and card.
 - `ai/project-cards/<id>.md` holds compact hub metadata for that ID.
 - `ai/archiprojects.md` is the canonical hub-owned archiproject registry.
+- `ai/goal-log.md` is the canonical hub-owned progress log for numeric goals.
 - `ai/active-project.md` is a convenience record, never a new-chat permission.
 - `ai/cross-project-signals.md` holds sanitized, explicitly scoped signals.
 
@@ -361,6 +362,19 @@ The fixed six-step contract is:
 There is no apply mode, automatic write, Calendar MCP operation, vault
 migration, or session audit in this workflow. A generated proposal has no
 authority by itself and is not a durable queue item.
+
+## Goal Progress And Workflow Learning
+
+`hub-goal-progress` is the only writer of `ai/goal-log.md`. It appends one
+user-confirmed entry and then uses `scripts/count-goal-progress.sh` to report
+progress. Amounts are never inferred from a task or a calendar event.
+
+`hub-workflows` keeps confirmed task/calendar learning in
+`ai/workflow-observations.md` and `ai/workflow-context.md`.
+`scripts/check-workflow-memory.sh` validates their stored format. Temporary
+calendar snapshots belong under `ai/tmp/calendar-snapshots/` and are written by
+`scripts/snapshot-calendar.sh`; they are not task memory and do not authorize
+a task or calendar change.
 
 ## Cross-Project Signals
 
