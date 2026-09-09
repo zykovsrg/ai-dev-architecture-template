@@ -28,6 +28,8 @@ bash scripts/obsidian-task-sync.sh apply --project-id <confirmed-project-id> --c
    `ai/decisions.md`, `ai/changelog.md`, or `ai/future-tasks.md` file.
 2. Check recorded Done criteria and report any missing verification or open
    risk. Do not change task memory during this check.
+   Run the deterministic task-record and review checks before any model call;
+   report a deterministic failure directly and leave the task open.
 3. If the Done criteria pass, run `hub-session-review` for this task's current
    visible session before clearing task context. Save and validate the review,
    then add `Session review: ai/session-reviews/<file>.md` to the task so a

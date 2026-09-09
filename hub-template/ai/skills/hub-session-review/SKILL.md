@@ -13,6 +13,17 @@ explicit request, read only the selected session or range; never fetch all
 history. Store reviews only in the selected project's `ai/session-reviews/`.
 This never authorizes writes to another project or to shared rules.
 
+## Cost control
+
+Run deterministic checks before any model call: validate task records, review
+format, required references, dates, and duplicate proposal links. If a check
+fails, report it directly and do not call a model.
+
+For semantic review, use Luna by default. Give it only the task goal, outcome,
+relevant user corrections, and the smallest available evidence range. Never
+expand a partial history automatically. Use Terra only when Luna explicitly
+marks the evidence ambiguous or identifies a potentially material risk.
+
 ## Procedure
 
 1. Identify the task goal, constraints, expected result, available conversation
