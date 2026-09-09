@@ -751,6 +751,21 @@ apply_operations_to_temporary_files() {
   done < <(/usr/bin/jq -c '.operations[]' "$PROPOSAL")
 }
 
+requires_calendar_confirmation() {
+  local operation type due
+  while IFS= read -r operation; do
+    type="$(printf '%s' "$operation" | /usr/bin/jq -r '.operation')"
+    case "$type" in
+      set_due) return 0 ;;
+      create_future)
+        due="$(printf '%s' "$operation" | /usr/bin/jq -r '.due // empty')"
+        [ -z "$due" ] || return 0
+        ;;
+    esac
+  done < <(/usr/bin/jq -c '.operations[]' "$PROPOSAL")
+  return 1
+}
+
 validate_temporary_records() {
   local i target temp
   for i in "${!APPLY_TARGETS[@]}"; do
@@ -797,6 +812,10 @@ replace_named_source_files() {
 apply() {
   trap cleanup_apply_state EXIT
   require_safe_paths; load_projects; load_scope_and_validate_vault; load_project_boards; load_proposal; verify_board_hash; verify_manifest_hash; verify_manifest_sources_are_registered; verify_every_affected_source_hash; load_known_cards
+  if requires_calendar_confirmation; then
+    echo 'calendar-confirmation-required: dated task changes must use the joint task-and-calendar preview' >&2
+    exit 3
+  fi
   apply_operations_to_temporary_files; validate_temporary_records
   GENERATOR="$(cd "$(dirname "$0")" && pwd -P)/generate-obsidian-projects-kanban.sh"
   [ -f "$GENERATOR" ] && [ ! -L "$GENERATOR" ] || die 'missing or unsafe generator'
