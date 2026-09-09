@@ -106,6 +106,15 @@ mkdir -p "$HUB_DIR/scripts"
   || cp "$SCRIPT_DIR/obsidian-task-sync.sh" "$HUB_DIR/scripts/obsidian-task-sync.sh"
 [ -e "$HUB_DIR/scripts/generate-obsidian-projects-kanban.sh" ] \
   || cp "$SCRIPT_DIR/generate-obsidian-projects-kanban.sh" "$HUB_DIR/scripts/generate-obsidian-projects-kanban.sh"
+[ -e "$HUB_DIR/scripts/count-goal-progress.sh" ] \
+  || cp "$SCRIPT_DIR/count-goal-progress.sh" "$HUB_DIR/scripts/count-goal-progress.sh"
+[ -e "$HUB_DIR/scripts/snapshot-calendar.sh" ] \
+  || cp "$SCRIPT_DIR/snapshot-calendar.sh" "$HUB_DIR/scripts/snapshot-calendar.sh"
+[ -e "$HUB_DIR/scripts/check-workflow-memory.sh" ] \
+  || cp "$SCRIPT_DIR/check-workflow-memory.sh" "$HUB_DIR/scripts/check-workflow-memory.sh"
+mkdir -p "$HUB_DIR/scripts/lib"
+[ -e "$HUB_DIR/scripts/lib/calendar-date.sh" ] \
+  || cp "$SCRIPT_DIR/lib/calendar-date.sh" "$HUB_DIR/scripts/lib/calendar-date.sh"
 
 if [ -d "$SCRIPT_DIR/../calendar-policy" ]; then
   bash "$SCRIPT_DIR/sync-calendar-policy.sh" \
