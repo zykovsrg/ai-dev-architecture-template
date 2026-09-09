@@ -115,6 +115,8 @@ mkdir -p "$HUB_DIR/scripts"
 mkdir -p "$HUB_DIR/scripts/lib"
 [ -e "$HUB_DIR/scripts/lib/calendar-date.sh" ] \
   || cp "$SCRIPT_DIR/lib/calendar-date.sh" "$HUB_DIR/scripts/lib/calendar-date.sh"
+[ -e "$HUB_DIR/scripts/check-session-review.py" ] \
+  || cp "$SCRIPT_DIR/check-session-review.py" "$HUB_DIR/scripts/check-session-review.py"
 
 if [ -d "$SCRIPT_DIR/../calendar-policy" ]; then
   bash "$SCRIPT_DIR/sync-calendar-policy.sh" \

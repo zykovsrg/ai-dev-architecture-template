@@ -19,6 +19,7 @@ SOURCE_GOAL_COUNTER=""
 SOURCE_SNAPSHOT=""
 SOURCE_WORKFLOW_CHECKER=""
 SOURCE_CALENDAR_DATE=""
+SOURCE_SESSION_REVIEW_CHECKER=""
 CREATED_MEMORY_FILES=()
 REMOVED_PATHS=()
 
@@ -84,6 +85,7 @@ cleanup() {
   SOURCE_SNAPSHOT="$SOURCE_REPO_ROOT/scripts/snapshot-calendar.sh"
   SOURCE_WORKFLOW_CHECKER="$SOURCE_REPO_ROOT/scripts/check-workflow-memory.sh"
   SOURCE_CALENDAR_DATE="$SOURCE_REPO_ROOT/scripts/lib/calendar-date.sh"
+  SOURCE_SESSION_REVIEW_CHECKER="$SOURCE_REPO_ROOT/scripts/check-session-review.py"
 }
 trap cleanup EXIT
 
@@ -210,7 +212,7 @@ resolve_source_template() {
   [ -f "$SOURCE_COMPACT_INDEX" ] || die "Source template is missing mandatory script: scripts/read-compact-project-index.sh"
   [ -f "$SOURCE_OBSIDIAN_SYNC" ] || die "Source template is missing mandatory script: scripts/obsidian-task-sync.sh"
   [ -f "$SOURCE_OBSIDIAN_GENERATOR" ] || die "Source template is missing mandatory script: scripts/generate-obsidian-projects-kanban.sh"
-  [ -f "$SOURCE_GOAL_COUNTER" ] && [ -f "$SOURCE_SNAPSHOT" ] && [ -f "$SOURCE_WORKFLOW_CHECKER" ] && [ -f "$SOURCE_CALENDAR_DATE" ] \
+  [ -f "$SOURCE_GOAL_COUNTER" ] && [ -f "$SOURCE_SNAPSHOT" ] && [ -f "$SOURCE_WORKFLOW_CHECKER" ] && [ -f "$SOURCE_CALENDAR_DATE" ] && [ -f "$SOURCE_SESSION_REVIEW_CHECKER" ] \
     || die "Source template is missing a learning script"
   for mandatory_skill in hub-project-router hub-project-switch hub-project-register hub-registry-check hub-knowledge-capture hub-knowledge-review hub-workflows; do
     [ -f "$SOURCE_TEMPLATE/ai/skills/$mandatory_skill/SKILL.md" ] \
@@ -229,6 +231,7 @@ PROTECTED_FILES=(
   "scripts/snapshot-calendar.sh"
   "scripts/check-workflow-memory.sh"
   "scripts/lib/calendar-date.sh"
+  "scripts/check-session-review.py"
 )
 
 MEMORY_FILES=(
@@ -371,6 +374,7 @@ show_file_diff() {
   [ "$rel" = "scripts/snapshot-calendar.sh" ] && src="$SOURCE_SNAPSHOT"
   [ "$rel" = "scripts/check-workflow-memory.sh" ] && src="$SOURCE_WORKFLOW_CHECKER"
   [ "$rel" = "scripts/lib/calendar-date.sh" ] && src="$SOURCE_CALENDAR_DATE"
+  [ "$rel" = "scripts/check-session-review.py" ] && src="$SOURCE_SESSION_REVIEW_CHECKER"
 
   [ -f "$src" ] || return 0
 
@@ -403,6 +407,7 @@ managed_file_differs() {
   [ "$rel" = "scripts/snapshot-calendar.sh" ] && src="$SOURCE_SNAPSHOT"
   [ "$rel" = "scripts/check-workflow-memory.sh" ] && src="$SOURCE_WORKFLOW_CHECKER"
   [ "$rel" = "scripts/lib/calendar-date.sh" ] && src="$SOURCE_CALENDAR_DATE"
+  [ "$rel" = "scripts/check-session-review.py" ] && src="$SOURCE_SESSION_REVIEW_CHECKER"
 
   [ -f "$src" ] || return 0
   [ -f "$dst" ] && cmp -s "$src" "$dst" || MANAGED_FILES_DIFFER=1
@@ -442,6 +447,7 @@ copy_file() {
   [ "$rel" = "scripts/snapshot-calendar.sh" ] && src="$SOURCE_SNAPSHOT"
   [ "$rel" = "scripts/check-workflow-memory.sh" ] && src="$SOURCE_WORKFLOW_CHECKER"
   [ "$rel" = "scripts/lib/calendar-date.sh" ] && src="$SOURCE_CALENDAR_DATE"
+  [ "$rel" = "scripts/check-session-review.py" ] && src="$SOURCE_SESSION_REVIEW_CHECKER"
 
   [ -f "$src" ] || return 0
   mkdir -p "$(dirname "$dst")"
