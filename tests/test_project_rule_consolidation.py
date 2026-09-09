@@ -35,6 +35,18 @@ class ProjectRuleConsolidationTests(unittest.TestCase):
         self.assertIn("../../AGENTS.md", entry)
         self.assertNotIn("Superpowers", entry)
 
+    def test_accepts_the_known_old_shared_output_rule(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            project = root / "projects" / "demo"
+            (project / "ai").mkdir(parents=True)
+            for relative in ("AGENTS.md", "CLAUDE.md"):
+                source = MODULE.legacy_shared_variant(
+                    (ROOT / "template" / relative).read_text(encoding="utf-8")
+                )
+                (project / relative).write_text(source, encoding="utf-8")
+            self.assertEqual(MODULE.eligible_files(ROOT, project), ["AGENTS.md", "CLAUDE.md"])
+
 
 if __name__ == "__main__":
     unittest.main()
