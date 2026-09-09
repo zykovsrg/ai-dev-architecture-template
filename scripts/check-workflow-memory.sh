@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+# shellcheck source=lib/calendar-date.sh
+source "$SCRIPT_DIR/lib/calendar-date.sh"
+
 HUB_DIR="."
 MAX_RULES=100
 
@@ -29,6 +33,8 @@ while IFS= read -r line || [ -n "$line" ]; do
   case "$line" in "- "*) ;; *) continue ;; esac
   [ "$SECTION" = "Схема" ] && continue
   printf '%s' "$line" | grep -Eq "$OBS_RE" || die "bad observation line: $line"
+  [[ "$line" =~ ^-\ ([0-9]{4}-[0-9]{2}-[0-9]{2})\ \| ]] || die "missing observation date: $line"
+  valid_calendar_date "${BASH_REMATCH[1]}" || die "impossible observation date: $line"
 done <"$OBS_FILE"
 
 RULES=0
@@ -38,6 +44,8 @@ while IFS= read -r line || [ -n "$line" ]; do
   case "$line" in "- "*) ;; *) continue ;; esac
   [ "$SECTION" = "Схема" ] && continue
   printf '%s' "$line" | grep -Eq "$CTX_RE" || die "bad rule line: $line"
+  [[ "$line" =~ ^-\ ([0-9]{4}-[0-9]{2}-[0-9]{2})\ \| ]] || die "missing rule date: $line"
+  valid_calendar_date "${BASH_REMATCH[1]}" || die "impossible rule date: $line"
   RULES=$((RULES + 1))
 done <"$CTX_FILE"
 
