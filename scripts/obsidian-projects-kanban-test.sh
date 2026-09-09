@@ -87,7 +87,7 @@ EOF
 }
 
 add_project "ai-dev-architecture" "AI Dev Architecture" "active" \
-  $'Status: active\nTask ID: TASK-20260826-001\ndue: 2026-08-26\n\n## Goal\n\nCurrent architecture task' \
+  $'Status: active\nTask ID: TASK-20260826-001\nDue: 2026-08-26\n\n## Goal\n\nCurrent architecture task' \
   $'### FT-20260826-001 — Idea task\n\nStatus: idea\n\n### FT-20260826-002 — Ready task\n\nStatus: ready\ndue: 2026-08-28\n\n### FT-20260826-003 — Blocked task\n\nStatus: blocked\n\n### FT-20260826-004 — Promoted task\n\nStatus: promoted\n\n### FT-20260826-005 — Dropped task\n\nStatus: dropped\n\n### FT-20260826-006 — Completed future task\n\nStatus: done' \
   $'### 2026-08-20 — Paused task\n\nTask ID: TASK-20260820-001\n\nStatus: paused'
 add_project "waiting-project" "Waiting project" "active" \
