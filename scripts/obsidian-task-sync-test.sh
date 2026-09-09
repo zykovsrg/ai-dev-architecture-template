@@ -425,7 +425,7 @@ SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault 
 perl -0pi -e 's/📅 2026-08-28/📅 2026-09-01/' "$TASKS"
 scan > "$TMP_DIR/due-scan.out"
 apply > "$TMP_DIR/due-apply.out"
-assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" 'due: 2026-09-01'
+assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" 'Due: 2026-09-01'
 assert_contains "$TASKS" '📅 2026-09-01'
 assert_not_exists "$PROPOSAL"
 
@@ -440,7 +440,7 @@ assert_contains "$PROPOSAL" '"operation": "promote_to_current"'
 apply > "$TMP_DIR/combined-promote-apply.out"
 assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Task ID: FT-20260826-001'
 assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Promoted renamed idea'
-assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'due: 2026-09-03'
+assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Due: 2026-09-03'
 assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" 'Task ID: TASK-20260826-001'
 assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" 'Status: promoted'
 assert_contains "$TASKS" 'Promoted renamed idea ^ai-dev-architecture--FT-20260826-001'

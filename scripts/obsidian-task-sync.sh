@@ -342,7 +342,7 @@ promotion_operation_json() {
   old_status="$(awk '/^## / {exit} /^Status: / {print substr($0, 9); exit}' "$current")"
   old_id="$(sed -n '/^## /q; /^Task ID: /s/^Task ID: //p' "$current" | head -n 1)"; old_id="$(trim "$old_id")"
   old_title="$(awk '/^## Goal[[:space:]]*$/ {goal=1; next} goal && /^## / {exit} goal && NF {print; exit}' "$current" | sed 's/[[:space:]]*$//')"
-  old_due="$(sed -nE 's/^[[:space:]]*due:[[:space:]]*([0-9]{4}-[0-9]{2}-[0-9]{2})[[:space:]]*$/\1/p' "$current" | head -n 1)"
+  old_due="$(sed -nE 's/^[[:space:]]*(Due|due):[[:space:]]*([0-9]{4}-[0-9]{2}-[0-9]{2})[[:space:]]*$/\2/p' "$current" | head -n 1)"
   replaced='null'; preserve_change='[]'
   case "$old_status" in
     active|ready|in_progress|waiting|blocked|review|paused) preserved_status=paused;;
@@ -631,9 +631,9 @@ set_due_record() {
   temp="$(temp_for_source "$source")"; base="$(basename "$source")"
   case "$base" in
     current-task.md)
-      DUE="$due" perl -0pi -e 's/^[ \t]*due:[^\n]*(?:\n|\z)//mg; $_ .= "\n" if $ENV{DUE} ne q{} && $_ !~ /\n\z/; $_ .= "due: $ENV{DUE}\n" if $ENV{DUE} ne q{}' "$temp";;
+      DUE="$due" perl -0pi -e 's/^[ \t]*(?:Due|due):[^\n]*(?:\n|\z)//mg; $_ .= "\n" if $ENV{DUE} ne q{} && $_ !~ /\n\z/; $_ .= "Due: $ENV{DUE}\n" if $ENV{DUE} ne q{}' "$temp";;
     future-tasks.md)
-      TASK_ID="$task_id" DUE="$due" perl -0pi -e 's{(^### \Q$ENV{TASK_ID}\E [^\n]*\n)(.*?)(?=^### |\z)}{my ($head, $body) = ($1, $2); $body =~ s/^[ \t]*due:[^\n]*(?:\n|\z)//mg; $body .= "\n" if length($body) && $body !~ /\n\z/; $body .= "due: $ENV{DUE}\n" if $ENV{DUE} ne q{}; $head . $body}mges' "$temp";;
+      TASK_ID="$task_id" DUE="$due" perl -0pi -e 's{(^### \Q$ENV{TASK_ID}\E [^\n]*\n)(.*?)(?=^### |\z)}{my ($head, $body) = ($1, $2); $body =~ s/^[ \t]*(?:Due|due):[^\n]*(?:\n|\z)//mg; $body .= "\n" if length($body) && $body !~ /\n\z/; $body .= "Due: $ENV{DUE}\n" if $ENV{DUE} ne q{}; $head . $body}mges' "$temp";;
     paused-tasks.md) [ -z "$due" ] || die "due dates are not supported for paused task: $task_id";;
   esac
 }
@@ -692,7 +692,7 @@ promote_to_active() {
   IFS=$'\t' read -r _ title due <<< "$record"
   mark_record_promoted "$source" "$task_id"
   printf 'Status: active\nTask ID: %s\n\n## Goal\n\n%s\n' "$task_id" "$title" > "$current_temp"
-  [ -z "$due" ] || printf '\ndue: %s\n' "$due" >> "$current_temp"
+  [ -z "$due" ] || printf '\nDue: %s\n' "$due" >> "$current_temp"
   PROMOTED_TASK_IDS+=("$(card_key "$project_id" "$task_id")"); PROMOTED_CURRENT_SOURCES+=("$current")
 }
 
@@ -719,7 +719,7 @@ create_future_record() {
   temp="$(temp_for_source "$source")"
   ! grep -Fq -- "$task_id" "$temp" || die "new Task ID already exists: $task_id"
   printf '\n### %s — %s\n\nStatus: %s\n' "$task_id" "$title" "$status" >> "$temp"
-  [ -z "$due" ] || printf 'due: %s\n' "$due" >> "$temp"
+  [ -z "$due" ] || printf 'Due: %s\n' "$due" >> "$temp"
 }
 
 # Every operation names the project it belongs to, because a task ID alone no
