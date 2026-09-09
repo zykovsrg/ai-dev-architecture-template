@@ -2,11 +2,16 @@
 """Preview or apply the safe first batch of project-rule consolidation."""
 
 import argparse
+import hashlib
 import re
 from pathlib import Path
 
 
 RULE_FILES = ("AGENTS.md", "CLAUDE.md", "ai/architecture.md")
+OLD_ARCHITECTURE_HASHES = {
+    "d62b4e706f2b95a90339af0ddd2b42349f1e64057ddf6a457f71d395c7d996b3",
+    "dd4769e912fc34efcad7bffe34baae8689de44e3474e939dc28cc79b6f61b255",
+}
 OLD_OUTPUT = """Before editing, state `Mode: ...`, the next step, and real risks. After editing, state the mode, summarize changes, list checks, name risks or unfinished parts, say whether task memory changed, and propose `task-finish` if the task appears complete.\n"""
 
 
@@ -15,12 +20,19 @@ def render_entry():
             / "hub-project-register" / "resources" / "registered-project-entry.md").read_text(encoding="utf-8")
 
 
+def render_architecture_entry():
+    return (Path(__file__).resolve().parents[1] / "hub-template" / "ai" / "skills"
+            / "hub-project-register" / "resources" / "registered-project-architecture.md").read_text(encoding="utf-8")
+
+
 def eligible_files(source_root, project):
     eligible = []
     for relative in RULE_FILES:
         legacy = source_root / "template" / relative
         current = project / relative
-        if current.is_file() and current.read_text(encoding="utf-8") in {
+        if relative == "ai/architecture.md" and current.is_file() and hashlib.sha256(current.read_bytes()).hexdigest() in OLD_ARCHITECTURE_HASHES:
+            eligible.append(relative)
+        elif current.is_file() and current.read_text(encoding="utf-8") in {
             legacy.read_text(encoding="utf-8"), legacy_shared_variant(legacy.read_text(encoding="utf-8"))
         }:
             eligible.append(relative)
@@ -58,7 +70,6 @@ def main():
     parser.add_argument("--apply", action="store_true")
     args = parser.parse_args()
     source_root = Path(__file__).resolve().parents[1]
-    entry = render_entry()
     changed = 0
     for project_id, project in registered_projects(args.hub):
         files = eligible_files(source_root, project)
@@ -67,6 +78,7 @@ def main():
         print(f"{project_id}: {', '.join(files)}")
         if args.apply:
             for relative in files:
+                entry = render_architecture_entry() if relative == "ai/architecture.md" else render_entry()
                 (project / relative).write_text(entry, encoding="utf-8")
                 changed += 1
     if args.apply:
