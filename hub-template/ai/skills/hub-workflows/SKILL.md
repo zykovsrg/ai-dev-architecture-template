@@ -13,7 +13,9 @@ description: |
 # Hub Workflows
 
 Use this skill for `day-plan`, `evening-review`, `weekly-review`, or `capture`.
-It is proposal-only. Never write or apply a proposal automatically.
+It is proposal-only. Never write or apply a proposal automatically. Pending
+learning observations use the separate lifecycle in
+`resources/learning-lifecycle.md`: showing a proposal never consumes it.
 
 Read the schedule only through the guarded `hub_calendar` MCP, and only with
 its read tools. Never call `preview_change` or `apply_change` here: a calendar
