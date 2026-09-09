@@ -1,8 +1,10 @@
+import hashlib
+import json
 import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.hub_release import decide, preview, target_path
+from scripts.hub_release import apply, decide, preview, target_path
 
 
 class ReleaseDecisionTests(unittest.TestCase):
@@ -44,6 +46,21 @@ class ReleaseDecisionTests(unittest.TestCase):
             plan = preview(source, hub)
             agents = next(row for row in plan["operations"] if row["target"] == "AGENTS.md")
             self.assertEqual(agents["action"], "conflict")
+
+    def test_apply_replaces_only_a_file_matching_its_installed_baseline(self):
+        with tempfile.TemporaryDirectory() as directory:
+            hub = Path(directory) / "hub"
+            hub.mkdir()
+            old = b"old managed entry\n"
+            (hub / "AGENTS.md").write_bytes(old)
+            state = hub / ".local" / "hub-release"
+            state.mkdir(parents=True)
+            state.joinpath("installed.json").write_text(json.dumps({"files": [{"target": "AGENTS.md", "sha256": hashlib.sha256(old).hexdigest()}]}), encoding="utf-8")
+            source = Path(__file__).resolve().parents[1]
+            plan = preview(source, hub)
+            result = apply(source, hub, plan["plan_sha256"])
+            self.assertIn("AGENTS.md", result["changed"])
+            self.assertEqual((hub / "AGENTS.md").read_bytes(), (source / "hub-template" / "AGENTS.md").read_bytes())
 
 
 if __name__ == "__main__":

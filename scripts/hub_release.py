@@ -5,8 +5,11 @@ import argparse
 import hashlib
 import json
 import os
+import shutil
 import stat
 import sys
+import tempfile
+import uuid
 from pathlib import Path
 
 
@@ -117,6 +120,51 @@ def preview(source, hub):
     return payload
 
 
+def apply(source, hub, confirmed_plan):
+    hub = hub.resolve()
+    plan = preview(source, hub)
+    if plan["plan_sha256"] != confirmed_plan:
+        raise ValueError("plan changed; preview again before applying")
+    conflicts = [row["target"] for row in plan["operations"] if row["action"] == "conflict"]
+    if conflicts:
+        raise ValueError("conflicting local changes: " + ", ".join(conflicts))
+    entries = {entry["target"]: entry for entry in plan["manifest"]["files"]}
+    changed = [row for row in plan["operations"] if row["action"] in {"create", "replace"}]
+    operation_id = uuid.uuid4().hex
+    backup_root = hub / ".local" / "hub-release" / "backups" / operation_id
+    staging = Path(tempfile.mkdtemp(prefix="hub-release-"))
+    applied = []
+    try:
+        for row in changed:
+            entry = entries[row["target"]]
+            staged = staging / row["target"]
+            staged.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(source_root(source) / entry["source"], staged)
+            os.chmod(staged, entry["mode"])
+        for row in changed:
+            target = target_path(hub, row["target"])
+            backup = backup_root / row["target"]
+            if target.exists():
+                backup.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(target, backup)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            os.replace(staging / row["target"], target)
+            applied.append((target, backup if backup.exists() else None))
+        state = hub / ".local" / "hub-release"
+        state.mkdir(parents=True, exist_ok=True)
+        state.joinpath("installed.json").write_text(json.dumps(plan["manifest"], sort_keys=True, separators=(",", ":")), encoding="utf-8")
+        return {"operation_id": operation_id, "changed": [row["target"] for row in changed]}
+    except Exception:
+        for target, backup in reversed(applied):
+            if backup is None:
+                target.unlink(missing_ok=True)
+            else:
+                os.replace(backup, target)
+        raise
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)
+
+
 def main():
     parser = argparse.ArgumentParser()
     commands = parser.add_subparsers(dest="command", required=True)
@@ -128,9 +176,16 @@ def main():
     preview_command = commands.add_parser("preview")
     preview_command.add_argument("--source", required=True, type=Path)
     preview_command.add_argument("--hub", required=True, type=Path)
+    apply_command = commands.add_parser("apply")
+    apply_command.add_argument("--source", required=True, type=Path)
+    apply_command.add_argument("--hub", required=True, type=Path)
+    apply_command.add_argument("--confirm-plan", required=True)
     args = parser.parse_args()
     if args.command == "preview":
         emit(preview(args.source, args.hub))
+        return 0
+    if args.command == "apply":
+        emit(apply(args.source, args.hub, args.confirm_plan))
         return 0
     expected = build_manifest(args.source)
     if args.command == "build":
