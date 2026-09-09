@@ -20,6 +20,7 @@ SOURCE_SNAPSHOT=""
 SOURCE_WORKFLOW_CHECKER=""
 SOURCE_CALENDAR_DATE=""
 SOURCE_SESSION_REVIEW_CHECKER=""
+SOURCE_TASK_RECORDS_CHECKER=""
 CREATED_MEMORY_FILES=()
 REMOVED_PATHS=()
 
@@ -81,11 +82,6 @@ cleanup() {
     rm -rf "$TMP_DIR"
   fi
 
-  SOURCE_GOAL_COUNTER="$SOURCE_REPO_ROOT/scripts/count-goal-progress.sh"
-  SOURCE_SNAPSHOT="$SOURCE_REPO_ROOT/scripts/snapshot-calendar.sh"
-  SOURCE_WORKFLOW_CHECKER="$SOURCE_REPO_ROOT/scripts/check-workflow-memory.sh"
-  SOURCE_CALENDAR_DATE="$SOURCE_REPO_ROOT/scripts/lib/calendar-date.sh"
-  SOURCE_SESSION_REVIEW_CHECKER="$SOURCE_REPO_ROOT/scripts/check-session-review.py"
 }
 trap cleanup EXIT
 
@@ -154,6 +150,7 @@ for required_hub_file in "AGENTS.md" "ai/architecture.md" "ai/project-registry.m
   if [ ! -f "$required_hub_file" ]; then
     die "This does not look like an installed personal AI hub. Missing required file: $required_hub_file. Use scripts/install.sh --mode hub first."
   fi
+
 done
 
 if [ "$MODE" = "apply" ] && [ "$ALLOW_DIRTY" != "true" ] && [ -n "$(git status --porcelain)" ]; then
@@ -196,6 +193,13 @@ resolve_source_template() {
     SOURCE_REPO_ROOT="$SOURCE_ROOT"
   fi
 
+  SOURCE_GOAL_COUNTER="$SOURCE_REPO_ROOT/scripts/count-goal-progress.sh"
+  SOURCE_SNAPSHOT="$SOURCE_REPO_ROOT/scripts/snapshot-calendar.sh"
+  SOURCE_WORKFLOW_CHECKER="$SOURCE_REPO_ROOT/scripts/check-workflow-memory.sh"
+  SOURCE_CALENDAR_DATE="$SOURCE_REPO_ROOT/scripts/lib/calendar-date.sh"
+  SOURCE_SESSION_REVIEW_CHECKER="$SOURCE_REPO_ROOT/scripts/check-session-review.py"
+  SOURCE_TASK_RECORDS_CHECKER="$SOURCE_REPO_ROOT/scripts/check-all-task-records.sh"
+
   [ -f "$SOURCE_TEMPLATE/AGENTS.md" ] || die "Source hub template is missing AGENTS.md"
   [ -f "$SOURCE_TEMPLATE/CLAUDE.md" ] || die "Source hub template is missing CLAUDE.md"
   [ -f "$SOURCE_TEMPLATE/ai/architecture.md" ] || die "Source hub template is missing ai/architecture.md"
@@ -212,7 +216,7 @@ resolve_source_template() {
   [ -f "$SOURCE_COMPACT_INDEX" ] || die "Source template is missing mandatory script: scripts/read-compact-project-index.sh"
   [ -f "$SOURCE_OBSIDIAN_SYNC" ] || die "Source template is missing mandatory script: scripts/obsidian-task-sync.sh"
   [ -f "$SOURCE_OBSIDIAN_GENERATOR" ] || die "Source template is missing mandatory script: scripts/generate-obsidian-projects-kanban.sh"
-  [ -f "$SOURCE_GOAL_COUNTER" ] && [ -f "$SOURCE_SNAPSHOT" ] && [ -f "$SOURCE_WORKFLOW_CHECKER" ] && [ -f "$SOURCE_CALENDAR_DATE" ] && [ -f "$SOURCE_SESSION_REVIEW_CHECKER" ] \
+  [ -f "$SOURCE_GOAL_COUNTER" ] && [ -f "$SOURCE_SNAPSHOT" ] && [ -f "$SOURCE_WORKFLOW_CHECKER" ] && [ -f "$SOURCE_CALENDAR_DATE" ] && [ -f "$SOURCE_SESSION_REVIEW_CHECKER" ] && [ -f "$SOURCE_TASK_RECORDS_CHECKER" ] \
     || die "Source template is missing a learning script"
   for mandatory_skill in hub-project-router hub-project-switch hub-project-register hub-registry-check hub-knowledge-capture hub-knowledge-review hub-workflows; do
     [ -f "$SOURCE_TEMPLATE/ai/skills/$mandatory_skill/SKILL.md" ] \
@@ -230,6 +234,7 @@ PROTECTED_FILES=(
   "scripts/count-goal-progress.sh"
   "scripts/snapshot-calendar.sh"
   "scripts/check-workflow-memory.sh"
+  "scripts/check-all-task-records.sh"
   "scripts/lib/calendar-date.sh"
   "scripts/check-session-review.py"
 )
@@ -373,6 +378,7 @@ show_file_diff() {
   [ "$rel" = "scripts/count-goal-progress.sh" ] && src="$SOURCE_GOAL_COUNTER"
   [ "$rel" = "scripts/snapshot-calendar.sh" ] && src="$SOURCE_SNAPSHOT"
   [ "$rel" = "scripts/check-workflow-memory.sh" ] && src="$SOURCE_WORKFLOW_CHECKER"
+  [ "$rel" = "scripts/check-all-task-records.sh" ] && src="$SOURCE_TASK_RECORDS_CHECKER"
   [ "$rel" = "scripts/lib/calendar-date.sh" ] && src="$SOURCE_CALENDAR_DATE"
   [ "$rel" = "scripts/check-session-review.py" ] && src="$SOURCE_SESSION_REVIEW_CHECKER"
 
@@ -406,6 +412,7 @@ managed_file_differs() {
   [ "$rel" = "scripts/count-goal-progress.sh" ] && src="$SOURCE_GOAL_COUNTER"
   [ "$rel" = "scripts/snapshot-calendar.sh" ] && src="$SOURCE_SNAPSHOT"
   [ "$rel" = "scripts/check-workflow-memory.sh" ] && src="$SOURCE_WORKFLOW_CHECKER"
+  [ "$rel" = "scripts/check-all-task-records.sh" ] && src="$SOURCE_TASK_RECORDS_CHECKER"
   [ "$rel" = "scripts/lib/calendar-date.sh" ] && src="$SOURCE_CALENDAR_DATE"
   [ "$rel" = "scripts/check-session-review.py" ] && src="$SOURCE_SESSION_REVIEW_CHECKER"
 
@@ -446,6 +453,7 @@ copy_file() {
   [ "$rel" = "scripts/count-goal-progress.sh" ] && src="$SOURCE_GOAL_COUNTER"
   [ "$rel" = "scripts/snapshot-calendar.sh" ] && src="$SOURCE_SNAPSHOT"
   [ "$rel" = "scripts/check-workflow-memory.sh" ] && src="$SOURCE_WORKFLOW_CHECKER"
+  [ "$rel" = "scripts/check-all-task-records.sh" ] && src="$SOURCE_TASK_RECORDS_CHECKER"
   [ "$rel" = "scripts/lib/calendar-date.sh" ] && src="$SOURCE_CALENDAR_DATE"
   [ "$rel" = "scripts/check-session-review.py" ] && src="$SOURCE_SESSION_REVIEW_CHECKER"
 

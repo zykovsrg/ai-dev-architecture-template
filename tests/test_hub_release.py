@@ -4,10 +4,15 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.hub_release import apply, decide, preview, target_path
+from scripts.hub_release import apply, build_manifest, decide, preview, target_path
 
 
 class ReleaseDecisionTests(unittest.TestCase):
+    def test_release_includes_task_record_checker(self):
+        source = Path(__file__).resolve().parents[1]
+        targets = {entry["target"] for entry in build_manifest(source)["files"]}
+        self.assertIn("scripts/check-all-task-records.sh", targets)
+
     def test_equal_current_and_incoming_is_kept(self):
         self.assertEqual(decide("new", "old", "new"), "keep")
 

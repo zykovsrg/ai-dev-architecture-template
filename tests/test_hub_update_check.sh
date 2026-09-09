@@ -19,3 +19,4 @@ if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB" --source "$ROOT" --
   exit 1
 fi
 grep -Fq 'Managed files differ' "$TEMP_DIR/result"
+grep -Fq 'scripts/check-all-task-records.sh' "$TEMP_DIR/result"
