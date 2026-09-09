@@ -8,6 +8,7 @@ unit() {
   python3 -m unittest discover -s "$ROOT/tests" -p 'test_*.py' -v
   bash "$ROOT/tests/test-snapshot-calendar.sh"
   bash "$ROOT/tests/test-check-workflow-memory.sh"
+  bash "$ROOT/tests/test-check-all-task-records.sh"
   bash "$ROOT/tests/test_hub_update_check.sh"
 }
 
