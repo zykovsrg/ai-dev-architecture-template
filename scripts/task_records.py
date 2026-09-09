@@ -25,8 +25,20 @@ def read_due(lines):
 
 
 def read_records(project_id, kind, text):
+    if kind == "current":
+        lines = text.splitlines()
+        task_id = next((line[9:] for line in lines if line.startswith("Task ID: ")), None)
+        status = next((line[8:] for line in lines if line.startswith("Status: ")), None)
+        if not task_id or not task_id.startswith(f"TASK-{project_id}-"):
+            raise ValueError("invalid_current_task_id")
+        if status not in {"active", "ready", "in_progress", "waiting", "blocked", "review", "paused", "done", "completed"}:
+            raise ValueError("invalid_status")
+        goal = re.search(r"^## Goal\s*$\n(?:\s*\n)*(\S[^\n]*)", text, re.M)
+        if not goal:
+            raise ValueError("missing_goal")
+        return [{"task_id": task_id, "title": goal.group(1), "status": status, "due": read_due(lines)}]
     if kind != "future":
-        raise ValueError("only future records are supported by this reader version")
+        raise ValueError("unsupported task kind")
     records = []
     heading = None
     body = []
@@ -58,7 +70,7 @@ def main():
     parser.add_argument("read", nargs="?")
     parser.add_argument("--file", type=Path, required=True)
     parser.add_argument("--project-id")
-    parser.add_argument("--kind", choices=("future",))
+    parser.add_argument("--kind", choices=("current", "future"))
     args = parser.parse_args()
     try:
         text = args.file.read_text(encoding="utf-8")

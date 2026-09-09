@@ -24,6 +24,18 @@ due: 2026-09-10
         self.assertEqual(records[0]["title"], "Write report")
         self.assertEqual(records[0]["due"], "2026-09-10")
 
+    def test_reads_current_task(self):
+        records = read_records("demo", "current", """Status: active
+Task ID: TASK-demo-20260909-001
+Due: 2026-09-10
+
+## Goal
+
+Write report
+""")
+        self.assertEqual(records[0]["status"], "active")
+        self.assertEqual(records[0]["title"], "Write report")
+
 
 if __name__ == "__main__":
     unittest.main()
