@@ -29,7 +29,7 @@ def read_records(project_id, kind, text):
         lines = text.splitlines()
         task_id = next((line[9:] for line in lines if line.startswith("Task ID: ")), None)
         status = next((line[8:] for line in lines if line.startswith("Status: ")), None)
-        if not task_id and status in {"empty", "backlog", None}:
+        if status in {"empty", "backlog", None} and task_id in {None, "TASK-YYYYMMDD-NNN"}:
             return []
         if not task_id or not (task_id.startswith(f"TASK-{project_id}-") or re.fullmatch(r"TASK-\d{8}-\d{3}|FT-\d{8}-\d+", task_id)):
             raise ValueError("invalid_current_task_id")

@@ -36,6 +36,23 @@ Write report
         self.assertEqual(records[0]["status"], "active")
         self.assertEqual(records[0]["title"], "Write report")
 
+    def test_ignores_unfilled_current_task_template(self):
+        records = read_records("demo", "current", """Status: empty
+Task ID: TASK-YYYYMMDD-NNN
+
+## Goal
+
+Что нужно изменить.
+""")
+        self.assertEqual(records, [])
+
+    def test_ignores_unfilled_future_task_template(self):
+        records = read_records("demo", "future", """### FT-YYYYMMDD-001 — Task title
+
+Status: idea
+""")
+        self.assertEqual(records, [])
+
     def test_reads_paused_task(self):
         records = read_records("demo", "paused", """### 2026-09-09 — Continue report
 
