@@ -13,6 +13,12 @@ class LowCostSessionReviewTests(unittest.TestCase):
         self.assertIn("Terra", review)
         self.assertIn("before any model call", finish)
 
+    def test_review_is_available_at_closure_and_on_demand(self):
+        review = (ROOT / "hub-template/ai/skills/hub-session-review/SKILL.md").read_text(encoding="utf-8")
+        finish = (ROOT / "hub-template/ai/skills/hub-task-finish/SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("read only the selected session or range", review)
+        self.assertIn("before clearing task context", finish)
+
 
 if __name__ == "__main__":
     unittest.main()
