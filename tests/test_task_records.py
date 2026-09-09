@@ -36,6 +36,16 @@ Write report
         self.assertEqual(records[0]["status"], "active")
         self.assertEqual(records[0]["title"], "Write report")
 
+    def test_reads_paused_task(self):
+        records = read_records("demo", "paused", """### 2026-09-09 — Continue report
+
+Task ID: TASK-demo-20260909-001
+
+Status: paused
+""")
+        self.assertEqual(records[0]["status"], "paused")
+        self.assertEqual(records[0]["title"], "Continue report")
+
 
 if __name__ == "__main__":
     unittest.main()

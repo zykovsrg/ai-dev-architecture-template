@@ -37,6 +37,18 @@ def read_records(project_id, kind, text):
         if not goal:
             raise ValueError("missing_goal")
         return [{"task_id": task_id, "title": goal.group(1), "status": status, "due": read_due(lines)}]
+    if kind == "paused":
+        records = []
+        for block in re.split(r"(?=^### )", text, flags=re.M):
+            heading = re.match(r"^### \d{4}-\d{2}-\d{2} — (.+)$", block, re.M)
+            if not heading:
+                continue
+            task_id = re.search(r"^Task ID: (.+)$", block, re.M)
+            status = re.search(r"^Status: (.+)$", block, re.M)
+            if not task_id or not task_id.group(1).startswith(f"TASK-{project_id}-") or not status or status.group(1) != "paused":
+                raise ValueError("invalid_paused_record")
+            records.append({"task_id": task_id.group(1), "title": heading.group(1), "status": "paused", "due": read_due(block.splitlines())})
+        return records
     if kind != "future":
         raise ValueError("unsupported task kind")
     records = []
@@ -70,7 +82,7 @@ def main():
     parser.add_argument("read", nargs="?")
     parser.add_argument("--file", type=Path, required=True)
     parser.add_argument("--project-id")
-    parser.add_argument("--kind", choices=("current", "future"))
+    parser.add_argument("--kind", choices=("current", "future", "paused"))
     args = parser.parse_args()
     try:
         text = args.file.read_text(encoding="utf-8")

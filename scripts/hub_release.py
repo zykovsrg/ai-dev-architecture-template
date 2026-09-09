@@ -24,6 +24,7 @@ RUNTIME_SCRIPTS = (
     "scripts/count-goal-progress.sh", "scripts/snapshot-calendar.sh",
     "scripts/check-workflow-memory.sh", "scripts/check-session-review.py",
     "scripts/lib/calendar-date.sh", "scripts/workflow_friction.py",
+    "scripts/task_records.py",
 )
 
 
