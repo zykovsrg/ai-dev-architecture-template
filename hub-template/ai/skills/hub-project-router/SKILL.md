@@ -23,8 +23,9 @@ Choose exactly one route before reading project data:
    project-specific request and preserve its explicit project confirmation.
 4. If the route is genuinely unclear, ask one concise clarification question.
 
-Treat clear requests including «распланируем сегодняшний день», «план на
-сегодня», «составь план дня», and “plan today” as `day-plan`. Invoke
+Treat clear requests including «распланируем сегодняшний день», «распланируем
+остаток дня», «план на сегодня», «план на остаток дня», «составь план дня»,
+and “plan today” as `day-plan`. Invoke
 `hub-workflows` before writing a reply and render its six mandatory day-plan
 sections. Do not return a preliminary free-form calendar summary.
 

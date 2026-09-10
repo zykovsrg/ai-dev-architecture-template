@@ -19,6 +19,13 @@ read empty days have events=[]; missing coverage is never an empty day.
 
 ## Update procedure
 
+- Run `scripts/calendar-context.py plan --hub <hub> --anchor <D>
+  --timezone <IANA> --calendar-id <allowed-id>` (repeat `--calendar-id` for
+  each allowed calendar). For every returned half-open range, call guarded
+  `read_events`, then run `calendar-context.py ingest` with the same hub,
+  anchor, timezone and IDs plus that `--start` and `--end`. Send the complete
+  MCP JSON response to the process on stdin and then close stdin. Do not
+  hand-edit the cache.
 - First run: resolve allowed calendar IDs through hub-calendar; fetch the
   past and future windows once using guarded read_events, plus today's normal
   calendar read. Split requests to respect tool range limits and pagination.
@@ -62,4 +69,3 @@ what is unavailable; if no useful advice is grounded, write
 `- Нет обоснованных рекомендаций.`
 Accepted advice follows the existing task/calendar confirmation flow;
 recommendations alone change neither project records nor calendar events.
-

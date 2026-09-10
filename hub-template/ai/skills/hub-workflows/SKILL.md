@@ -252,6 +252,11 @@ canonical record needs no proposal; say so instead of emitting an empty diff.
 Under `## Рекомендации`, follow `resources/calendar-context.md`: analyze
 the past 30 days and next 14 days to suggest grounded actions for today.
 Keep this sixth section even when context is missing; explain the limitation.
+Before sending the final response, check that all six exact headings appear in
+the required order by passing the complete draft on stdin to
+`scripts/validate-day-plan-output.py`. Send only after it exits successfully;
+otherwise rewrite and validate again. A cache write failure never permits
+omitting `## Рекомендации`.
 
 ### Evening review format
 

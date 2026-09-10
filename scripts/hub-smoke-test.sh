@@ -107,7 +107,7 @@ personal_assistant_router_contract_valid() {
 
     [[ "$text" == *'personal-assistant request'* ]] &&
     [[ "$text" == *'day plan'*'capture'* ]] &&
-    [[ "$text" == *'распланируем сегодняшний день'*'plan today'*'six mandatory day-plan sections'* ]] &&
+    [[ "$text" == *'распланируем сегодняшний день'*'распланируем остаток дня'*'plan today'*'six mandatory day-plan sections'* ]] &&
     [[ "$text" == *'all active registered projects'* ]] &&
     [[ "$text" == *'ai/current-task.md'*'ai/future-tasks.md'*'ai/paused-tasks.md'* ]] &&
     [[ "$text" == *'Do not read project code, knowledge records, credentials, or arbitrary files'* ]] &&
@@ -622,6 +622,8 @@ grep -Fq 'explicit confirmation' "$HUB_AGENTS" || fail 'missing confirmation gat
 grep -Fq 'sole allowed root' "$HUB_AGENTS" || fail 'missing allowed-root gate'
 grep -Fq 'explicit confirmation' "$HUB_CLAUDE" || fail 'missing confirmation gate'
 grep -Fq 'sole allowed root' "$HUB_CLAUDE" || fail 'missing allowed-root gate'
+grep -Fq 'Day-plan responses are exempt from the 5-line and 80-word default' "$HUB_AGENTS" || fail 'missing day-plan output exception'
+grep -Fq 'Day-plan responses are exempt from the 5-line and 80-word default' "$HUB_CLAUDE" || fail 'missing day-plan output exception'
 hub_entry_staged_allowlist_valid "$HUB_AGENTS" \
   || fail 'hub entry must allow only compact-index routing before confirmation'
 assert_contains "$HUB_AGENTS" 'ai/architecture.md'
@@ -1875,7 +1877,7 @@ assert_contains "$TMP_DIR/missing-compact-source.out" 'missing mandatory script:
 copy_mandatory_update_scripts() {
   local source_root="$1" script
   mkdir -p "$source_root/scripts/lib"
-  for script in read-compact-project-index.sh obsidian-task-sync.sh generate-obsidian-projects-kanban.sh count-goal-progress.sh snapshot-calendar.sh check-workflow-memory.sh check-session-review.py check-all-task-records.sh task_records.py; do
+  for script in read-compact-project-index.sh obsidian-task-sync.sh generate-obsidian-projects-kanban.sh count-goal-progress.sh snapshot-calendar.sh calendar-context.py validate-day-plan-output.py check-workflow-memory.sh check-session-review.py check-all-task-records.sh task_records.py; do
     cp "$ROOT/scripts/$script" "$source_root/scripts/$script"
   done
   cp "$ROOT/scripts/lib/calendar-date.sh" "$source_root/scripts/lib/calendar-date.sh"

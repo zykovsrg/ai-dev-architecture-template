@@ -356,10 +356,15 @@ confirmed project when the action is ambiguous, and emits neither task nor
 calendar proposal until then. Every overdue task is rendered with its exact
 canonical task title, never a generated summary or translation.
 
-Clear day-planning requests, including «распланируем сегодняшний день», «план
-на сегодня», and “plan today”, invoke `hub-workflows` before any reply. Their
+Clear day-planning requests, including «распланируем сегодняшний день»,
+«распланируем остаток дня», «план на сегодня», «план на остаток дня», and
+“plan today”, invoke `hub-workflows` before any reply. Their
 reply uses the six mandatory day-plan sections; a free-form calendar summary
 is not a valid day-plan response.
+
+The general 5-line and 80-word output default does not apply to a day plan.
+Every day-plan response renders all six headings, even when a section contains
+only `- Нет.` or a precise data-access limitation.
 
 Day planning maintains local `ai/tmp/calendar-context.json`: 30 past days,
 today and 30 future days. Initial guarded reads populate it; subsequent runs
