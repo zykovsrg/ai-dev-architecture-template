@@ -30,7 +30,7 @@
 - Consumes: `scripts/install-legacy-hub-obsidian-bridge.sh --hub <absolute-path> --dry-run|--apply`.
 - Produces: a repeatable fake hub fixture and `PASS: legacy hub Obsidian bridge contract`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create a temporary hub with `ai/project-registry.md`, `ai/tmp/obsidian-scope.txt`, and three direct-child projects: `legacy-project` at version 7.3 with matching `AGENTS.md` / `CLAUDE.md`; `modern-project` at version 7.4; and `broken-project` at version 7.3 with mismatched entry files. Invoke the missing installer in dry-run and apply modes.
 
@@ -44,13 +44,13 @@ cmp "$LEGACY/AGENTS.md" "$LEGACY/CLAUDE.md"
 assert_not_contains "$MODERN/AGENTS.md" '## Hub Obsidian Bridge'
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `bash scripts/legacy-hub-obsidian-bridge-test.sh`
 
 Expected: FAIL because `scripts/install-legacy-hub-obsidian-bridge.sh` does not exist.
 
-- [ ] **Step 3: Commit the failing test**
+- [x] **Step 3: Commit the failing test**
 
 ```bash
 git add scripts/legacy-hub-obsidian-bridge-test.sh
