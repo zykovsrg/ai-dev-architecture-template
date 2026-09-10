@@ -176,9 +176,10 @@ section. Use `<result> — <project-id>; срок: <YYYY-MM-DD|нет>; исто
 <canonical-path>`.
 
 Under `## Просроченные задачи`, render every actionable task whose due date is
-before the requested date as `<result> — <project-id>; срок: <YYYY-MM-DD>;
-просрочено: <N> дн.; источник: <canonical-path>`. Do not repeat a task in
-another day-plan section.
+before the requested date as `<exact canonical task title> — <project-id>;
+срок: <YYYY-MM-DD>; просрочено: <N> дн.; источник: <canonical-path>`.
+Use the exact canonical task title, never a summary, translation, or generated
+label. Do not repeat a task in another day-plan section.
 
 Under `## Предлагаемый календарь`, render one chronological day view that keeps
 each current calendar event and adds proposed blocks for the highest-ranked
@@ -195,6 +196,16 @@ read-only and never becomes a Calendar change without its separate preview and
 confirmation. For a retained event, use its calendar title verbatim. For a new
 block, use the exact canonical task title; do not create a summary or a new
 phrase for either kind of entry.
+
+When the user explicitly states a new action or reminder for today while
+planning, turn it into a `create_task` or `update_task` proposal for the
+confirmed project that owns the action, as well as any appropriate proposed
+calendar block. Preserve the exact user-stated task title unless the user
+explicitly supplies a replacement. A day-plan project-task proposal has its
+own exact target path and diff, and remains independently selectable from its
+calendar proposal. Do not guess a project: if the action cannot be grounded in
+one confirmed project, ask which confirmed project owns it and make no task or
+calendar proposal until the user answers.
 
 ### Evening review format
 

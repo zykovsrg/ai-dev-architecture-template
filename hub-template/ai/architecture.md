@@ -345,6 +345,17 @@ and numeric goal progress constrain the proposal without creating extra chat
 sections. Existing calendar titles are copied verbatim; proposed new blocks use
 the exact title of their canonical task and never a generated summary.
 
+An explicit new action or reminder stated during day planning is not merely a
+calendar item: when it belongs to one confirmed project, `hub-workflows`
+creates an exact `create_task` or `update_task` proposal for that project's
+canonical task record alongside any calendar proposal. The task proposal uses
+the exact stated title and has its own exact target path and diff; it remains
+independently selectable and needs the normal project-write confirmation. The
+workflow never guesses the owning project. It asks the user to identify one
+confirmed project when the action is ambiguous, and emits neither task nor
+calendar proposal until then. Every overdue task is rendered with its exact
+canonical task title, never a generated summary or translation.
+
 Clear day-planning requests, including «распланируем сегодняшний день», «план
 на сегодня», and “plan today”, invoke `hub-workflows` before any reply. Their
 reply uses the five mandatory day-plan sections; a free-form calendar summary

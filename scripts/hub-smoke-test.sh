@@ -76,6 +76,10 @@ hub_workflows_skill_contract_valid() {
     [[ "$text" == *'every entry, kept or proposed, as a separate bullet'* ]] &&
     [[ "$text" == *'title verbatim'*'Do not shorten, translate, group, or paraphrase it'* ]] &&
     [[ "$text" == *'exact canonical task title'* ]] &&
+    [[ "$text" == *'exact canonical task title, never a summary'* ]] &&
+    [[ "$text" == *'explicitly states a new action or reminder for today'*'`create_task` or `update_task` proposal'* ]] &&
+    [[ "$text" == *'Do not guess a project'*'ask which confirmed project owns it'* ]] &&
+    [[ "$text" == *'day-plan project-task proposal has its own exact target path and diff'* ]] &&
     [[ "$text" == *'render the schedule for the requested date'*'list_calendar_metadata'*'read_events'* ]] &&
     [[ "$text" == *'Never call `read_events` before a successful `list_calendar_metadata` response'* ]] &&
     [[ "$text" == *'Do not report an empty allowlist without a successful metadata response'* ]] &&
