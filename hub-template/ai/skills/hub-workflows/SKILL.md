@@ -24,6 +24,11 @@ vault migration, start a session audit, scan for arbitrary transcripts, or copy
 source text into project memory. Do not add an apply command or a persistent
 proposal queue.
 
+Day planning may maintain the local calendar context buffer described in
+`resources/calendar-context.md`. Read that resource on every day-plan run.
+This is an explicit noncanonical cache exception to proposal-only writes;
+calendar events and project records still require their usual confirmation.
+
 ## Personal-assistant scope
 
 When `hub-project-router` classifies a personal-assistant request, this skill
@@ -140,6 +145,9 @@ Within every section, keep canonical ranking order and render `- Нет.` when t
 section has no grounded item. Do not rename, merge, repeat, or reorder the
 headings defined below.
 
+For a day-plan run that writes its local buffer, replace the no-changes line
+with: `Обновлён локальный контекст; календарь и задачи не изменены.`
+
 ### Day plan format
 
 `day-plan` renders these headings in this exact order:
@@ -149,6 +157,7 @@ headings defined below.
 3. `## Задачи вне календаря`
 4. `## Просроченные задачи`
 5. `## Предлагаемый календарь`
+6. `## Рекомендации`
 
 Under `## Текущий календарь`, render the schedule for the requested date:
 first call `list_calendar_metadata`. Use exactly the IDs from its successful
@@ -207,7 +216,12 @@ calendar proposal. Do not guess a project: if the action cannot be grounded in
 one confirmed project, ask which confirmed project owns it and make no task or
 calendar proposal until the user answers.
 
+Under `## Рекомендации`, follow `resources/calendar-context.md`: analyze
+the past 30 days and next 14 days to suggest grounded actions for today.
+Keep this sixth section even when context is missing; explain the limitation.
+
 ### Evening review format
+
 
 `evening-review` renders these headings in this exact order:
 

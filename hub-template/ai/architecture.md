@@ -334,9 +334,9 @@ the optional Bash adapter only validates mechanical scope, paths, and recorder
 JSON. Neither layer applies project, task, knowledge, waiting, deadline,
 Calendar, or vault changes.
 
-The day-plan chat output has exactly five sections in this order: current
+The day-plan chat output has exactly six sections in this order: current
 calendar, grounded conflicts, actionable project tasks that are not in that
-calendar, overdue actionable tasks, and one proposed calendar. A task appears
+calendar, overdue actionable tasks, one proposed calendar, and recommendations. A task appears
 in only one task section. The proposed calendar retains existing events and
 labels every suggested block's duration as stated or estimated; it lists work
 that does not fit instead of silently dropping it. Both calendars are
@@ -358,8 +358,16 @@ canonical task title, never a generated summary or translation.
 
 Clear day-planning requests, including «распланируем сегодняшний день», «план
 на сегодня», and “plan today”, invoke `hub-workflows` before any reply. Their
-reply uses the five mandatory day-plan sections; a free-form calendar summary
+reply uses the six mandatory day-plan sections; a free-form calendar summary
 is not a valid day-plan response.
+
+Day planning maintains local `ai/tmp/calendar-context.json`: 30 past days,
+today and 30 future days. Initial guarded reads populate it; subsequent runs
+prune expired days and fetch missing far-future days. Recommendations use the
+past month and next 14 days with canonical tasks and verified deadlines.
+The detailed lifecycle is in `hub-workflows/resources/calendar-context.md`.
+This noncanonical cache exception allows local context writes only; event
+data is never published, and no background job or automatic task write is added.
 
 The fixed six-step contract is:
 

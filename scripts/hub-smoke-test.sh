@@ -69,7 +69,7 @@ hub_workflows_skill_contract_valid() {
     [[ "$text" == *'guarded `hub_calendar` MCP'*'read tools'* ]] &&
     [[ "$text" == *'Never call `preview_change` or `apply_change` here'* ]] &&
     [[ "$text" == *'vault migration'*'session audit'* ]] &&
-    [[ "$text" == *'## Текущий календарь'*'## Конфликты'*'## Задачи вне календаря'*'## Просроченные задачи'*'## Предлагаемый календарь'* ]] &&
+    [[ "$text" == *'## Текущий календарь'*'## Конфликты'*'## Задачи вне календаря'*'## Просроченные задачи'*'## Предлагаемый календарь'*'## Рекомендации'* ]] &&
     [[ "$text" == *'Do not repeat a task in another day-plan section'* ]] &&
     [[ "$text" == *'duration: stated|estimate'* ]] &&
     [[ "$text" == *'each event as a separate bullet'*'`- <HH:MM>–<HH:MM> — <title>`'* ]] &&
@@ -102,7 +102,7 @@ personal_assistant_router_contract_valid() {
 
     [[ "$text" == *'personal-assistant request'* ]] &&
     [[ "$text" == *'day plan'*'capture'* ]] &&
-    [[ "$text" == *'распланируем сегодняшний день'*'plan today'*'five mandatory day-plan sections'* ]] &&
+    [[ "$text" == *'распланируем сегодняшний день'*'plan today'*'six mandatory day-plan sections'* ]] &&
     [[ "$text" == *'all active registered projects'* ]] &&
     [[ "$text" == *'ai/current-task.md'*'ai/future-tasks.md'*'ai/paused-tasks.md'* ]] &&
     [[ "$text" == *'Do not read project code, knowledge records, credentials, or arbitrary files'* ]] &&

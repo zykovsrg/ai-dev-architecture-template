@@ -40,6 +40,9 @@ shown pair. Nothing else is merged: the preview stays complete, an unshown or
 changed event still needs its own confirmation, and the confirmation dies with
 the screen it belongs to. Do not create background checks, notifications,
 task-to-calendar transfers, or files containing events, secrets, or tokens.
+Local calendar snapshots and the day-plan buffer explicitly defined in
+`hub-workflows/resources/calendar-context.md` are cache exceptions.
+They authorize neither publishing event data nor changing events.
 
 An authorized writable calendar may update or delete events whether they are
 past or future. For a recurring event require exactly `this` or `future` scope and the
