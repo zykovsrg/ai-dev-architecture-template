@@ -72,17 +72,22 @@ hub_workflows_skill_contract_valid() {
     [[ "$text" == *'## Текущий календарь'*'## Конфликты'*'## Задачи вне календаря'*'## Просроченные задачи'*'## Предлагаемый календарь'*'## Рекомендации'* ]] &&
     [[ "$text" == *'Do not repeat a task in another day-plan section'* ]] &&
     [[ "$text" == *'duration: stated|estimate'* ]] &&
-    [[ "$text" == *'each event as a separate bullet'*'`- <HH:MM>–<HH:MM> — <title>`'* ]] &&
-    [[ "$text" == *'every entry, kept or proposed, as a separate bullet'* ]] &&
+    [[ "$text" == *'`- <HH:MM>–<HH:MM> — <title>`'*'each event as a separate bullet'* ]] &&
+    [[ "$text" == *'each entry, kept or proposed, as a separate bullet'* ]] &&
     [[ "$text" == *'title verbatim'*'Do not shorten, translate, group, or paraphrase it'* ]] &&
     [[ "$text" == *'exact canonical task title'* ]] &&
     [[ "$text" == *'exact canonical task title, never a summary'* ]] &&
-    [[ "$text" == *'explicitly states a new action or reminder for today'*'`create_task` or `update_task` proposal'* ]] &&
-    [[ "$text" == *'Do not guess a project'*'ask which confirmed project owns it'* ]] &&
-    [[ "$text" == *'day-plan project-task proposal has its own exact target path and diff'* ]] &&
+    [[ "$text" == *'Every such statement'*'becomes a proposal in the same reply'* ]] &&
+    [[ "$text" == *'Answering in prose instead is a failure of this workflow'* ]] &&
+    [[ "$text" == *'| `update_task` |'*'| `update_due` |'*'| `update_waiting` |'*'| `create_task` |'*'| `calendar-event` |'* ]] &&
+    [[ "$text" == *'emit its complete calendar preview beside the task diff'*'one confirmation approve exactly that shown pair'* ]] &&
+    [[ "$text" == *'Do not guess a project'*'ask which project owns it'* ]] &&
+    [[ "$text" == *'Each proposal keeps its own exact target path and diff'* ]] &&
+    [[ "$text" == *'writes inside this scope without a project switch'* ]] &&
+    [[ "$text" == *'The write scope is exactly the three canonical task records'* ]] &&
     [[ "$text" == *'render the schedule for the requested date'*'list_calendar_metadata'*'read_events'* ]] &&
     [[ "$text" == *'Never call `read_events` before a successful `list_calendar_metadata` response'* ]] &&
-    [[ "$text" == *'Do not report an empty allowlist without a successful metadata response'* ]] &&
+    [[ "$text" == *'do not report an empty allowlist without a successful metadata response'* ]] &&
     [[ "$text" == *'never claim a free day you could not read'* ]] &&
     [[ "$text" == *'## Сделано'*'## Перенос'*'## Ожидания'*'## Follow-ups'*'## Завтрашний Calendar'*'## Три главных действия завтра'*'## Подтвердить'* ]] &&
     [[ "$text" == *'## Архипроекты'*'### <archiproject-id> — <name>'*'#### Детали проектов'*'## Три результата недели'*'## Нужны решения'* ]] &&
@@ -940,7 +945,7 @@ hub_workflows_skill_contract_valid "$HUB_WORKFLOWS_SKILL" \
 
 # A day plan that cannot read the calendar must say so, never show an empty day.
 HUB_WORKFLOWS_WITHOUT_CALENDAR_HONESTY="$TMP_DIR/hub-workflows-without-calendar-honesty.md"
-sed '/never claim a free day/d' "$HUB_WORKFLOWS_SKILL" \
+sed 's/never claim a free//' "$HUB_WORKFLOWS_SKILL" \
   > "$HUB_WORKFLOWS_WITHOUT_CALENDAR_HONESTY"
 assert_rejected hub_workflows_skill_contract_valid "$HUB_WORKFLOWS_WITHOUT_CALENDAR_HONESTY"
 
