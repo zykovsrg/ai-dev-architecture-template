@@ -420,10 +420,10 @@ hub_task_finish_knowledge_offer_valid() {
   local file="$1" text
   text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
 
-  [[ "$text" == *'After the normal completion check'* ]] &&
-    [[ "$text" == *'may offer the hub-owned `hub-knowledge-review`'* ]] &&
+  [[ "$text" == *'After the review, if durable records linked from this task may need a focused check'* ]] &&
+    [[ "$text" == *'may offer `hub-knowledge-review`'* ]] &&
     [[ "$text" == *'never start it automatically'* ]] &&
-    [[ "$text" == *'Declining the offer has no effect on task closure'* ]]
+    [[ "$text" == *'Declining it has no effect on closure'* ]]
 }
 project_migrate_contract_valid() {
   local file="$1" text

@@ -20,7 +20,7 @@ Verified: the suite already failed at `eeac361`, before this branch started.
 - `hub_workflows_skill_contract_valid` — rewritten for the new day-editing
   rules, plus three assertions that could never match (bullet order, "every"
   vs "each" entry, capitalized "Do not report") and one rejection fixture that
-  deleted by a phrase broken across lines (commit `ae295ce`).
+  deleted by a phrase broken across lines (commit `58d57ab`).
 - `project_create_contract_valid` — expected "active-project.md only after
   successful validation"; the skill has said "Only after successful validation
   ... update `ai/active-project.md`" since `61ba7aa` (commit `fba19ab`).
