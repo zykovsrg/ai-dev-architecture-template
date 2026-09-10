@@ -308,7 +308,7 @@ project_create_contract_valid() {
     [[ "$text" == *'ai/project-cards/'* ]] &&
     [[ "$text" == *'ai/cross-project-signals.md'* ]] &&
     [[ "$text" == *'ai/archive/'* ]] &&
-    [[ "$text" == *'active-project.md only after successful validation'* ]] &&
+    [[ "$text" == *'Only after successful validation'*'update'*'ai/active-project.md'* ]] &&
     [[ "$text" == *'hub-owned `hub-environment-check`'* ]] &&
     [[ "$text" == *'hub-owned `hub-task-intake`'* ]] &&
     [[ "$text" == *'unsafe project names'* ]] &&
