@@ -1,5 +1,10 @@
 # Changelog
 
+### 2026-09-10
+
+- Change: Added and installed the guarded `prepare_evening_review` calendar tool. It gathers allowlisted calendar events, creates a noncanonical snapshot, and returns prior snapshots and pending friction for confirmation-gated learning proposals.
+- Verification: 91 calendar-policy tests, assistant-workflow contract, and consistency checks passed. The full smoke test still reports the known hub entry-file size limit; the user explicitly accepted that external failure. Live review execution is deferred to 2026-09-11.
+
 ### 2026-09-10 — Явная команда обновления доски
 
 - Change: В четырёх правилах работы с задачами явно названа команда
