@@ -260,6 +260,7 @@ omitting `## Рекомендации`.
 
 ### Evening review format
 
+For a calendar-only evening review, first call `prepare_evening_review` with the requested date and calendar timezone. Use its events, snapshot history, and pending friction as the complete learning input. It may create proposals, but never durable learning changes without separate confirmation.
 
 `evening-review` renders these headings in this exact order:
 

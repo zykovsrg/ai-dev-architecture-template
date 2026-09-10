@@ -41,7 +41,8 @@ def _required_path(name: str) -> Path:
 
 
 def build_server() -> GuardedCalendarServer:
-    allowed = load_allowed_calendar_ids(_required_path("HUB_CALENDAR_ALLOWLIST"))
+    allowlist_path = _required_path("HUB_CALENDAR_ALLOWLIST")
+    allowed = load_allowed_calendar_ids(allowlist_path)
     bridge_path = _required_path("HUB_CALENDAR_BRIDGE")
     if not bridge_path.is_file():
         raise ConfigError(f"local EventKit bridge is missing: {bridge_path}")
@@ -50,6 +51,7 @@ def build_server() -> GuardedCalendarServer:
         EventKitBackend(bridge_path),
         CalendarPolicy(allowed_calendar_ids=allowed),
         PreviewGrantStore(clock=clock),
+        hub_root=allowlist_path.parent.parent.parent,
     )
 
 

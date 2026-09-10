@@ -47,7 +47,7 @@ def create_request(now: datetime) -> ChangeRequest:
 
 
 def test_exposes_only_safe_tools(server: GuardedCalendarServer) -> None:
-    assert server.tool_names == frozenset({"calendar_status", "list_calendar_metadata", "read_events", "find_free_slots", "preview_change", "cancel_preview", "apply_change"})
+    assert server.tool_names == frozenset({"calendar_status", "list_calendar_metadata", "read_events", "find_free_slots", "prepare_evening_review", "preview_change", "cancel_preview", "apply_change"})
 
 
 @pytest.mark.asyncio
