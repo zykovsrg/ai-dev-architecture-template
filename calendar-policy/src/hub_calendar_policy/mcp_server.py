@@ -29,6 +29,10 @@ def build_mcp(guarded: GuardedCalendarServer) -> FastMCP:
     async def read_events(calendar_ids: list[str], start: str, end: str, timezone: str) -> dict[str, object]:
         return await guarded.read_events(set(calendar_ids), _parse_datetime(start), _parse_datetime(end), timezone)
 
+    @mcp.tool(name="prepare_evening_review")
+    async def prepare_evening_review(date: str, timezone: str) -> dict[str, object]:
+        return await guarded.prepare_evening_review(date, timezone)
+
     @mcp.tool(name="find_free_slots")
     async def find_free_slots(calendar_ids: list[str], start: str, end: str, timezone: str) -> dict[str, object]:
         return await guarded.find_free_slots(set(calendar_ids), _parse_datetime(start), _parse_datetime(end), timezone)

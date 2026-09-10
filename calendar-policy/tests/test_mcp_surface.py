@@ -24,3 +24,4 @@ async def test_mcp_exposes_exactly_the_guarded_tool_set() -> None:
     mcp = build_mcp(guarded)
 
     assert {tool.name for tool in await mcp.list_tools()} == guarded.tool_names
+    assert "prepare_evening_review" in guarded.tool_names

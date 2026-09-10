@@ -34,6 +34,8 @@ assistant_workflow_guardrail_check() {
     || { echo 'MISMATCH [assistant workflow guardrails] — hub-workflows skill name'; return 1; }
   grep -Fq 'Never write or apply a proposal automatically' "$skill" \
     || { echo 'MISMATCH [assistant workflow guardrails] — no-auto-write rule'; return 1; }
+  grep -Fq 'prepare_evening_review' "$skill" \
+    || { echo 'MISSING [evening review lifecycle] — required MCP tool'; return 1; }
   echo 'OK [assistant workflow guardrails] — executable source and hub rule'
 }
 
