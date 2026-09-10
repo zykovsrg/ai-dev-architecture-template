@@ -340,6 +340,11 @@ and numeric goal progress constrain the proposal without creating extra chat
 sections. Existing calendar titles are copied verbatim; proposed new blocks use
 the exact title of their canonical task and never a generated summary.
 
+Clear day-planning requests, including «распланируем сегодняшний день», «план
+на сегодня», and “plan today”, invoke `hub-workflows` before any reply. Their
+reply uses the five mandatory day-plan sections; a free-form calendar summary
+is not a valid day-plan response.
+
 The fixed six-step contract is:
 
 1. Receive exactly one user-selected source: pasted text, a selected local

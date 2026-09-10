@@ -94,8 +94,9 @@ personal_assistant_router_contract_valid() {
   [ -f "$file" ] || return 1
   text="$(tr '\n' ' ' < "$file" | tr -s ' ')"
 
-  [[ "$text" == *'personal-assistant request'* ]] &&
+    [[ "$text" == *'personal-assistant request'* ]] &&
     [[ "$text" == *'day plan'*'capture'* ]] &&
+    [[ "$text" == *'распланируем сегодняшний день'*'plan today'*'five mandatory day-plan sections'* ]] &&
     [[ "$text" == *'all active registered projects'* ]] &&
     [[ "$text" == *'ai/current-task.md'*'ai/future-tasks.md'*'ai/paused-tasks.md'* ]] &&
     [[ "$text" == *'Do not read project code, knowledge records, credentials, or arbitrary files'* ]] &&

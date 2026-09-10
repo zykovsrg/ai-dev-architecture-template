@@ -14,7 +14,7 @@ This is a multi-project hub. The hub registry defines what may be accessed.
 
 ## Project Routing
 
-- Start every real request by classifying its intent. A personal-assistant request — day plan, cross-project status, review, capture, or cross-project search — goes directly to `hub-workflows`; project-specific work uses project routing.
+- Start every real request by classifying its intent. A personal-assistant request — day plan, cross-project status, review, capture, or cross-project search — goes directly to `hub-workflows`; project-specific work uses project routing. Requests such as «распланируем сегодняшний день», «план на сегодня», or “plan today” are day plans: invoke `hub-workflows` and return its mandatory sections, never a free-form summary.
 - A remembered project still requires explicit confirmation in a new chat.
 - Before reading a selected project, show its registered `Project: <project-id>` and exact `Path: <registered-path>`.
 - Do not read any selected project's memory or code before explicit confirmation.
