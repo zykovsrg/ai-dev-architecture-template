@@ -25,7 +25,7 @@ Choose exactly one route before reading project data:
 
 Treat clear requests including «распланируем сегодняшний день», «план на
 сегодня», «составь план дня», and “plan today” as `day-plan`. Invoke
-`hub-workflows` before writing a reply and render its five mandatory day-plan
+`hub-workflows` before writing a reply and render its six mandatory day-plan
 sections. Do not return a preliminary free-form calendar summary.
 
 For a personal-assistant request, `hub-workflows` may read only

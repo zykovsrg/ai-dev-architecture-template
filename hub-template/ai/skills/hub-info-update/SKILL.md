@@ -121,7 +121,7 @@ registered path. Ask separately for any hub signal write. After approval,
 perform only the approved writes in `Mode: implementation`. After every
 approved selected-project write to `ai/current-task.md` or
 `ai/future-tasks.md`, invoke the guarded trusted architecture-to-Obsidian
-refresh with `--write --refresh-from-architecture`, keeping manifest
+refresh with `bash scripts/generate-obsidian-projects-kanban.sh --hub <hub> --scope <scope-file> --vault <hub>/projects/ai-dev-architecture/obsidian-vault --write --refresh-from-architecture`, keeping manifest
 validation enabled. If it detects a manual board edit, immediately run local
 `obsidian-task-sync scan --project-id <confirmed-project-id>` to create the pending proposal, report it, and do not
 overwrite the board. Then report each changed file and any item intentionally

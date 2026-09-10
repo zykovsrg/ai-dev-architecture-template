@@ -75,7 +75,11 @@ resolve_card() {
 }
 resolve_archiproject_group() {
   local requested="$1" count block kind name
-  [ -n "$requested" ] && [ "$requested" != none ] || die 'project card must declare primary_archiproject'
+  [ -n "$requested" ] || die 'project card must declare primary_archiproject'
+  if [ "$requested" = none ]; then
+    printf '—'
+    return
+  fi
   count="$(grep -Ec "^## ${requested}$" "$ARCHIPROJECTS" || true)"
   [ "$count" -eq 1 ] || die "unknown or duplicate primary_archiproject: $requested"
   block="$(awk -v heading="## $requested" '$0 == heading {found=1; next} found && /^## / {exit} found {print}' "$ARCHIPROJECTS")"

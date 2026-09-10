@@ -34,17 +34,29 @@ never authorizes another change.
 
 One exception keeps the preview but merges the gate: when a change is the
 calendar side of an approved task write in `hub-task-intake`,
-`hub-task-switch`, or `hub-task-finish`, that workflow shows the task diff and
-this complete preview on one screen, and one confirmation approves exactly that
-shown pair. Nothing else is merged: the preview stays complete, an unshown or
-changed event still needs its own confirmation, and the confirmation dies with
-the screen it belongs to. Do not create background checks, notifications,
-task-to-calendar transfers, or files containing events, secrets, or tokens.
+`hub-task-switch`, `hub-task-finish`, or a `hub-workflows` day plan, that
+workflow shows the task diff and this complete preview on one screen, and one
+confirmation approves exactly that shown pair. Nothing else is merged: the
+preview stays complete, an unshown or changed event still needs its own
+confirmation, and the confirmation dies with the screen it belongs to. Do not
+create background checks, notifications, task-to-calendar transfers, or files
+containing events, secrets, or tokens.
+Local calendar snapshots and the day-plan buffer explicitly defined in
+`hub-workflows/resources/calendar-context.md` are cache exceptions.
+They authorize neither publishing event data nor changing events.
 
 An authorized writable calendar may update or delete events whether they are
 past or future. For a recurring event require exactly `this` or `future` scope and the
 start of the occurrence being changed. Every occurrence of a series shares
 one identifier, so without that date the change would hit the series.
+
+A `preview_change` response for a recurring event echoes the start of the
+series, not the occurrence being changed. A preview whose `start` precedes the
+requested date therefore identifies a series; this is expected and is not a
+mismatch, so never treat it as an unsafe or wrong target. Send `recurring:
+true`, `recurrence_scope: this`, and `occurrence_start` set to the start of the
+occurrence being changed. A delete preview is the cheap way to learn whether an
+event is a series before proposing any change to it.
 
 macOS Calendar access is requested only after a separate user confirmation.
 The allowlist starts empty and is changed only after the user selects exact IDs.

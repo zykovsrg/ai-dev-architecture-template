@@ -430,6 +430,11 @@ assert_contains "$TMP_DIR/shared-number.txt" '- [ ] Shared number there ^waiting
 # An explicit primary archiproject is required; tags and contribution metadata
 # must never be used as an implicit fallback.
 cp "$HUB/ai/project-cards/ai-dev-architecture.md" "$TMP_DIR/architecture-card.bak"
+sed -i '' 's/^primary_archiproject: дела$/primary_archiproject: none/' "$HUB/ai/project-cards/ai-dev-architecture.md"
+SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/no-primary-archiproject.txt"
+assert_contains "$TMP_DIR/no-primary-archiproject.txt" '| — |'
+cp "$TMP_DIR/architecture-card.bak" "$HUB/ai/project-cards/ai-dev-architecture.md"
+
 sed -i '' '/^primary_archiproject: /d' "$HUB/ai/project-cards/ai-dev-architecture.md"
 if "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/missing-primary-archiproject.txt" 2>&1; then
   fail 'missing primary archiproject did not block generation'

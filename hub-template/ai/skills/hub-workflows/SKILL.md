@@ -24,6 +24,11 @@ vault migration, start a session audit, scan for arbitrary transcripts, or copy
 source text into project memory. Do not add an apply command or a persistent
 proposal queue.
 
+Day planning may maintain the local calendar context buffer described in
+`resources/calendar-context.md`. Read that resource on every day-plan run.
+This is an explicit noncanonical cache exception to proposal-only writes;
+calendar events and project records still require their usual confirmation.
+
 ## Personal-assistant scope
 
 When `hub-project-router` classifies a personal-assistant request, this skill
@@ -38,6 +43,14 @@ The personal-assistant scope applies to day plans, overdue or blocked-work
 overviews, evening or weekly reviews, and capture after its selected source is
 received. Richer project reads, explicit knowledge paths, and any project-local
 implementation work retain the normal exact confirmed scope.
+
+A confirmed day-plan proposal package writes inside this scope without a
+project switch, and one package may write into several active registered
+projects. The write scope is exactly the three canonical task records named
+above: `ai/current-task.md`, `ai/future-tasks.md`, and `ai/paused-tasks.md`.
+Every proposal shows its project ID, exact `target_path`, and exact diff before
+confirmation. No other file, path, or project state may be written from this
+scope, and any richer project work still requires a project switch.
 
 ## Fixed sequence
 
@@ -80,9 +93,10 @@ implementation work retain the normal exact confirmed scope.
    per possible write, followed by one exact per-file diff or replacement
    block. Keep proposals independent; if an exact allowed target file is not
    known, ask a question instead of guessing or emitting an actionable
-   proposal. For one capture result, present the envelopes as one selectable
-   proposal package. A package confirmation may authorize only unchanged named
-   proposals that remain selected; the user may exclude individual proposal
+   proposal. For one capture result or one day-plan editing turn, present the
+   envelopes as one selectable proposal package. A package confirmation may
+   authorize only unchanged named proposals that remain selected; the user may
+   exclude individual proposal
    IDs. Every proposal retains its exact target and diff, and any changed diff
    needs new confirmation. Outside that package, show a fresh exact diff and
    wait for named proposal confirmation.
@@ -140,6 +154,9 @@ Within every section, keep canonical ranking order and render `- Нет.` when t
 section has no grounded item. Do not rename, merge, repeat, or reorder the
 headings defined below.
 
+For a day-plan run that writes its local buffer, replace the no-changes line
+with: `Обновлён локальный контекст; календарь и задачи не изменены.`
+
 ### Day plan format
 
 `day-plan` renders these headings in this exact order:
@@ -149,6 +166,7 @@ headings defined below.
 3. `## Задачи вне календаря`
 4. `## Просроченные задачи`
 5. `## Предлагаемый календарь`
+6. `## Рекомендации`
 
 Under `## Текущий календарь`, render the schedule for the requested date:
 first call `list_calendar_metadata`. Use exactly the IDs from its successful
@@ -160,8 +178,10 @@ response. State plainly that the day holds no event when it holds none. If the
 MCP is unreachable, the permission is missing, or the allowlist is empty, say
 which of those it is instead of rendering an empty schedule; do not report an
 empty allowlist without a successful metadata response and never claim a free
-day you could not read. Render the calendar event title verbatim. Do not shorten,
-translate, group, or paraphrase it.
+day you could not read. On a `CALENDAR_NOT_ALLOWED` error, read the local
+allowlist file and retry `read_events` with exactly the IDs it lists; report an
+empty allowlist only when that file is confirmed empty. Render the calendar
+event title verbatim. Do not shorten, translate, group, or paraphrase it.
 
 Under `## Конфликты`, list only grounded conflicts: overlapping calendar
 events, or an actionable task with an exact `Запланировано:` range that overlaps
@@ -197,17 +217,44 @@ confirmation. For a retained event, use its calendar title verbatim. For a new
 block, use the exact canonical task title; do not create a summary or a new
 phrase for either kind of entry.
 
-When the user explicitly states a new action or reminder for today while
-planning, turn it into a `create_task` or `update_task` proposal for the
-confirmed project that owns the action, as well as any appropriate proposed
-calendar block. Preserve the exact user-stated task title unless the user
-explicitly supplies a replacement. A day-plan project-task proposal has its
-own exact target path and diff, and remains independently selectable from its
-calendar proposal. Do not guess a project: if the action cannot be grounded in
-one confirmed project, ask which confirmed project owns it and make no task or
-calendar proposal until the user answers.
+After the plan is rendered, the user edits the day by naming a task and
+stating a fact about it. Every such statement, whether it names new work or
+changes the state of existing work, becomes a proposal in the same reply.
+Answering in prose instead is a failure of this workflow.
+
+Map each statement to exactly one canonical task record of one active
+registered project, then emit the envelope action that matches it:
+
+| Statement | Envelope action |
+|---|---|
+| The work is done, built, sent, or otherwise advanced | `update_task` |
+| The due date moves | `update_due` |
+| A wait starts, changes, or ends | `update_waiting` |
+| New work or a reminder is named | `create_task` |
+| A block's time or duration changes | `calendar-event` |
+
+Preserve the exact user-stated task title unless the user explicitly supplies a
+replacement. Each proposal keeps its own exact target path and diff.
+
+When the task carries a schedule, emit its complete calendar preview beside the
+task diff and let one confirmation approve exactly that shown pair, under the
+merged gate in `hub-calendar`. Present the statements of one editing turn as
+one selectable proposal package: one confirmation names the proposals that
+remain selected, the user may exclude individual proposal IDs, and any changed
+diff needs a new confirmation. A package may span several projects, each
+proposal carrying its own project ID and exact `target_path`.
+
+Do not guess a project: if a statement cannot be grounded in exactly one active
+registered project, ask which project owns it and make no task or calendar
+proposal until the user answers. A statement that is already recorded in the
+canonical record needs no proposal; say so instead of emitting an empty diff.
+
+Under `## Рекомендации`, follow `resources/calendar-context.md`: analyze
+the past 30 days and next 14 days to suggest grounded actions for today.
+Keep this sixth section even when context is missing; explain the limitation.
 
 ### Evening review format
+
 
 `evening-review` renders these headings in this exact order:
 
@@ -299,9 +346,10 @@ requires_confirmation: true
 
 After the envelopes, state that apply is unavailable. A possible project,
 task, meeting, knowledge, deadline, waiting, or Calendar write remains an
-independent proposal with its own exact diff and `target_path`. A capture may
-render all independent envelopes as one selectable proposal package; this
-reduces confirmation count without combining their writes. A create-project
+independent proposal with its own exact diff and `target_path`. A capture or a
+day-plan editing turn may render all independent envelopes as one selectable
+proposal package; this reduces confirmation count without combining their
+writes. A create-project
 proposal must name the exact proposed direct-child path and list each planned
 scaffold, registry, and card file, but must not create or inspect that target.
 
@@ -309,10 +357,13 @@ scaffold, registry, and card file, but must not create or inspect that target.
 
 Source selection, recorder export consent, scope confirmation, and proposal
 confirmation are separate gates. None substitutes for another. A one selectable
-proposal package can be applied only by its owning confirmed project workflow
-after one confirmation that names the unchanged named proposals still selected.
-Unknown, pending, failed, or ambiguous targets remain read-only proposals or
-questions.
+proposal package is applied after one confirmation that names the unchanged
+named proposals still selected. A capture package is applied by its owning
+confirmed project workflow. A day-plan package is applied inside the
+personal-assistant scope without a project switch and may span several active
+registered projects, bounded to the three canonical task records named in that
+scope. Unknown, pending, failed, or ambiguous targets remain read-only
+proposals or questions.
 
 ## Preserved learning lifecycle
 

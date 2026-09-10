@@ -39,8 +39,8 @@ bash scripts/obsidian-task-sync.sh apply --project-id <confirmed-project-id> --c
    three-digit number for that date in the selected project; never leave a
    placeholder. A promoted future task keeps exactly the same immutable ID
    when it becomes current.
-5. After that approved selected-project task write, invoke the guarded trusted architecture-to-Obsidian refresh
-   with `--write --refresh-from-architecture`.
+5. After that approved selected-project task write, invoke the guarded trusted architecture-to-Obsidian refresh with
+   `bash scripts/generate-obsidian-projects-kanban.sh --hub <hub> --scope <scope-file> --vault <hub>/projects/ai-dev-architecture/obsidian-vault --write --refresh-from-architecture`.
    This direction is trusted only from canonical `ai/` records to generated
    Obsidian views. Keep manifest validation enabled. If it detects a manual
    Obsidian edit, run the local `obsidian-task-sync scan --project-id <confirmed-project-id>` to create its pending

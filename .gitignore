@@ -7,3 +7,5 @@ tmp/
 obsidian-vault/
 .ai-architecture-sync/
 .worktrees/
+__pycache__/
+*.pyc
