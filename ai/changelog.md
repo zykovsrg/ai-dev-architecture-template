@@ -1,5 +1,19 @@
 # Changelog
 
+### 2026-09-10 — Явная команда обновления доски
+
+- Change: В четырёх правилах работы с задачами явно названа команда
+  `generate-obsidian-projects-kanban.sh` и её параметры обновления. Та же
+  формулировка применена в рабочем хабе. Смоук-тест проверяет наличие команды
+  во всех четырёх шаблонных правилах.
+- Impact: После изменения записи задачи агент запускает правильный генератор,
+  а не пытается передать параметры обновления сканеру доски.
+- Manual checks: `smoke-test.sh`, `hub-smoke-test.sh`,
+  `assistant-workflows-test.sh`, `architecture-test.sh`,
+  `check-consistency.sh`, `check-hub-registry.sh`,
+  `check-workflow-memory.sh`, `check-all-task-records.sh`.
+- Session review: `ai/session-reviews/2026-09-10-day-editing-loop-close.md`.
+
 ### 2026-09-10 — Рекомендации по календарному контексту
 
 - Добавлен шестой раздел дневного плана «Рекомендации».

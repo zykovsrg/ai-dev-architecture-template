@@ -1872,44 +1872,44 @@ if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$
 fi
 assert_contains "$TMP_DIR/missing-compact-source.out" 'missing mandatory script: scripts/read-compact-project-index.sh'
 
+copy_mandatory_update_scripts() {
+  local source_root="$1" script
+  mkdir -p "$source_root/scripts/lib"
+  for script in read-compact-project-index.sh obsidian-task-sync.sh generate-obsidian-projects-kanban.sh count-goal-progress.sh snapshot-calendar.sh check-workflow-memory.sh check-session-review.py check-all-task-records.sh task_records.py; do
+    cp "$ROOT/scripts/$script" "$source_root/scripts/$script"
+  done
+  cp "$ROOT/scripts/lib/calendar-date.sh" "$source_root/scripts/lib/calendar-date.sh"
+}
+
 INCOMPLETE_HUB_SOURCE="$TMP_DIR/incomplete-hub-source"
 mkdir -p "$INCOMPLETE_HUB_SOURCE"
 cp -R "$ROOT/hub-template" "$INCOMPLETE_HUB_SOURCE/hub-template"
-mkdir -p "$INCOMPLETE_HUB_SOURCE/scripts"
-cp "$ROOT/scripts/read-compact-project-index.sh" "$INCOMPLETE_HUB_SOURCE/scripts/read-compact-project-index.sh"
-cp "$ROOT/scripts/obsidian-task-sync.sh" "$INCOMPLETE_HUB_SOURCE/scripts/obsidian-task-sync.sh"
-cp "$ROOT/scripts/generate-obsidian-projects-kanban.sh" "$INCOMPLETE_HUB_SOURCE/scripts/generate-obsidian-projects-kanban.sh"
+copy_mandatory_update_scripts "$INCOMPLETE_HUB_SOURCE"
 rm "$INCOMPLETE_HUB_SOURCE/hub-template/ai/skills/hub-project-router/SKILL.md"
 if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$INCOMPLETE_HUB_SOURCE" --dry-run > "$TMP_DIR/incomplete-hub-source.out" 2>&1; then
   fail 'hub updater accepted a source without a mandatory hub skill'
 fi
-assert_contains "$TMP_DIR/incomplete-hub-source.out" 'missing mandatory hub skill: hub-project-router'
+assert_contains "$TMP_DIR/incomplete-hub-source.out" 'Source template missing mandatory hub skill: hub-project-router'
 
 INCOMPLETE_KNOWLEDGE_SOURCE="$TMP_DIR/incomplete-knowledge-source"
 mkdir -p "$INCOMPLETE_KNOWLEDGE_SOURCE"
 cp -R "$ROOT/hub-template" "$INCOMPLETE_KNOWLEDGE_SOURCE/hub-template"
-mkdir -p "$INCOMPLETE_KNOWLEDGE_SOURCE/scripts"
-cp "$ROOT/scripts/read-compact-project-index.sh" "$INCOMPLETE_KNOWLEDGE_SOURCE/scripts/read-compact-project-index.sh"
-cp "$ROOT/scripts/obsidian-task-sync.sh" "$INCOMPLETE_KNOWLEDGE_SOURCE/scripts/obsidian-task-sync.sh"
-cp "$ROOT/scripts/generate-obsidian-projects-kanban.sh" "$INCOMPLETE_KNOWLEDGE_SOURCE/scripts/generate-obsidian-projects-kanban.sh"
+copy_mandatory_update_scripts "$INCOMPLETE_KNOWLEDGE_SOURCE"
 rm "$INCOMPLETE_KNOWLEDGE_SOURCE/hub-template/ai/skills/hub-knowledge-review/SKILL.md"
 if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$INCOMPLETE_KNOWLEDGE_SOURCE" --dry-run > "$TMP_DIR/incomplete-knowledge-source.out" 2>&1; then
   fail 'hub updater accepted a source without the mandatory knowledge quality cycle'
 fi
-assert_contains "$TMP_DIR/incomplete-knowledge-source.out" 'missing mandatory hub skill: hub-knowledge-review'
+assert_contains "$TMP_DIR/incomplete-knowledge-source.out" 'Source template missing mandatory hub skill: hub-knowledge-review'
 
 INCOMPLETE_WORKFLOWS_SOURCE="$TMP_DIR/incomplete-workflows-source"
 mkdir -p "$INCOMPLETE_WORKFLOWS_SOURCE"
 cp -R "$ROOT/hub-template" "$INCOMPLETE_WORKFLOWS_SOURCE/hub-template"
-mkdir -p "$INCOMPLETE_WORKFLOWS_SOURCE/scripts"
-cp "$ROOT/scripts/read-compact-project-index.sh" "$INCOMPLETE_WORKFLOWS_SOURCE/scripts/read-compact-project-index.sh"
-cp "$ROOT/scripts/obsidian-task-sync.sh" "$INCOMPLETE_WORKFLOWS_SOURCE/scripts/obsidian-task-sync.sh"
-cp "$ROOT/scripts/generate-obsidian-projects-kanban.sh" "$INCOMPLETE_WORKFLOWS_SOURCE/scripts/generate-obsidian-projects-kanban.sh"
+copy_mandatory_update_scripts "$INCOMPLETE_WORKFLOWS_SOURCE"
 rm "$INCOMPLETE_WORKFLOWS_SOURCE/hub-template/ai/skills/hub-workflows/SKILL.md"
 if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB_INSTALL" --source "$INCOMPLETE_WORKFLOWS_SOURCE" --dry-run > "$TMP_DIR/incomplete-workflows-source.out" 2>&1; then
   fail 'hub updater accepted a source without hub-workflows'
 fi
-assert_contains "$TMP_DIR/incomplete-workflows-source.out" 'missing mandatory hub skill: hub-workflows'
+assert_contains "$TMP_DIR/incomplete-workflows-source.out" 'Source template missing mandatory hub skill: hub-workflows'
 
 # Regression: --source must resolve against the caller's directory, not the hub.
 # Before this fix a relative --source silently resolved inside the hub, so the
@@ -1930,16 +1930,16 @@ fi
 assert_contains "$TMP_DIR/self-source.out" 'resolves to the hub itself'
 echo 'Source-resolution evidence: relative --source resolved against the caller, self-source refused.'
 
-# --check compares version numbers only. Its success message must not read as
-# "the files match", because a hub with a matching version and a drifted rule
-# file is reported as up to date (Audit 3, FT-20260815-002).
-bash "$ROOT/scripts/update-installed-hub.sh" \
-  --hub "$HUB_INSTALL" --source "$ROOT" --check > "$TMP_DIR/check-wording.out" 2>&1 \
-  || fail "--check against a matching-version hub failed unexpectedly"
+# --check rejects drift even when version numbers match, and explains that the
+# result is a no-write preview rather than a successful update.
+if bash "$ROOT/scripts/update-installed-hub.sh" \
+  --hub "$HUB_INSTALL" --source "$ROOT" --check > "$TMP_DIR/check-wording.out" 2>&1; then
+  fail "--check accepted a matching-version hub with drifted managed files"
+fi
 assert_contains "$TMP_DIR/check-wording.out" 'Version numbers match'
-assert_contains "$TMP_DIR/check-wording.out" '--dry-run'
-assert_not_contains "$TMP_DIR/check-wording.out" 'Hub architecture is up to date (v'
-echo 'Check-wording evidence: --check states that it compared version numbers only.'
+assert_contains "$TMP_DIR/check-wording.out" 'Preview below (no files are changed).'
+assert_not_contains "$TMP_DIR/check-wording.out" 'Version numbers and updater-managed files match'
+echo 'Check-wording evidence: --check rejects managed-file drift without writing.'
 
 printf '%s\n' '# Allowed Roots' '' '- /custom/projects' > "$HUB_INSTALL/ai/allowed-roots.md"
 printf '%s\n' '# Project Registry' '' 'custom registry' > "$HUB_INSTALL/ai/project-registry.md"
