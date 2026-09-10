@@ -1,8 +1,8 @@
 # Current Task
 
-Status: empty
+Status: active
 
-Task ID: TASK-YYYYMMDD-NNN
+Task ID: TASK-ai-dev-architecture-20260910-007
 
 Allowed statuses: empty / active / review / blocked / done / paused
 
@@ -10,7 +10,7 @@ Note: `paused` is a transient status used only while `task-switch` is moving thi
 task into `ai/paused-tasks.md`. After the switch this file holds the new task and
 the paused one lives in `ai/paused-tasks.md`.
 
-Stage: intake
+Stage: spec
 
 Allowed stages: intake / spec / planning / implementation / review / task-finish
 
@@ -20,7 +20,7 @@ implementation / review / task-finish / architecture-update
 
 ## Goal
 
-Что нужно изменить.
+Сделать обязательный автоматический цикл аналитики и обучения для вечернего ревью.
 
 ## Use Superpowers
 
@@ -28,11 +28,16 @@ no
 
 ## Relevant files
 
-unknown
+- `docs/superpowers/specs/2026-09-10-evening-review-learning-design.md`
+- `scripts/assistant-workflows.sh`
+- `calendar-policy/`
 
 ## Done criteria
 
-- Как понять, что задача завершена.
+- Запуск вечернего ревью автоматически получает календарные события, сохраняет снимок и возвращает историю снимков и нерассмотренные наблюдения.
+- Модель получает структурированные данные для анализа без ручного вызова вспомогательных скриптов.
+- Новые наблюдения и изменения правил остаются предложениями до явного подтверждения пользователя.
+- Интеграционный тест доказывает полный цикл и предотвращает регрессию.
 
 ## Agent handoff
 
