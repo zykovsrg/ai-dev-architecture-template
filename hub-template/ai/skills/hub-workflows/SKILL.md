@@ -153,11 +153,13 @@ headings defined below.
 Under `## Текущий календарь`, render the schedule for the requested date: read
 it with `read_events` over exactly the calendar IDs in the local allowlist,
 using the calendar timezone, and render one line per event as
-`<HH:MM>–<HH:MM> — <title>; календарь: <name>` in start order. State plainly
-that the day holds no event when it holds none. If the MCP is unreachable, the
-permission is missing, or the allowlist is empty, say which of those it is
-instead of rendering an empty schedule; never claim a free day you could not
-read.
+`- <HH:MM>–<HH:MM> — <title>` in start order. Render each event as a separate
+bullet; include the calendar name in parentheses only when it helps distinguish
+events. State plainly that the day holds no event when it holds none. If the MCP
+is unreachable, the permission is missing, or the allowlist is empty, say which
+of those it is instead of rendering an empty schedule; never claim a free day
+you could not read. Render the calendar event title verbatim. Do not shorten,
+translate, group, or paraphrase it.
 
 Under `## Конфликты`, list only grounded conflicts: overlapping calendar
 events, or an actionable task with an exact `Запланировано:` range that overlaps
@@ -179,7 +181,8 @@ another day-plan section.
 Under `## Предлагаемый календарь`, render one chronological day view that keeps
 each current calendar event and adds proposed blocks for the highest-ranked
 unscheduled or overdue tasks where a free window is available. Render each
-line as `<HH:MM>–<HH:MM> — <title>; статус: <сохраняется|предлагается>;
+entry, kept or proposed, as a separate bullet: `- <HH:MM>–<HH:MM> — <title>;
+статус: <сохраняется|предлагается>;
 основание: <calendar|canonical-path>; duration: stated|estimate`. A proposed
 duration must use a stated duration from its canonical task record when one is
 available; otherwise mark it `estimate`. Apply learned rules and active numeric
@@ -187,7 +190,9 @@ goal progress as planning constraints, but do not add a separate section for
 them. If a task cannot fit, name it at the end of this section as `Не вошло`;
 do not invent a time or remove a current event. The proposed calendar is
 read-only and never becomes a Calendar change without its separate preview and
-confirmation.
+confirmation. For a retained event, use its calendar title verbatim. For a new
+block, use the exact canonical task title; do not create a summary or a new
+phrase for either kind of entry.
 
 ### Evening review format
 

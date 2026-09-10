@@ -72,6 +72,10 @@ hub_workflows_skill_contract_valid() {
     [[ "$text" == *'## Текущий календарь'*'## Конфликты'*'## Задачи вне календаря'*'## Просроченные задачи'*'## Предлагаемый календарь'* ]] &&
     [[ "$text" == *'Do not repeat a task in another day-plan section'* ]] &&
     [[ "$text" == *'duration: stated|estimate'* ]] &&
+    [[ "$text" == *'each event as a separate bullet'*'`- <HH:MM>–<HH:MM> — <title>`'* ]] &&
+    [[ "$text" == *'every entry, kept or proposed, as a separate bullet'* ]] &&
+    [[ "$text" == *'title verbatim'*'Do not shorten, translate, group, or paraphrase it'* ]] &&
+    [[ "$text" == *'exact canonical task title'* ]] &&
     [[ "$text" == *'render the schedule for the requested date'*'read_events'* ]] &&
     [[ "$text" == *'never claim a free day you could not read'* ]] &&
     [[ "$text" == *'## Сделано'*'## Перенос'*'## Ожидания'*'## Follow-ups'*'## Завтрашний Calendar'*'## Три главных действия завтра'*'## Подтвердить'* ]] &&

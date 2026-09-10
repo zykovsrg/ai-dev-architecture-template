@@ -334,8 +334,11 @@ calendar, grounded conflicts, actionable project tasks that are not in that
 calendar, overdue actionable tasks, and one proposed calendar. A task appears
 in only one task section. The proposed calendar retains existing events and
 labels every suggested block's duration as stated or estimated; it lists work
-that does not fit instead of silently dropping it. Learned rules and numeric
-goal progress constrain the proposal without creating extra chat sections.
+that does not fit instead of silently dropping it. Both calendars are
+chronological bullet lists: one `time — event` entry per line. Learned rules
+and numeric goal progress constrain the proposal without creating extra chat
+sections. Existing calendar titles are copied verbatim; proposed new blocks use
+the exact title of their canonical task and never a generated summary.
 
 The fixed six-step contract is:
 
