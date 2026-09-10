@@ -1,5 +1,15 @@
 # Changelog
 
+### 2026-09-10 — Единый формат дневного плана
+
+- Change: `hub-workflows` теперь выводит текущий календарь, конфликты, задачи
+  вне календаря, просроченные задачи и единый предлагаемый календарь. Формат
+  проверяет smoke-тест; шаблон и работающий хаб обновлены.
+- Impact: агент не повторяет задачи между разделами, сохраняет события и явно
+  помечает оценённую длительность предложенного блока.
+- Manual checks: `bash scripts/check-consistency.sh`; статическая проверка
+  контракта `hub_workflows_skill_contract_valid`; `git diff --check`.
+
 ### 2026-09-10 — Refactor, deployment and closure context
 
 - Local main includes refactor merge fbd4c1d and combined release d40ab25.

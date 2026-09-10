@@ -329,6 +329,14 @@ the optional Bash adapter only validates mechanical scope, paths, and recorder
 JSON. Neither layer applies project, task, knowledge, waiting, deadline,
 Calendar, or vault changes.
 
+The day-plan chat output has exactly five sections in this order: current
+calendar, grounded conflicts, actionable project tasks that are not in that
+calendar, overdue actionable tasks, and one proposed calendar. A task appears
+in only one task section. The proposed calendar retains existing events and
+labels every suggested block's duration as stated or estimated; it lists work
+that does not fit instead of silently dropping it. Learned rules and numeric
+goal progress constrain the proposal without creating extra chat sections.
+
 The fixed six-step contract is:
 
 1. Receive exactly one user-selected source: pasted text, a selected local

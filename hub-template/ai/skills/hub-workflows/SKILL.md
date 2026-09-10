@@ -144,32 +144,50 @@ headings defined below.
 
 `day-plan` renders these headings in this exact order:
 
-1. `## Сегодня: контекст`
-2. `## Три главных действия`
-3. `## Остальные действия`
-4. `## Ожидания и follow-up`
-5. `## Риски и сроки`
-6. `## Календарь`
-7. `## Нужны решения`
+1. `## Текущий календарь`
+2. `## Конфликты`
+3. `## Задачи вне календаря`
+4. `## Просроченные задачи`
+5. `## Предлагаемый календарь`
 
-Under `## Три главных действия`, render at most three ranked executable results,
-not vague themes or waiting items. Number them `1.` through `3.` and use
-`<result> — <project-id>; срок: <YYYY-MM-DD|нет>; источник: <canonical-path>`.
-Prefer scheduling those three actions inside the user's peak focus window,
-09:00-13:00 local time, when the calendar leaves room. This is a soft
-preference, not a constraint: never drop, reorder, or delay a grounded item
-only to fit the window, and never invent a time for an item that has none.
-Put remaining actionable work under `## Остальные действия`. Keep waiting and
-due or overdue follow-ups together under `## Ожидания и follow-up`; put unknown
-states, missing waiting fields, blockers, and dated risks under `## Риски и
-сроки`. Under `## Календарь`, render the schedule for the requested date: read
+Under `## Текущий календарь`, render the schedule for the requested date: read
 it with `read_events` over exactly the calendar IDs in the local allowlist,
 using the calendar timezone, and render one line per event as
 `<HH:MM>–<HH:MM> — <title>; календарь: <name>` in start order. State plainly
 that the day holds no event when it holds none. If the MCP is unreachable, the
 permission is missing, or the allowlist is empty, say which of those it is
 instead of rendering an empty schedule; never claim a free day you could not
-read. Ranking is read-only and never becomes a proposal by itself.
+read.
+
+Under `## Конфликты`, list only grounded conflicts: overlapping calendar
+events, or an actionable task with an exact `Запланировано:` range that overlaps
+a calendar event or another exact task range. Cite both records. Do not infer a
+conflict from a task without an exact time range; report `- Нет.` when no
+grounded conflict exists.
+
+Under `## Задачи вне календаря`, render ranked actionable tasks from the
+confirmed scope that have neither an exact `Запланировано:` range on the
+requested date nor a grounded calendar match. Exclude overdue tasks from this
+section. Use `<result> — <project-id>; срок: <YYYY-MM-DD|нет>; источник:
+<canonical-path>`.
+
+Under `## Просроченные задачи`, render every actionable task whose due date is
+before the requested date as `<result> — <project-id>; срок: <YYYY-MM-DD>;
+просрочено: <N> дн.; источник: <canonical-path>`. Do not repeat a task in
+another day-plan section.
+
+Under `## Предлагаемый календарь`, render one chronological day view that keeps
+each current calendar event and adds proposed blocks for the highest-ranked
+unscheduled or overdue tasks where a free window is available. Render each
+line as `<HH:MM>–<HH:MM> — <title>; статус: <сохраняется|предлагается>;
+основание: <calendar|canonical-path>; duration: stated|estimate`. A proposed
+duration must use a stated duration from its canonical task record when one is
+available; otherwise mark it `estimate`. Apply learned rules and active numeric
+goal progress as planning constraints, but do not add a separate section for
+them. If a task cannot fit, name it at the end of this section as `Не вошло`;
+do not invent a time or remove a current event. The proposed calendar is
+read-only and never becomes a Calendar change without its separate preview and
+confirmation.
 
 ### Evening review format
 

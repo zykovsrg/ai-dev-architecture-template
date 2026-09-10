@@ -69,8 +69,9 @@ hub_workflows_skill_contract_valid() {
     [[ "$text" == *'guarded `hub_calendar` MCP'*'read tools'* ]] &&
     [[ "$text" == *'Never call `preview_change` or `apply_change` here'* ]] &&
     [[ "$text" == *'vault migration'*'session audit'* ]] &&
-    [[ "$text" == *'## Сегодня: контекст'*'## Три главных действия'*'## Остальные действия'*'## Ожидания и follow-up'*'## Риски и сроки'*'## Календарь'*'## Нужны решения'* ]] &&
-    [[ "$text" == *'at most three ranked executable results'* ]] &&
+    [[ "$text" == *'## Текущий календарь'*'## Конфликты'*'## Задачи вне календаря'*'## Просроченные задачи'*'## Предлагаемый календарь'* ]] &&
+    [[ "$text" == *'Do not repeat a task in another day-plan section'* ]] &&
+    [[ "$text" == *'duration: stated|estimate'* ]] &&
     [[ "$text" == *'render the schedule for the requested date'*'read_events'* ]] &&
     [[ "$text" == *'never claim a free day you could not read'* ]] &&
     [[ "$text" == *'## Сделано'*'## Перенос'*'## Ожидания'*'## Follow-ups'*'## Завтрашний Calendar'*'## Три главных действия завтра'*'## Подтвердить'* ]] &&
