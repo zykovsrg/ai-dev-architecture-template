@@ -31,6 +31,13 @@ projects. Do not read project code, knowledge records, credentials, or arbitrary
 files in this route. The user does not need to confirm each project read; every
 write still uses the workflow's explicit proposal confirmation.
 
+A request such as “проверь эту сессию”, “разбери работу агента”, or
+“самопроверка сессии” is project-specific. Select and confirm the project
+first, then invoke `hub-session-review` for the current session or the exact
+session/range named by the user. If the requested history is unavailable,
+record insufficient evidence and ask only for the missing session selection or
+access; do not read unrelated history.
+
 ## Read allowlist and phases
 
 Apply these phases only to a project-specific request.

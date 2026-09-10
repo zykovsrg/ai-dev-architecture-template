@@ -2,6 +2,9 @@
 # Create local, confirmable proposals for edits to the generated Obsidian board.
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+source "$SCRIPT_DIR/lib/calendar-date.sh"
+
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }
 is_absolute() { [[ "$1" = /* ]]; }
 inside() { [[ "$1" == "$2" || "$1" == "$2"/* ]]; }
@@ -191,7 +194,7 @@ source_record() {
       [ "$id" = "$wanted_id" ] || return 1
       status="$(awk '/^## / {exit} /^Status: / {print substr($0, 9); exit}' "$source")"
       title="$(awk '/^## Goal[[:space:]]*$/ {goal=1; next} goal && /^## / {exit} goal && NF {print; exit}' "$source" | sed 's/[[:space:]]*$//')"
-      due="$(sed -nE 's/^[[:space:]]*due:[[:space:]]*([0-9]{4}-[0-9]{2}-[0-9]{2})[[:space:]]*$/\1/p' "$source" | head -n 1)"
+      due="$(sed -nE 's/^[[:space:]]*(Due|due):[[:space:]]*([0-9]{4}-[0-9]{2}-[0-9]{2})[[:space:]]*$/\2/p' "$source" | head -n 1)"
       printf '%s\t%s\t%s\n' "$status" "$title" "$due"
       ;;
     future-tasks.md)
@@ -199,7 +202,7 @@ source_record() {
         function flush() { if (entry && id == wanted) { sub(/[[:space:]]*$/, "", title); print status "\t" title "\t" due; count++ } }
         /^### / { flush(); entry=1; id=$2; status=""; due=""; title=$0; sub(/^### [^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]*/, "", title); next }
         entry && /^Status: / { status=substr($0, 9); next }
-        entry && /^[[:space:]]*due:[[:space:]]*[0-9]{4}-[0-9]{2}-[0-9]{2}[[:space:]]*$/ { due=$0; sub(/^[[:space:]]*due:[[:space:]]*/, "", due); sub(/[[:space:]]*$/, "", due) }
+        entry && /^[[:space:]]*(Due|due):[[:space:]]*[0-9]{4}-[0-9]{2}-[0-9]{2}[[:space:]]*$/ { due=$0; sub(/^[[:space:]]*(Due|due):[[:space:]]*/, "", due); sub(/[[:space:]]*$/, "", due) }
         END { flush(); if (count != 1) exit 1 }
       ' "$source")" || return 1
       printf '%s\n' "$result"
@@ -232,6 +235,9 @@ load_known_cards() {
     # it; a lexical ai/../ path must never be hashed or parsed.
     source_is_registered_task_file "$source" "$project_index" || die "manifest source is not a registered task file: $task_id"
     source="${PROJECT_PATHS[$project_index]}/ai/$(basename "$source")"
+    case "$(basename "$source")" in current-task.md) record_kind=current;; future-tasks.md) record_kind=future;; paused-tasks.md) record_kind=paused;; esac
+    python3 "$SCRIPT_DIR/task_records.py" read --file "$source" --project-id "$project_id" --kind "$record_kind" >/dev/null \
+      || die "invalid canonical task record: $task_id"
     [[ "$source_sha" =~ ^[0-9a-f]{64}$ ]] || die "invalid manifest source hash: $task_id"
     actual_sha="$(hash_file "$source")"; [ "$actual_sha" = "$source_sha" ] || die "canonical source differs from manifest: $source"
     record="$(source_record "$source" "$task_id")" || die "manifest task is not a unique canonical record: $task_id"
@@ -342,7 +348,7 @@ promotion_operation_json() {
   old_status="$(awk '/^## / {exit} /^Status: / {print substr($0, 9); exit}' "$current")"
   old_id="$(sed -n '/^## /q; /^Task ID: /s/^Task ID: //p' "$current" | head -n 1)"; old_id="$(trim "$old_id")"
   old_title="$(awk '/^## Goal[[:space:]]*$/ {goal=1; next} goal && /^## / {exit} goal && NF {print; exit}' "$current" | sed 's/[[:space:]]*$//')"
-  old_due="$(sed -nE 's/^[[:space:]]*due:[[:space:]]*([0-9]{4}-[0-9]{2}-[0-9]{2})[[:space:]]*$/\1/p' "$current" | head -n 1)"
+  old_due="$(sed -nE 's/^[[:space:]]*(Due|due):[[:space:]]*([0-9]{4}-[0-9]{2}-[0-9]{2})[[:space:]]*$/\2/p' "$current" | head -n 1)"
   replaced='null'; preserve_change='[]'
   case "$old_status" in
     active|ready|in_progress|waiting|blocked|review|paused) preserved_status=paused;;
@@ -631,9 +637,9 @@ set_due_record() {
   temp="$(temp_for_source "$source")"; base="$(basename "$source")"
   case "$base" in
     current-task.md)
-      DUE="$due" perl -0pi -e 's/^[ \t]*due:[^\n]*(?:\n|\z)//mg; $_ .= "\n" if $ENV{DUE} ne q{} && $_ !~ /\n\z/; $_ .= "due: $ENV{DUE}\n" if $ENV{DUE} ne q{}' "$temp";;
+      DUE="$due" perl -0pi -e 's/^[ \t]*(?:Due|due):[^\n]*(?:\n|\z)//mg; $_ .= "\n" if $ENV{DUE} ne q{} && $_ !~ /\n\z/; $_ .= "Due: $ENV{DUE}\n" if $ENV{DUE} ne q{}' "$temp";;
     future-tasks.md)
-      TASK_ID="$task_id" DUE="$due" perl -0pi -e 's{(^### \Q$ENV{TASK_ID}\E [^\n]*\n)(.*?)(?=^### |\z)}{my ($head, $body) = ($1, $2); $body =~ s/^[ \t]*due:[^\n]*(?:\n|\z)//mg; $body .= "\n" if length($body) && $body !~ /\n\z/; $body .= "due: $ENV{DUE}\n" if $ENV{DUE} ne q{}; $head . $body}mges' "$temp";;
+      TASK_ID="$task_id" DUE="$due" perl -0pi -e 's{(^### \Q$ENV{TASK_ID}\E [^\n]*\n)(.*?)(?=^### |\z)}{my ($head, $body) = ($1, $2); $body =~ s/^[ \t]*(?:Due|due):[^\n]*(?:\n|\z)//mg; $body .= "\n" if length($body) && $body !~ /\n\z/; $body .= "Due: $ENV{DUE}\n" if $ENV{DUE} ne q{}; $head . $body}mges' "$temp";;
     paused-tasks.md) [ -z "$due" ] || die "due dates are not supported for paused task: $task_id";;
   esac
 }
@@ -692,7 +698,7 @@ promote_to_active() {
   IFS=$'\t' read -r _ title due <<< "$record"
   mark_record_promoted "$source" "$task_id"
   printf 'Status: active\nTask ID: %s\n\n## Goal\n\n%s\n' "$task_id" "$title" > "$current_temp"
-  [ -z "$due" ] || printf '\ndue: %s\n' "$due" >> "$current_temp"
+  [ -z "$due" ] || printf '\nDue: %s\n' "$due" >> "$current_temp"
   PROMOTED_TASK_IDS+=("$(card_key "$project_id" "$task_id")"); PROMOTED_CURRENT_SOURCES+=("$current")
 }
 
@@ -719,7 +725,7 @@ create_future_record() {
   temp="$(temp_for_source "$source")"
   ! grep -Fq -- "$task_id" "$temp" || die "new Task ID already exists: $task_id"
   printf '\n### %s — %s\n\nStatus: %s\n' "$task_id" "$title" "$status" >> "$temp"
-  [ -z "$due" ] || printf 'due: %s\n' "$due" >> "$temp"
+  [ -z "$due" ] || printf 'Due: %s\n' "$due" >> "$temp"
 }
 
 # Every operation names the project it belongs to, because a task ID alone no
@@ -736,13 +742,28 @@ apply_operations_to_temporary_files() {
     type="$(printf '%s' "$operation" | /usr/bin/jq -r '.operation')"
     case "$type" in
       rename) task_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.task_id')"; project_id="$(operation_project_id "$operation")"; to="$(printf '%s' "$operation" | /usr/bin/jq -r '.to')"; [ -n "$to" ] || die 'rename title is empty'; source="$(known_source_for "$project_id" "$task_id")"; rename_record "$source" "$task_id" "$to";;
-      set_due) task_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.task_id')"; project_id="$(operation_project_id "$operation")"; due="$(printf '%s' "$operation" | /usr/bin/jq -r '.to')"; [ -z "$due" ] || [[ "$due" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || die 'invalid due date'; if source="$(promoted_current_source_for "$(card_key "$project_id" "$task_id")")"; then :; else source="$(known_source_for "$project_id" "$task_id")"; fi; set_due_record "$source" "$task_id" "$due";;
+      set_due) task_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.task_id')"; project_id="$(operation_project_id "$operation")"; due="$(printf '%s' "$operation" | /usr/bin/jq -r '.to')"; [ -z "$due" ] || valid_calendar_date "$due" || die 'invalid due date'; if source="$(promoted_current_source_for "$(card_key "$project_id" "$task_id")")"; then :; else source="$(known_source_for "$project_id" "$task_id")"; fi; set_due_record "$source" "$task_id" "$due";;
       set_status) task_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.task_id')"; project_id="$(operation_project_id "$operation")"; to="$(printf '%s' "$operation" | /usr/bin/jq -r '.to')"; source="$(known_source_for "$project_id" "$task_id")"; set_status_record "$source" "$task_id" "$to";;
       promote_to_current) task_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.task_id')"; project_id="$(operation_project_id "$operation")"; source="$(known_source_for "$project_id" "$task_id")"; promote_to_active "$source" "$project_id" "$task_id" "$operation";;
       create_future) task_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.task_id')"; project_id="$(printf '%s' "$operation" | /usr/bin/jq -r '.project_id')"; title="$(printf '%s' "$operation" | /usr/bin/jq -r '.title')"; to="$(printf '%s' "$operation" | /usr/bin/jq -r '.status')"; due="$(printf '%s' "$operation" | /usr/bin/jq -r '.due')"; [ -n "$title" ] || die 'future task title is empty'; create_future_record "$task_id" "$project_id" "$title" "$to" "$due";;
       *) die "unsupported proposal operation: $type";;
     esac
   done < <(/usr/bin/jq -c '.operations[]' "$PROPOSAL")
+}
+
+requires_calendar_confirmation() {
+  local operation type due
+  while IFS= read -r operation; do
+    type="$(printf '%s' "$operation" | /usr/bin/jq -r '.operation')"
+    case "$type" in
+      set_due) return 0 ;;
+      create_future)
+        due="$(printf '%s' "$operation" | /usr/bin/jq -r '.due // empty')"
+        [ -z "$due" ] || return 0
+        ;;
+    esac
+  done < <(/usr/bin/jq -c '.operations[]' "$PROPOSAL")
+  return 1
 }
 
 validate_temporary_records() {
@@ -791,6 +812,10 @@ replace_named_source_files() {
 apply() {
   trap cleanup_apply_state EXIT
   require_safe_paths; load_projects; load_scope_and_validate_vault; load_project_boards; load_proposal; verify_board_hash; verify_manifest_hash; verify_manifest_sources_are_registered; verify_every_affected_source_hash; load_known_cards
+  if requires_calendar_confirmation; then
+    echo 'calendar-confirmation-required: dated task changes must use the joint task-and-calendar preview' >&2
+    exit 3
+  fi
   apply_operations_to_temporary_files; validate_temporary_records
   GENERATOR="$(cd "$(dirname "$0")" && pwd -P)/generate-obsidian-projects-kanban.sh"
   [ -f "$GENERATOR" ] && [ ! -L "$GENERATOR" ] || die 'missing or unsafe generator'

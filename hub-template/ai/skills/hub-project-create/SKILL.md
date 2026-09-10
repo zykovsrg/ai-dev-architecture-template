@@ -44,7 +44,13 @@ confirmation.
 Show one complete preview after the checks succeed. It must include the name,
 ID, type, canonical path, exactly six `<path>/ai/` files, the empty knowledge
 scaffold, the draft card, the draft registry entry, and the active-project
-selection. Use this shape:
+selection decision. Before the preview, inspect `git status --short --
+ai/active-project.md` without writing. Preserve the current selection by
+default: do not overwrite it merely because a new project is created. Offer an
+explicit choice to switch to the new project. If that file has uncommitted
+changes, warn that switching would overwrite them.
+
+Use this shape:
 
 ```text
 Режим: routing
@@ -54,7 +60,9 @@ ID: <project-id>
 Путь: <canonical-path>
 
 Будет создано: папка <canonical-path>/ai/; шесть файлов памяти; пустой
-knowledge-scaffold; карточка; запись в реестре; активный проект; локальный Git.
+knowledge-scaffold; карточка; запись в реестре; локальный Git.
+Текущий активный проект будет сохранён. Чтобы переключиться на новый, добавьте
+к подтверждению: «и переключить активный проект».
 При доступной авторизации GitHub: приватный репозиторий <project-id>, первый
 commit и push ветки main. Иначе результат будет отмечен как pending-sync.
 Не будут созданы: код, зависимости, сервисы, AGENTS.md, CLAUDE.md или общие skills.
@@ -111,9 +119,16 @@ Path: <canonical-path>
 Confirmation required on new chat: yes
 ```
 
+When `ai/active-project.md` has uncommitted changes, add this warning to the
+preview: `Warning: ai/active-project.md has uncommitted changes. Switching the
+active project would overwrite them and requires the explicit phrase «и
+переключить активный проект».`
+
 The quoted Russian confirmation is the one explicit confirmation. Wait for it
 to repeat both `<project-id>` and `<canonical-path>` exactly. Do not create any
 directory, card, registry entry, or active-project record before that reply.
+Only change `ai/active-project.md` when the user explicitly included
+«и переключить активный проект» in the creation confirmation.
 The preview also explicitly excludes `ai/architecture.md`,
 `ai/external-tools.md`, project `AGENTS.md`, project `CLAUDE.md`, shared skills,
 `ai/cross-project-signals.md`, and `ai/archive/`.
@@ -146,9 +161,9 @@ The preview also explicitly excludes `ai/architecture.md`,
 5. Run `scripts/check-hub-registry.sh`. On a failure, stop and report the
    validator output. Do not update active-project selection or invoke a
    project workflow.
-6. Only after successful validation, update `ai/active-project.md` with the
-   confirmed ID and canonical path. `active-project.md only after successful validation`;
-   it is a selection record, not permission for a future chat.
+6. Only after successful validation and the explicit switching phrase, update
+   `ai/active-project.md` with the confirmed ID and canonical path. It is a
+   selection record, not permission for a future chat.
 7. Initialize a local Git repository and commit only the approved scaffold.
    If authenticated GitHub CLI access is available, verify that `<project-id>`
    is unused, create a private repository with that exact name, add `origin`,

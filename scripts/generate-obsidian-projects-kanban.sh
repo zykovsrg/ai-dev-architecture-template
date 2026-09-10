@@ -2,6 +2,8 @@
 # Generate read-only Obsidian task and project views. Source records remain canonical.
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+
 die() { printf '%s\n' "error: $*" >&2; exit 1; }
 is_absolute() { [[ "$1" = /* ]]; }
 inside() { [[ "$1" == "$2" || "$1" == "$2"/* ]]; }
@@ -26,7 +28,7 @@ current_task_id() {
   [[ "${ids[0]}" =~ ^TASK-[0-9]{8}-[0-9]{3}$ || "${ids[0]}" =~ ^FT-[0-9]{8}-[0-9]+$ || "${ids[0]}" =~ ^TASK-${project_id}-[0-9]{8}-[0-9]{3}$ ]] || die "invalid Task ID for project $project_id: $file"
   printf '%s' "${ids[0]}"
 }
-safe_due() { sed -nE 's/^[[:space:]]*due:[[:space:]]*([0-9]{4}-[0-9]{2}-[0-9]{2})[[:space:]]*$/\1/p' "$@" | sort -u | head -n 1; }
+safe_due() { sed -nE 's/^[[:space:]]*(Due|due):[[:space:]]*([0-9]{4}-[0-9]{2}-[0-9]{2})[[:space:]]*$/\2/p' "$@" | sort -u | head -n 1; }
 table_cell() { local text="$1"; text=${text//|/\\|}; text=${text//$'\n'/ }; printf '%s' "$text"; }
 
 future_records() {
@@ -46,7 +48,7 @@ future_records() {
     }
     /^### / { flush(); entry=0; state=""; due=""; title=""; next }
     entry && /^Status: / { state=substr($0, 9); next }
-    entry && /^[[:space:]]*due:[[:space:]]*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9][[:space:]]*$/ { due=$0; sub(/^[[:space:]]*due:[[:space:]]*/, "", due); sub(/[[:space:]]*$/, "", due) }
+    entry && /^[[:space:]]*(Due|due):[[:space:]]*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9][[:space:]]*$/ { due=$0; sub(/^[[:space:]]*(Due|due):[[:space:]]*/, "", due); sub(/[[:space:]]*$/, "", due) }
     END { flush(); exit invalid }
   ' "$1" | sed 's/[[:space:]]*$//'
 }
@@ -140,6 +142,9 @@ for id in "${IDS[@]}"; do
   [ -f "$card" ] && [ ! -L "$card" ] || die "missing or symlinked project card: $id"
   current_file="$path/ai/current-task.md"; future_file="$path/ai/future-tasks.md"; paused_file="$path/ai/paused-tasks.md"
   for source in "$current_file" "$future_file" "$paused_file"; do [ -f "$source" ] && [ ! -L "$source" ] || die "missing or symlinked allowed task file: $id"; validate_task_source "$source"; done
+  python3 "$SCRIPT_DIR/task_records.py" --validate-project-dates \
+    --current-file "$current_file" --future-file "$future_file" --paused-file "$paused_file" >/dev/null \
+    || die "invalid task date: $id"
   name="$(read_field "$card" Name)"; [ -n "$name" ] || name=$id
   primary_archiproject="$(read_field "$card" primary_archiproject)"
   archiproject_name="$(resolve_archiproject_group "$primary_archiproject")"
@@ -248,9 +253,16 @@ if [ -e "$TARGET_MANIFEST" ] || [ -e "$TARGET_OVERVIEW" ]; then
   [ "$recorded_overview" = "$(hash_file "$TARGET_OVERVIEW")" ] || die 'proposal pending: manual project overview edit detected'
   if [ "$manifest_format" = 4 ] || [ "$manifest_has_project_boards" = true ]; then
     for i in "${!BOARD_TARGETS[@]}"; do
-      board_file="$TARGET_DIR/${BOARD_TARGETS[$i]}"; [ -f "$board_file" ] || die 'proposal pending: generated view set is incomplete'
+      board_file="$TARGET_DIR/${BOARD_TARGETS[$i]}"
       recorded_board="$(/usr/bin/jq -r --arg id "${IDS[$i]}" '[.project_boards[] | select(.project_id == $id) | .sha256] | if length == 1 then .[0] else empty end' "$TARGET_MANIFEST")"
-      [ -n "$recorded_board" ] || die 'proposal pending: generated manifest is invalid'
+      # A project registered after the last generated write has no manifest entry
+      # yet. That is a new board, not a tampered one, so it may be created here.
+      # It must still not already exist on disk outside the generated manifest.
+      if [ -z "$recorded_board" ]; then
+        [ ! -e "$board_file" ] || die 'proposal pending: manual project board exists outside generated manifest'
+        continue
+      fi
+      [ -f "$board_file" ] || die 'proposal pending: generated view set is incomplete'
       if [ "$REPLACE_CONFIRMED_BOARD" -eq 0 ] && [ "$recorded_board" != "$(hash_file "$board_file")" ]; then
         die 'proposal pending: manual task board edit detected; run obsidian-task-sync.sh scan to create a proposal'
       fi

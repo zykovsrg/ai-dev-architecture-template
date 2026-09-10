@@ -52,6 +52,7 @@ Hub-owned files are the routing inventory:
   tags, and card.
 - `ai/project-cards/<id>.md` holds compact hub metadata for that ID.
 - `ai/archiprojects.md` is the canonical hub-owned archiproject registry.
+- `ai/goal-log.md` is the canonical hub-owned progress log for numeric goals.
 - `ai/active-project.md` is a convenience record, never a new-chat permission.
 - `ai/cross-project-signals.md` holds sanitized, explicitly scoped signals.
 
@@ -198,10 +199,14 @@ validation, use these central hub-owned skills. They remove any need to copy
 - `hub-task-switch` — changes an unfinished task only after a separate explicit
   confirmation, using only the selected project's `ai/` memory.
 - `hub-task-finish` — verifies the selected project's task and, when its check
-  finds no blocker, cleans that project's task memory and saves the result in the
-  same step; only a task with a schedule keeps the joint task-and-calendar
-  confirmation. After its completion check it may offer, but never start, a
-  focused `hub-knowledge-review`.
+  finds no blocker, first saves an evidence-based review of the current agent
+  session, then cleans task memory and saves the result. Only a task with a
+  schedule keeps the joint task-and-calendar confirmation. It may offer, but
+  never start, a focused `hub-knowledge-review`.
+- `hub-session-review` — reviews a completed task's current session or an
+  explicitly selected session. Reviews live only in the selected project's
+  `ai/session-reviews/`; findings are proposals and require explicit approval
+  before any improvement is applied.
 - `hub-knowledge-capture` — creates or updates one explicitly selected record in
   the confirmed project's local `knowledge/` tree after exact confirmation.
 - `hub-knowledge-review` — checks one explicit project-local record, folder, or
@@ -361,6 +366,19 @@ The fixed six-step contract is:
 There is no apply mode, automatic write, Calendar MCP operation, vault
 migration, or session audit in this workflow. A generated proposal has no
 authority by itself and is not a durable queue item.
+
+## Goal Progress And Workflow Learning
+
+`hub-goal-progress` is the only writer of `ai/goal-log.md`. It appends one
+user-confirmed entry and then uses `scripts/count-goal-progress.sh` to report
+progress. Amounts are never inferred from a task or a calendar event.
+
+`hub-workflows` keeps confirmed task/calendar learning in
+`ai/workflow-observations.md` and `ai/workflow-context.md`.
+`scripts/check-workflow-memory.sh` validates their stored format. Temporary
+calendar snapshots belong under `ai/tmp/calendar-snapshots/` and are written by
+`scripts/snapshot-calendar.sh`; they are not task memory and do not authorize
+a task or calendar change.
 
 ## Cross-Project Signals
 
