@@ -25,6 +25,11 @@ class LiveHubMergeTests(unittest.TestCase):
         self.assertIn("snapshot-calendar.sh", workflows)
         self.assertIn("snapshot-calendar.sh", calendar)
 
+    def test_task_close_reviews_before_memory_clear(self):
+        finish = template("ai/skills/hub-task-finish/SKILL.md")
+        self.assertLess(finish.index("hub-session-review"), finish.index("clearing task context"))
+        self.assertIn("deterministic", finish)
+
 
 if __name__ == "__main__":
     unittest.main()
