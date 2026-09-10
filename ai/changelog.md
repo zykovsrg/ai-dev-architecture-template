@@ -1,5 +1,16 @@
 # Changelog
 
+### 2026-09-10 — Refactor, deployment and closure context
+
+- Local main includes refactor merge fbd4c1d and combined release d40ab25.
+  The parent working hub was updated; no remote push is evidenced.
+- User requested closure and declined additional regression verification.
+  Full integration success and complete learning preservation are not proven.
+- Durable outcome and document map: `ai/refactor-handoff-2026-09-10.md`.
+  Session review: `ai/session-reviews/2026-09-10-refactor-closure.md`.
+- Corrected omitted memory capture after an erroneous refusal to close because
+  the current-task template was empty. No task ID was invented.
+
 Последние заметные изменения проекта.
 
 Храни последние 2–4 недели. Старые записи переноси в `ai/archive/`.
@@ -13,6 +24,12 @@
 - Manual checks:
 
 ## Текущий changelog
+
+### 2026-09-05 — Хабовое закрытие задачи тоже идёт без второго подтверждения
+
+- Change: `hub-task-finish` после проверки сразу пишет журнал изменений, решения, будущие задачи, чистит карточку задачи и сохраняет результат. Отдельное подтверждение убрано; исключение — задача с расписанием, где закрытие меняет и календарь: там остаётся один общий экран подтверждения. Правило синхронизировано в `hub-template/`, архитектура хаба повышена до 1.12.
+- Impact: Хабовый путь закрытия совпал с проектным. Замечание: копии `task-finish` внутри проектов в хабовом сценарии не запускаются, поэтому правка проектного скилла касается только отдельных установок шаблона.
+- Manual checks: `scripts/check-consistency.sh`, `scripts/hub-smoke-test.sh`, `scripts/check-hub-registry.sh`.
 
 ### 2026-09-05 — Закрытие задачи идёт без второго подтверждения
 

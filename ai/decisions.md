@@ -1,5 +1,19 @@
 # Decisions
 
+### 2026-09-10 — Refactor scope and approval boundaries
+
+Status: active
+
+Decision: Centralize generic project rules in the hub; preserve task/calendar
+learning and goal workflows. Add session review at closure and on request;
+apply improvements only after user confirmation. Codex scheduled automation
+is not the requested self-learning mechanism. Use Astra for design/plans and
+Terra or Luna for economical implementation/review when actually available.
+
+Impact: Application testing is out of audit scope. User declined extra
+regression checks after deployment; this does not establish that checks passed.
+See `ai/refactor-handoff-2026-09-10.md` for evidence and remaining concerns.
+
 Важные активные архитектурные, продуктовые, workflow-решения и решения по модели данных конкретного проекта.
 
 Не используй этот файл для мелких багфиксов, косметических правок, обычной истории изменений или решений самого шаблона AI-архитектуры.
@@ -31,8 +45,9 @@ Why: Второе подтверждение ничего не проверял�
 незакрытыми, а изменения — несохранёнными.
 
 Impact: Отчёт о закрытии обязан перечислять все автоматические записи и коммит.
-Хабовый `hub-task-finish` сохраняет своё подтверждение как границу безопасности
-хаба и этим решением не отменяется.
+То же правило действует в хабовом `hub-task-finish`. Единственное исключение —
+задача с расписанием: её закрытие меняет ещё и календарь, поэтому там остаётся
+один общий экран подтверждения памяти и события.
 
 ### 2026-09-03 — Задача с расписанием и её событие подтверждаются вместе
 
