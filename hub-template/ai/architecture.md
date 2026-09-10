@@ -367,18 +367,37 @@ There is no apply mode, automatic write, Calendar MCP operation, vault
 migration, or session audit in this workflow. A generated proposal has no
 authority by itself and is not a durable queue item.
 
-## Goal Progress And Workflow Learning
+## Goal Progress
 
-`hub-goal-progress` is the only writer of `ai/goal-log.md`. It appends one
-user-confirmed entry and then uses `scripts/count-goal-progress.sh` to report
-progress. Amounts are never inferred from a task or a calendar event.
+Numeric goals live in `ai/archiprojects.md` as `kind: goal` blocks with
+`target`, `unit`, and `due`. Their progress lives in the canonical
+`ai/goal-log.md`, one line per event: date, goal id, amount in the goal's unit,
+optional project, optional note. Adding a goal is a registry change only; the
+counter, the evening question, and the weekly figures follow from it with no
+further edit.
 
-`hub-workflows` keeps confirmed task/calendar learning in
-`ai/workflow-observations.md` and `ai/workflow-context.md`.
-`scripts/check-workflow-memory.sh` validates their stored format. Temporary
-calendar snapshots belong under `ai/tmp/calendar-snapshots/` and are written by
-`scripts/snapshot-calendar.sh`; they are not task memory and do not authorize
-a task or calendar change.
+`scripts/count-goal-progress.sh` is the only computation of progress, pace, and
+forecast, and the only validator of the log. Workflows render its output
+verbatim and never recompute it. `hub-goal-progress` is the only writer of
+`ai/goal-log.md`; it appends one user-confirmed line. An amount is never
+inferred from a task or calendar event.
+
+## Self-Learning Workflows
+
+`ai/workflow-observations.md` is the canonical append-only journal of workflow
+friction and calendar drift. `ai/workflow-context.md` contains the learned
+rules that `day-plan` and `evening-review` read, with at most 100 rules.
+`hub-workflows` writes either file only through a confirmed proposal. A rule
+matures at three repeats, or two within one week; `retire_rule` is the only way
+to remove it and also needs confirmation.
+
+`ai/tmp/calendar-snapshots/` and `ai/tmp/workflow-friction/` are non-canonical
+caches, written without confirmation and pruned after 14 days.
+`scripts/snapshot-calendar.sh` writes snapshots after calendar changes and at
+the start of day and evening reviews. `scripts/check-workflow-memory.sh`
+validates the two canonical learning files. These workflows remain independent
+of `hub-session-review`: a session review supplies improvement proposals but
+never automatically changes a rule or consumes a pending observation.
 
 ## Cross-Project Signals
 
