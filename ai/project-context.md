@@ -1,5 +1,14 @@
 # Project Context
 
+## Latest handoff — 2026-09-10
+
+The audit/refactor branch was merged into main (fbd4c1d). The combined hub
+release ends at d40ab25 and was installed into the parent personal hub.
+See `ai/refactor-handoff-2026-09-10.md` for the actual outcome, limitations,
+user decisions, and document map. Read it before claiming full verification
+or starting another architecture update. The current-task template is empty;
+this does not mean the conversation's work or closure review never happened.
+
 Этот файл уникален для проекта. Заполни его после установки шаблона в реальный проект.
 
 ## Что это за проект
