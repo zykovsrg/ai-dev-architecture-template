@@ -1,6 +1,6 @@
 import unittest
 
-from scripts.task_records import read_due, read_records
+from scripts.task_records import read_due, read_records, validate_project_dates
 
 
 class TaskRecordTests(unittest.TestCase):
@@ -62,6 +62,29 @@ Status: paused
 """)
         self.assertEqual(records[0]["status"], "paused")
         self.assertEqual(records[0]["title"], "Continue report")
+
+    def test_validates_all_project_due_dates_in_one_call(self):
+        due_dates = validate_project_dates(
+            """Status: active
+Task ID: TASK-demo-20260909-001
+
+## Goal
+
+Write report
+""",
+            """### FT-20260909-001 — Next report
+
+Status: ready
+due: 2026-09-11
+""",
+            """### 2026-09-09 — Resume report
+
+Task ID: TASK-demo-20260909-002
+
+Status: paused
+""",
+        )
+        self.assertEqual(due_dates, {"current": None, "future": "2026-09-11", "paused": None})
 
 
 if __name__ == "__main__":

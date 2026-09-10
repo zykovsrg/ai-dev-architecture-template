@@ -80,14 +80,49 @@ def read_records(project_id, kind, text):
     return records
 
 
+def validate_project_dates(current_text, future_text, paused_text):
+    return {
+        "current": read_due(current_text.splitlines()),
+        "future": read_due(future_text.splitlines()),
+        "paused": read_due(paused_text.splitlines()),
+    }
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("read", nargs="?")
-    parser.add_argument("--file", type=Path, required=True)
+    parser.add_argument("--file", type=Path)
+    parser.add_argument("--current-file", type=Path)
+    parser.add_argument("--future-file", type=Path)
+    parser.add_argument("--paused-file", type=Path)
+    parser.add_argument("--validate-project-dates", action="store_true")
     parser.add_argument("--project-id")
     parser.add_argument("--kind", choices=("current", "future", "paused"))
     args = parser.parse_args()
     try:
+        if args.current_file or args.future_file or args.paused_file:
+            if not (args.current_file and args.future_file and args.paused_file):
+                raise ValueError("incomplete_project_records")
+            if args.validate_project_dates:
+                due_dates = validate_project_dates(
+                    args.current_file.read_text(encoding="utf-8"),
+                    args.future_file.read_text(encoding="utf-8"),
+                    args.paused_file.read_text(encoding="utf-8"),
+                )
+                print(json.dumps({"due": due_dates}, ensure_ascii=False))
+                return 0
+            if not args.project_id:
+                raise ValueError("incomplete_project_records")
+            records = read_project_records(
+                args.project_id,
+                args.current_file.read_text(encoding="utf-8"),
+                args.future_file.read_text(encoding="utf-8"),
+                args.paused_file.read_text(encoding="utf-8"),
+            )
+            print(json.dumps({"records": records}, ensure_ascii=False))
+            return 0
+        if not args.file:
+            raise ValueError("missing_file")
         text = args.file.read_text(encoding="utf-8")
         if args.project_id and args.kind:
             print(json.dumps({"records": read_records(args.project_id, args.kind, text)}, ensure_ascii=False))

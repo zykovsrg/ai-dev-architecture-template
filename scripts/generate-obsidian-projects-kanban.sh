@@ -142,9 +142,9 @@ for id in "${IDS[@]}"; do
   [ -f "$card" ] && [ ! -L "$card" ] || die "missing or symlinked project card: $id"
   current_file="$path/ai/current-task.md"; future_file="$path/ai/future-tasks.md"; paused_file="$path/ai/paused-tasks.md"
   for source in "$current_file" "$future_file" "$paused_file"; do [ -f "$source" ] && [ ! -L "$source" ] || die "missing or symlinked allowed task file: $id"; validate_task_source "$source"; done
-  python3 "$SCRIPT_DIR/task_records.py" read --file "$current_file" --project-id "$id" --kind current >/dev/null || die "invalid current task record: $id"
-  python3 "$SCRIPT_DIR/task_records.py" read --file "$future_file" --project-id "$id" --kind future >/dev/null || die "invalid future task record: $id"
-  python3 "$SCRIPT_DIR/task_records.py" read --file "$paused_file" --project-id "$id" --kind paused >/dev/null || die "invalid paused task record: $id"
+  python3 "$SCRIPT_DIR/task_records.py" --validate-project-dates \
+    --current-file "$current_file" --future-file "$future_file" --paused-file "$paused_file" >/dev/null \
+    || die "invalid task date: $id"
   name="$(read_field "$card" Name)"; [ -n "$name" ] || name=$id
   primary_archiproject="$(read_field "$card" primary_archiproject)"
   archiproject_name="$(resolve_archiproject_group "$primary_archiproject")"
