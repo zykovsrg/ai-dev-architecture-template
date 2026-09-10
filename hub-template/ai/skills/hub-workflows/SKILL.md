@@ -277,3 +277,23 @@ proposal package can be applied only by its owning confirmed project workflow
 after one confirmation that names the unchanged named proposals still selected.
 Unknown, pending, failed, or ambiguous targets remain read-only proposals or
 questions.
+
+## Preserved learning lifecycle
+
+For every active numeric goal, `day-plan` renders the verbatim result of
+`count-goal-progress.sh`; evening review asks for a stated amount and offers a
+separate confirmed `goal_progress` proposal. `weekly-review` renders each
+goal's verbatim pace and forecast.
+
+Day plan renders every learned rule from `ai/workflow-context.md`, snapshots
+the requested calendar day with `snapshot-calendar.sh`, and records friction in
+the day's non-canonical cache. Evening review snapshots the same day, compares
+its complete snapshot history, reads unconsumed friction, and proposes one
+`add_observation` per grounded issue. It then marks that friction cache
+consumed. Snapshot and friction caches are pruned after 14 days.
+
+Weekly review reads the observation journal, groups repeated friction or
+calendar drift, and proposes `promote_rule` after three repeats or two in one
+week. It proposes `retire_rule` for a contradicted or excess rule. Before those
+proposals it runs `check-workflow-memory.sh`; failure blocks only rule changes.
+All observation, promotion, and retirement proposals require confirmation.
