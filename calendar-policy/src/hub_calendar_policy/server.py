@@ -46,7 +46,7 @@ class GuardedCalendarServer:
             "calendars": [
                 {"id": item.id, "name": item.name, "source": SOURCE, "writable": item.writable,
                  "timezone": item.timezone}
-                for item in calendars
+                for item in calendars if item.id in self._policy.allowed_calendar_ids
             ],
         }
 

@@ -13,6 +13,13 @@ Read only calendar IDs listed in the local allowlist. Never infer IDs from
 names. Every read response must state `Apple Calendar / EventKit` and its IANA
 timezone. Reads never change events.
 
+For a calendar read, call `list_calendar_metadata` first. Its returned entries
+are the authoritative list of available allowed calendars; use only their IDs
+in `read_events`. A successful empty response means the allowlist has no
+available calendar. Do not report an empty allowlist when this call was not
+made or failed: state instead whether the calendar bridge is unavailable or
+permission was denied.
+
 Для создания и явного переименования используй название
 `категория/проект/задача`. Каждая часть обязательна, набрана строчными
 буквами, а `/` не окружён пробелами. Предпочитай категории `маша`,

@@ -76,7 +76,9 @@ hub_workflows_skill_contract_valid() {
     [[ "$text" == *'every entry, kept or proposed, as a separate bullet'* ]] &&
     [[ "$text" == *'title verbatim'*'Do not shorten, translate, group, or paraphrase it'* ]] &&
     [[ "$text" == *'exact canonical task title'* ]] &&
-    [[ "$text" == *'render the schedule for the requested date'*'read_events'* ]] &&
+    [[ "$text" == *'render the schedule for the requested date'*'list_calendar_metadata'*'read_events'* ]] &&
+    [[ "$text" == *'Never call `read_events` before a successful `list_calendar_metadata` response'* ]] &&
+    [[ "$text" == *'Do not report an empty allowlist without a successful metadata response'* ]] &&
     [[ "$text" == *'never claim a free day you could not read'* ]] &&
     [[ "$text" == *'## Сделано'*'## Перенос'*'## Ожидания'*'## Follow-ups'*'## Завтрашний Calendar'*'## Три главных действия завтра'*'## Подтвердить'* ]] &&
     [[ "$text" == *'## Архипроекты'*'### <archiproject-id> — <name>'*'#### Детали проектов'*'## Три результата недели'*'## Нужны решения'* ]] &&

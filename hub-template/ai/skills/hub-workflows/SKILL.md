@@ -150,15 +150,17 @@ headings defined below.
 4. `## Просроченные задачи`
 5. `## Предлагаемый календарь`
 
-Under `## Текущий календарь`, render the schedule for the requested date: read
-it with `read_events` over exactly the calendar IDs in the local allowlist,
-using the calendar timezone, and render one line per event as
+Under `## Текущий календарь`, render the schedule for the requested date:
+first call `list_calendar_metadata`. Use exactly the IDs from its successful
+response in `read_events`, using the calendar timezone, and render one line per event as
 `- <HH:MM>–<HH:MM> — <title>` in start order. Render each event as a separate
 bullet; include the calendar name in parentheses only when it helps distinguish
-events. State plainly that the day holds no event when it holds none. If the MCP
-is unreachable, the permission is missing, or the allowlist is empty, say which
-of those it is instead of rendering an empty schedule; never claim a free day
-you could not read. Render the calendar event title verbatim. Do not shorten,
+events. Never call `read_events` before a successful `list_calendar_metadata`
+response. State plainly that the day holds no event when it holds none. If the
+MCP is unreachable, the permission is missing, or the allowlist is empty, say
+which of those it is instead of rendering an empty schedule; do not report an
+empty allowlist without a successful metadata response and never claim a free
+day you could not read. Render the calendar event title verbatim. Do not shorten,
 translate, group, or paraphrase it.
 
 Under `## Конфликты`, list only grounded conflicts: overlapping calendar

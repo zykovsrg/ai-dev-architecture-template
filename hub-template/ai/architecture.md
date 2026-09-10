@@ -312,6 +312,11 @@ require `this` or `future`. No background checks, notifications, secrets, or
 calendar content are stored in architecture files. Updates are manual, audited,
 and separately confirmed.
 
+Before a workflow reads a day, it calls `list_calendar_metadata`; the returned
+allowed entries are the only source for the IDs sent to `read_events`. A missing
+or failed metadata response must be reported as bridge unavailability or denied
+permission, never as an empty allowlist.
+
 Задача с расписанием ведёт своё событие. Расписание задаётся полем
 `Запланировано: <YYYY-MM-DD> <HH:MM>-<HH:MM>`, а при его отсутствии — полем
 `Due: <YYYY-MM-DD>`, которое даёт событие на весь день. `hub-task-intake`,

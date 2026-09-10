@@ -59,6 +59,25 @@ async def test_permission_denied_blocks_read(calendar: CalendarRef, event: Event
 
 
 @pytest.mark.asyncio
+async def test_calendar_metadata_lists_only_allowed_calendars(now: datetime) -> None:
+    allowed = CalendarRef(id="calendar-1", name="Work", timezone=ZONE, writable=True)
+    blocked = CalendarRef(id="calendar-2", name="Private", timezone=ZONE, writable=True)
+    backend = FakeCalendarBackend([allowed, blocked], [])
+    server = GuardedCalendarServer(
+        backend,
+        CalendarPolicy(allowed_calendar_ids=frozenset({allowed.id})),
+        PreviewGrantStore(clock=lambda: now),
+    )
+
+    metadata = await server.list_calendar_metadata()
+
+    assert metadata["calendars"] == [{
+        "id": "calendar-1", "name": "Work", "source": "Apple Calendar / EventKit",
+        "writable": True, "timezone": ZONE,
+    }]
+
+
+@pytest.mark.asyncio
 async def test_unavailable_calendar_is_denied(server: GuardedCalendarServer, now: datetime) -> None:
     with pytest.raises(PolicyError, match="CALENDAR_UNAVAILABLE"):
         await server.read_events({"missing"}, now, now + timedelta(days=1), ZONE)
