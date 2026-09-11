@@ -2,6 +2,7 @@ import hashlib
 import json
 import os
 import shutil
+import stat
 import tempfile
 import unittest
 from pathlib import Path
@@ -23,6 +24,35 @@ class ReleaseDecisionTests(unittest.TestCase):
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src, dst)
         return source
+
+    def existing_installed_hub(self, root):
+        hub = root / "hub"
+        hub.mkdir()
+        old = b"old managed entry\n"
+        agents = hub / "AGENTS.md"
+        agents.write_bytes(old)
+        os.chmod(agents, 0o640)
+        state = hub / ".local" / "hub-release"
+        state.mkdir(parents=True)
+        installed_bytes = json.dumps({"files": [{
+            "target": "AGENTS.md",
+            "sha256": hashlib.sha256(old).hexdigest(),
+            "policy": "managed",
+        }]}, indent=2).encode()
+        installed = state / "installed.json"
+        installed.write_bytes(installed_bytes)
+        return hub, old, installed_bytes
+
+    def assert_existing_before_state(self, hub, old, installed_bytes):
+        self.assertEqual((hub / "AGENTS.md").read_bytes(), old)
+        self.assertEqual(stat.S_IMODE((hub / "AGENTS.md").stat().st_mode), 0o640)
+        self.assertEqual((hub / ".local/hub-release/installed.json").read_bytes(), installed_bytes)
+        self.assertFalse((hub / "CLAUDE.md").exists())
+
+    def assert_absent_before_state(self, hub):
+        self.assertFalse((hub / "AGENTS.md").exists())
+        self.assertFalse((hub / "CLAUDE.md").exists())
+        self.assertFalse((hub / ".local/hub-release/installed.json").exists())
 
     def test_release_includes_task_record_checker(self):
         targets = {entry["target"] for entry in build_manifest(ROOT)["files"]}
@@ -143,6 +173,60 @@ class ReleaseDecisionTests(unittest.TestCase):
                     apply(ROOT, hub, plan["plan_sha256"])
             self.assertEqual((hub / ".gitignore").read_bytes(), old_ignore)
             self.assertEqual((hub / "AGENTS.md").read_bytes(), old_agents)
+
+    def test_existing_installed_state_rolls_back_if_metadata_staging_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            hub, old, installed_bytes = self.existing_installed_hub(Path(directory))
+            plan = preview(ROOT, hub)
+            with mock.patch("scripts.hub_release.tempfile.mkstemp", side_effect=OSError("metadata stage failure")):
+                with self.assertRaisesRegex(OSError, "metadata stage failure"):
+                    apply(ROOT, hub, plan["plan_sha256"])
+            self.assert_existing_before_state(hub, old, installed_bytes)
+
+    def test_absent_installed_state_stays_absent_if_metadata_staging_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            hub = Path(directory) / "hub"
+            hub.mkdir()
+            plan = preview(ROOT, hub)
+            with mock.patch("scripts.hub_release.tempfile.mkstemp", side_effect=OSError("metadata stage failure")):
+                with self.assertRaisesRegex(OSError, "metadata stage failure"):
+                    apply(ROOT, hub, plan["plan_sha256"])
+            self.assert_absent_before_state(hub)
+
+    def test_existing_installed_state_rolls_back_if_metadata_replace_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            hub, old, installed_bytes = self.existing_installed_hub(Path(directory))
+            installed = hub / ".local/hub-release/installed.json"
+            plan = preview(ROOT, hub)
+            original_replace = os.replace
+
+            def fail_metadata_replace(src, dst):
+                if Path(dst) == installed:
+                    raise OSError("metadata replace failure")
+                return original_replace(src, dst)
+
+            with mock.patch("scripts.hub_release.os.replace", side_effect=fail_metadata_replace):
+                with self.assertRaisesRegex(OSError, "metadata replace failure"):
+                    apply(ROOT, hub, plan["plan_sha256"])
+            self.assert_existing_before_state(hub, old, installed_bytes)
+
+    def test_absent_installed_state_stays_absent_if_metadata_replace_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            hub = Path(directory) / "hub"
+            hub.mkdir()
+            installed = hub / ".local/hub-release/installed.json"
+            plan = preview(ROOT, hub)
+            original_replace = os.replace
+
+            def fail_metadata_replace(src, dst):
+                if Path(dst) == installed:
+                    raise OSError("metadata replace failure")
+                return original_replace(src, dst)
+
+            with mock.patch("scripts.hub_release.os.replace", side_effect=fail_metadata_replace):
+                with self.assertRaisesRegex(OSError, "metadata replace failure"):
+                    apply(ROOT, hub, plan["plan_sha256"])
+            self.assert_absent_before_state(hub)
 
 
 if __name__ == "__main__":
