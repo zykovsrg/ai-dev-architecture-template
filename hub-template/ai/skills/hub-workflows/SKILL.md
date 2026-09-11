@@ -177,8 +177,8 @@ review may render pace/forecast.
 
 Day planning may record noncanonical friction and calendar snapshots through
 `snapshot-calendar.sh`. Evening review reads pending friction and may offer one
-`add_observation` proposal per grounded issue. Proposal display leaves it
-pending. Only explicit acceptance or rejection resolves it according to
+`add_observation` proposal per grounded issue. Proposal display leaves it pending.
+Only explicit acceptance or rejection resolves it according to
 `resources/learning-lifecycle.md`; accepted observations are appended to the
 journal before resolution, rejection resolves without append, and failed append
 remains pending.
