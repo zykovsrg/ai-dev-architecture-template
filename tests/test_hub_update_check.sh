@@ -34,9 +34,13 @@ grep -Fq 'RESOLVED_SHA' "$ROOT/scripts/update-installed-hub.sh" || {
 # A reviewed remote preview must remain pinned even if the branch moves before apply.
 REMOTE="$TEMP_DIR/remote.git"
 WORK="$TEMP_DIR/work"
-git clone -q "$ROOT" "$WORK"
+mkdir -p "$WORK"
+git -C "$ROOT" archive HEAD | tar -x -C "$WORK"
+git -C "$WORK" init -q
 git -C "$WORK" config user.name test
 git -C "$WORK" config user.email test@example.com
+git -C "$WORK" add -A
+git -C "$WORK" commit -q -m 'fixture: source A'
 git init -q --bare "$REMOTE"
 git -C "$WORK" remote add fixture "$REMOTE"
 git -C "$WORK" push -q fixture HEAD:refs/heads/moving-source
