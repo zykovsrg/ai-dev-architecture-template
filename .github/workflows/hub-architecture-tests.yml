@@ -22,7 +22,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Prepare repository test temp path
-        run: sudo mkdir -p /private/tmp
+        run: sudo mkdir -p /private/tmp && sudo chmod 1777 /private/tmp
       - name: Consistency
         if: always()
         run: bash scripts/check-consistency.sh
