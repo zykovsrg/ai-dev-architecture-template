@@ -21,15 +21,22 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Prepare repository test temp path
+        run: sudo mkdir -p /private/tmp
       - name: Consistency
+        if: always()
         run: bash scripts/check-consistency.sh
       - name: Hub smoke
+        if: always()
         run: bash scripts/hub-smoke-test.sh
       - name: Architecture smoke
+        if: always()
         run: bash scripts/architecture-test.sh
       - name: Assistant workflows
+        if: always()
         run: bash scripts/assistant-workflows-test.sh
       - name: Architecture unit tests
+        if: always()
         run: python3 -m unittest discover -s tests -v
 
   calendar-policy:
