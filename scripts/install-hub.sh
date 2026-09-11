@@ -1,134 +1,53 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-HUB_TEMPLATE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)/hub-template"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+SOURCE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd -P)"
+HUB_DIR="${1:-.}"
+die() { echo "ERROR: $*" >&2; exit 1; }
 
-usage() {
-  echo "Usage: $0 [HUB_DIR]" >&2
-  exit 1
-}
-
-HUB_DIR=""
-
-while [ "$#" -gt 0 ]; do
-  case "$1" in
-    --root)
-      echo "--root is not supported in portable hub mode: projects live in _ai-hub/projects/." >&2
-      exit 1
-      ;;
-    --)
-      shift
-      [ "$#" -le 1 ] || usage
-      HUB_DIR="${1:-.}"
-      break
-      ;;
-    -*)
-      usage
-      ;;
-    *)
-      [ -z "$HUB_DIR" ] || usage
-      HUB_DIR="$1"
-      shift
-      ;;
-  esac
-done
-
-HUB_DIR="${HUB_DIR:-.}"
-
-[ -d "$HUB_TEMPLATE_DIR" ] || {
-  echo "Hub template directory not found: $HUB_TEMPLATE_DIR" >&2
-  exit 1
-}
-[ -f "$HUB_TEMPLATE_DIR/ai/skills/hub-workflows/SKILL.md" ] || {
-  echo "Hub template is missing mandatory skill: hub-workflows" >&2
-  exit 1
-}
-
-case "$(basename "$HUB_DIR")" in
-  _ai-hub) ;;
-  *) echo "Hub directory must be named _ai-hub." >&2; exit 1 ;;
-esac
+case "$(basename "$HUB_DIR")" in _ai-hub) ;; *) die "Hub directory must be named _ai-hub." ;; esac
 
 path_component="$HUB_DIR"
 while [ "$path_component" != "/" ] && [ "$path_component" != "." ]; do
-  if [ -L "$path_component" ]; then
-    echo "Hub directory path must not contain symlinks." >&2
-    exit 1
-  fi
+  [ ! -L "$path_component" ] || die "Hub directory path must not contain symlinks."
   path_component="$(dirname "$path_component")"
 done
 
-if [ -e "$HUB_DIR" ]; then
-  CANONICAL_HUB_DIR="$(cd "$HUB_DIR" && pwd -P)"
-else
-  target_parent="$(dirname "$HUB_DIR")"
-  missing_suffix=""
-  while [ ! -d "$target_parent" ]; do
-    [ "$target_parent" != "/" ] || { echo "Cannot resolve hub directory parent." >&2; exit 1; }
-    missing_suffix="/$(basename "$target_parent")$missing_suffix"
-    target_parent="$(dirname "$target_parent")"
-  done
-  CANONICAL_HUB_DIR="$(cd "$target_parent" && pwd -P)$missing_suffix/$(basename "$HUB_DIR")"
-fi
-
-PROJECTS_ROOT="$CANONICAL_HUB_DIR/projects"
-
-if [ -d "$HUB_DIR" ] && [ -n "$(find "$HUB_DIR" -mindepth 1 -maxdepth 1 -print -quit)" ]; then
-  if [ ! -d "$HUB_DIR/.git" ] \
-    || [ ! -f "$HUB_DIR/AGENTS.md" ] \
-    || [ ! -f "$HUB_DIR/ai/architecture.md" ] \
-    || [ ! -f "$HUB_DIR/ai/allowed-roots.md" ] \
-    || [ ! -f "$HUB_DIR/ai/project-registry.md" ] \
-    || [ "$(grep -Fxc -- "- $PROJECTS_ROOT" "$HUB_DIR/ai/allowed-roots.md" 2>/dev/null || true)" -ne 1 ] \
-    || [ "$(grep -Ec '^- ' "$HUB_DIR/ai/allowed-roots.md" 2>/dev/null || true)" -ne 1 ]; then
-    echo "Target is not an installed personal AI hub; refusing to copy into a nonempty directory." >&2
-    exit 1
-  fi
-fi
-
 mkdir -p "$(dirname "$HUB_DIR")"
+if [ -d "$HUB_DIR" ] && [ -n "$(find "$HUB_DIR" -mindepth 1 -maxdepth 1 -print -quit)" ]; then
+  if [ -f "$HUB_DIR/AGENTS.md" ] && [ -f "$HUB_DIR/ai/architecture.md" ] && [ -f "$HUB_DIR/ai/project-registry.md" ]; then
+    echo "Existing Hub detected. Installation does not overwrite/update an installed Hub." >&2
+    echo "Review the content-addressed update plan instead:" >&2
+    echo "  bash $SCRIPT_DIR/update-installed-hub.sh --hub $HUB_DIR --source $SOURCE_ROOT --dry-run" >&2
+    exit 2
+  fi
+  die "Target is nonempty and is not an installed personal AI Hub."
+fi
+
 mkdir -p "$HUB_DIR"
-rsync -av --ignore-existing "$HUB_TEMPLATE_DIR/" "$HUB_DIR/"
-[ -f "$HUB_DIR/ai/skills/hub-workflows/SKILL.md" ] || {
-  echo "Hub install did not copy mandatory skill: hub-workflows" >&2
-  exit 1
-}
-mkdir -p "$HUB_DIR/projects"
-grep -Fqx '/projects/' "$HUB_DIR/.gitignore" 2>/dev/null \
-  || printf '%s\n' '/projects/' >> "$HUB_DIR/.gitignore"
-mkdir -p "$HUB_DIR/scripts"
-[ -e "$HUB_DIR/scripts/check-hub-registry.sh" ] \
-  || cp "$SCRIPT_DIR/check-hub-registry.sh" "$HUB_DIR/scripts/check-hub-registry.sh"
-[ -e "$HUB_DIR/scripts/read-compact-project-index.sh" ] \
-  || cp "$SCRIPT_DIR/read-compact-project-index.sh" "$HUB_DIR/scripts/read-compact-project-index.sh"
-[ -e "$HUB_DIR/scripts/obsidian-task-sync.sh" ] \
-  || cp "$SCRIPT_DIR/obsidian-task-sync.sh" "$HUB_DIR/scripts/obsidian-task-sync.sh"
-[ -e "$HUB_DIR/scripts/generate-obsidian-projects-kanban.sh" ] \
-  || cp "$SCRIPT_DIR/generate-obsidian-projects-kanban.sh" "$HUB_DIR/scripts/generate-obsidian-projects-kanban.sh"
-[ -e "$HUB_DIR/scripts/count-goal-progress.sh" ] \
-  || cp "$SCRIPT_DIR/count-goal-progress.sh" "$HUB_DIR/scripts/count-goal-progress.sh"
-[ -e "$HUB_DIR/scripts/snapshot-calendar.sh" ] \
-  || cp "$SCRIPT_DIR/snapshot-calendar.sh" "$HUB_DIR/scripts/snapshot-calendar.sh"
-[ -e "$HUB_DIR/scripts/check-workflow-memory.sh" ] \
-  || cp "$SCRIPT_DIR/check-workflow-memory.sh" "$HUB_DIR/scripts/check-workflow-memory.sh"
-mkdir -p "$HUB_DIR/scripts/lib"
-[ -e "$HUB_DIR/scripts/lib/calendar-date.sh" ] \
-  || cp "$SCRIPT_DIR/lib/calendar-date.sh" "$HUB_DIR/scripts/lib/calendar-date.sh"
-[ -e "$HUB_DIR/scripts/check-session-review.py" ] \
-  || cp "$SCRIPT_DIR/check-session-review.py" "$HUB_DIR/scripts/check-session-review.py"
+HUB_DIR="$(cd "$HUB_DIR" && pwd -P)"
+PROJECTS_ROOT="$HUB_DIR/projects"
 
-if [ -d "$SCRIPT_DIR/../calendar-policy" ]; then
-  bash "$SCRIPT_DIR/sync-calendar-policy.sh" \
-    --source "$(cd "$SCRIPT_DIR/.." && pwd -P)" --hub "$HUB_DIR"
+[ -f "$SOURCE_ROOT/scripts/hub_release.py" ] || die "source is missing scripts/hub_release.py"
+PLAN_JSON="$(python3 "$SOURCE_ROOT/scripts/hub_release.py" preview --source "$SOURCE_ROOT" --hub "$HUB_DIR")"
+PLAN_SHA="$(printf '%s' "$PLAN_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["plan_sha256"])')"
+python3 "$SOURCE_ROOT/scripts/hub_release.py" apply --source "$SOURCE_ROOT" --hub "$HUB_DIR" --confirm-plan "$PLAN_SHA" >/dev/null
+
+[ -f "$HUB_DIR/AGENTS.md" ] || die "Hub release did not install AGENTS.md"
+[ -f "$HUB_DIR/ai/skills/hub-workflows/SKILL.md" ] || die "Hub release did not install hub-workflows"
+[ -f "$HUB_DIR/scripts/read-compact-task-index.py" ] || die "Hub release did not install compact task index"
+
+mkdir -p "$PROJECTS_ROOT"
+grep -Fqx '/projects/' "$HUB_DIR/.gitignore" 2>/dev/null || printf '%s\n' '/projects/' >> "$HUB_DIR/.gitignore"
+printf '%s\n' '# Allowed Roots' '' "- $PROJECTS_ROOT" > "$HUB_DIR/ai/allowed-roots.md"
+
+if [ -d "$SOURCE_ROOT/calendar-policy" ]; then
+  bash "$SCRIPT_DIR/sync-calendar-policy.sh" --source "$SOURCE_ROOT" --hub "$HUB_DIR"
 fi
 
-ROOTS_FILE="$HUB_DIR/ai/allowed-roots.md"
-printf '%s\n' '# Allowed Roots' '' "- $PROJECTS_ROOT" > "$ROOTS_FILE"
+if [ ! -e "$HUB_DIR/.git" ]; then git -C "$HUB_DIR" init >/dev/null 2>&1; fi
 
-if [ ! -e "$HUB_DIR/.git" ]; then
-  git -C "$HUB_DIR" init >/dev/null 2>&1
-fi
-
+echo "Installed Personal AI Hub: $HUB_DIR"
 echo "No projects were inspected or registered automatically."
-echo "Registration requires confirmation: run project-register in the hub."
+echo "Registration, creation, and migration each require their documented confirmation flow."
