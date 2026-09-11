@@ -1,434 +1,99 @@
 # Prompts
 
-## Install an optional personal hub
+These prompts assume the supported Personal AI Hub architecture. Shared rules and workflows live in Hub; project repositories keep their own canonical memory and optional knowledge.
+
+## Install Personal AI Hub
 
 ```text
-Mode: review
-
-I want to install the optional personal AI hub from this repository:
-https://github.com/zykovsrg/ai-dev-architecture-template
-
-Use the exact command after confirming the hub path, whose final folder name is
-`_ai-hub`:
-  bash /path/to/ai-dev-architecture-template/scripts/install.sh --mode hub /path/to/_ai-hub
-
-Requirements:
-- create or update only the hub directory `_ai-hub`;
-- create `_ai-hub/projects/` as the sole permanent project location;
-- do not scan project contents;
-- do not register any project automatically;
-- do not move existing project folders automatically;
-- tell me that registration and migration each need separate confirmation;
-- do not create cleanup jobs or reminders.
+Install Personal AI Hub from my local ai-dev-architecture-template checkout.
+Show the exact target path first. The target folder must be `_ai-hub`.
+Run the supported Hub installer only after I confirm the path.
+Do not scan, register, move, or edit any project automatically.
 ```
 
-## Register projects in a personal hub
+Supported local command after confirmation:
+
+```bash
+bash scripts/install.sh /path/to/_ai-hub
+```
+
+## Create a project
 
 ```text
-Project: none
-Mode: routing
-
-Use the current hub `hub-project-register` workflow.
-
-List only direct child directory names under `_ai-hub/projects/`. Do not
-recurse, read project code, project memory, `.env` files, or backups. Propose
-each candidate separately and wait for my explicit
-confirmation before reading project context or adding a registry entry.
+Use `hub-project-create`.
+Collect the project name/type, validate the allowed Hub projects root, and show the exact project ID, direct-child target path, scaffold, registry/card changes, Git initialization, and any remote action before writing.
+Wait for the workflow's explicit confirmation. Do not create application code, dependencies, services, or shared rule copies.
 ```
 
-## Create a new project in a personal hub
+## Register an existing project
 
 ```text
-Project: none
-Mode: routing
-
-Use the current hub `hub-project-create` workflow to create a new project.
-
-Collect the new project's name and type. The only target root is
-`_ai-hub/projects/`. Create it only after one complete preview and my exact
-confirmation of the displayed project ID and path.
-
-Requirements:
-- create exactly one new direct child of `_ai-hub/projects/`;
-- create only the six `ai/` memory files, the project card, registry entry,
-  and active-project selection;
-- do not read a project directory before confirmation;
-- do not create Git, code, dependencies, services, `AGENTS.md`, `CLAUDE.md`,
-  shared skills, or a duplicate registry entry.
+Use `hub-project-register` for an existing direct child under the allowed Hub projects root.
+Before confirmation, use only the permitted routing inventory. Show the exact project ID and registered path, then wait for explicit confirmation before reading project memory or changing the registry/card.
 ```
 
-## Preview migration of existing projects into a personal hub
+## Migrate an existing project
 
 ```text
-Project: none
-Mode: routing
-
-Use the current hub `hub-project-migrate` workflow. I want to consider moving
-existing project folders into `_ai-hub/projects/`.
-
-First ask me to name and separately confirm one temporary source directory.
-Before a candidate preflight, inventory only its direct-child names. Do not
-read project content, copy, move, register, archive, or change allowed roots.
-
-Then show every proposed source-to-destination path, Git status, and collision
-state. Move only the exact project or listed batch that I explicitly confirm.
-Keep each project's existing `.git/` unchanged; stop if one move fails. After a
-successful move, ask separately whether to register it. Validate the registry
-before offering cleanup. After successful registration show a separate list of
-old standalone files that can be removed; never remove anything without a new
-explicit confirmation and preserve all project memory files.
-
-After successful registration, use this exact request for the optional cleanup:
-
-После успешной регистрации покажи отдельный список старых standalone-файлов,
-которые можно удалить. Ничего не удаляй без нового явного подтверждения;
-сохрани все файлы памяти проекта.
-
-The move, registration, registry validation, and cleanup confirmations are
-independent. Declining cleanup leaves every old file unchanged.
+Use `hub-project-migrate`.
+Ask me to name and separately confirm the temporary source directory. Inventory only direct-child candidate names before candidate confirmation. Show exact source-to-destination mappings, narrow Git status, collisions, and preservation rules.
+Moving, registration, validation, and optional legacy-rule cleanup are separate confirmation gates. Preserve project memory, knowledge, Git metadata, and project-specific rules.
 ```
 
-## Run a hub registry check
+## Switch project
 
 ```text
-Project: none
-Mode: review
-
-Use the current `hub-registry-check` workflow for this personal hub. Run
-`scripts/check-hub-registry.sh` against the hub, report pass/fail and stale or
-missing registry metadata, and do not write, register, archive, migrate, or
-schedule anything automatically.
+Use `hub-project-switch`.
+Show the candidate project ID and exact registered path using Hub routing metadata only. Wait for explicit project/path confirmation before reading its memory, code, knowledge, Git, or linked targets.
 ```
 
-## Preview standalone-to-hub migration
+## Cross-project task overview
 
 ```text
-Mode: review
-
-Preview, but do not perform, a move of existing project folders into a personal
-hub. Explain that hub installation is separate and uses only this command:
-  bash /path/to/ai-dev-architecture-template/scripts/install.sh --mode hub /path/to/_ai-hub
-
-Explain that the hub derives `_ai-hub/projects/` as the only permanent project
-location. Use `hub-project-migrate` only after a separately confirmed temporary
-source, and do not edit, move, copy, or register anything unless I give the
-required separate confirmations.
+Treat this as a personal-assistant request.
+For discovery across active registered projects, start with `scripts/read-compact-task-index.py`. Open a canonical current/future/paused task record only when a selected row requires a detail absent from the compact index. Final factual output must cite the canonical source path. Do not read project code, credentials, arbitrary files, or inactive projects.
 ```
 
-## Use `hub-info-update` for meeting information
+## Day plan
 
 ```text
-Project: <confirmed-project-id>
-Mode: review
-
-Use the hub `hub-info-update` workflow for the meeting text below. Keep the source
-text temporary by default. Produce review-only proposals in the workflow's
-required order, identify every affected project, and request a separate
-confirmation for each project and each hub signal before writing. Do not run
-task-switch or task-finish, and do not save the raw transcript by default.
-
-Meeting text:
-<paste synthetic or approved meeting text here>
+Use `hub-workflows` with the `day-plan` scenario. Follow core scope/security/proposal rules, then load only `resources/day-plan.md` plus its required calendar-context resource. Read Calendar only through the guarded Hub Calendar interface. Render the complete required day-plan format and keep all proposed task/calendar writes confirmation-gated.
 ```
 
-## Check template synchronization
+## Evening review
 
 ```text
-Mode: review
-
-Goal:
-Check whether the AI development architecture template is synchronized correctly.
-
-Read:
-- AGENTS.md
-- CLAUDE.md
-- ai/architecture.md
-- ai/current-task.md
-- ai/paused-tasks.md
-- ai/future-tasks.md
-- ai/project-context.md
-- ai/decisions.md
-- ai/changelog.md
-- ai/external-tools.md
-- all ai/skills/*/SKILL.md files
-
-Do not edit files.
-
-Check:
-1. Are all required files present?
-2. Are AGENTS.md and CLAUDE.md short enough?
-3. Are all 11 base skills present, including task-intake, task-switch, and environment-check?
-4. Are permanent AI-facing instruction files in English?
-5. Are project-specific files still templates and not filled with data from another project?
-6. Is there duplicated or conflicting guidance?
-7. Does environment-check end with an informational menu of available next commands and skills?
-
-Return:
-1. What is correct.
-2. What is missing.
-3. What should be fixed before using the template.
-
-Explain in Russian with simple words.
+Use `hub-workflows` with the `evening-review` scenario. Follow core scope/security/proposal rules, then load only `resources/evening-review.md`. For a calendar-only review start with `prepare_evening_review`. Pending friction stays pending when a proposal is merely shown; resolve it only after explicit accepted/rejected disposition through the learning lifecycle.
 ```
 
-## Build `project-context.md`
+## Weekly review
 
 ```text
-Mode: review
-
-Goal:
-Collect information for ai/project-context.md for this specific project.
-
-Read:
-- README if present
-- package.json, pyproject.toml, requirements.txt, or other dependency files
-- main source folders
-- app entry points
-- build scripts
-- test scripts
-- storage and data model files if present
-
-Do not edit files.
-
-Return a draft for ai/project-context.md.
-
-Include:
-1. What this project is.
-2. Tech stack.
-3. How to run locally.
-4. How to build.
-5. How to run tests.
-6. Main folders and files.
-7. Main screens or modules.
-8. Data model or core entities.
-9. Project invariants: what must not be broken.
-10. Known fragile areas.
-
-Write in Russian or English. Use simple wording. Briefly explain technical terms.
+Use `hub-workflows` with the `weekly-review` scenario. Start personal-assistant task discovery from the compact task index, use canonical task sources for facts, and load only `resources/weekly-review.md` for scenario formatting. Learning rule promotion/retirement remains proposal-only and confirmation-gated.
 ```
 
-## Build `decisions.md`
+## Capture a meeting or task
 
 ```text
-Mode: review
-
-Goal:
-Collect initial important architecture and product decisions for ai/decisions.md.
-
-Read:
-- README
-- ai/project-context.md
-- data model files
-- storage files
-- important frontend/backend modules
-- recent git history if available
-
-Do not edit files.
-
-Return a draft for ai/decisions.md.
-
-Include only important active decisions:
-1. Data model decisions.
-2. Product rules.
-3. Architecture constraints.
-4. Known temporary workarounds.
-5. Decisions that future agents must not accidentally break.
-
-Use format:
-
-## YYYY-MM-DD — Decision title
-
-Status: active / superseded / resolved
-
-Decision:
-...
-
-Why:
-...
-
-Impact:
-...
-
-Do not include minor bugfixes, colors, spacing, or ordinary changelog entries.
+Use `hub-workflows` with the `capture` scenario for the one source I explicitly provide. Do not discover other transcripts/files. Follow the source/scope gates, perform semantic analysis, then return exact independent proposal envelopes and diffs. Do not apply them automatically.
 ```
 
-## Build `changelog.md`
+## Capture project knowledge
 
 ```text
-Mode: review
-
-Goal:
-Collect initial changelog for ai/changelog.md.
-
-Read:
-- git log for the last 2–4 weeks
-- recent commits
-- README
-- ai/project-context.md
-
-Do not edit files.
-
-Return a concise draft for ai/changelog.md.
-
-Include:
-1. Only notable product, architecture, data model, UI, build, or testing changes.
-2. No tiny implementation details.
-3. No cosmetic-only changes unless they affected user experience.
-
-Use format:
-
-# Changelog
-
-## YYYY-MM-DD
-
-- Change:
-- Impact:
-- Manual checks:
+Use `hub-knowledge-capture` only for the already confirmed project and explicitly selected material. Knowledge is optional/on-demand, not default context. Show the exact target record/path and proposed content before confirmation; do not copy raw sensitive source material unnecessarily.
 ```
 
-## Check the installation in a project
+## Review project knowledge
 
 ```text
-Mode: review
-
-Goal:
-Check whether AI development architecture is installed correctly in this project.
-
-Use:
-- ai/skills/hub-environment-check/SKILL.md
-
-Read:
-- AGENTS.md
-- CLAUDE.md
-- ai/architecture.md
-- ai/current-task.md
-- ai/paused-tasks.md
-- ai/future-tasks.md
-- ai/project-context.md
-- ai/decisions.md
-- ai/changelog.md
-- ai/external-tools.md
-- ai/skills/hub-task-intake/SKILL.md
-- ai/skills/start-screen/SKILL.md
-- ai/skills/ui-review/SKILL.md
-- ai/skills/security-review/SKILL.md
-- ai/skills/release-check/SKILL.md
-- ai/skills/copy-review/SKILL.md
-- ai/skills/write-tests/SKILL.md
-- ai/skills/hub-task-finish/SKILL.md
-- ai/skills/hub-task-switch/SKILL.md
-- ai/skills/architecture-update/SKILL.md
-- ai/skills/hub-environment-check/SKILL.md
-
-Do not edit files.
-
-Return:
-1. What is installed correctly.
-2. What is missing.
-3. What may waste tokens.
-4. What must be filled with project-specific information.
-5. Whether the architecture is ready for the first task.
-6. Available next commands and skills.
-7. Whether task-intake is ready to record the first task.
-
-Important:
-- The available next commands and skills section is informational.
-- Do not activate any listed workflow automatically.
-- Before real task work, use task-intake.
-
-Explain in Russian with simple words.
+Use `hub-knowledge-review` for one explicitly selected project-local knowledge record, folder, or task-linked set. Check freshness and conflicts against the permitted source evidence. Show exact proposed edits and wait for confirmation before changing anything.
 ```
 
-## Safely update an existing project
+## Update an installed Hub
 
 ```text
-Mode: review
-
-Goal:
-Compare the current project AI architecture with the updated template and propose a safe update plan.
-
-Compare protected architecture files:
-- ~/Documents/ai-dev-architecture-template/template/AGENTS.md with ./AGENTS.md
-- ~/Documents/ai-dev-architecture-template/template/CLAUDE.md with ./CLAUDE.md
-- ~/Documents/ai-dev-architecture-template/template/ai/architecture.md with ./ai/architecture.md
-- ~/Documents/ai-dev-architecture-template/template/ai/external-tools.md with ./ai/external-tools.md
-- ~/Documents/ai-dev-architecture-template/template/ai/skills/*/SKILL.md with ./ai/skills/*/SKILL.md
-
-Do not overwrite controlled memory files:
-- ai/current-task.md
-- ai/paused-tasks.md
-- ai/future-tasks.md
-- ai/project-context.md
-- ai/decisions.md
-- ai/changelog.md
-
-Do not edit files.
-
-Important:
-- Protected architecture files may be updated only after explicit approval.
-- Controlled memory files must not be replaced from the template.
-- Preserve project-specific additions unless they are outdated or duplicated.
-- If the update has unclear blast radius, recommend code-review-graph.
-- After applying approved updates, run environment-check and show the available commands/skills menu.
-- Before the next real task, use task-intake.
-
-Return:
-1. Which template files changed.
-2. Which protected architecture files should be updated.
-3. Which controlled memory files must be preserved.
-4. What project-specific content must be preserved.
-5. What exact changes you recommend.
-6. Whether it is safe to apply the update.
-
-Explain in Russian with simple words.
+Use the supported content-addressed Hub update flow from a local source checkout. Resolve any requested remote branch/tag to one commit SHA once, use that same revision for preview and apply, show the plan/hash first, preserve local modified managed files as conflicts, and keep existing create-if-missing memory untouched.
 ```
 
-## First session environment check
-
-```text
-Mode: review
-
-Goal:
-Check whether the AI development architecture has all required base skills and expected external skills/tools available.
-
-Use:
-- ai/skills/hub-environment-check/SKILL.md
-
-Check required files:
-- AGENTS.md
-- CLAUDE.md
-- ai/architecture.md
-- ai/current-task.md
-- ai/paused-tasks.md
-- ai/future-tasks.md
-- ai/project-context.md
-- ai/decisions.md
-- ai/changelog.md
-- ai/external-tools.md
-- ai/skills/hub-task-intake/SKILL.md
-- ai/skills/start-screen/SKILL.md
-- ai/skills/ui-review/SKILL.md
-- ai/skills/security-review/SKILL.md
-- ai/skills/release-check/SKILL.md
-- ai/skills/copy-review/SKILL.md
-- ai/skills/write-tests/SKILL.md
-- ai/skills/hub-task-finish/SKILL.md
-- ai/skills/hub-task-switch/SKILL.md
-- ai/skills/architecture-update/SKILL.md
-- ai/skills/hub-environment-check/SKILL.md
-
-Check expected external skills and tools:
-- code-review-graph
-- agent-skills-for-context-engineering
-
-Check controlled external methodologies:
-- Superpowers
-
-Return the required environment-check result and end with:
-- available next commands and skills;
-- optional skills if present;
-- external tools and controlled methodologies status.
-- note that Superpowers is expected for bugs and complex tasks when available.
-
-Do not activate any listed workflow automatically.
-```
+Do not use pipe-to-shell installation/update commands. Download or clone first, inspect the local source/revision, then run the repository scripts locally.
