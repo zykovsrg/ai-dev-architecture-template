@@ -170,15 +170,15 @@ Repo-only tests запускайте из source repository, а не из уст
 
 ## Если проект всё ещё содержит старые общие rules/skills
 
-Используйте `hub-project-migrate`. Не восстанавливайте retired project-local architecture через старый updater.
+Используйте `hub-project-migrate`. Не восстанавливайте retired project-local architecture через устаревший механизм обновления.
 
 ## Чего не делать
 
-Не используйте для обычного Hub update:
+Для обычного Hub update не используйте:
 
-- retired `scripts/update-installed-architecture.sh` как updater;
-- удалённый `template/`;
-- `--mode standalone`;
+- устаревший updater старой project-local архитектуры;
+- удалённое дерево распространения старой project-local архитектуры;
+- устаревший режим установки старой project-local архитектуры;
 - `curl ... | bash`;
 - force overwrite локальных conflicts;
 - `git reset --hard` ради обновления;
