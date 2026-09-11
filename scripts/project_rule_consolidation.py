@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Preview or apply the safe first batch of project-rule consolidation."""
+"""Preview or apply safe cleanup of exact known legacy project-rule copies."""
 
 import argparse
 import hashlib
@@ -8,11 +8,34 @@ from pathlib import Path
 
 
 RULE_FILES = ("AGENTS.md", "CLAUDE.md", "ai/architecture.md")
+# Git blob IDs of exact generic project-rule files that were distributed before
+# the Hub-only migration. Keeping fingerprints instead of source copies lets the
+# migration recognize old files without retaining a second distributable tree.
+LEGACY_RULE_BLOBS = {
+    "AGENTS.md": {
+        "becbbbf18ad656f5fff70e578ae458d548b493db",  # retired template copy
+        "418a30f6e45a537734584df1cb8695ef5bc4e7b5",  # pre-retirement repo copy
+    },
+    "CLAUDE.md": {
+        "a83c9f790a7ad1b4f572b9553b89cbaaccb97adb",  # retired template copy
+        "0afeb0e77311247edc27225a55a5cb766f6a9d16",  # pre-retirement repo copy
+    },
+    "ai/architecture.md": {
+        "46d8cd64721ad7de61b6108ec56341dca20ac9d9",  # retired template copy
+        "793fe11e98a3668d1d4d9a4915b2295422fe82fb",  # pre-retirement repo copy
+    },
+}
+# Additional exact architecture payloads observed in older installations before
+# blob IDs were recorded. These are content SHA-256 fingerprints only.
 OLD_ARCHITECTURE_HASHES = {
     "d62b4e706f2b95a90339af0ddd2b42349f1e64057ddf6a457f71d395c7d996b3",
     "dd4769e912fc34efcad7bffe34baae8689de44e3474e939dc28cc79b6f61b255",
 }
-OLD_OUTPUT = """Before editing, state `Mode: ...`, the next step, and real risks. After editing, state the mode, summarize changes, list checks, name risks or unfinished parts, say whether task memory changed, and propose `task-finish` if the task appears complete.\n"""
+
+
+def git_blob_id(data: bytes) -> str:
+    header = f"blob {len(data)}\0".encode("ascii")
+    return hashlib.sha1(header + data).hexdigest()
 
 
 def render_entry():
@@ -25,31 +48,19 @@ def render_architecture_entry():
             / "hub-project-register" / "resources" / "registered-project-architecture.md").read_text(encoding="utf-8")
 
 
-def eligible_files(source_root, project):
+def eligible_files(_source_root, project):
     eligible = []
     for relative in RULE_FILES:
-        legacy = source_root / "template" / relative
         current = project / relative
-        if relative == "ai/architecture.md" and current.is_file() and hashlib.sha256(current.read_bytes()).hexdigest() in OLD_ARCHITECTURE_HASHES:
+        if not current.is_file() or current.is_symlink():
+            continue
+        data = current.read_bytes()
+        if git_blob_id(data) in LEGACY_RULE_BLOBS[relative]:
             eligible.append(relative)
-        elif current.is_file() and current.read_text(encoding="utf-8") in {
-            legacy.read_text(encoding="utf-8"), legacy_shared_variant(legacy.read_text(encoding="utf-8"))
-        }:
+            continue
+        if relative == "ai/architecture.md" and hashlib.sha256(data).hexdigest() in OLD_ARCHITECTURE_HASHES:
             eligible.append(relative)
     return eligible
-
-
-def legacy_shared_variant(text):
-    """The former generic entry with only its known obsolete output wording."""
-    if "## Output\n" not in text:
-        return ""
-    text = text.replace(
-        "- Keep persistent AI-facing instructions in English.\n",
-        "- Keep persistent AI-facing instructions in English.\n"
-        "- Use a concise, direct, informational style with very simple words. Default to a short answer; give long explanations only when the user asks. This holds for output produced under any external methodology, including Superpowers.\n",
-    )
-    output = text.index("## Output\n") + len("## Output\n\n")
-    return text[:output] + OLD_OUTPUT
 
 
 def registered_projects(hub):
