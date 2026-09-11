@@ -88,6 +88,13 @@ class CompactTaskIndexTests(unittest.TestCase):
             rows = json.loads(result.stdout)
             self.assertEqual({row["project_id"] for row in rows}, {"alpha", "beta"})
             self.assertEqual(set(rows[0]), {"project_id", "task_id", "title", "status", "due", "source_kind", "source_path"})
+            self.assertEqual({row["source_kind"] for row in rows}, {"current", "future", "paused"})
+            for row in rows:
+                self.assertEqual(Path(row["source_path"]).name, {
+                    "current": "current-task.md",
+                    "future": "future-tasks.md",
+                    "paused": "paused-tasks.md",
+                }[row["source_kind"]])
             self.assertNotIn("MUST_NOT_APPEAR", result.stdout)
             self.assertNotIn("## Goal", result.stdout)
 
@@ -110,6 +117,53 @@ class CompactTaskIndexTests(unittest.TestCase):
             output = json.dumps(rows, ensure_ascii=False)
             self.assertNotIn("BODY_MARKER_MUST_NOT_BE_FULL_READ", output)
             self.assertEqual({row["project_id"] for row in rows}, {"alpha", "beta"})
+
+    def test_current_parser_physically_stops_before_body_after_compact_metadata(self):
+        module = self.load_index_module()
+
+        class BodyGuard:
+            def __init__(self):
+                self.lines = iter([
+                    "Status: active\n",
+                    "Task ID: TASK-demo-20260911-001\n",
+                    "Due: 2026-09-12\n",
+                    "\n",
+                    "## Goal\n",
+                    "\n",
+                    "Compact title\n",
+                ])
+
+            def __iter__(self):
+                return self
+
+            def __next__(self):
+                try:
+                    return next(self.lines)
+                except StopIteration:
+                    raise AssertionError("body was read")
+
+        records = module.read_records_lines("demo", "current", BodyGuard())
+        self.assertEqual(records, [{
+            "task_id": "TASK-demo-20260911-001",
+            "title": "Compact title",
+            "status": "active",
+            "due": "2026-09-12",
+        }])
+
+    def test_compact_parser_preserves_strict_validation(self):
+        module = self.load_index_module()
+        cases = [
+            ("current", "Status: active\nTask ID: invalid\n\n## Goal\n\nTitle\n", "invalid_current_task_id"),
+            ("current", "Status: active\nTask ID: TASK-other-20260911-001\n\n## Goal\n\nTitle\n", "invalid_current_task_id"),
+            ("current", "Status: nonsense\nTask ID: TASK-demo-20260911-001\n\n## Goal\n\nTitle\n", "invalid_status"),
+            ("current", "Status: active\nTask ID: TASK-demo-20260911-001\nDue: 2026-02-30\n\n## Goal\n\nTitle\n", "invalid_due"),
+            ("paused", "### 2026-09-11 — Paused\n\nStatus: paused\n", "invalid_paused_record"),
+            ("future", "### TASK-demo-20260911-002 — Future\n\nStatus: nonsense\n", "invalid_status"),
+        ]
+        for kind, text, expected in cases:
+            with self.subTest(kind=kind, expected=expected):
+                with self.assertRaisesRegex(ValueError, expected):
+                    module.read_records_lines("demo", kind, iter(text.splitlines(keepends=True)))
 
     def test_invalid_active_record_fails(self):
         with tempfile.TemporaryDirectory() as tmp:
