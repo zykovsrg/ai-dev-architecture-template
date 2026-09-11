@@ -19,7 +19,10 @@ def read_due(lines):
             value = match.group(1)
             if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
                 raise ValueError("invalid_due")
-            date.fromisoformat(value)
+            try:
+                date.fromisoformat(value)
+            except ValueError as error:
+                raise ValueError("invalid_due") from error
             values.append(value)
     if len(set(values)) > 1:
         raise ValueError("conflicting_due")
@@ -33,7 +36,10 @@ def _due_value(line):
     value = match.group(1)
     if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
         raise ValueError("invalid_due")
-    date.fromisoformat(value)
+    try:
+        date.fromisoformat(value)
+    except ValueError as error:
+        raise ValueError("invalid_due") from error
     return value
 
 
