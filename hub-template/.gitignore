@@ -1,1 +1,4 @@
 /projects/
+/.local/
+/.worktrees/
+.claude/settings.local.json
