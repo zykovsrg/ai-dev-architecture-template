@@ -17,7 +17,8 @@ usage() {
 Usage: update-installed-hub.sh [--check|--dry-run|--apply --confirm-plan SHA] [--hub DIR] [--source DIR | --ref REF] [--commit] [--allow-dirty]
 
 Uses scripts/hub_release.py as the single preview/apply engine.
-Remote refs are resolved once to one commit SHA and that exact revision is used for the whole invocation.
+For a remote branch/tag, preview prints one resolved commit SHA. Reuse that SHA
+as --ref during apply so preview and apply use exactly the same revision.
 EOF
 }
 die() { echo "ERROR: $*" >&2; exit 1; }
@@ -50,7 +51,11 @@ if [ -n "$SOURCE_DIR" ]; then
   SOURCE_REPO_ROOT="$(cd "$SOURCE_DIR" && pwd -P)"
 else
   command -v git >/dev/null 2>&1 || die "git is required for remote updates"
-  RESOLVED_SHA="$(git ls-remote "$REPO_URL" "$REF" "refs/heads/$REF" "refs/tags/$REF^{}" "refs/tags/$REF" | awk 'NR==1{print $1}')"
+  if [[ "$REF" =~ ^[0-9a-fA-F]{40}$ ]]; then
+    RESOLVED_SHA="$(printf '%s' "$REF" | tr 'A-F' 'a-f')"
+  else
+    RESOLVED_SHA="$(git ls-remote "$REPO_URL" "$REF" "refs/heads/$REF" "refs/tags/$REF^{}" "refs/tags/$REF" | awk 'NR==1{print $1}')"
+  fi
   [ -n "$RESOLVED_SHA" ] || die "could not resolve remote ref: $REF"
   TMP_DIR="$(mktemp -d)"
   SOURCE_REPO_ROOT="$TMP_DIR/source"
@@ -89,6 +94,7 @@ fi
 
 if [ "$MODE" = "dry-run" ]; then
   print_plan
+  [ -z "$RESOLVED_SHA" ] || echo "Apply with the pinned revision: --ref $RESOLVED_SHA --confirm-plan $PLAN_SHA"
   exit 0
 fi
 
