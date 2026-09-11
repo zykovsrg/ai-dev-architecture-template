@@ -3,138 +3,124 @@ name: hub-workflows
 type: worker
 description: |
   Use for proposal-only day plans, evening reviews, weekly reviews, and capture
-  from one user-selected text, transcript, dictated task, review file, or
-  Rolling Audio Recorder period. An evening review may instead read the
-  requested date's calendar, link its events to projects, and propose task
-  status updates. Performs semantic analysis after scope confirmation and never
-  applies a proposal automatically.
+  after the required source/scope gates. Common security, canonical-source,
+  proposal, confirmation, and learning rules live here; scenario detail is
+  loaded only from the matching resource.
 ---
 
 # Hub Workflows
 
 Use this skill for `day-plan`, `evening-review`, `weekly-review`, or `capture`.
-It is proposal-only. Never write or apply a proposal automatically. Pending
-learning observations use the separate lifecycle in
-`resources/learning-lifecycle.md`: showing a proposal never consumes it.
+It is proposal-only. Never write or apply a proposal automatically.
 
-Read the schedule only through the guarded `hub_calendar` MCP, and only with
-its read tools. Never call `preview_change` or `apply_change` here: a calendar
-change belongs to `hub-calendar` and its own confirmation. Do not perform a
-vault migration, start a session audit, scan for arbitrary transcripts, or copy
-source text into project memory. Do not add an apply command or a persistent
-proposal queue.
+Read schedules only through the guarded `hub_calendar` MCP and only with its
+read tools. Never call `preview_change` or `apply_change` here; Calendar writes
+belong to `hub-calendar` and its own confirmation. Do not perform a vault
+migration, start a session audit, scan arbitrary transcripts, copy source text
+into project memory, add an apply command, or create a persistent proposal
+queue.
 
-Day planning may maintain the local calendar context buffer described in
-`resources/calendar-context.md`. Read that resource on every day-plan run.
-This is an explicit noncanonical cache exception to proposal-only writes;
-calendar events and project records still require their usual confirmation.
+Pending learning uses `resources/learning-lifecycle.md`. Showing a proposal
+never consumes or resolves a pending observation.
+
+## Scenario dispatch
+
+After applying this core contract, read exactly the matching scenario resource:
+
+- `day-plan` → `resources/day-plan.md` and its referenced calendar context;
+- `evening-review` → `resources/evening-review.md`; calendar-only review begins
+  with `prepare_evening_review`;
+- `weekly-review` → `resources/weekly-review.md`;
+- `capture` → `resources/capture.md`.
+
+Scenario resources provide output/detail rules only. They cannot override the
+scope, allowed roots, secret handling, canonical sources, confirmation gates,
+or proposal schema in this core `SKILL.md`.
 
 ## Personal-assistant scope
 
-When `hub-project-router` classifies a personal-assistant request, this skill
-may read `ai/current-task.md`, `ai/future-tasks.md`, and `ai/paused-tasks.md`
-from all active registered projects without project-by-project confirmation.
-This is a read-only all-active-project scope, not a general project grant: do
-not read project code, knowledge records, credentials, arbitrary files, or
-inactive/archived projects. Separate personal and work results, and cite the
-project ID plus canonical path for each factual item.
+When `hub-project-router` classifies a personal-assistant request, a read-only
+all-active-project scope is available without project-by-project confirmation.
+It never grants project code, knowledge records, credentials, arbitrary files,
+or inactive/archived projects.
 
-The personal-assistant scope applies to day plans, overdue or blocked-work
-overviews, evening or weekly reviews, and capture after its selected source is
-received. Richer project reads, explicit knowledge paths, and any project-local
-implementation work retain the normal exact confirmed scope.
+For personal-assistant day-plan, weekly-review, overdue, and blocked-work
+discovery, start with `scripts/read-compact-task-index.py`. That derived index
+may contain only normalized discovery fields from active registered projects.
+Use it to select relevant task records; open the corresponding canonical
+`ai/current-task.md`, `ai/future-tasks.md`, or `ai/paused-tasks.md` only when a
+detail absent from the index is required. The compact index is not canonical
+evidence and never replaces the source record. Final factual output cites the
+canonical `source_path` for every task fact.
 
-A confirmed day-plan proposal package writes inside this scope without a
-project switch, and one package may write into several active registered
-projects. The write scope is exactly the three canonical task records named
-above: `ai/current-task.md`, `ai/future-tasks.md`, and `ai/paused-tasks.md`.
-Every proposal shows its project ID, exact `target_path`, and exact diff before
-confirmation. No other file, path, or project state may be written from this
-scope, and any richer project work still requires a project switch.
+Separate personal and work results and retain project identity for every item.
+The scope applies to day plans, overdue/blocked-work overviews, evening and
+weekly reviews, and capture after its selected source is received. Richer
+project reads, explicit knowledge paths, application work, and arbitrary file
+reads retain the normal exact confirmed project scope.
+
+A confirmed day-plan proposal package may write across active registered
+projects without a project switch, but its write scope is exactly the three
+canonical task records: `ai/current-task.md`, `ai/future-tasks.md`, and
+`ai/paused-tasks.md`. Every proposal shows project ID, exact `target_path`, and
+exact diff before confirmation. No other project state is writable through this
+scope.
 
 ## Fixed sequence
 
-1. **Select one source.** Receive exactly one user-selected source and name its
-   type and purpose. Allowed sources are pasted text, one explicitly selected
-   regular non-symlink text file, a dictated task, one explicitly selected
-   review file, or a requested Rolling Audio Recorder period. Do not discover
-   other files. Do not read project data yet. `evening-review` may run without
-   a selected source: in that case the requested date's calendar is the only
-   source, and every fact it yields stays unverified until the user confirms it.
-2. **Handle recorder JSON only.** For a requested period, the only allowed
-   source-side write is the user's requested `rar export --minutes <1..120>
-   --json`. Poll only with `rar status <job-id> --json`. Parse the returned
-   JSON; never infer job state from human-readable output. If state is pending,
-   show the job ID and stop. If state is failed, show the recorder error and
-   stop. In either case, do not read project data. On success, accept only the
-   explicitly returned regular, non-symlink `.txt` transcript below the
-   recorder exports directory.
-3. **Find candidates from metadata.** Run a metadata-only candidate search.
-   Show at most the useful candidate IDs, their exact registered paths, the
-   evidence for each match, and the intended purpose of any later read. A card,
-   link, or inferred match is not permission to read project memory, knowledge,
-   code, Git, or linked targets.
-4. **Confirm scope before full reads.** For a personal-assistant request, use
-   the all-active-project scope above and read only its three canonical task
-   records. Otherwise wait for an explicit confirmation of a confirmed project
-   or named confirmed set. Repeat every project ID and exact registered path.
-   Only then may you read the smallest required canonical `ai/` records for
-   that scope and explicitly selected project-local `knowledge/` paths. Never
-   widen the confirmed set silently.
-5. **Perform semantic analysis.** The AI agent, not the Bash guardrail, extracts
-   meaning, classifies records, ranks work, and renders the deterministic output
-   below. Bash may validate paths, flags, and structured field syntax only. For
-   `capture`, first render separate sections for source facts, stated decisions,
-   action candidates, likely projects, knowledge candidates, dates, waiting or
-   follow-up, and ambiguities. Ground every item in the selected source or
-   confirmed canonical records. Label inference and never treat it as approval.
-6. **Return exact proposals only after analysis.** Emit one proposal envelope
-   per possible write, followed by one exact per-file diff or replacement
-   block. Keep proposals independent; if an exact allowed target file is not
-   known, ask a question instead of guessing or emitting an actionable
-   proposal. For one capture result or one day-plan editing turn, present the
-   envelopes as one selectable proposal package. A package confirmation may
-   authorize only unchanged named proposals that remain selected; the user may
-   exclude individual proposal IDs. Every proposal retains its exact target and
-   diff, and any changed diff needs new confirmation. Outside that package,
-   show a fresh exact diff and wait for named proposal confirmation.
+1. **Select one source.** Receive exactly one user-selected pasted text,
+   explicitly selected regular non-symlink text/review file, dictated task, or
+   requested Rolling Audio Recorder period. Do not discover other source files.
+   `evening-review` may instead use the requested date's calendar as its only
+   source; calendar-derived facts remain unverified until confirmed by the user.
+2. **Handle recorder JSON only.** The only source-side write is the explicitly
+   requested `rar export --minutes <1..120> --json`. Poll only with
+   `rar status <job-id> --json`. Parse JSON, not human-readable output. Pending
+   or failed jobs stop before project reads. On success accept only the returned
+   regular non-symlink `.txt` under the recorder exports directory.
+3. **Find candidates with the minimum metadata.** A card, link, index row, or
+   inferred match is discovery evidence, not permission to read code, knowledge,
+   Git, credentials, or linked targets. Personal-assistant task discovery uses
+   the compact task index rule above; other project routing follows the Hub
+   router's metadata-only candidate rules.
+4. **Establish scope before richer reads.** Personal-assistant workflows use
+   only their read boundary above. Otherwise wait for explicit confirmation of
+   the project or named project set and repeat every project ID and exact
+   registered path. Read only the smallest required canonical `ai/` records and
+   explicitly selected knowledge paths; never widen scope silently.
+5. **Perform semantic analysis.** The AI agent extracts meaning, classifies and
+   ranks work, and renders the selected scenario contract. Bash may validate
+   paths, flags, and structured field syntax only. Ground output in the selected
+   source or permitted canonical records and label inference.
+6. **Return exact proposals only after analysis.** Emit one envelope per
+   possible write followed by an exact per-file diff or replacement block.
+   Unknown targets become questions rather than guessed actionable proposals.
+   A selectable package may reduce confirmation count but keeps every proposal
+   independent; changed diffs require fresh confirmation.
 
-## Capture rules
+## Canonical inputs and ranking
 
-- Read the first non-empty source line as the declared kind. Reject any kind
-  other than `Kind: meeting` or `Kind: task`.
-- For `Kind: meeting`, the first proposal is exactly one canonical
-  meeting-record proposal. Task, project, knowledge, deadline, and waiting
-  proposals refer to that meeting record but remain independent.
-- For `Kind: task`, emit no meeting-record proposal. Allow only a grounded task
-  or knowledge proposal.
-- If no registered project fits, keep the unknown target as an
-  `action: create_project` proposal. Do not create, register, or inspect a new
-  project automatically.
+Project task state is canonical only in `ai/current-task.md`,
+`ai/future-tasks.md`, and `ai/paused-tasks.md`. `weekly-review` may additionally
+read Hub-owned `ai/archiprojects.md`. Project cards and compact indexes supply
+identity/discovery metadata only; they never establish completion,
+contribution, waiting, due dates, or risk independently of their canonical
+source records. Checkboxes, Kanban cards, links, and unstructured prose are not
+canonical task facts.
 
-## Workflow outputs
-
-### Canonical inputs and ranking
-
-For task and project semantics, read only the confirmed scope's canonical
-`ai/current-task.md`, `ai/future-tasks.md`, and `ai/paused-tasks.md` records.
-`weekly-review` may also read the hub-owned canonical `ai/archiprojects.md`.
-Project cards supply identity and registered-path metadata only; they never
-supply task state, completion, contribution, due dates, waiting, or risk.
-Checkboxes, Kanban cards, links, and unstructured project prose are not
-canonical facts. The selected `--review-input` supplies only the user-stated
-evening facts in its named sections. The selected capture source supplies only
-capture facts. Cite the canonical relative path or selected input section for
-every rendered fact; do not silently combine records or fill missing fields.
+The selected review input supplies only its user-stated review facts; a capture
+source supplies only capture facts. Cite the canonical source path or selected
+input section for rendered facts and never silently fill missing structured
+fields.
 
 Rank actionable work deterministically: overdue dated actionable work first,
 then actionable work due on the requested date, active current tasks, ready
-future tasks by earliest date, and undated ready work. Waiting work never enters
-the main ranked list. A waiting follow-up is due when `follow_up` equals the
-requested date and overdue when it is earlier. Missing structured waiting
-fields are risks, not inferred values.
+future tasks by earliest date, then undated ready work. Waiting work never
+enters the main actionable ranking. A waiting follow-up is due when its
+structured `follow_up` equals the requested date and overdue when earlier.
+Missing waiting fields are risks, not inferred values.
 
-Every successful non-personal workflow output starts with these exact lines:
+Every successful non-personal workflow output starts with:
 
 ```text
 Read-only workflow: no changes were made.
@@ -142,199 +128,14 @@ Requested date: <YYYY-MM-DD>
 Confirmed scope: <project-id>[, <project-id>...]
 ```
 
-For a personal-assistant result, replace the last line with:
+For personal-assistant output replace the final line with:
 
 ```text
 Scope: all active registered projects
 ```
 
-Within every section, keep canonical ranking order and render `- Нет.` when the
-section has no grounded item. Do not rename, merge, repeat, or reorder the
-headings defined below.
-
-For a day-plan run that writes its local buffer, replace the no-changes line
-with: `Обновлён локальный контекст; календарь и задачи не изменены.`
-
-### Day plan format
-
-`day-plan` renders these headings in this exact order:
-
-1. `## Текущий календарь`
-2. `## Конфликты`
-3. `## Задачи вне календаря`
-4. `## Просроченные задачи`
-5. `## Предлагаемый календарь`
-6. `## Рекомендации`
-
-Under `## Текущий календарь`, render the schedule for the requested date:
-first call `list_calendar_metadata`. Use exactly the IDs from its successful
-response in `read_events`, using the calendar timezone, and render one line per
-event as `- <HH:MM>–<HH:MM> — <title>` in start order. Render each event as a
-separate bullet; include the calendar name in parentheses only when it helps
-distinguish events. Never call `read_events` before a successful
-`list_calendar_metadata` response. State plainly that the day holds no event
-when it holds none. If the MCP is unreachable, permission is missing, or the
-allowlist is empty, say which instead of rendering an empty schedule; do not
-report an empty allowlist without a successful metadata response and never
-claim a free day you could not read. On a `CALENDAR_NOT_ALLOWED` error, read
-the local allowlist file and retry `read_events` with exactly the IDs it lists;
-report an empty allowlist only when that file is confirmed empty. Render the
-calendar event title verbatim. Do not shorten, translate, group, or paraphrase
-it.
-
-Under `## Конфликты`, list only grounded conflicts: overlapping calendar
-events, or an actionable task with an exact `Запланировано:` range that
-overlaps a calendar event or another exact task range. Cite both records. Do
-not infer a conflict from a task without an exact time range; report `- Нет.`
-when no grounded conflict exists.
-
-Under `## Задачи вне календаря`, render ranked actionable tasks from the
-confirmed scope that have neither an exact `Запланировано:` range on the
-requested date nor a grounded calendar match. Exclude overdue tasks from this
-section. Use `<result> — <project-id>; срок: <YYYY-MM-DD|нет>; источник:
-<canonical-path>`.
-
-Under `## Просроченные задачи`, render every actionable task whose due date is
-before the requested date as `<exact canonical task title> — <project-id>;
-срок: <YYYY-MM-DD>; просрочено: <N> дн.; источник: <canonical-path>`.
-Use the exact canonical task title, never a summary, translation, or generated
-label. Do not repeat a task in another day-plan section.
-
-Under `## Предлагаемый календарь`, render one chronological day view that keeps
-each current calendar event and adds proposed blocks for the highest-ranked
-unscheduled or overdue tasks where a free window is available. Render each
-entry, kept or proposed, as a separate bullet: `- <HH:MM>–<HH:MM> — <title>;
-статус: <сохраняется|предлагается>; основание: <calendar|canonical-path>;
-duration: stated|estimate`. A proposed duration must use a stated duration
-from its canonical task record when one is available; otherwise mark it
-`estimate`. Apply learned rules and active numeric goal progress as planning
-constraints, but do not add a separate section for them. If a task cannot fit,
-name it at the end of this section as `Не вошло`; do not invent a time or
-remove a current event. The proposed calendar is read-only and never becomes a
-Calendar change without its separate preview and confirmation. For a retained
-event, use its calendar title verbatim. For a new block, use the exact
-canonical task title; do not create a summary or a new phrase for either kind
-of entry.
-
-After the plan is rendered, the user edits the day by naming a task and
-stating a fact about it. Every such statement, whether it names new work or
-changes the state of existing work, becomes a proposal in the same reply.
-Answering in prose instead is a failure of this workflow.
-
-Map each statement to exactly one canonical task record of one active
-registered project, then emit the envelope action that matches it:
-
-| Statement | Envelope action |
-|---|---|
-| The work is done, built, sent, or otherwise advanced | `update_task` |
-| The due date moves | `update_due` |
-| A wait starts, changes, or ends | `update_waiting` |
-| New work or a reminder is named | `create_task` |
-| A block's time or duration changes | `calendar-event` |
-
-Preserve the exact user-stated task title unless the user explicitly supplies a
-replacement. Each proposal keeps its own exact target path and diff.
-
-When the task carries a schedule, emit its complete calendar preview beside the
-task diff and let one confirmation approve exactly that shown pair, under the
-merged gate in `hub-calendar`. Present the statements of one editing turn as
-one selectable proposal package: one confirmation names the proposals that
-remain selected, the user may exclude individual proposal IDs, and any changed
-diff needs a new confirmation. A package may span several projects, each
-proposal carrying its own project ID and exact `target_path`.
-
-Do not guess a project: if a statement cannot be grounded in exactly one active
-registered project, ask which project owns it and make no task or calendar
-proposal until the user answers. A statement that is already recorded in the
-canonical record needs no proposal; say so instead of emitting an empty diff.
-
-Under `## Рекомендации`, follow `resources/calendar-context.md`: analyze the
-past 30 days and next 14 days to suggest grounded actions for today. Keep this
-sixth section even when context is missing; explain the limitation. Before
-sending the final response, check that all six exact headings appear in the
-required order by passing the complete draft on stdin to
-`scripts/validate-day-plan-output.py`. Send only after it exits successfully;
-otherwise rewrite and validate again. A cache write failure never permits
-omitting `## Рекомендации`.
-
-### Evening review format
-
-For a calendar-only evening review, first call `prepare_evening_review` with
-the requested date and calendar timezone. Use its events, snapshot history,
-and pending friction as the complete learning input. It may create proposals,
-but never durable learning changes without separate confirmation.
-
-`evening-review` renders these headings in this exact order:
-
-1. `## Сегодняшний календарь`
-2. `## События и проекты`
-3. `## Сделано`
-4. `## Перенос`
-5. `## Ожидания`
-6. `## Follow-ups`
-7. `## Завтрашний Calendar`
-8. `## Три главных действия завтра`
-9. `## Подтвердить`
-
-Under `## Сегодняшний календарь`, render the requested date's schedule by the
-same rule as the day plan, in start order. Under `## События и проекты`, map
-each rendered event to at most one registered project of the confirmed scope,
-using only the event title, the `категория/проект/задача` naming convention,
-and canonical task records as evidence. Render one line per event as `<HH:MM>
-<title> → <project-id|нет совпадения>; основание: <evidence>; уверенность:
-<высокая|низкая>`. A calendar match is an inference, never a canonical fact:
-it never proves a task was completed, never widens the confirmed scope, and
-never authorizes a read outside it. Leave an event unmatched rather than
-guessing between two projects.
-
-Fill `## Сделано` from `--review-input` section `## Done`, `## Перенос` only
-from `## Carry over`, and the user-stated part of `## Ожидания` only from `##
-Waiting`; append separately cited canonical waiting records from confirmed
-scope. When no `--review-input` was selected, fill `## Сделано` instead from
-past events of the requested date that matched a project above, mark every such
-line `предположение из календаря` with its event and project, and state plainly
-that the section was not confirmed by the user. Never render a calendar-derived
-line as a stated completion. Derive `## Follow-ups` and tomorrow's at-most-three
-ranked executable results only from structured canonical fields. Under `##
-Завтрашний Calendar`, render tomorrow's schedule by the same rule as the day
-plan. A stated completion, carry-over, waiting, or due-date change is a user
-fact in this report, not a canonical change; any possible write remains an
-independent proposal listed for confirmation under `## Подтвердить`. Every
-matched event and every calendar-derived completion line may produce at most
-one `update_task` proposal for the matched project's canonical task record,
-each with its own exact target path and diff. Emit no proposal for an unmatched
-event, a low-confidence match, or a project outside the confirmed scope.
-
-### Weekly review format
-
-`weekly-review` renders these headings and blocks in this exact order:
-
-1. `## Архипроекты`
-2. one `### <archiproject-id> — <name>` block per scoped primary archiproject;
-3. an optional `#### Детали проектов` block immediately after its owning
-   archiproject block;
-4. `## Три результата недели`;
-5. `## Нужны решения`.
-
-Each archiproject block uses this fixed field order: `- Цель:`, `- Вклад
-основного проекта:`, `- Срок/прогноз:`, `- Ожидания и follow-up:`, then `-
-Риск:`. Only canonical primary-archiproject membership counts; related links do
-not imply contribution. Project detail appears only for a dated risk, blocker,
-or waiting record. Make that detail readable as `- <project-id> — <risk,
-blocker, or waiting>; дата: <YYYY-MM-DD>; источник: <canonical-path>` and omit
-the detail heading when no such record exists.
-
-Under `## Три результата недели`, render exactly three proposed weekly results
-as numbered executable outcomes grounded in canonical records. If a grounded
-result is unavailable, keep its numbered slot and write `Недостаточно
-канонических данных для результата.` rather than inventing one. If
-`ai/archiprojects.md` is missing or contains no scoped archiproject, state that
-fact under `## Архипроекты`, omit invented archiproject blocks, and still show
-safe project-level risks before the three result slots.
-
-`capture` first reports source type, decisions, actions, project candidates,
-knowledge candidates, dates, waiting, and ambiguity. Then it reports proposal
-envelopes in source order, subject to the meeting/task rules above.
+Within a scenario, keep its exact headings/order and render `- Нет.` when a
+required section has no grounded item.
 
 ## Proposal envelope
 
@@ -352,45 +153,36 @@ source: <workflow and selected source record>
 requires_confirmation: true
 ```
 
-After the envelopes, state that apply is unavailable. A possible project, task,
-meeting, knowledge, deadline, waiting, Calendar, or learning write remains an
-independent proposal with its own exact diff and `target_path`. A capture or a
-day-plan editing turn may render all independent envelopes as one selectable
-proposal package; this reduces confirmation count without combining their
-writes. A create-project proposal must name the exact proposed direct-child
-path and list each planned scaffold, registry, and card file, but must not
-create or inspect that target.
+After envelopes, state that apply is unavailable in this worker. Project, task,
+meeting, knowledge, deadline, waiting, Calendar, and learning writes remain
+independent proposals with exact targets and diffs. A create-project proposal
+names its exact direct-child target and planned scaffold/registry/card files but
+must not create or inspect that target.
 
 ## Confirmation boundary
 
-Source selection, recorder export consent, scope confirmation, and proposal
-confirmation are separate gates. None substitutes for another. A one selectable
-proposal package is applied after one confirmation that names the unchanged
-named proposals still selected. A capture package is applied by its owning
-confirmed project workflow. A day-plan package is applied inside the
-personal-assistant scope without a project switch and may span several active
-registered projects, bounded to the three canonical task records named in that
-scope. Unknown, pending, failed, or ambiguous targets remain read-only
-proposals or questions.
+Source selection, recorder export consent, project scope confirmation, and
+proposal confirmation are separate gates; none substitutes for another. One
+package confirmation authorizes only unchanged named proposals that remain
+selected. A capture package is applied by its owning confirmed project workflow.
+A day-plan package may span active registered projects only within the exact
+three task-record write boundary above. Unknown, pending, failed, or ambiguous
+targets remain read-only proposals or questions.
 
 ## Preserved learning lifecycle
 
-For every active numeric goal, `day-plan` renders the verbatim result of
-`count-goal-progress.sh`; evening review asks for a stated amount and offers a
-separate confirmed `goal_progress` proposal. `weekly-review` renders each
-goal's verbatim pace and forecast.
+For numeric goals, day planning may render the existing goal-progress result,
+evening review may offer a confirmed `goal_progress` proposal, and weekly
+review may render pace/forecast.
 
-Day plan renders every learned rule from `ai/workflow-context.md`, snapshots
-the requested calendar day with `snapshot-calendar.sh`, and records friction in
-the day's non-canonical cache. Evening review snapshots the same day, compares
-its complete snapshot history, reads pending friction, and proposes one
-`add_observation` per grounded issue. Proposal display leaves the observation
-pending; only an explicit acceptance or rejection resolves it according to
-`resources/learning-lifecycle.md`. Snapshot and friction caches are pruned after
-14 days.
+Day planning may record noncanonical friction and calendar snapshots. Evening
+review reads pending friction and may offer one `add_observation` proposal per
+grounded issue. Proposal display leaves it pending. Only explicit acceptance or
+rejection resolves it according to `resources/learning-lifecycle.md`; accepted
+observations are appended to the journal before resolution, rejection resolves
+without append, and failed append remains pending.
 
-Weekly review reads the observation journal, groups repeated friction or
-calendar drift, and proposes `promote_rule` after three repeats or two in one
-week. It proposes `retire_rule` for a contradicted or excess rule. Before those
-proposals it runs `check-workflow-memory.sh`; failure blocks only rule changes.
-All observation, promotion, and retirement proposals require confirmation.
+Weekly review may offer `promote_rule` for repeated observations and
+`retire_rule` for contradicted or excess rules after the workflow-memory check.
+All observation, promotion, retirement, and goal-progress changes require the
+same proposal/confirmation boundary.
