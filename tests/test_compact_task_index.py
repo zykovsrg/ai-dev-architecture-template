@@ -1,3 +1,4 @@
+import importlib.util
 import json
 import os
 import subprocess
@@ -5,8 +6,10 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
+ROOT = Path(__file__).resolve().parents[1]
 CURRENT = """Status: active
 Task ID: TASK-{project}-20260911-001
 Due: 2026-09-12
@@ -67,6 +70,17 @@ class CompactTaskIndexTests(unittest.TestCase):
             text=True, capture_output=True,
         )
 
+    def load_index_module(self):
+        scripts = str(ROOT / "scripts")
+        if scripts not in sys.path:
+            sys.path.insert(0, scripts)
+        spec = importlib.util.spec_from_file_location(
+            "compact_task_index_under_test", ROOT / "scripts/read-compact-task-index.py"
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
     def test_only_active_registered_projects_and_compact_fields(self):
         with tempfile.TemporaryDirectory() as tmp:
             result = self.run_index(self.make_hub(Path(tmp)))
@@ -76,6 +90,26 @@ class CompactTaskIndexTests(unittest.TestCase):
             self.assertEqual(set(rows[0]), {"project_id", "task_id", "title", "status", "due", "source_kind", "source_path"})
             self.assertNotIn("MUST_NOT_APPEAR", result.stdout)
             self.assertNotIn("## Goal", result.stdout)
+
+    def test_primary_discovery_does_not_full_read_task_bodies(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            hub = self.make_hub(Path(tmp))
+            marker = "BODY_MARKER_MUST_NOT_BE_FULL_READ_" + ("x" * 200000)
+            for path in (hub / "projects").glob("*/ai/*.md"):
+                path.write_text(path.read_text(encoding="utf-8") + "\n## Notes\n" + marker + "\n", encoding="utf-8")
+            module = self.load_index_module()
+            original = Path.read_text
+
+            def guarded_read_text(path, *args, **kwargs):
+                if path.name in {"current-task.md", "future-tasks.md", "paused-tasks.md"}:
+                    raise AssertionError("compact discovery must not full-read canonical task bodies")
+                return original(path, *args, **kwargs)
+
+            with mock.patch.object(Path, "read_text", new=guarded_read_text):
+                rows = module.build_index(hub)
+            output = json.dumps(rows, ensure_ascii=False)
+            self.assertNotIn("BODY_MARKER_MUST_NOT_BE_FULL_READ", output)
+            self.assertEqual({row["project_id"] for row in rows}, {"alpha", "beta"})
 
     def test_invalid_active_record_fails(self):
         with tempfile.TemporaryDirectory() as tmp:
