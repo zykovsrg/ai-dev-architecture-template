@@ -114,7 +114,9 @@ def preview(source, hub, source_sha=None):
     hub = hub.resolve()
     installed_file = hub / ".local" / "hub-release" / "installed.json"
     installed = {}
-    if installed_file.is_file() and not installed_file.is_symlink():
+    if installed_file.is_symlink():
+        raise ValueError("unsafe installed release metadata")
+    if installed_file.is_file():
         installed = {entry["target"]: entry["sha256"]
                      for entry in json.loads(installed_file.read_text(encoding="utf-8")).get("files", [])}
     operations = []
@@ -147,9 +149,14 @@ def apply(source, hub, confirmed_plan, source_sha=None, confirmed_source_sha=Non
     entries = {entry["target"]: entry for entry in plan["manifest"]["files"]}
     changed = [row for row in plan["operations"] if row["action"] in {"create", "replace"}]
     operation_id = uuid.uuid4().hex
-    backup_root = hub / ".local" / "hub-release" / "backups" / operation_id
+    state = hub / ".local" / "hub-release"
+    installed_file = state / "installed.json"
+    backup_root = state / "backups" / operation_id
     staging = Path(tempfile.mkdtemp(prefix="hub-release-"))
     applied = []
+    metadata_backup = None
+    metadata_stage = None
+    metadata_replaced = False
     try:
         for row in changed:
             entry = entries[row["target"]]
@@ -157,6 +164,10 @@ def apply(source, hub, confirmed_plan, source_sha=None, confirmed_source_sha=Non
             staged.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(source_root(source) / entry["source"], staged)
             os.chmod(staged, entry["mode"])
+        if installed_file.exists():
+            backup_root.mkdir(parents=True, exist_ok=True)
+            metadata_backup = backup_root / ".installed.json.before"
+            shutil.copy2(installed_file, metadata_backup)
         for row in changed:
             target = target_path(hub, row["target"])
             backup = backup_root / row["target"]
@@ -166,18 +177,34 @@ def apply(source, hub, confirmed_plan, source_sha=None, confirmed_source_sha=Non
             target.parent.mkdir(parents=True, exist_ok=True)
             os.replace(staging / row["target"], target)
             applied.append((target, backup if backup.exists() else None))
-        state = hub / ".local" / "hub-release"
+
         state.mkdir(parents=True, exist_ok=True)
-        state.joinpath("installed.json").write_text(json.dumps(plan["manifest"], sort_keys=True, separators=(",", ":")), encoding="utf-8")
+        fd, metadata_name = tempfile.mkstemp(prefix=".installed.", suffix=".tmp", dir=state)
+        metadata_stage = Path(metadata_name)
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(json.dumps(plan["manifest"], sort_keys=True, separators=(",", ":")))
+            handle.flush()
+        os.replace(metadata_stage, installed_file)
+        metadata_replaced = True
+        metadata_stage = None
         return {"operation_id": operation_id, "changed": [row["target"] for row in changed]}
     except Exception:
+        if metadata_replaced:
+            if metadata_backup is None:
+                installed_file.unlink(missing_ok=True)
+            else:
+                os.replace(metadata_backup, installed_file)
+                metadata_backup = None
         for target, backup in reversed(applied):
             if backup is None:
                 target.unlink(missing_ok=True)
             else:
                 os.replace(backup, target)
+        shutil.rmtree(backup_root, ignore_errors=True)
         raise
     finally:
+        if metadata_stage is not None:
+            metadata_stage.unlink(missing_ok=True)
         shutil.rmtree(staging, ignore_errors=True)
 
 
