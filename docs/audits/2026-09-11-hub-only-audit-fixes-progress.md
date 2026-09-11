@@ -179,6 +179,18 @@ Implementation regression run `34603713031` passed the complete architecture-foc
 
 Scoped result: all five authoritative remediation findings are fixed. No HIGH/MEDIUM finding from this remediation list remains open. This statement does not constitute a new architecture audit.
 
+## R2 final remediation
+
+- Finding: compact discovery emitted only the seven discovery fields, but the shared task parser still physically advanced through canonical task records after the compact metadata had already been obtained.
+- RED commit: `6a8182a8c001886c0dd9be6e949183e8480f49ea`.
+- RED run: `34606010422` — `failure` as expected.
+- Real failure cause: the controlled current-task iterator supplied all required metadata and the Goal title, then raised `AssertionError("body was read")` on the next read; the previous parser requested that next line because it continued toward EOF instead of stopping at the compact boundary.
+- GREEN commit: `720fcdaf380d34e801b53dfccc243bedc226a84e` (bounded parser implementation plus strict impossible-date error normalization; initial bounded-parser commit `3480cc73db72850a60cef9074e0df47e0c08b4f0`).
+- GREEN run: `34606344078` — `success`; consistency, Hub smoke, architecture tests, assistant workflows, full Python unittest suite and Calendar policy all passed.
+- Changed files: `tests/test_compact_task_index.py`, `scripts/task_records.py`, `docs/audits/2026-09-11-hub-only-audit-fixes-progress.md`. `scripts/read-compact-task-index.py` did not require a behavior change.
+- Tests: physical controlled-iterator read guard; exact seven discovery fields and source provenance; invalid/foreign current task IDs; invalid status; invalid/impossible due; malformed paused record; malformed future record; existing `tests/test_task_records.py`; complete repository unittest and integration acceptance set.
+- Result: PASS. Current-task compact parsing stops immediately after the required metadata and Goal title. Future/paused parsing retains record-by-record boundary scanning needed to discover the next heading, but stops parsing body content once compact metadata is complete. Full canonical parsing remains available separately through the full-record API and retains strict validation.
+
 ## Status
 
-Tasks 1–9 and independent verification remediation 1–5 are implemented. Hub-only distribution remains intact; standalone/template distribution has not been restored. No merge into `main` was performed. A final CI run on this progress-record commit is required before the branch is handed back for the next independent verification session.
+Tasks 1–9 and independent verification remediation 1–5 plus R2 final remediation are implemented. Hub-only distribution remains intact; standalone/template distribution has not been restored. No merge into `main` was performed. Final CI on the resulting branch HEAD must be green before handoff.
