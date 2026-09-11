@@ -20,6 +20,7 @@ MEMORY_FILES = {
 }
 RUNTIME_SCRIPTS = (
     "scripts/check-hub-registry.sh", "scripts/read-compact-project-index.sh",
+    "scripts/read-compact-task-index.py",
     "scripts/obsidian-task-sync.sh", "scripts/generate-obsidian-projects-kanban.sh",
     "scripts/count-goal-progress.sh", "scripts/snapshot-calendar.sh",
     "scripts/check-workflow-memory.sh", "scripts/check-session-review.py",
