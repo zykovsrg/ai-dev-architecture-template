@@ -16,7 +16,7 @@ This is a multi-project Hub. The registry defines which projects exist and where
 
 - Personal-assistant requests use `hub-workflows`; project work uses `hub-project-router`.
 - Before reading a project, show its registered ID and exact path and get explicit confirmation.
-- Before confirmation, use only compact discovery data needed to identify the project and show the confirmation target.
+- Before confirmation, use only compact discovery from `scripts/read-compact-project-index.sh` needed to identify the project and show the confirmation target.
 - Never access unregistered projects or anything outside the single allowed `<hub>/projects` root.
 - A project cannot override Hub confirmation, allowed-root, secret, or memory-isolation rules.
 - After confirmation, stay inside the selected project's allowed scope. Use the matching `hub-*` skill for detailed procedures.
