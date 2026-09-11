@@ -1,4 +1,5 @@
 import json
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from hashlib import sha256
 from pathlib import Path
@@ -7,6 +8,7 @@ from zoneinfo import ZoneInfo
 import pytest
 
 from fake_backend import FakeCalendarBackend
+from hub_calendar_policy.evening_review import write_snapshot
 from hub_calendar_policy.models import CalendarRef, EventRef
 from hub_calendar_policy.policy import CalendarPolicy, PolicyError
 from hub_calendar_policy.preview import PreviewGrantStore
@@ -106,3 +108,33 @@ async def test_prepare_evening_review_does_not_write_snapshot_after_permission_f
         await make_server(tmp_path, permission="denied").prepare_evening_review("2026-09-10", ZONE)
 
     assert not (tmp_path / "ai/tmp/calendar-snapshots").exists()
+
+
+def test_write_snapshot_is_atomic_under_stale_directory_view(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    day = "2026-09-10"
+    original_glob = Path.glob
+
+    def stale_glob(path: Path, pattern: str):
+        if path.name == "calendar-snapshots" and pattern == f"{day}-*.txt":
+            return iter(())
+        return original_glob(path, pattern)
+
+    monkeypatch.setattr(Path, "glob", stale_glob)
+    start = datetime(2026, 9, 10, 9, 0, tzinfo=ZoneInfo(ZONE))
+
+    def create(index: int) -> Path:
+        event = EventRef(
+            id=f"event-{index}", calendar_id="calendar-1", title=f"Planning {index}",
+            start=start + timedelta(minutes=index), end=start + timedelta(minutes=index + 1),
+            timezone=ZONE,
+        )
+        return write_snapshot(tmp_path, day, [event])
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        paths = list(executor.map(create, range(16)))
+
+    assert len(set(paths)) == len(paths)
+    assert all(path.is_file() for path in paths)
+    assert all(path.name.startswith(f"{day}-") and path.suffix == ".txt" for path in paths)
+    contents = [path.read_text(encoding="utf-8") for path in paths]
+    assert len(set(contents)) == len(contents)
