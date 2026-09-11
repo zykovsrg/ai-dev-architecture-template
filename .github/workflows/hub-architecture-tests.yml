@@ -3,7 +3,7 @@ name: Hub Architecture Tests
 on:
   push:
     branches:
-      - audit/hub-only-fixes-2026-09-11
+      - main
   pull_request:
     branches:
       - main
