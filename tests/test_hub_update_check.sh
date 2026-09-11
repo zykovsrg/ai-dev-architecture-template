@@ -18,7 +18,6 @@ fi
 grep -Fq 'Managed files differ' "$TEMP_DIR/result"
 grep -Fq 'AGENTS.md' "$TEMP_DIR/result"
 
-# The updater must delegate preview/apply to the content-addressed release engine.
 grep -Fq 'hub_release.py' "$ROOT/scripts/update-installed-hub.sh" || {
   echo 'FAIL: updater does not use hub_release.py' >&2
   exit 1
@@ -31,3 +30,39 @@ grep -Fq 'RESOLVED_SHA' "$ROOT/scripts/update-installed-hub.sh" || {
   echo 'FAIL: updater does not retain one resolved revision' >&2
   exit 1
 }
+
+# A reviewed remote preview must remain pinned even if the branch moves before apply.
+REMOTE="$TEMP_DIR/remote.git"
+WORK="$TEMP_DIR/work"
+git clone -q "$ROOT" "$WORK"
+git -C "$WORK" config user.name test
+git -C "$WORK" config user.email test@example.com
+git init -q --bare "$REMOTE"
+git -C "$WORK" remote add fixture "$REMOTE"
+git -C "$WORK" push -q fixture HEAD:refs/heads/moving-source
+SHA_A="$(git -C "$WORK" rev-parse HEAD)"
+
+PIN_HUB="$TEMP_DIR/pin-hub"
+mkdir -p "$PIN_HUB"
+bash "$ROOT/scripts/install.sh" --mode hub "$PIN_HUB" >/dev/null
+PREVIEW="$(HUB_RELEASE_REPO_URL="$REMOTE" bash "$ROOT/scripts/update-installed-hub.sh" --hub "$PIN_HUB" --ref moving-source --dry-run)"
+PLAN_SHA="$(printf '%s\n' "$PREVIEW" | awk '/Plan SHA256:/ {print $3; exit}')"
+PREVIEW_SHA="$(printf '%s\n' "$PREVIEW" | awk '/Resolved revision:/ {print $3; exit}')"
+[ "$PREVIEW_SHA" = "$SHA_A" ] || { echo 'FAIL: preview did not pin SHA A' >&2; exit 1; }
+[ -n "$PLAN_SHA" ] || { echo 'FAIL: preview did not emit plan hash' >&2; exit 1; }
+
+printf '\n<!-- branch moved to B -->\n' >> "$WORK/hub-template/AGENTS.md"
+git -C "$WORK" add hub-template/AGENTS.md
+git -C "$WORK" commit -q -m 'fixture: move source branch'
+SHA_B="$(git -C "$WORK" rev-parse HEAD)"
+git -C "$WORK" push -q fixture HEAD:refs/heads/moving-source
+[ "$SHA_A" != "$SHA_B" ] || { echo 'FAIL: fixture branch did not move' >&2; exit 1; }
+
+HUB_RELEASE_REPO_URL="$REMOTE" bash "$ROOT/scripts/update-installed-hub.sh" \
+  --hub "$PIN_HUB" --ref moving-source --apply \
+  --confirm-plan "$PLAN_SHA" --confirm-source-sha "$SHA_A" >/dev/null
+
+if grep -Fq 'branch moved to B' "$PIN_HUB/AGENTS.md"; then
+  echo 'FAIL: apply silently used moved branch SHA B' >&2
+  exit 1
+fi
