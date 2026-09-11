@@ -1,0 +1,55 @@
+name: Hub Architecture Tests
+
+on:
+  push:
+    branches:
+      - audit/hub-only-fixes-2026-09-11
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  architecture:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Prepare repository test temp path
+        run: sudo mkdir -p /private/tmp && sudo chmod 1777 /private/tmp
+      - name: Consistency
+        if: always()
+        run: bash scripts/check-consistency.sh
+      - name: Hub smoke
+        if: always()
+        run: bash scripts/hub-smoke-test.sh
+      - name: Architecture smoke
+        if: always()
+        run: bash scripts/architecture-test.sh
+      - name: Assistant workflows
+        if: always()
+        run: bash scripts/assistant-workflows-test.sh
+      - name: Architecture unit tests
+        if: always()
+        run: python3 -m unittest discover -s tests -v
+
+  calendar-policy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install calendar policy and test dependencies
+        run: python3 -m pip install -e ./calendar-policy pytest pytest-asyncio
+      - name: Calendar policy tests
+        working-directory: calendar-policy
+        run: python3 -m pytest -q

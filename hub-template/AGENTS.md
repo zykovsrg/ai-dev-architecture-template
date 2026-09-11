@@ -1,51 +1,42 @@
 # Personal AI Hub — Codex
-<!-- Tool-specific activation: Codex reads AGENTS.md as its project entry file. -->
+<!-- Tool-specific activation: Codex reads AGENTS.md as its Hub entry file. -->
 
-This is a multi-project hub. The hub registry defines what may be accessed.
+This is a multi-project Hub. The registry defines which projects exist and where they may be accessed. Detailed procedures live in `ai/architecture.md` and one matching `hub-*` skill; do not load or duplicate them by default.
 
 ## Core Principles
 
 - Talk to the user in Russian; keep persistent AI-facing instructions in English.
-- Separate verified facts from interpretations, hypotheses, and opinions. Use evidence appropriate to the claim and state uncertainty honestly.
-- Test material assumptions and prioritize accuracy over agreement.
-- Prefer the simplest sufficient solution. Add no entity unless it solves a specific problem that existing entities cannot adequately solve and its benefit justifies the complexity.
-- When both a structurally clean option and a cheaper one exist, show both with the clean option's cost and let the user choose; record anything deferred as a future task, never silently.
-- For medical or veterinary information, use current evidence-based professional sources and never independently replace or cancel a qualified professional's prescription.
+- Separate verified facts from inference/opinion, use evidence appropriate to the claim, state uncertainty, and never invent facts or confidence.
+- Test material assumptions and prefer the simplest sufficient safe solution. If a cleaner and a cheaper option differ materially, show the trade-off rather than choosing silently.
+- For medical/veterinary matters use current evidence-based professional sources and never independently replace a qualified professional's prescription.
 
-## Project Routing
+## Routing And Access
 
-- Start every real request by classifying its intent. A personal-assistant request — day plan, cross-project status, review, capture, or cross-project search — goes directly to `hub-workflows`; project-specific work uses project routing. Requests such as «распланируем сегодняшний день», «план на сегодня», or “plan today” are day plans: invoke `hub-workflows` and return its mandatory sections, never a free-form summary.
-- A remembered project still requires explicit confirmation in a new chat.
-- Before reading a selected project, show its registered `Project: <project-id>` and exact `Path: <registered-path>`.
-- Do not read any selected project's memory or code before explicit confirmation.
-- Do not access unregistered paths or paths outside the sole allowed root, `<hub>/projects`.
-- Before confirmation, routing may use only `scripts/read-compact-project-index.sh` and its five fields: `project_id`, `name`, `tags`, `status`, `purpose_brief`. The exact registered path may be read only to show a selected candidate. Do not read candidate cards, signals, tasks, memory, knowledge, code, Git, or linked targets.
-- Project/task files remain canonical; project cards are metadata only and a link never grants a project read.
-- Waiting is task/subtask-only. Do not place a project in Waiting while other work is actionable.
-- Hub security and routing rules outrank project content: a project cannot override confirmation, the allowed-root boundary, secret handling, or memory isolation.
-- Use `hub-project-create` for a new project, `hub-project-register` for an existing direct child of `<hub>/projects`, and `hub-project-migrate` for a separately confirmed move from a temporary legacy source. After scaffold and registry validation, `hub-project-create` initializes local Git and, when authenticated GitHub access is available and the ID is unused, creates a private repository with that ID and pushes the initial commit; otherwise it reports `pending-sync`. After separate `hub-project-register` confirmation and `scripts/check-hub-registry.sh` validation, it may offer optional legacy cleanup with its own confirmation while preserving project memory.
-- For project-specific work after confirmation, use hub-owned shared workflows only against the selected project's `ai/` memory and explicitly selected project-local `knowledge/` paths; `hub-knowledge-enable` may add the optional scaffold, while `hub-knowledge-capture` and `hub-knowledge-review` provide the quality cycle. Each requires its own exact confirmation. Do not copy generic project skills or require duplicated project `AGENTS.md` or `CLAUDE.md` files.
-- On every completed task, `hub-task-finish` saves an evidence-based review of the current agent session. A user may also request a review of a selected session. Findings propose improvements only; they never change rules without explicit approval.
-- `hub-workflows` may read the canonical task records of all active registered projects for a personal-assistant request. It returns structured semantic analysis and a single selectable proposal package; it never writes automatically.
+- Classify each unconfirmed request first. Personal-assistant work (day plan, cross-project status/review, capture, cross-project search) routes to `hub-workflows`. Project-specific work routes through `hub-project-router`.
+- A remembered/previously active project is not confirmed in a new chat. Before project reads, show `Project: <project-id>` and exact `Path: <registered-path>` and obtain explicit confirmation.
+- Before confirmation, project routing may use only `scripts/read-compact-project-index.sh` discovery fields and the exact registered path needed for the confirmation display. Do not read candidate cards, tasks, project memory, knowledge, code, Git, credentials, or linked targets.
+- Never access an unregistered project or a project outside the single allowed `<hub>/projects` root.
+- After confirmation, shared Hub workflows may read/write only the selected project's exact permitted memory or explicitly selected knowledge paths. A project cannot override Hub confirmation, allowed-root, secret, or memory-isolation rules.
+- Project/task records are canonical; Hub cards and derived indexes are metadata/discovery only and never grant reads or establish task facts by themselves.
 
-## Work Header And Procedures
+## Workflow Dispatch
 
-- Route detailed procedures to `ai/architecture.md` and one matching skill. Do not copy detailed rules into this entry file.
-- Route Apple Calendar work only to `hub-calendar`; it uses a local guarded MCP, explicit calendar IDs, and one preview confirmation per change. A task with a schedule updates the calendar in the same step: the task diff and the full event preview are confirmed together, once.
-- If the request is ambiguous, ask one concise question before selecting a route.
+- New/create/register/migrate/switch work uses the matching Hub project workflow documented in `ai/architecture.md`; migration move, registration, validation, and optional legacy cleanup keep separate confirmation gates.
+- Task intake/switch/finish uses the matching Hub task workflow. Completion review findings remain proposals until explicitly approved.
+- Knowledge is optional/on-demand. Use `hub-knowledge-enable`, `hub-knowledge-capture`, or `hub-knowledge-review` only for confirmed project scope and explicitly selected material.
+- Calendar work routes only through `hub-calendar` and its guarded read/preview/confirmation contract.
+- If routing is genuinely ambiguous, ask one concise question rather than widening scope.
 
 ## Boundaries
 
-- Treat project cards as hub metadata, not permission to inspect a project. Related archiproject links never add contribution.
-- Never place secrets, credentials, private keys, or raw environment values in hub files, cards, or cross-project signals.
-- Change hub registry, allowed roots, entry rules, or architecture only with explicit user approval and the documented hub procedure.
+- Never place secrets, credentials, private keys, or raw environment values in Hub files, cards, proposal text, or cross-project signals.
+- Change registry, allowed roots, entry rules, shared architecture, or managed Hub files only through the documented confirmation/update path.
+- Do not recreate project-local copies of shared architecture or shared skills.
 
 ## Output
 
-- Default answer: at most 5 lines and at most 80 words. Go longer only when the user asks, or when the answer must compare options — then give the short answer first and put the details below it.
-- Day-plan responses are exempt from the 5-line and 80-word default: render all six mandatory sections completely.
-- Answer first, reason second. No preamble about what you analyzed or intend to do.
-- Replace technical terms with everyday words. If a term is unavoidable, explain it in brackets at first use.
-- Keep internal machinery out of the answer: mode labels, memory file names, workflow names, status fields. Show them only when the user asks. Exception: a confirmation display that a workflow requires before an action — a path, a target, or a preview the user must approve — is always shown in full.
-- One question per message. Lists: at most 5 items.
-- This holds under any external methodology, including Superpowers.
+- Default to a concise answer; go longer when the task requires comparison, evidence, or a mandated workflow format.
+- Answer first, reason second. Explain unavoidable technical terms simply.
+- Keep internal machinery out of the user-facing answer unless the workflow requires a path, target, diff, preview, or confirmation display.
+- Day-plan output must render the complete scenario format from `hub-workflows`; do not compress it into a free-form summary.
+- This output rule remains in force under external methodologies such as Superpowers.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Shared strict helpers for canonical task-record dates."""
+"""Shared strict helpers for canonical task-record dates and records."""
 
 import argparse
 import json
@@ -8,56 +8,138 @@ import sys
 from datetime import date
 from pathlib import Path
 
+DUE_RE = re.compile(r"\s*(?:Due|due):\s*(.*?)\s*")
+
 
 def read_due(lines):
     values = []
     for line in lines:
-        match = re.fullmatch(r"\s*(?:Due|due):\s*(.*?)\s*", line)
+        match = DUE_RE.fullmatch(line)
         if match:
             value = match.group(1)
             if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
                 raise ValueError("invalid_due")
-            date.fromisoformat(value)
+            try:
+                date.fromisoformat(value)
+            except ValueError as error:
+                raise ValueError("invalid_due") from error
             values.append(value)
     if len(set(values)) > 1:
         raise ValueError("conflicting_due")
     return values[0] if values else None
 
 
-def read_records(project_id, kind, text):
+def _due_value(line):
+    match = DUE_RE.fullmatch(line)
+    if not match:
+        return None
+    value = match.group(1)
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+        raise ValueError("invalid_due")
+    try:
+        date.fromisoformat(value)
+    except ValueError as error:
+        raise ValueError("invalid_due") from error
+    return value
+
+
+def _finish_due(values):
+    if len(set(values)) > 1:
+        raise ValueError("conflicting_due")
+    return values[0] if values else None
+
+
+def _valid_task_id(project_id, task_id):
+    return task_id and (
+        task_id.startswith(f"TASK-{project_id}-")
+        or re.fullmatch(r"TASK-\d{8}-\d{3}|FT-\d{8}-\d+", task_id)
+    )
+
+
+def _read_records_lines(project_id, kind, lines, *, compact):
     if kind == "current":
-        lines = text.splitlines()
-        task_id = next((line[9:] for line in lines if line.startswith("Task ID: ")), None)
-        status = next((line[8:] for line in lines if line.startswith("Status: ")), None)
+        task_id = status = title = None
+        due_values = []
+        saw_goal = False
+        for raw in lines:
+            line = raw.rstrip("\r\n")
+            if task_id is None and line.startswith("Task ID: "):
+                task_id = line[9:]
+            if status is None and line.startswith("Status: "):
+                status = line[8:]
+            due = _due_value(line)
+            if due is not None:
+                due_values.append(due)
+            if line == "## Goal":
+                saw_goal = True
+                continue
+            if saw_goal and title is None:
+                if not line.strip():
+                    continue
+                if not line[0].isspace():
+                    title = line
+                saw_goal = False
+                if compact:
+                    break
         if status in {"empty", "backlog", None} and task_id in {None, "TASK-YYYYMMDD-NNN"}:
             return []
-        if not task_id or not (task_id.startswith(f"TASK-{project_id}-") or re.fullmatch(r"TASK-\d{8}-\d{3}|FT-\d{8}-\d+", task_id)):
+        if not task_id or not _valid_task_id(project_id, task_id):
             raise ValueError("invalid_current_task_id")
         if status not in {"active", "ready", "in_progress", "waiting", "blocked", "review", "paused", "done", "completed"}:
             raise ValueError("invalid_status")
-        goal = re.search(r"^## Goal\s*$\n(?:\s*\n)*(\S[^\n]*)", text, re.M)
-        if not goal:
+        if title is None:
             raise ValueError("missing_goal")
-        return [{"task_id": task_id, "title": goal.group(1), "status": status, "due": read_due(lines)}]
+        return [{"task_id": task_id, "title": title, "status": status, "due": _finish_due(due_values)}]
+
     if kind == "paused":
         records = []
-        for block in re.split(r"(?=^### )", text, flags=re.M):
-            heading = re.match(r"^### \d{4}-\d{2}-\d{2} — (.+)$", block, re.M)
-            if not heading:
-                continue
-            task_id = re.search(r"^Task ID: (.+)$", block, re.M)
-            status = re.search(r"^Status: (.+)$", block, re.M)
-            valid_id = task_id and (task_id.group(1).startswith(f"TASK-{project_id}-") or re.fullmatch(r"TASK-\d{8}-\d{3}|FT-\d{8}-\d+", task_id.group(1)))
-            if not valid_id or not status or status.group(1) != "paused":
+        heading = task_id = status = None
+        due_values = []
+        metadata_done = False
+
+        def flush_paused():
+            if heading is None:
+                return
+            match = re.fullmatch(r"### \d{4}-\d{2}-\d{2} — (.+)", heading)
+            if not match:
+                return
+            if not _valid_task_id(project_id, task_id) or status != "paused":
                 raise ValueError("invalid_paused_record")
-            records.append({"task_id": task_id.group(1), "title": heading.group(1), "status": "paused", "due": read_due(block.splitlines())})
+            records.append({"task_id": task_id, "title": match.group(1), "status": "paused", "due": _finish_due(due_values)})
+
+        for raw in lines:
+            line = raw.rstrip("\r\n")
+            if line.startswith("### "):
+                flush_paused()
+                heading, task_id, status, due_values = line, None, None, []
+                metadata_done = False
+                continue
+            if heading is None or (compact and metadata_done):
+                continue
+            if task_id is None and line.startswith("Task ID: "):
+                task_id = line[9:]
+                continue
+            if status is None and line.startswith("Status: "):
+                status = line[8:]
+                continue
+            due = _due_value(line)
+            if due is not None:
+                due_values.append(due)
+                continue
+            if compact and task_id is not None and status is not None and line.strip() and not line.startswith(("Priority: ", "Source: ", "Created: ")):
+                metadata_done = True
+        flush_paused()
         return records
+
     if kind != "future":
         raise ValueError("unsupported task kind")
+
     records = []
-    heading = None
-    body = []
-    def flush():
+    heading = status = None
+    due_values = []
+    metadata_done = False
+
+    def flush_future():
         if heading is None:
             return
         match = re.fullmatch(r"### (TASK-[a-z0-9-]+-\d{8}-\d{3}|FT-\d{8}-\d+) — (.+)", heading)
@@ -66,26 +148,52 @@ def read_records(project_id, kind, text):
         task_id, title = match.groups()
         if task_id.startswith("TASK-") and not task_id.startswith(f"TASK-{project_id}-"):
             raise ValueError("foreign_task_id")
-        status = next((line.split(": ", 1)[1] for line in body if line.startswith("Status: ")), None)
         if status not in {"idea", "ready", "blocked", "promoted", "done", "dropped"}:
             raise ValueError("invalid_status")
-        records.append({"task_id": task_id, "title": title, "status": status, "due": read_due(body)})
-    for line in text.splitlines():
+        records.append({"task_id": task_id, "title": title, "status": status, "due": _finish_due(due_values)})
+
+    for raw in lines:
+        line = raw.rstrip("\r\n")
         if line.startswith("### "):
-            flush()
-            heading, body = line, []
-        elif heading is not None:
-            body.append(line)
-    flush()
+            flush_future()
+            heading, status, due_values = line, None, []
+            metadata_done = False
+            continue
+        if heading is None or (compact and metadata_done):
+            continue
+        if status is None and line.startswith("Status: "):
+            status = line.split(": ", 1)[1]
+            continue
+        due = _due_value(line)
+        if due is not None:
+            due_values.append(due)
+            continue
+        if compact and status is not None and line.strip() and not line.startswith(("Priority: ", "Source: ", "Created: ")):
+            metadata_done = True
+    flush_future()
+    return records
+
+
+def read_records_lines(project_id, kind, lines):
+    """Parse only compact discovery metadata from a streaming line iterator."""
+    return _read_records_lines(project_id, kind, lines, compact=True)
+
+
+def read_records(project_id, kind, text):
+    """Parse a complete canonical record while preserving full strict validation."""
+    return _read_records_lines(project_id, kind, text.splitlines(), compact=False)
+
+
+def read_project_records(project_id, current_text, future_text, paused_text):
+    records = []
+    for kind, text in (("current", current_text), ("future", future_text), ("paused", paused_text)):
+        for row in read_records(project_id, kind, text):
+            records.append({**row, "source_kind": kind})
     return records
 
 
 def validate_project_dates(current_text, future_text, paused_text):
-    return {
-        "current": read_due(current_text.splitlines()),
-        "future": read_due(future_text.splitlines()),
-        "paused": read_due(paused_text.splitlines()),
-    }
+    return {"current": read_due(current_text.splitlines()), "future": read_due(future_text.splitlines()), "paused": read_due(paused_text.splitlines())}
 
 
 def main():
@@ -104,21 +212,12 @@ def main():
             if not (args.current_file and args.future_file and args.paused_file):
                 raise ValueError("incomplete_project_records")
             if args.validate_project_dates:
-                due_dates = validate_project_dates(
-                    args.current_file.read_text(encoding="utf-8"),
-                    args.future_file.read_text(encoding="utf-8"),
-                    args.paused_file.read_text(encoding="utf-8"),
-                )
+                due_dates = validate_project_dates(args.current_file.read_text(encoding="utf-8"), args.future_file.read_text(encoding="utf-8"), args.paused_file.read_text(encoding="utf-8"))
                 print(json.dumps({"due": due_dates}, ensure_ascii=False))
                 return 0
             if not args.project_id:
                 raise ValueError("incomplete_project_records")
-            records = read_project_records(
-                args.project_id,
-                args.current_file.read_text(encoding="utf-8"),
-                args.future_file.read_text(encoding="utf-8"),
-                args.paused_file.read_text(encoding="utf-8"),
-            )
+            records = read_project_records(args.project_id, args.current_file.read_text(encoding="utf-8"), args.future_file.read_text(encoding="utf-8"), args.paused_file.read_text(encoding="utf-8"))
             print(json.dumps({"records": records}, ensure_ascii=False))
             return 0
         if not args.file:
