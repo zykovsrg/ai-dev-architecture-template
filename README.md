@@ -45,26 +45,29 @@ bash scripts/install.sh --mode hub /path/to/_ai-hub
 
 ## Обновление Hub
 
-Работайте из локально скачанного репозитория. Сначала показывайте preview, затем применяйте только подтверждённый план:
+Безопасный вариант — одна локальная source revision для preview и apply:
 
 ```bash
-bash scripts/update-installed-hub.sh --hub /path/to/_ai-hub --source /path/to/ai-dev-architecture-template --dry-run
+bash scripts/update-installed-hub.sh --hub /path/to/_ai-hub --source /path/to/pinned-repository --dry-run
+bash scripts/update-installed-hub.sh --hub /path/to/_ai-hub --source /path/to/pinned-repository --apply --confirm-plan <PLAN_SHA256>
 ```
 
-Точный content-addressed update flow дополнительно проверяется release-тестами. Не применяйте непоказанные изменения и не перезаписывайте пользовательскую память Hub.
+Для remote branch/tag preview дополнительно печатает `Resolved revision: <COMMIT_SHA>`. При apply передавайте именно этот SHA как `--ref <COMMIT_SHA>` вместе с подтверждённым plan hash. Если source bytes или план изменились, apply откажется продолжать.
 
-## Канонические источники
+Updater не перезаписывает изменённые managed files без baseline, не заменяет существующую пользовательскую Hub memory и делает rollback уже заменённых файлов при ошибке apply. Инструкции вида `curl ... | bash` не являются поддерживаемым update path.
 
-- shared workflows и security — `hub-template/`;
-- project identity/path — Hub registry;
-- текущие/будущие/приостановленные задачи — `ai/current-task.md`, `ai/future-tasks.md`, `ai/paused-tasks.md` внутри проекта;
-- ориентация по проекту — `ai/project-context.md`;
+## Source Of Truth / Канонические источники
+
+- shared workflows, routing и security policy — установленный Hub; distributable source — `hub-template/`;
+- project identity, status и exact path — `ai/project-registry.md` в Hub;
+- текущее/приостановленное/будущее task state — `ai/current-task.md`, `ai/paused-tasks.md`, `ai/future-tasks.md` внутри проекта;
+- project orientation — `ai/project-context.md`;
 - долговечные решения — `ai/decisions.md`;
-- семантическая история результата — `ai/changelog.md`;
-- подробные повторно используемые материалы — optional `knowledge/`;
-- точная история файлов и кода — Git.
+- семантическая история результатов — `ai/changelog.md`;
+- подробные повторно используемые references — optional `knowledge/`, только по запросу;
+- точная история файлов и кода — Git конкретного проекта.
 
-Derived indexes и Obsidian-представления помогают искать и планировать, но не заменяют канонические записи.
+Project cards, compact indexes и Obsidian — производные представления для навигации и планирования. Они не заменяют реестр, task memory, knowledge или Git как канонические источники.
 
 ## Проверки репозитория
 
