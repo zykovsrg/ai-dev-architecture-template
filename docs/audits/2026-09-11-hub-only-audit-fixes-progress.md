@@ -110,6 +110,75 @@ Compact task discovery has two relevant measurements:
 
 Interpretation: the guaranteed benefit is bounded discovery scope and exclusion of prose/secrets/arbitrary files; byte/token reduction appears when canonical task records contain normal workflow instructions/context, not when input records are already minimal.
 
+## Independent verification remediation
+
+### Remediation 1 — compact index allowed root
+
+- Finding: `scripts/read-compact-task-index.py` trusted registry `Path:` values without proving that the resolved project root was one real direct child of `<hub>/projects`.
+- RED commit: `7d37140a8bca113c5d8497238e11cba4bb5ff09f`.
+- RED run: `34602361683` — failed as expected after the new path-boundary regression tests were added.
+- Observed failure: outside-root, nested, symlink-escape and traversal fixtures were not rejected by the previous implementation.
+- GREEN commit: `2a6f2ebc4a8f35534956aeadfd3179611a7cbe37`.
+- GREEN run: `34602437346` — `success`.
+- Changed files: `tests/test_compact_task_index.py`, `scripts/read-compact-task-index.py`.
+- Tests: outside `<hub>/projects`; nested rather than direct child; symlink escape; lexical path traversal; existing strict task-record validation retained.
+- Result: PASS. Registry project paths must be absolute, non-symlink, traversal-free directories whose resolved parent is exactly the resolved `<hub>/projects` root.
+
+### Remediation 2 — true compact / lazy discovery
+
+- Finding: compact output excluded task bodies, but primary discovery still used `read_text()` on complete `current-task.md`, `future-tasks.md` and `paused-tasks.md` files for every active project.
+- RED commit: `1bc17742139158f8fb24ab45ade689544a48ffa4`.
+- RED run: `34602529560` — failed as expected because canonical task files were still full-read.
+- Observed failure: a regression fixture that forbids `Path.read_text()` for canonical task records exposed the eager reads; a large body marker was included in the fixture but must never be needed for discovery.
+- GREEN commit: `f0664658148d7f6ff3b7f2011091fdbda42d52c2`.
+- GREEN run: `34602651781` — `success`.
+- Changed files: `tests/test_compact_task_index.py`, `scripts/read-compact-task-index.py`, `scripts/task_records.py`.
+- Tests: primary discovery succeeds while full-file `Path.read_text()` is forbidden; the large body marker is absent from output; per-kind ID/status/due/title validation remains shared and strict.
+- Result: PASS. Primary discovery now streams canonical files line-by-line and retains only metadata required for `project_id`, `task_id`, `title`, `status`, `due`, `source_kind`, `source_path`; full canonical records remain available for a later selected-task read.
+
+### Remediation 3 — pin remote source SHA
+
+- Finding: mutable remote refs could be resolved separately for preview and apply, so a branch/tag moving between those phases could change the applied source after review.
+- RED commit: `19f619498f00d4554ac214f65d5a1eec9e23c669`.
+- RED run: `34602766464` — branch-move regression failed against the old wrapper/engine contract.
+- Observed failure: the old runtime did not carry one immutable source commit SHA as an enforced part of the reviewed apply contract.
+- GREEN commit: `91bd694160b3e8a8b6552059842c4ba97b41c6d2`.
+- Test-fixture-only follow-ups: `94d2f59a47576c6714b5ede37ac868b5c20dc52e`, `dc132367fa365cdaedf30b92af9c71ec5f0f28e7`, `ece45a3f81c1ebe1dcc233cb2ef78f01ae36cfa2`, `68b3b32f39efea06f7908bcc53b0a17b5fdd23cc`; these isolated the GitHub Actions shallow checkout, canonical `_ai-hub` basename and installer `.gitignore` normalization from the source-pinning assertion without changing release behavior.
+- GREEN run: `34603713031` — architecture and calendar-policy jobs both `success`.
+- Changed files: `tests/test_hub_update_check.sh`, `scripts/update-installed-hub.sh`, `scripts/hub_release.py`.
+- Tests: local remote branch is previewed at SHA A, moved to SHA B, then confirmed apply uses SHA A and must not install the B marker; CLI/wrapper requires reviewed source SHA for remote apply.
+- Result: PASS. Remote preview resolves one SHA, that SHA participates in the plan hash, and remote apply fetches/enforces the confirmed SHA rather than re-resolving the mutable ref.
+
+### Remediation 4 — transactional installed.json
+
+- Finding: managed files were rollback-capable but `.local/hub-release/installed.json` was written after file apply with an ordinary non-transactional write.
+- RED commit: `f5f2d7ff63356e6949eb4396a4909f2858509832`.
+- RED run: `34603019413` — new metadata fault-injection regressions failed against the previous implementation.
+- Observed failure: failure before/during metadata replacement could leave managed files and release metadata in different states, including when no prior `installed.json` existed.
+- GREEN commit: `fc427e542483dbf966f22e8e6d0f9f0cd64df7e9`.
+- GREEN run: `34603713031` — all focused release unit tests and the full architecture/calendar workflow passed.
+- Changed files: `tests/test_hub_release.py`, `scripts/hub_release.py`.
+- Tests: metadata staging failure and metadata replace failure, each with previous `installed.json` present and absent; managed-file and metadata before-state checked after failure.
+- Result: PASS. Metadata is staged in the release state directory, installed by atomic `os.replace`, backed up when present, restored exactly on failure or returned to absence when originally absent, with temporary-file cleanup inside the same rollback boundary as managed files.
+
+### Remediation 5 — remove retired managed files
+
+- Finding: preview only considered incoming manifest files, so files managed by the previous release but removed upstream remained installed indefinitely.
+- RED commit: `101d1065e08732b68496db477b77b6e83d74b0d9`.
+- RED run: `34603221855` — new retired-file regressions failed against the previous implementation.
+- Observed failure: a previously managed target absent from the incoming manifest produced no remove operation; local modification, create-if-missing preservation and removal rollback therefore had no enforceable lifecycle.
+- GREEN commit: `4d89f64605e15e4792460eb9414f71f41f8a2782`.
+- GREEN run: `34603713031` — all four retired-file regressions plus the full architecture/calendar workflow passed.
+- Changed files: `tests/test_hub_release_retired.py`, `scripts/hub_release.py`.
+- Tests: unchanged retired managed file → remove/apply delete; locally modified retired managed file → conflict/preserve; retired create-if-missing memory file → preserve; injected failure after removal → exact bytes and mode restored.
+- Result: PASS. Preview now compares previous installed baseline with the incoming manifest, generates safe remove operations only for unchanged previous `managed` targets, preserves create-if-missing state and includes removal in transactional rollback.
+
+### Remediation regression status
+
+Implementation regression run `34603713031` passed the complete architecture-focused workflow. It verifies the new compact-path and lazy-discovery tests, immutable source-SHA wrapper test, transactional release metadata tests and retired-file tests together with Hub-only consistency, Hub smoke, architecture smoke, assistant workflows, the complete Python unittest suite and the full Calendar policy pytest suite.
+
+Scoped result: all five authoritative remediation findings are fixed. No HIGH/MEDIUM finding from this remediation list remains open. This statement does not constitute a new architecture audit.
+
 ## Status
 
-Tasks 1–9 implemented. Functional acceptance is green. This file is the final audit-only documentation change; its own CI run must also pass before the branch is declared ready for independent review.
+Tasks 1–9 and independent verification remediation 1–5 are implemented. Hub-only distribution remains intact; standalone/template distribution has not been restored. No merge into `main` was performed. A final CI run on this progress-record commit is required before the branch is handed back for the next independent verification session.
