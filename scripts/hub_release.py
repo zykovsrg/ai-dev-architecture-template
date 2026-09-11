@@ -5,13 +5,13 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import stat
 import sys
 import tempfile
 import uuid
 from pathlib import Path
-
 
 MEMORY_FILES = {
     "ai/allowed-roots.md", "ai/active-project.md", "ai/archiprojects.md",
@@ -32,6 +32,14 @@ RUNTIME_SCRIPTS = (
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def normalize_source_sha(value):
+    if value is None:
+        return None
+    if not re.fullmatch(r"[0-9a-fA-F]{40}", value):
+        raise ValueError("invalid source commit SHA")
+    return value.lower()
 
 
 def decide(current, installed, incoming):
@@ -100,7 +108,8 @@ def emit(payload):
     print(json.dumps(payload, sort_keys=True, separators=(",", ":")))
 
 
-def preview(source, hub):
+def preview(source, hub, source_sha=None):
+    source_sha = normalize_source_sha(source_sha)
     manifest = build_manifest(source)
     hub = hub.resolve()
     installed_file = hub / ".local" / "hub-release" / "installed.json"
@@ -118,14 +127,18 @@ def preview(source, hub):
             action = decide(current, installed.get(entry["target"]), entry["sha256"])
         operations.append({"target": entry["target"], "action": action,
                            "current_sha256": current, "incoming_sha256": entry["sha256"]})
-    payload = {"manifest": manifest, "operations": operations}
+    payload = {"manifest": manifest, "operations": operations, "source_sha": source_sha}
     payload["plan_sha256"] = hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
     return payload
 
 
-def apply(source, hub, confirmed_plan):
+def apply(source, hub, confirmed_plan, source_sha=None, confirmed_source_sha=None):
+    source_sha = normalize_source_sha(source_sha)
+    confirmed_source_sha = normalize_source_sha(confirmed_source_sha)
+    if source_sha != confirmed_source_sha:
+        raise ValueError("source revision changed; apply the reviewed source SHA")
     hub = hub.resolve()
-    plan = preview(source, hub)
+    plan = preview(source, hub, source_sha=source_sha)
     if plan["plan_sha256"] != confirmed_plan:
         raise ValueError("plan changed; preview again before applying")
     conflicts = [row["target"] for row in plan["operations"] if row["action"] == "conflict"]
@@ -179,16 +192,20 @@ def main():
     preview_command = commands.add_parser("preview")
     preview_command.add_argument("--source", required=True, type=Path)
     preview_command.add_argument("--hub", required=True, type=Path)
+    preview_command.add_argument("--source-sha")
     apply_command = commands.add_parser("apply")
     apply_command.add_argument("--source", required=True, type=Path)
     apply_command.add_argument("--hub", required=True, type=Path)
     apply_command.add_argument("--confirm-plan", required=True)
+    apply_command.add_argument("--source-sha")
+    apply_command.add_argument("--confirm-source-sha")
     args = parser.parse_args()
     if args.command == "preview":
-        emit(preview(args.source, args.hub))
+        emit(preview(args.source, args.hub, source_sha=args.source_sha))
         return 0
     if args.command == "apply":
-        emit(apply(args.source, args.hub, args.confirm_plan))
+        emit(apply(args.source, args.hub, args.confirm_plan,
+                   source_sha=args.source_sha, confirmed_source_sha=args.confirm_source_sha))
         return 0
     expected = build_manifest(args.source)
     if args.command == "build":
