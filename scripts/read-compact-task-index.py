@@ -46,6 +46,21 @@ def parse_registry(path: Path) -> list[dict[str, str]]:
     return projects
 
 
+def registered_project_root(hub: Path, project: dict[str, str]) -> Path:
+    allowed_root = hub / "projects"
+    if allowed_root.is_symlink() or not allowed_root.is_dir():
+        raise ValueError("invalid Hub projects root")
+    allowed_root = allowed_root.resolve()
+
+    candidate = Path(project["path"]).expanduser()
+    if not candidate.is_absolute() or ".." in candidate.parts or candidate.is_symlink():
+        raise ValueError(f"invalid registered project path: {project['project_id']}")
+    resolved = candidate.resolve()
+    if not resolved.is_dir() or resolved.parent != allowed_root:
+        raise ValueError(f"invalid registered project path: {project['project_id']}")
+    return resolved
+
+
 def safe_record(project_root: Path, relative: str) -> Path:
     project_root = project_root.resolve()
     path = project_root / relative
@@ -61,9 +76,7 @@ def build_index(hub: Path) -> list[dict[str, object]]:
     for project in sorted(parse_registry(hub / "ai/project-registry.md"), key=lambda item: item["project_id"]):
         if project["status"] != "active":
             continue
-        project_root = Path(project["path"]).expanduser()
-        if not project_root.is_absolute() or project_root.is_symlink() or not project_root.is_dir():
-            raise ValueError(f"invalid registered project path: {project['project_id']}")
+        project_root = registered_project_root(hub, project)
         texts = {}
         paths = {}
         for kind, relative in SOURCE_FILES.items():
