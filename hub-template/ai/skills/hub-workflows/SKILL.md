@@ -6,8 +6,8 @@ description: |
   from one user-selected text, transcript, dictated task, review file, or
   Rolling Audio Recorder period. An evening review may instead read the
   requested date's calendar, link its events to projects, and propose task
-  status updates. Performs semantic analysis after scope
-  confirmation and never applies a proposal automatically.
+  status updates. Performs semantic analysis after scope confirmation and never
+  applies a proposal automatically.
 ---
 
 # Hub Workflows
@@ -60,16 +60,15 @@ scope, and any richer project work still requires a project switch.
    review file, or a requested Rolling Audio Recorder period. Do not discover
    other files. Do not read project data yet. `evening-review` may run without
    a selected source: in that case the requested date's calendar is the only
-   source, and every fact it yields stays unverified until the user confirms
-   it.
+   source, and every fact it yields stays unverified until the user confirms it.
 2. **Handle recorder JSON only.** For a requested period, the only allowed
-   source-side write is the user's requested
-   `rar export --minutes <1..120> --json`. Poll only with
-   `rar status <job-id> --json`. Parse the returned JSON; never infer job state
-   from human-readable output. If state is pending, show the job ID and stop.
-   If state is failed, show the recorder error and stop. In either case, do not
-   read project data. On success, accept only the explicitly returned regular,
-   non-symlink `.txt` transcript below the recorder exports directory.
+   source-side write is the user's requested `rar export --minutes <1..120>
+   --json`. Poll only with `rar status <job-id> --json`. Parse the returned
+   JSON; never infer job state from human-readable output. If state is pending,
+   show the job ID and stop. If state is failed, show the recorder error and
+   stop. In either case, do not read project data. On success, accept only the
+   explicitly returned regular, non-symlink `.txt` transcript below the
+   recorder exports directory.
 3. **Find candidates from metadata.** Run a metadata-only candidate search.
    Show at most the useful candidate IDs, their exact registered paths, the
    evidence for each match, and the intended purpose of any later read. A card,
@@ -96,10 +95,9 @@ scope, and any richer project work still requires a project switch.
    proposal. For one capture result or one day-plan editing turn, present the
    envelopes as one selectable proposal package. A package confirmation may
    authorize only unchanged named proposals that remain selected; the user may
-   exclude individual proposal
-   IDs. Every proposal retains its exact target and diff, and any changed diff
-   needs new confirmation. Outside that package, show a fresh exact diff and
-   wait for named proposal confirmation.
+   exclude individual proposal IDs. Every proposal retains its exact target and
+   diff, and any changed diff needs new confirmation. Outside that package,
+   show a fresh exact diff and wait for named proposal confirmation.
 
 ## Capture rules
 
@@ -170,24 +168,25 @@ with: `Обновлён локальный контекст; календарь 
 
 Under `## Текущий календарь`, render the schedule for the requested date:
 first call `list_calendar_metadata`. Use exactly the IDs from its successful
-response in `read_events`, using the calendar timezone, and render one line per event as
-`- <HH:MM>–<HH:MM> — <title>` in start order. Render each event as a separate
-bullet; include the calendar name in parentheses only when it helps distinguish
-events. Never call `read_events` before a successful `list_calendar_metadata`
-response. State plainly that the day holds no event when it holds none. If the
-MCP is unreachable, the permission is missing, or the allowlist is empty, say
-which of those it is instead of rendering an empty schedule; do not report an
-empty allowlist without a successful metadata response and never claim a free
-day you could not read. On a `CALENDAR_NOT_ALLOWED` error, read the local
-allowlist file and retry `read_events` with exactly the IDs it lists; report an
-empty allowlist only when that file is confirmed empty. Render the calendar
-event title verbatim. Do not shorten, translate, group, or paraphrase it.
+response in `read_events`, using the calendar timezone, and render one line per
+event as `- <HH:MM>–<HH:MM> — <title>` in start order. Render each event as a
+separate bullet; include the calendar name in parentheses only when it helps
+distinguish events. Never call `read_events` before a successful
+`list_calendar_metadata` response. State plainly that the day holds no event
+when it holds none. If the MCP is unreachable, permission is missing, or the
+allowlist is empty, say which instead of rendering an empty schedule; do not
+report an empty allowlist without a successful metadata response and never
+claim a free day you could not read. On a `CALENDAR_NOT_ALLOWED` error, read
+the local allowlist file and retry `read_events` with exactly the IDs it lists;
+report an empty allowlist only when that file is confirmed empty. Render the
+calendar event title verbatim. Do not shorten, translate, group, or paraphrase
+it.
 
 Under `## Конфликты`, list only grounded conflicts: overlapping calendar
-events, or an actionable task with an exact `Запланировано:` range that overlaps
-a calendar event or another exact task range. Cite both records. Do not infer a
-conflict from a task without an exact time range; report `- Нет.` when no
-grounded conflict exists.
+events, or an actionable task with an exact `Запланировано:` range that
+overlaps a calendar event or another exact task range. Cite both records. Do
+not infer a conflict from a task without an exact time range; report `- Нет.`
+when no grounded conflict exists.
 
 Under `## Задачи вне календаря`, render ranked actionable tasks from the
 confirmed scope that have neither an exact `Запланировано:` range on the
@@ -205,17 +204,17 @@ Under `## Предлагаемый календарь`, render one chronological
 each current calendar event and adds proposed blocks for the highest-ranked
 unscheduled or overdue tasks where a free window is available. Render each
 entry, kept or proposed, as a separate bullet: `- <HH:MM>–<HH:MM> — <title>;
-статус: <сохраняется|предлагается>;
-основание: <calendar|canonical-path>; duration: stated|estimate`. A proposed
-duration must use a stated duration from its canonical task record when one is
-available; otherwise mark it `estimate`. Apply learned rules and active numeric
-goal progress as planning constraints, but do not add a separate section for
-them. If a task cannot fit, name it at the end of this section as `Не вошло`;
-do not invent a time or remove a current event. The proposed calendar is
-read-only and never becomes a Calendar change without its separate preview and
-confirmation. For a retained event, use its calendar title verbatim. For a new
-block, use the exact canonical task title; do not create a summary or a new
-phrase for either kind of entry.
+статус: <сохраняется|предлагается>; основание: <calendar|canonical-path>;
+duration: stated|estimate`. A proposed duration must use a stated duration
+from its canonical task record when one is available; otherwise mark it
+`estimate`. Apply learned rules and active numeric goal progress as planning
+constraints, but do not add a separate section for them. If a task cannot fit,
+name it at the end of this section as `Не вошло`; do not invent a time or
+remove a current event. The proposed calendar is read-only and never becomes a
+Calendar change without its separate preview and confirmation. For a retained
+event, use its calendar title verbatim. For a new block, use the exact
+canonical task title; do not create a summary or a new phrase for either kind
+of entry.
 
 After the plan is rendered, the user edits the day by naming a task and
 stating a fact about it. Every such statement, whether it names new work or
@@ -249,18 +248,21 @@ registered project, ask which project owns it and make no task or calendar
 proposal until the user answers. A statement that is already recorded in the
 canonical record needs no proposal; say so instead of emitting an empty diff.
 
-Under `## Рекомендации`, follow `resources/calendar-context.md`: analyze
-the past 30 days and next 14 days to suggest grounded actions for today.
-Keep this sixth section even when context is missing; explain the limitation.
-Before sending the final response, check that all six exact headings appear in
-the required order by passing the complete draft on stdin to
+Under `## Рекомендации`, follow `resources/calendar-context.md`: analyze the
+past 30 days and next 14 days to suggest grounded actions for today. Keep this
+sixth section even when context is missing; explain the limitation. Before
+sending the final response, check that all six exact headings appear in the
+required order by passing the complete draft on stdin to
 `scripts/validate-day-plan-output.py`. Send only after it exits successfully;
 otherwise rewrite and validate again. A cache write failure never permits
 omitting `## Рекомендации`.
 
 ### Evening review format
 
-For a calendar-only evening review, first call `prepare_evening_review` with the requested date and calendar timezone. Use its events, snapshot history, and pending friction as the complete learning input. It may create proposals, but never durable learning changes without separate confirmation.
+For a calendar-only evening review, first call `prepare_evening_review` with
+the requested date and calendar timezone. Use its events, snapshot history,
+and pending friction as the complete learning input. It may create proposals,
+but never durable learning changes without separate confirmation.
 
 `evening-review` renders these headings in this exact order:
 
@@ -278,29 +280,29 @@ Under `## Сегодняшний календарь`, render the requested date'
 same rule as the day plan, in start order. Under `## События и проекты`, map
 each rendered event to at most one registered project of the confirmed scope,
 using only the event title, the `категория/проект/задача` naming convention,
-and canonical task records as evidence. Render one line per event as
-`<HH:MM> <title> → <project-id|нет совпадения>; основание: <evidence>;
-уверенность: <высокая|низкая>`. A calendar match is an inference, never a
-canonical fact: it never proves a task was completed, never widens the
-confirmed scope, and never authorizes a read outside it. Leave an event
-unmatched rather than guessing between two projects.
+and canonical task records as evidence. Render one line per event as `<HH:MM>
+<title> → <project-id|нет совпадения>; основание: <evidence>; уверенность:
+<высокая|низкая>`. A calendar match is an inference, never a canonical fact:
+it never proves a task was completed, never widens the confirmed scope, and
+never authorizes a read outside it. Leave an event unmatched rather than
+guessing between two projects.
 
-Fill `## Сделано` from `--review-input` section `## Done`, `## Перенос`
-only from `## Carry over`, and the user-stated part of `## Ожидания` only from
-`## Waiting`; append separately cited canonical waiting records from confirmed
+Fill `## Сделано` from `--review-input` section `## Done`, `## Перенос` only
+from `## Carry over`, and the user-stated part of `## Ожидания` only from `##
+Waiting`; append separately cited canonical waiting records from confirmed
 scope. When no `--review-input` was selected, fill `## Сделано` instead from
 past events of the requested date that matched a project above, mark every such
 line `предположение из календаря` with its event and project, and state plainly
-that the section was not confirmed by the user. Never render a
-calendar-derived line as a stated completion. Derive `## Follow-ups` and tomorrow's at-most-three ranked executable
-results only from structured canonical fields. Under `## Завтрашний Calendar`,
-render tomorrow's schedule by the same rule as the day plan. A stated
-completion, carry-over, waiting, or due-date change is a user fact in this
-report, not a canonical change; any possible write remains an independent
-proposal listed for confirmation under `## Подтвердить`. Every matched event
-and every calendar-derived completion line may produce at most one
-`update_task` proposal for the matched project's canonical task record, each
-with its own exact target path and diff. Emit no proposal for an unmatched
+that the section was not confirmed by the user. Never render a calendar-derived
+line as a stated completion. Derive `## Follow-ups` and tomorrow's at-most-three
+ranked executable results only from structured canonical fields. Under `##
+Завтрашний Calendar`, render tomorrow's schedule by the same rule as the day
+plan. A stated completion, carry-over, waiting, or due-date change is a user
+fact in this report, not a canonical change; any possible write remains an
+independent proposal listed for confirmation under `## Подтвердить`. Every
+matched event and every calendar-derived completion line may produce at most
+one `update_task` proposal for the matched project's canonical task record,
+each with its own exact target path and diff. Emit no proposal for an unmatched
 event, a low-confidence match, or a project outside the confirmed scope.
 
 ### Weekly review format
@@ -340,7 +342,7 @@ Use one complete envelope for every candidate change:
 
 ```yaml
 proposal_id: P-<workflow>-<date>-<ordinal>
-action: <create_project|update_project|create_task|update_task|update_due|update_waiting|create_knowledge|update_knowledge|calendar-event>
+action: <create_project|update_project|create_task|update_task|update_due|update_waiting|create_knowledge|update_knowledge|calendar-event|goal_progress|add_observation|promote_rule|retire_rule>
 target_kind: <project|project-task|project-knowledge|shared-meeting|calendar-event>
 target_project: <registered-id|none>
 target_path: <exact-project-or-knowledge-path|calendar:not-configured>
@@ -350,14 +352,14 @@ source: <workflow and selected source record>
 requires_confirmation: true
 ```
 
-After the envelopes, state that apply is unavailable. A possible project,
-task, meeting, knowledge, deadline, waiting, or Calendar write remains an
+After the envelopes, state that apply is unavailable. A possible project, task,
+meeting, knowledge, deadline, waiting, Calendar, or learning write remains an
 independent proposal with its own exact diff and `target_path`. A capture or a
 day-plan editing turn may render all independent envelopes as one selectable
 proposal package; this reduces confirmation count without combining their
-writes. A create-project
-proposal must name the exact proposed direct-child path and list each planned
-scaffold, registry, and card file, but must not create or inspect that target.
+writes. A create-project proposal must name the exact proposed direct-child
+path and list each planned scaffold, registry, and card file, but must not
+create or inspect that target.
 
 ## Confirmation boundary
 
@@ -381,9 +383,11 @@ goal's verbatim pace and forecast.
 Day plan renders every learned rule from `ai/workflow-context.md`, snapshots
 the requested calendar day with `snapshot-calendar.sh`, and records friction in
 the day's non-canonical cache. Evening review snapshots the same day, compares
-its complete snapshot history, reads unconsumed friction, and proposes one
-`add_observation` per grounded issue. It then marks that friction cache
-consumed. Snapshot and friction caches are pruned after 14 days.
+its complete snapshot history, reads pending friction, and proposes one
+`add_observation` per grounded issue. Proposal display leaves the observation
+pending; only an explicit acceptance or rejection resolves it according to
+`resources/learning-lifecycle.md`. Snapshot and friction caches are pruned after
+14 days.
 
 Weekly review reads the observation journal, groups repeated friction or
 calendar drift, and proposes `promote_rule` after three repeats or two in one
