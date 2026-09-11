@@ -1,109 +1,14 @@
 #!/usr/bin/env bash
-# Verify that every canonical list (wrapped in <!-- canon:NAME --> markers)
-# holds the same ordered set of file paths across all files that contain it.
-# macOS bash 3.2 compatible: no mapfile, no associative arrays.
+# Verify the supported Hub-only architecture and its cross-file contracts.
 set -euo pipefail
 
 ROOT="$(cd "${1:-$(dirname "$0")/..}" && pwd)"
 cd "$ROOT"
-
-assistant_workflow_guardrail_check() {
-  local file="scripts/assistant-workflows.sh" skill="hub-template/ai/skills/hub-workflows/SKILL.md" source rule found=0
-  if [ ! -f "$file" ]; then
-    echo "MISSING [assistant workflow guardrails] — $file"
-    return 1
-  fi
-  source="$(awk ' /^[[:space:]]*#/ { next } { sub(/[[:space:]]+#.*/, ""); print } ' "$file")"
-  grep -Fq 'rar export --minutes' <<<"$source" || { echo 'MISSING [assistant workflow guardrails] — rar export --minutes'; return 1; }
-  grep -Fq -- '--json' <<<"$source" || { echo 'MISSING [assistant workflow guardrails] — --json'; return 1; }
-  grep -Fq 'rar status' <<<"$source" || { echo 'MISSING [assistant workflow guardrails] — rar status'; return 1; }
-  grep -Fq 'Read-only workflow: no changes were made.' <<<"$source" || { echo 'MISMATCH [assistant workflow guardrails] — exact no-changes line'; return 1; }
-  if grep -E '(^|[[:space:]])(calendar[ -]?mcp|obsidian-vault|rar[[:space:]]+(pause|resume|install))([[:space:]]|$)' <<<"$source" >/dev/null; then
-    echo 'MISMATCH [assistant workflow guardrails] — forbidden executable path'
-    return 1
-  fi
-  while IFS= read -r line; do
-    case "$line" in *'--write|--apply)'*) ;; *) echo 'MISMATCH [assistant workflow guardrails] — executable --write/--apply path'; return 1 ;; esac
-  done < <(grep -E '(^|[[:space:]])(--write|--apply)([[:space:]]|$)' <<<"$source" || true)
-  for rule in hub-template/AGENTS.md hub-template/CLAUDE.md hub-template/ai/architecture.md; do
-    if grep -Fq '`hub-workflows`' "$rule"; then found=1; break; fi
-  done
-  [ "$found" -eq 1 ] || { echo 'MISSING [assistant workflow guardrails] — literal `hub-workflows` hub rule'; return 1; }
-  [ -f "$skill" ] || { echo "MISSING [assistant workflow guardrails] — $skill"; return 1; }
-  grep -Fqx 'name: hub-workflows' "$skill" \
-    || { echo 'MISMATCH [assistant workflow guardrails] — hub-workflows skill name'; return 1; }
-  grep -Fq 'Never write or apply a proposal automatically' "$skill" \
-    || { echo 'MISMATCH [assistant workflow guardrails] — no-auto-write rule'; return 1; }
-  grep -Fq 'prepare_evening_review' "$skill" \
-    || { echo 'MISSING [evening review lifecycle] — required MCP tool'; return 1; }
-  echo 'OK [assistant workflow guardrails] — executable source and hub rule'
-}
-
-extract_output_section() {
-  awk '
-    /^## Output/ { p=1; print; next }
-    /^## / { p=0 }
-    p { print }
-  ' "$1"
-}
-
-output_rule_check() {
-  local project_files="AGENTS.md CLAUDE.md template/AGENTS.md template/CLAUDE.md"
-  local hub_files="hub-template/AGENTS.md hub-template/CLAUDE.md"
-  local f
-  for f in $project_files $hub_files; do
-    if [ ! -f "$f" ]; then
-      echo "MISSING [output rule] — $f"
-      return 1
-    fi
-    if [ -z "$(extract_output_section "$f")" ]; then
-      echo "MISSING [output rule] — $f has no ## Output section"
-      return 1
-    fi
-  done
-
-  local ref
-  ref="$(extract_output_section AGENTS.md)"
-  for f in CLAUDE.md template/AGENTS.md template/CLAUDE.md; do
-    if [ "$(extract_output_section "$f")" != "$ref" ]; then
-      echo "MISMATCH [output rule] — $f differs from AGENTS.md"
-      return 1
-    fi
-  done
-
-  local hub_ref
-  hub_ref="$(extract_output_section hub-template/AGENTS.md)"
-  if [ "$(extract_output_section hub-template/CLAUDE.md)" != "$hub_ref" ]; then
-    echo "MISMATCH [output rule] — hub-template/CLAUDE.md differs from hub-template/AGENTS.md"
-    return 1
-  fi
-
-  echo "$ref" | grep -Fq -- '- Never declare a task closed.' \
-    || { echo 'MISMATCH [output rule] — project variant missing task-finish bullet'; return 1; }
-
-  local ref_trimmed
-  ref_trimmed="$(echo "$ref" | grep -Fv -- '- Never declare a task closed.')"
-  if [ "$ref_trimmed" != "$hub_ref" ]; then
-    echo "MISMATCH [output rule] — project variant (minus task-finish bullet) differs from hub variant"
-    return 1
-  fi
-
-  echo 'OK [output rule] — 6 copies consistent'
-}
-
-MARKERS="canon:protected-files canon:controlled-memory"
 fail=0
 
-# extract_block FILE MARKER -> prints one path per line (first `backtick` token)
-extract_block() {
-  awk -v open="<!-- $2 -->" -v endmark="<!-- /$2 -->" '
-    index($0, open)    { inb=1; next }
-    index($0, endmark) { inb=0 }
-    inb { print }
-  ' "$1" \
-  | { grep -E '^[[:space:]]*[-*][[:space:]].*`' || true; } \
-  | sed -E 's/^[^`]*`([^`]+)`.*/\1/'
-}
+ok() { printf 'OK [%s] — %s\n' "$1" "$2"; }
+bad() { printf 'MISMATCH [%s] — %s\n' "$1" "$2" >&2; fail=1; }
+missing() { printf 'MISSING [%s] — %s\n' "$1" "$2" >&2; fail=1; }
 
 normalize_hub_entry() {
   sed -E \
@@ -113,248 +18,169 @@ normalize_hub_entry() {
     "$1"
 }
 
-extract_array() {
-  awk -v name="$2" '
-    $0 ~ "^" name "=\\(" { in_array=1; next }
-    in_array && /^\)/ { exit }
-    in_array && match($0, /"[^"]+"/) {
-      print substr($0, RSTART + 1, RLENGTH - 2)
-    }
-  ' "$1"
-}
-
-for marker in $MARKERS; do
-  files=""
-  while IFS= read -r f; do
-    files="$files$f"$'\n'
-  done < <(grep -rlF --include='*.md' --exclude-dir=superpowers "<!-- $marker -->" . | sort)
-
-  files="$(printf '%s' "$files" | sed '/^$/d')"
-  if [ -z "$files" ]; then
-    echo "WARN: no holders found for $marker"
-    continue
-  fi
-
-  ref=""
-  ref_list=""
-  marker_ok=1
-  while IFS= read -r f; do
-    cur_list="$(extract_block "$f" "$marker")"
-    if [ -z "$ref" ]; then
-      ref="$f"
-      ref_list="$cur_list"
-      continue
-    fi
-    if [ "$cur_list" != "$ref_list" ]; then
-      fail=1
-      marker_ok=0
-      echo "MISMATCH [$marker]"
-      echo "  reference: $ref"
-      echo "  differs:   $f"
-      diff <(printf '%s\n' "$ref_list") <(printf '%s\n' "$cur_list") | sed 's/^/    /' || true
-    fi
-  done <<EOF
-$files
-EOF
-
-  if [ "$marker_ok" -eq 1 ]; then
-    n="$(printf '%s\n' "$files" | grep -c . || true)"
-    if [ "$n" -lt 2 ]; then
-      echo "WARN: only $n holder for $marker — nothing to cross-check"
-    else
-      echo "OK [$marker] — $n holders consistent"
-    fi
-  fi
-done
-
-if [ -f AGENTS.md ] && [ -f CLAUDE.md ] && [ -f ai/architecture.md ]; then
-  standalone_base="."
-  standalone_source="root local files"
-elif [ -f template/AGENTS.md ] && [ -f template/CLAUDE.md ] && [ -f template/ai/architecture.md ]; then
-  standalone_base="template"
-  standalone_source="template (root local files absent)"
+# Hub is the only distributable architecture source.
+if [ -d template ]; then
+  bad "hub-only distribution" "retired template/ tree still exists"
 else
-  echo "MISSING [standalone canonical blocks] — no complete root or template holder set"
-  fail=1
-  standalone_base=""
+  ok "hub-only distribution" "hub-template/ is the only distributable architecture tree"
+fi
+[ -d hub-template ] || missing "hub-only distribution" "hub-template/"
+
+# This repository is itself a Hub-managed project: preserve project memory but
+# never recreate a second generic architecture layer in root ai/.
+if [ -f ai/architecture.md ] || [ -d ai/skills ]; then
+  bad "root project rules" "generic project-local architecture copies remain"
+elif [ ! -f AGENTS.md ] || [ ! -f CLAUDE.md ]; then
+  missing "root project rules" "minimal direct-open pointers"
+elif ! cmp -s AGENTS.md CLAUDE.md; then
+  bad "root project rules" "AGENTS.md and CLAUDE.md pointers differ"
+elif ! grep -Fq 'Hub-managed entry' AGENTS.md; then
+  bad "root project rules" "entry is not the minimal Hub-managed pointer"
+else
+  ok "root project rules" "project memory is local; shared rules are Hub-owned"
 fi
 
-if [ -n "$standalone_base" ]; then
-  standalone_ok=1
-  for marker in $MARKERS; do
-    standalone_ref="$(extract_block "$standalone_base/AGENTS.md" "$marker")"
-    for holder in "$standalone_base/CLAUDE.md" "$standalone_base/ai/architecture.md"; do
-      if [ "$(extract_block "$holder" "$marker")" != "$standalone_ref" ]; then
-        echo "MISMATCH [standalone canonical blocks] — $holder differs for $marker"
-        fail=1
-        standalone_ok=0
-      fi
-    done
-  done
-  [ "$standalone_ok" -eq 0 ] \
-    || echo "OK [standalone canonical blocks] — source: $standalone_source"
-fi
-
+# Hub entry parity and architecture presence.
 if [ ! -f hub-template/AGENTS.md ] || [ ! -f hub-template/CLAUDE.md ]; then
-  echo "MISSING [hub entry parity]"
-  fail=1
-elif cmp -s <(normalize_hub_entry hub-template/AGENTS.md) \
-  <(normalize_hub_entry hub-template/CLAUDE.md); then
-  echo "OK [hub entry parity] — equal after tool-name normalization"
+  missing "hub entry parity" "Hub entry files"
+elif cmp -s <(normalize_hub_entry hub-template/AGENTS.md) <(normalize_hub_entry hub-template/CLAUDE.md); then
+  ok "hub entry parity" "equal after tool-name normalization"
 else
-  echo "MISMATCH [hub entry parity] — semantic content differs"
-  fail=1
+  bad "hub entry parity" "semantic content differs"
 fi
+[ -f hub-template/ai/architecture.md ] || missing "hub architecture" "hub-template/ai/architecture.md"
 
-hub_skill_ok=1
-hub_skill_count=0
-checked_hub_skills=""
-HUB_REQUIRED_SKILLS="hub-project-router hub-project-switch hub-project-register hub-project-create hub-project-migrate hub-registry-check hub-info-update hub-local-router-install hub-environment-check hub-task-intake hub-task-switch hub-task-finish hub-knowledge-enable hub-knowledge-capture hub-knowledge-review hub-workflows hub-calendar"
-if [ ! -f hub-template/ai/architecture.md ]; then
-  echo "MISSING [hub skill references] — hub architecture absent"
-  fail=1
-  hub_skill_ok=0
-fi
-for skill in $HUB_REQUIRED_SKILLS $(sed -n -E 's/.*`([a-z][a-z0-9-]*)` workflow.*/\1/p' hub-template/ai/architecture.md | sort -u); do
-  case " $checked_hub_skills " in *" $skill "*) continue ;; esac
-  checked_hub_skills="$checked_hub_skills $skill"
-  hub_skill_count=$((hub_skill_count + 1))
-  if [ ! -f "hub-template/ai/skills/$skill/SKILL.md" ]; then
-    echo "MISSING [hub skill references] — $skill"
-    fail=1
-    hub_skill_ok=0
-  fi
-done
-[ "$hub_skill_ok" -eq 0 ] \
-  || echo "OK [hub skill references] — $hub_skill_count declared skills exist"
-
-hub_prefix_ok=1
+# Every installed Hub skill must be prefixed, have a SKILL.md, and be named in
+# an active Hub rule. Every backticked hub-* workflow named in those rules must
+# resolve to an installed skill directory.
+hub_rule_files="hub-template/AGENTS.md hub-template/CLAUDE.md hub-template/ai/architecture.md"
 if [ -d hub-template/ai/skills ]; then
+  skill_count=0
   while IFS= read -r skill_dir; do
-    case "$(basename "$skill_dir")" in
-      hub-*) ;;
-      *)
-        echo "MISMATCH [hub skill prefix] — $skill_dir must be named hub-*"
-        fail=1
-        hub_prefix_ok=0
-        ;;
-    esac
+    skill="$(basename "$skill_dir")"
+    skill_count=$((skill_count + 1))
+    case "$skill" in hub-*) ;; *) bad "hub skill prefix" "$skill" ;; esac
+    [ -f "$skill_dir/SKILL.md" ] || missing "hub skill references" "$skill/SKILL.md"
+    grep -Fq "\`$skill\`" $hub_rule_files || bad "hub skill naming" "$skill is named in no active Hub rule"
   done < <(find hub-template/ai/skills -mindepth 1 -maxdepth 1 -type d | sort)
-fi
-[ "$hub_prefix_ok" -eq 0 ] \
-  || echo "OK [hub skill prefix] — every hub skill directory is prefixed"
-
-# Reverse of the [hub skill references] check above: that one reads the
-# hardcoded HUB_REQUIRED_SKILLS list and proves declared -> exists. This proves
-# exists -> declared, so a skill cannot be added without naming it in the rules.
-hub_naming_ok=1
-hub_rule_files="hub-template/CLAUDE.md hub-template/AGENTS.md hub-template/ai/architecture.md"
-if [ -d hub-template/ai/skills ]; then
-  while IFS= read -r skill_dir; do
-    skill_name="$(basename "$skill_dir")"
-    if ! grep -Fq "\`$skill_name\`" $hub_rule_files; then
-      echo "UNNAMED [hub skill naming] — $skill_name is named in no hub rule file"
-      fail=1
-      hub_naming_ok=0
-    fi
-  done < <(find hub-template/ai/skills -mindepth 1 -maxdepth 1 -type d | sort)
-fi
-[ "$hub_naming_ok" -eq 0 ] \
-  || echo "OK [hub skill naming] — every hub skill is named in a rule file"
-
-hub_protected="$(extract_array scripts/update-installed-hub.sh PROTECTED_FILES)"
-if [ -d hub-template/ai/skills ]; then
-  while IFS= read -r protected_file; do
-    hub_protected="${hub_protected}${hub_protected:+$'\n'}${protected_file#hub-template/}"
-  done < <(find hub-template/ai/skills -type f | sort)
+  ok "hub skill inventory" "$skill_count skill directories checked"
+else
+  missing "hub skill inventory" "hub-template/ai/skills"
 fi
 
-hub_memory="$(extract_array scripts/update-installed-hub.sh MEMORY_FILES)"
-for memory_dir in ai/project-cards ai/archive; do
-  if [ -d "hub-template/$memory_dir" ]; then
-    while IFS= read -r memory_file; do
-      hub_memory="${hub_memory}${hub_memory:+$'\n'}${memory_file#hub-template/}"
-    done < <(find "hub-template/$memory_dir" -type f | sort)
-  fi
-done
-
-hub_classes_ok=1
-while IFS= read -r memory_file; do
-  [ -n "$memory_file" ] || continue
-  if printf '%s\n' "$hub_protected" | grep -Fxq "$memory_file"; then
-    echo "OVERLAP [hub update classes] — $memory_file is both protected and memory"
-    fail=1
-    hub_classes_ok=0
-  fi
+referenced_skills="$(grep -hoE '\`hub-[a-z0-9-]+\`' $hub_rule_files 2>/dev/null | tr -d '\`' | sort -u || true)"
+while IFS= read -r skill; do
+  [ -n "$skill" ] || continue
+  [ -f "hub-template/ai/skills/$skill/SKILL.md" ] || missing "hub skill references" "$skill"
 done <<EOF
-$hub_memory
+$referenced_skills
 EOF
-[ "$hub_classes_ok" -eq 0 ] \
-  || echo "OK [hub update classes] — protected files exclude hub memory"
+[ "$fail" -ne 0 ] || ok "hub skill references" "active Hub workflow references resolve"
 
-# path_is_or_contains LIST ENTRY -> 0 if ENTRY exactly equals a line in LIST,
-# or ENTRY is a directory prefix of a line in LIST (line starts with "ENTRY/").
-path_is_or_contains() {
-  local list="$1" entry="$2" line
-  while IFS= read -r line; do
-    [ -n "$line" ] || continue
-    case "$line" in
-      "$entry") return 0 ;;
-      "$entry"/*) return 0 ;;
-    esac
+# Progressive disclosure: core must dispatch to each scenario resource, while
+# those resources remain subordinate to core authority.
+workflow_core="hub-template/ai/skills/hub-workflows/SKILL.md"
+if [ ! -f "$workflow_core" ]; then
+  missing "hub workflows" "$workflow_core"
+else
+  for resource in day-plan evening-review weekly-review capture; do
+    file="hub-template/ai/skills/hub-workflows/resources/$resource.md"
+    [ -f "$file" ] || missing "hub workflow resources" "$resource.md"
+    grep -Fq "resources/$resource.md" "$workflow_core" || bad "hub workflow resources" "core does not dispatch to $resource.md"
+    [ ! -f "$file" ] || grep -Fq 'core `SKILL.md`' "$file" || bad "hub workflow resources" "$resource.md does not point back to core authority"
+  done
+  [ "$fail" -ne 0 ] || ok "hub workflow resources" "all scenario resources exist and are core-dispatched"
+fi
+
+# Learning proposal actions referenced by core/resources must be declared in the
+# canonical proposal action enum. Showing a proposal must explicitly leave an
+# observation pending.
+if [ -f "$workflow_core" ]; then
+  declared_actions="$(sed -n -E 's/^action: <(.*)>$/\1/p' "$workflow_core")"
+  referenced_learning="$(grep -rhoE '\`(goal_progress|add_observation|promote_rule|retire_rule)\`' \
+    hub-template/ai/skills/hub-workflows 2>/dev/null | tr -d '\`' | sort -u || true)"
+  while IFS= read -r action; do
+    [ -n "$action" ] || continue
+    case "|$declared_actions|" in *"|$action|"*) ;; *) bad "workflow action schema" "$action is referenced but not declared" ;; esac
   done <<EOF
-$list
+$referenced_learning
 EOF
-  return 1
-}
+  grep -Fq 'Proposal display leaves it pending' "$workflow_core" \
+    || bad "learning lifecycle" "proposal display must leave friction pending"
+  [ "$fail" -ne 0 ] || ok "workflow action schema" "learning actions and proposal schema agree"
+fi
 
-hub_superseded="$(extract_array scripts/update-installed-hub.sh SUPERSEDED_PATHS)"
-hub_superseded_ok=1
-while IFS= read -r superseded_path; do
-  [ -n "$superseded_path" ] || continue
-  if path_is_or_contains "$hub_memory" "$superseded_path" \
-    || path_is_or_contains "$hub_protected" "$superseded_path"; then
-    echo "OVERLAP [hub superseded paths] — $superseded_path is hub memory or a protected file"
-    fail=1
-    hub_superseded_ok=0
-  fi
-done <<EOF
-$hub_superseded
-EOF
-[ "$hub_superseded_ok" -eq 0 ] \
-  || echo "OK [hub superseded paths] — removals exclude hub memory and protected files"
+# The compact task index is a shipped runtime primitive and the personal
+# assistant must discover through it before opening selected canonical records.
+if ! grep -Fq '"scripts/read-compact-task-index.py"' scripts/hub_release.py; then
+  bad "compact task index" "not included in Hub release runtime scripts"
+elif ! grep -Fq 'scripts/read-compact-task-index.py' "$workflow_core"; then
+  bad "compact task index" "hub-workflows does not route discovery through the index"
+else
+  ok "compact task index" "shipped and used for personal-assistant discovery"
+fi
 
-standalone_architecture="$(extract_array scripts/update-installed-architecture.sh ARCHITECTURE_FILES)"
-standalone_memory="$(extract_block "$standalone_base/AGENTS.md" canon:controlled-memory)"
-standalone_boundaries_ok=1
-while IFS= read -r memory_file; do
-  [ -n "$memory_file" ] || continue
-  if printf '%s\n' "$standalone_architecture" | grep -Fxq "$memory_file" \
-    || printf '%s\n' "$hub_protected" | grep -Fxq "$memory_file"; then
-    echo "OVERLAP [standalone memory updater boundaries] — $memory_file is updater-protected"
-    fail=1
-    standalone_boundaries_ok=0
-  fi
-done <<EOF
-$standalone_memory
-EOF
-for updater in scripts/update-installed-architecture.sh scripts/update-installed-hub.sh; do
-  if ! grep -Fq 'for_each_memory_file copy_missing_memory_file' "$updater"; then
-    echo "MISMATCH [standalone memory updater boundaries] — $updater lacks create-only memory handling"
-    fail=1
-    standalone_boundaries_ok=0
-  fi
+# Knowledge remains available but optional/on-demand.
+for skill in hub-knowledge-enable hub-knowledge-capture hub-knowledge-review; do
+  [ -f "hub-template/ai/skills/$skill/SKILL.md" ] || missing "knowledge safeguards" "$skill"
 done
-[ "$standalone_boundaries_ok" -eq 0 ] \
-  || echo "OK [standalone memory updater boundaries] — neither updater overwrites controlled memory"
+if grep -Eq 'optional .*knowledge|optional `knowledge/`|knowledge.*on-demand' hub-template/ai/architecture.md; then
+  ok "knowledge safeguards" "knowledge skills remain optional"
+else
+  bad "knowledge safeguards" "Hub architecture no longer describes knowledge as optional/on-demand"
+fi
 
-assistant_workflow_guardrail_check || fail=1
-output_rule_check || fail=1
+# Assistant workflow executable remains read-only and recorder JSON-only.
+assistant="scripts/assistant-workflows.sh"
+if [ ! -x "$assistant" ]; then
+  missing "assistant workflow guardrails" "$assistant"
+else
+  source_text="$(awk '/^[[:space:]]*#/ { next } { sub(/[[:space:]]+#.*/, ""); print }' "$assistant")"
+  for needle in 'rar export --minutes' '--json' 'rar status' 'Read-only workflow: no changes were made.'; do
+    grep -Fq -- "$needle" <<<"$source_text" || bad "assistant workflow guardrails" "missing $needle"
+  done
+  if grep -E '(^|[[:space:]])(calendar[ -]?mcp|obsidian-vault|rar[[:space:]]+(pause|resume|install))([[:space:]]|$)' <<<"$source_text" >/dev/null; then
+    bad "assistant workflow guardrails" "forbidden executable path"
+  fi
+  [ "$fail" -ne 0 ] || ok "assistant workflow guardrails" "read-only executable boundary retained"
+fi
+
+# Active user documentation must not advertise or depend on the retired
+# distribution. Historical plans/audits and CHANGELOG are intentionally exempt.
+if python3 - "$ROOT" <<'PY'
+from pathlib import Path
+import re, sys
+root = Path(sys.argv[1])
+paths = [root / "README.md"]
+for base in (root / "docs", root / "getting-started"):
+    if base.exists():
+        paths.extend(base.rglob("*.md"))
+forbidden = [
+    re.compile(r"--mode\s+standalone", re.I),
+    re.compile(r"standalone architecture", re.I),
+    re.compile(r"update-installed-architecture\.sh", re.I),
+    re.compile(r"(?<!hub-)template/"),
+]
+hits = []
+for path in paths:
+    rel = path.relative_to(root).as_posix()
+    if rel.startswith("docs/superpowers/") or rel.startswith("docs/audits/"):
+        continue
+    text = path.read_text(encoding="utf-8")
+    for pattern in forbidden:
+        if pattern.search(text):
+            hits.append(f"{rel}: {pattern.pattern}")
+if hits:
+    print("\n".join(hits), file=sys.stderr)
+    raise SystemExit(1)
+PY
+then
+  ok "active docs" "no active standalone install/update dependency"
+else
+  bad "active docs" "retired distribution is still referenced"
+fi
 
 if [ "$fail" -ne 0 ]; then
-  echo ""
-  echo "Consistency check FAILED. Make the marked lists identical (same paths, same order)."
   exit 1
 fi
-echo ""
-echo "All canonical lists are consistent."
+printf '\nAll Hub-only consistency checks passed.\n'
