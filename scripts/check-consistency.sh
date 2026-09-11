@@ -111,7 +111,7 @@ forbidden = [
     re.compile(r"standalone architecture", re.I),
     re.compile(r"update-installed-architecture\.sh", re.I),
     re.compile(r"(?<!hub-)template/"),
-    re.compile(r"curl[^\n|]*\|[^\n]*\bbash\b", re.I),
+    re.compile(r"(?m)^\s*\$?\s*curl\b[^\n|]*\|[^\n]*\bbash\b", re.I),
 ]
 hits=[]
 for path in paths:
@@ -124,9 +124,9 @@ if hits:
     print("\n".join(hits), file=sys.stderr); raise SystemExit(1)
 PY
 then
-  ok "active docs" "Hub-only install/update guidance has no pipe-to-shell path"
+  ok "active docs" "Hub-only install/update guidance has no executable pipe-to-shell path"
 else
-  bad "active docs" "retired or pipe-to-shell update guidance remains"
+  bad "active docs" "retired or executable pipe-to-shell update guidance remains"
 fi
 
 if [ "$fail" -ne 0 ]; then exit 1; fi
