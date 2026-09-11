@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### 2026-09-11 — Hub-only consolidation
+
+- Personal AI Hub is now the only supported architecture; `hub-template/` is the only distributable architecture source, while project memory remains project-local and knowledge remains optional/on-demand.
+- Removed the supported standalone/template distribution path and consolidated install/update/release through `scripts/update-installed-hub.sh` and `scripts/hub_release.py`, with immutable source SHA, transactional `installed.json`, and safe retirement of managed files.
+- Unified evening-review friction state, learning lifecycle, proposal schema, and aggregate task parsing; added the compact task index and made compact discovery physically lazy.
+- Split `hub-workflows` into core plus scenario resources, fixed the Calendar snapshot race, preserved optional knowledge skills, and enabled CI architecture checks on both pull requests and pushes to `main`.
+- Current Hub architecture version remains `1.12`. No additional version bump is made for this documentation synchronization because the repository does not define a mandatory semantic-versioning rule and `1.12` has already remained current across later architecture-file changes.
+
+## Pre-Hub-only unreleased history
+
 - `evening-review` в `hub-workflows` читает календарь запрошенного дня,
   связывает события с проектами подтверждённой области и предлагает обновление
   статуса задач отдельными предложениями. Совпадение по календарю остаётся

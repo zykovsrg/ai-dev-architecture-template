@@ -100,7 +100,7 @@ work, such as the stack, commands, invariants, and fragile zones. Knowledge
 stores explicitly captured research, decisions, risks, and runbooks that may
 be useful later.
 
-A normal architecture update does not enable knowledge in an existing project:
+A normal Hub architecture update does not enable knowledge in an existing project:
 it never creates `knowledge/` in a pre-knowledge project and never changes
 knowledge records. Capturing knowledge is intentional. `hub-knowledge-capture`
 first proposes an exact category and path, while `hub-knowledge-review` examines
@@ -113,10 +113,9 @@ Legacy standalone knowledge migration is out of scope.
 
 Hub-created projects use central hub-owned `hub-knowledge-capture` and
 `hub-knowledge-review` workflows; the hub does not copy generic skills into each
-project. Both standalone and hub workflows reject absolute paths, traversal,
-and symlink components, and keep records inside the confirmed project's
-matching knowledge category. Records must contain no secrets, personal data,
-or client data.
+project. These Hub workflows reject absolute paths, traversal, and symlink
+components, and keep records inside the confirmed project's matching knowledge
+category. Records must contain no secrets, personal data, or client data.
 
 Every knowledge record has one of five statuses: `draft`, `verified`,
 `needs-review`, `stale`, or `superseded`. `hub-task-finish` may offer a focused
@@ -126,27 +125,29 @@ Review also validates the exact four record types, record and source dates,
 type/category agreement, and contradictions. Stale and superseded records stay
 in place and link to their replacements.
 
-## Standalone mode and personal hub
+## Personal AI Hub and retired standalone mode
 
-Standalone mode is the normal architecture for one project. Its rules and
-memory live in that project and it does not depend on a hub.
+Personal AI Hub is the only supported architecture. Shared routing, security
+rules, workflows, installation, and updates live in the Hub; `hub-template/` is
+the only distributable architecture source in this repository.
 
-A personal hub is optional and has its own `_ai-hub` directory. It is a local
-router for explicitly registered projects, not a shared project workspace. Its
-only permanent project location is `_ai-hub/projects/<project-id>`. The hub
-repository ignores `/projects/`, so every project can remain an independent Git
-repository with its own history and remote.
+Each project remains an independent Git repository with project-local memory
+and optional project-local `knowledge/`. The supported project location is
+`_ai-hub/projects/<project-id>`.
 
-A new hub chat shows the registered project and exact path, then waits for
+The former standalone/project-local architecture is retired. Existing folders
+move to the supported model only through `hub-project-migrate`: the user
+separately confirms a temporary source, reviews an exact preview, and confirms
+each move or the displayed batch. The workflow then uses independent gates:
+move → registration confirmation → registry validation → optional cleanup
+confirmation. Cleanup is never automatic and removes only confirmed obsolete
+shared standalone rules; project memory, Git metadata, project-specific rules,
+and knowledge remain unchanged.
+
+A new Hub chat shows the registered project and exact path, then waits for
 confirmation before reading that project's code or memory. Installing or
-updating a hub does not automatically convert projects, clean up files, move
-folders, or send reminders. Existing folders are moved only through
-`hub-project-migrate`: the user separately confirms a temporary source, reviews an
-exact preview, and separately confirms each move or the displayed batch. The
-workflow then uses independent gates: move → registration confirmation →
-registry validation → optional cleanup confirmation. Cleanup is never automatic
-and removes only confirmed old standalone rules; all project memory remains
-unchanged.
+updating the Hub does not automatically scan, convert, clean up, or move
+projects.
 
 ## Minimalism
 
@@ -232,7 +233,7 @@ The agent checks:
 
 It is not an application dependency check. For example, it does not check whether Python packages or npm dependencies are installed.
 
-If base skills are missing, the agent says what to restore from the template. If expected external tools or skills are missing, the agent prints a warning but does not block the work. Nothing is installed without user confirmation.
+If shared Hub architecture files are missing, the agent reports what must be restored through the supported Hub install/update path. If expected external tools or skills are missing, the agent prints a warning but does not block the work. Nothing is installed without user confirmation.
 
 After the check, the agent must show a menu of available next commands and skills. It is a reference, not a command to run everything.
 

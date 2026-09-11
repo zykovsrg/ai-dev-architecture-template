@@ -1,36 +1,25 @@
 # File roles
 
-This document explains which files belong to the architecture rules and which belong to the project's working memory.
+This document explains which files belong to the Hub architecture and which belong to a project's working memory.
 
-## 1. Protected architecture files
+## 1. Shared Hub architecture files
 
-These are the rules of the game for AI agents. They must not be changed in a normal task.
+Shared routing, security rules, workflows, and architecture updates belong to Personal AI Hub. In this repository, `hub-template/` is the only distributable architecture source.
 
-Files:
+Key Hub-owned architecture files include:
 
-<!-- canon:protected-files -->
-- `AGENTS.md`
-- `CLAUDE.md`
-- `ai/architecture.md`
-- `ai/external-tools.md`
-- `ai/skills/*/SKILL.md`
-- `.claude/` (created by the project when needed; absent from the template)
-- `.codex/` (created by the project when needed; absent from the template)
-<!-- /canon:protected-files -->
+- `hub-template/AGENTS.md`
+- `hub-template/CLAUDE.md`
+- `hub-template/ai/architecture.md`
+- `hub-template/ai/skills/*/SKILL.md`
 
-`.claude/` and `.codex/` are settings folders of the tools themselves (Claude Code and Codex): permissions, custom commands, hooks. They are program configuration, not instructions for the AI. The template does not include them; they become protected only if you create them.
+They are changed only through approved architecture work. The supported model does not copy these shared files into every project.
 
-When they may be changed:
+`.claude/` and `.codex/` may still exist inside an individual project as tool configuration. They are project-specific configuration, not a second copy of the shared Hub architecture.
 
-- only in `architecture-update` mode;
-- only after explicit user confirmation;
-- only when a workflow, a base rule, a skill, the tools list, or the agent's way of working changes.
+## 2. Controlled project memory files
 
-External skills, init commands, and setup tools may propose changes to these files but must not apply them without confirmation.
-
-## 2. Controlled memory files
-
-These are the working memory of the specific project and the current task. They may be changed, but only through the appropriate workflow.
+These are the working memory of the specific project and the current task. They stay project-local and may be changed only through the appropriate workflow.
 
 Files:
 
@@ -51,22 +40,18 @@ contains the current stack, commands, invariants, and fragile zones that guide
 normal work; knowledge contains deliberately captured research, decisions,
 risks, and runbooks.
 
-The normal standalone updater deliberately keeps `knowledge/` outside both its
-protected-architecture and controlled-memory lists. Updating an older,
-pre-knowledge project never creates `knowledge/` and never changes an existing
-knowledge record.
+A normal Hub update does not enable knowledge in an existing project, does not
+create project knowledge records, and does not change existing records.
 
-Existing-project knowledge enablement is available only through the hub's
-`hub-knowledge-enable` workflow after the hub has confirmed the registered project.
+Existing-project knowledge enablement is available only through the Hub's
+`hub-knowledge-enable` workflow after the Hub has confirmed the registered project.
 Legacy standalone knowledge migration is out of scope.
 
 Knowledge records are created or changed only through `hub-knowledge-capture` or
-`hub-knowledge-review`. In standalone projects these are project-local skills. In a
-hub-created project they are central hub-owned workflows, so the hub does not
-copy generic skills or entry files into each project. They canonicalize the
-confirmed project and selected path, reject absolute paths, traversal and
-symlink components, and require every record to remain inside the matching
-project-local category.
+`hub-knowledge-review`. These are central Hub-owned workflows; generic copies are
+not installed into each project. They canonicalize the confirmed project and
+selected path, reject absolute paths, traversal and symlink components, and
+require every record to remain inside the matching project-local category.
 
 The workflows prohibit secrets, personal data, and client data; rejected
 material is omitted or redacted without echoing it. Review validates required
@@ -78,10 +63,9 @@ At task finish, the agent may offer a focused knowledge review when relevant;
 it must not start one or edit records without an explicit request and the
 required confirmation.
 
-## Hub-managed project memory
+## Hub-managed memory
 
-The optional personal hub has a separate memory boundary. These files belong
-to the hub, not to any registered project's `ai/` directory:
+These files belong to the Hub, not to any registered project's `ai/` directory:
 
 - `ai/allowed-roots.md`
 - `ai/active-project.md`
@@ -92,9 +76,9 @@ to the hub, not to any registered project's `ai/` directory:
 - `ai/archive/*`
 
 Hub protected files are its `AGENTS.md`, `CLAUDE.md`, `ai/architecture.md`,
-and `ai/skills/*/SKILL.md`. The hub updater can replace protected hub files,
-but preserves hub-managed project memory and creates only missing memory
-templates. A project card is metadata, not permission to read a project.
+and `ai/skills/*/SKILL.md`. The Hub updater can replace managed Hub files under
+the release contract, but preserves Hub-managed user memory and project-local
+memory. A project card is metadata, not permission to read a project.
 Project/task files remain canonical; project cards are metadata only and a link
 never grants a project read. Cards may optionally use the all-or-nothing fields
 `primary_archiproject:`, `archiproject_contribution:`, and
@@ -102,37 +86,34 @@ never grants a project read. Cards may optionally use the all-or-nothing fields
 add contribution. Waiting is task/subtask-only: do not place a project in
 Waiting while other work is actionable.
 
-Standalone protected files and controlled memory remain scoped to one project.
-Do not copy either class into a hub or use the hub to overwrite project memory.
+Project memory remains scoped to one project. Do not copy it into Hub memory or
+use a Hub update to overwrite it.
 
 ## 3. Edit permissions matrix
 
 | File | When it may be changed |
 |---|---|
-| `AGENTS.md` | only `architecture-update` after confirmation |
-| `CLAUDE.md` | only `architecture-update` after confirmation |
-| `ai/architecture.md` | only `architecture-update` after confirmation |
-| `ai/external-tools.md` | only `architecture-update` or after a confirmed change to the tools list |
-| `ai/skills/*/SKILL.md` | only `architecture-update` after confirmation |
-| `.claude/` | only `architecture-update` after confirmation |
-| `.codex/` | only `architecture-update` after confirmation |
+| Hub `AGENTS.md` / `CLAUDE.md` | only approved architecture work |
+| Hub `ai/architecture.md` | only approved architecture work |
+| Hub `ai/skills/*/SKILL.md` | only approved architecture work |
+| project `.claude/` / `.codex/` | project-specific tool configuration under the project's own rules |
 | `ai/current-task.md` | `hub-task-intake`, `implementation`, `hub-task-switch`, `hub-task-finish`; `hub-task-intake` may record the first task, but does not overwrite an unfinished one without `hub-task-switch` |
 | `ai/paused-tasks.md` | only `hub-task-switch`; do not use as a backlog, future tasks, or a cleanup-work list |
 | `ai/future-tasks.md` | `implementation` after an explicit request to save an idea, `hub-task-finish` after candidates are confirmed, `hub-task-switch` on promotion |
 | `ai/project-context.md` | after confirmation, when the stack, commands, structure, data model, invariants, or fragile zones change |
-| `ai/decisions.md` | `hub-task-finish` or `architecture-update`, when an important durable decision appears |
-| `ai/changelog.md` | `hub-task-finish` after confirmation; `architecture-update` when an approved architecture change requires it |
+| `ai/decisions.md` | `hub-task-finish` or approved architecture-related project-memory work, when an important durable decision appears |
+| `ai/changelog.md` | `hub-task-finish` after confirmation; approved architecture-related project-memory work when needed |
 | `knowledge/**` | only `hub-knowledge-capture` or `hub-knowledge-review`, after explicit confirmation of the exact record write or edit |
 
-## 4. Template files
+## 4. Distributable architecture source
 
-These files are usually identical across projects:
+`hub-template/` is the only supported distributable architecture source. Shared
+Hub files are installed and updated from that tree through the supported Hub
+install/release path.
 
-- `AGENTS.md`
-- `CLAUDE.md`
-- `ai/architecture.md`
-- `ai/external-tools.md`
-- `ai/skills/*/SKILL.md`
+The former standalone distribution tree and project-local shared-rule copies are
+retired. Historical documents may still describe them, but they are not current
+install/update instructions.
 
 ## 5. Project files
 
@@ -150,27 +131,26 @@ These files may stay as empty templates until real data appears:
 
 ## 6. Roles of the main files
 
-### `AGENTS.md`
+### Hub `AGENTS.md`
 
-Short entry file for Codex.
+Short entry file for Codex at the Hub boundary.
 
-Holds only first-level rules: work modes, context routing, file protection, and the response format.
+Holds first-level routing, security, confirmation, context-loading, and response rules.
 
-### `CLAUDE.md`
+### Hub `CLAUDE.md`
 
-Short entry file for Claude Code.
+Short entry file for Claude Code at the Hub boundary.
 
-It should match `AGENTS.md` in meaning.
+It should match Hub `AGENTS.md` in behavior apart from tool-specific wording.
 
-### `ai/architecture.md`
+### Hub `ai/architecture.md`
 
-The main workflow reference.
-
-It is read when a task concerns the development architecture, rule conflicts, or `architecture-update` mode.
+The canonical shared Hub workflow reference. In this repository its source is
+`hub-template/ai/architecture.md`.
 
 ### `ai/current-task.md`
 
-One current task.
+One current task for the selected project.
 
 The empty template must contain:
 
@@ -271,39 +251,26 @@ The guideline is to keep the last 2–4 weeks. Move older entries to `ai/archive
 
 `future-tasks` answers: what can be done later but should not be mixed into the current task.
 
-### `ai/external-tools.md`
+### `knowledge/**`
 
-The list of expected external skills, tools, and controlled methodologies.
-
-Needed by `hub-environment-check`.
-
-Missing optional tools are a warning, not a blocker.
-
-### `ai/skills/*/SKILL.md`
-
-Reusable procedures.
-
-There is no need to load all skills at once. Open only the skill needed for the current task.
-
-If a task matches a skill's trigger, the agent must open the current skill file. Do not work from memory.
+Optional project-local reference material. It is loaded only when the task
+explicitly needs it and the Hub workflow permits the selected scope.
 
 ## 7. Related workflows
 
 ### `hub-environment-check`
 
-Checks the architecture installation, base and optional project skills, the local architecture version against the repository, expected external tools, and controlled methodologies.
+Checks Hub/project readiness after the registered project and path are confirmed.
 
 It is not a work mode and not a deep audit.
 
-It runs on a new session, a new chat, a tool/agent switch, and after compressed context or a restored summary.
-
-After the check, the agent must print a short menu of available next commands and skills. The menu is informational: it does not launch `hub-task-switch`, `hub-task-finish`, `architecture-update`, or other workflows automatically.
+After the check, the agent may print a short menu of available next commands and
+skills. The menu is informational: it does not launch `hub-task-switch`,
+`hub-task-finish`, `architecture-update`, or other workflows automatically.
 
 ### `hub-task-intake`
 
 Accepts a new working task.
-
-Used before real work, after `hub-environment-check`.
 
 If `ai/current-task.md` is empty, it records the new task in the current memory.
 
@@ -327,16 +294,17 @@ After user confirmation, it may update `ai/changelog.md`, `ai/decisions.md`, con
 
 After cleanup, the result must be saved: a push to GitHub if GitHub is configured, or a local-only fallback if GitHub is unavailable.
 
-### `release-check`
+### Hub install/update path
 
-Checks readiness for a commit, merge, build, or release.
+Supported installed-Hub updates use `scripts/update-installed-hub.sh`, which
+routes release operations through `scripts/hub_release.py`. Preview and apply
+must use the same immutable source revision and confirmed plan hash.
 
-For complex changes it must check whether `code-review-graph` is needed.
+The retired project-local updater entrypoint is not the current updater.
+`curl | bash` is not a supported canonical install/update path.
 
 ### Superpowers for bugs and complex tasks
 
-The local `bugfix-workflow` is no longer used.
+Bugs, crashes, regressions, flaky behavior, debug requests, performance problems, and complex tasks may use Superpowers when it is available and appropriate.
 
-Bugs, crashes, regressions, flaky behavior, debug requests, performance problems, and complex tasks should go through Superpowers when it is available.
-
-If Superpowers is missing, the agent must say so and ask whether to install/configure it or continue manually.
+Superpowers does not override Hub routing, project confirmation, security, memory isolation, task workflows, or architecture-update rules.
