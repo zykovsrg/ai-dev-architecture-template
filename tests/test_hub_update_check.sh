@@ -58,8 +58,11 @@ SHA_B="$(git -C "$WORK" rev-parse HEAD)"
 git -C "$WORK" push -q fixture HEAD:refs/heads/moving-source
 [ "$SHA_A" != "$SHA_B" ] || { echo 'FAIL: fixture branch did not move' >&2; exit 1; }
 
+# The fixture hub lives under ROOT, so it intentionally appears inside the
+# repository worktree. --allow-dirty bypasses only that unrelated test-harness
+# condition; source-SHA enforcement is still exercised by the updater itself.
 HUB_RELEASE_REPO_URL="$REMOTE" bash "$ROOT/scripts/update-installed-hub.sh" \
-  --hub "$PIN_HUB" --ref moving-source --apply \
+  --hub "$PIN_HUB" --ref moving-source --apply --allow-dirty \
   --confirm-plan "$PLAN_SHA" --confirm-source-sha "$SHA_A" >/dev/null
 
 if grep -Fq 'branch moved to B' "$PIN_HUB/AGENTS.md"; then
