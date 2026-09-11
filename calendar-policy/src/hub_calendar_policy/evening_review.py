@@ -1,6 +1,8 @@
 """Noncanonical inputs for a confirmation-gated evening review."""
 
 import json
+import os
+import tempfile
 from datetime import datetime, timedelta
 from hashlib import sha256
 from pathlib import Path
@@ -17,8 +19,17 @@ def day_bounds(day: str, timezone: str) -> tuple[datetime, datetime]:
 def write_snapshot(hub_root: Path, day: str, events: list[EventRef]) -> Path:
     directory = hub_root / "ai/tmp/calendar-snapshots"
     directory.mkdir(parents=True, exist_ok=True)
-    snapshot = directory / f"{day}-{len(list(directory.glob(f'{day}-*.txt'))):04d}.txt"
-    snapshot.write_text("".join(f"{event.start:%H:%M}|{event.end:%H:%M}|{event.title}|{event.calendar_id}\n" for event in events), encoding="utf-8")
+    fd, name = tempfile.mkstemp(prefix=f"{day}-", suffix=".txt", dir=directory)
+    snapshot = Path(name)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write("".join(
+                f"{event.start:%H:%M}|{event.end:%H:%M}|{event.title}|{event.calendar_id}\n"
+                for event in events
+            ))
+    except Exception:
+        snapshot.unlink(missing_ok=True)
+        raise
     return snapshot
 
 
