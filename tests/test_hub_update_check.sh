@@ -46,7 +46,7 @@ git -C "$WORK" remote add fixture "$REMOTE"
 git -C "$WORK" push -q fixture HEAD:refs/heads/moving-source
 SHA_A="$(git -C "$WORK" rev-parse HEAD)"
 
-PIN_HUB="$TEMP_DIR/pin-hub"
+PIN_HUB="$TEMP_DIR/pin/_ai-hub"
 mkdir -p "$PIN_HUB"
 bash "$ROOT/scripts/install.sh" --mode hub "$PIN_HUB" >/dev/null
 PREVIEW="$(HUB_RELEASE_REPO_URL="$REMOTE" bash "$ROOT/scripts/update-installed-hub.sh" --hub "$PIN_HUB" --ref moving-source --dry-run)"
