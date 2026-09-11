@@ -7,7 +7,7 @@ import re
 import sys
 from pathlib import Path
 
-from task_records import read_project_records
+from task_records import read_records_lines
 
 SOURCE_FILES = {
     "current": "ai/current-task.md",
@@ -51,7 +51,6 @@ def registered_project_root(hub: Path, project: dict[str, str]) -> Path:
     if allowed_root.is_symlink() or not allowed_root.is_dir():
         raise ValueError("invalid Hub projects root")
     allowed_root = allowed_root.resolve()
-
     candidate = Path(project["path"]).expanduser()
     if not candidate.is_absolute() or ".." in candidate.parts or candidate.is_symlink():
         raise ValueError(f"invalid registered project path: {project['project_id']}")
@@ -77,26 +76,20 @@ def build_index(hub: Path) -> list[dict[str, object]]:
         if project["status"] != "active":
             continue
         project_root = registered_project_root(hub, project)
-        texts = {}
-        paths = {}
         for kind, relative in SOURCE_FILES.items():
             path = safe_record(project_root, relative)
-            paths[kind] = path
-            texts[kind] = path.read_text(encoding="utf-8")
-        records = read_project_records(
-            project["project_id"], texts["current"], texts["future"], texts["paused"]
-        )
-        for record in records:
-            kind = record["source_kind"]
-            rows.append({
-                "project_id": project["project_id"],
-                "task_id": record["task_id"],
-                "title": record["title"],
-                "status": record["status"],
-                "due": record["due"],
-                "source_kind": kind,
-                "source_path": str(paths[kind]),
-            })
+            with path.open("r", encoding="utf-8") as stream:
+                records = read_records_lines(project["project_id"], kind, stream)
+            for record in records:
+                rows.append({
+                    "project_id": project["project_id"],
+                    "task_id": record["task_id"],
+                    "title": record["title"],
+                    "status": record["status"],
+                    "due": record["due"],
+                    "source_kind": kind,
+                    "source_path": str(path),
+                })
     rows.sort(key=lambda row: (row["project_id"], SOURCE_ORDER[row["source_kind"]], row["task_id"]))
     return rows
 
