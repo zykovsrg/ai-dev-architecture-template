@@ -25,18 +25,14 @@ fi
 architecture="hub-template/ai/architecture.md"
 [ -f "$architecture" ] || missing "hub architecture" "$architecture"
 
-# Final canonical source-of-truth model must be explicit rather than inferred
-# from scattered routing prose.
-if [ -f "$architecture" ]; then
-  source_section="$(awk '/^## Source Of Truth$/ {p=1; next} /^## / && p {exit} p {print}' "$architecture")"
-  if [ -z "$source_section" ]; then
-    bad "source of truth" "missing ## Source Of Truth section"
-  else
-    for needle in 'project-registry.md' 'ai/current-task.md' 'ai/paused-tasks.md' 'ai/future-tasks.md' 'ai/project-context.md' 'ai/decisions.md' 'ai/changelog.md' 'knowledge/' 'Git'; do
-      grep -Fq "$needle" <<<"$source_section" || bad "source of truth" "missing $needle"
-    done
-    [ "$fail" -ne 0 ] || ok "source of truth" "registry, project memory, knowledge, and Git authorities are explicit"
-  fi
+source_section="$(awk '/^## Source Of Truth \/ Канонические источники$/ {p=1; next} /^## / && p {exit} p {print}' README.md)"
+if [ -z "$source_section" ]; then
+  bad "source of truth" "README lacks the explicit Source Of Truth section"
+else
+  for needle in 'hub-template/' 'ai/project-registry.md' 'ai/current-task.md' 'ai/paused-tasks.md' 'ai/future-tasks.md' 'ai/project-context.md' 'ai/decisions.md' 'ai/changelog.md' 'knowledge/' 'Git'; do
+    grep -Fq "$needle" <<<"$source_section" || bad "source of truth" "missing $needle"
+  done
+  [ "$fail" -ne 0 ] || ok "source of truth" "shared workflows, registry, project memory, knowledge, and Git authorities are explicit"
 fi
 
 hub_rule_files="hub-template/AGENTS.md hub-template/CLAUDE.md hub-template/ai/architecture.md"
