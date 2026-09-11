@@ -7,16 +7,27 @@ cleanup() { rm -rf "$TEMP_DIR"; }
 trap cleanup EXIT
 
 HUB="$TEMP_DIR/_ai-hub"
-mkdir -p "$HUB/scripts" "$HUB/projects"
-cp -R "$ROOT/hub-template/." "$HUB/"
-cp "$ROOT/scripts/check-hub-registry.sh" "$ROOT/scripts/read-compact-project-index.sh" \
-  "$ROOT/scripts/obsidian-task-sync.sh" "$ROOT/scripts/generate-obsidian-projects-kanban.sh" "$HUB/scripts/"
-git -C "$HUB" init >/dev/null
+mkdir -p "$HUB"
+bash "$ROOT/scripts/install.sh" --mode hub "$HUB" >/dev/null
 printf '\n<!-- local drift -->\n' >> "$HUB/AGENTS.md"
 
 if bash "$ROOT/scripts/update-installed-hub.sh" --hub "$HUB" --source "$ROOT" --check >"$TEMP_DIR/result" 2>&1; then
-  echo "FAIL: --check accepted matching version with changed managed file" >&2
+  echo "FAIL: --check accepted changed managed file" >&2
   exit 1
 fi
 grep -Fq 'Managed files differ' "$TEMP_DIR/result"
-grep -Fq 'scripts/check-all-task-records.sh' "$TEMP_DIR/result"
+grep -Fq 'AGENTS.md' "$TEMP_DIR/result"
+
+# The updater must delegate preview/apply to the content-addressed release engine.
+grep -Fq 'hub_release.py' "$ROOT/scripts/update-installed-hub.sh" || {
+  echo 'FAIL: updater does not use hub_release.py' >&2
+  exit 1
+}
+grep -Fq 'ls-remote' "$ROOT/scripts/update-installed-hub.sh" || {
+  echo 'FAIL: remote symbolic ref is not pinned to a commit SHA' >&2
+  exit 1
+}
+grep -Fq 'RESOLVED_SHA' "$ROOT/scripts/update-installed-hub.sh" || {
+  echo 'FAIL: updater does not retain one resolved revision' >&2
+  exit 1
+}
