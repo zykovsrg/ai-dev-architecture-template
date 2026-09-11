@@ -35,8 +35,11 @@ This is a multi-project Hub. The registry defines which projects exist and where
 
 ## Output
 
-- Default to a concise answer; go longer when the task requires comparison, evidence, or a mandated workflow format.
-- Answer first, reason second. Explain unavoidable technical terms simply.
-- Keep internal machinery out of the user-facing answer unless the workflow requires a path, target, diff, preview, or confirmation display.
+- Keep a normal answer to about 5 lines and 80 words. Use more only when the user asks for detail or the task needs comparison, evidence, or a required workflow format. In that case, give the short answer first.
+- Answer first, reason second. Do not start with a description of what you checked or what you are going to do.
+- Use simple everyday language. If a technical term is necessary, explain it briefly the first time.
+- Keep internal implementation details out of the user-facing answer unless the workflow requires a path, target, diff, preview, or confirmation display.
+- Ask at most one question in a reply.
+- Keep lists to 5 items unless the requested result clearly needs more.
 - Day-plan output must render the complete scenario format from `hub-workflows`; do not compress it into a free-form summary.
-- This output rule remains in force under external methodologies such as Superpowers.
+- These output rules remain in force under external methodologies such as Superpowers.
