@@ -43,8 +43,14 @@ def _finish_due(values):
     return values[0] if values else None
 
 
-def read_records_lines(project_id, kind, lines):
-    """Parse canonical task records from an iterable without retaining task bodies."""
+def _valid_task_id(project_id, task_id):
+    return task_id and (
+        task_id.startswith(f"TASK-{project_id}-")
+        or re.fullmatch(r"TASK-\d{8}-\d{3}|FT-\d{8}-\d+", task_id)
+    )
+
+
+def _read_records_lines(project_id, kind, lines, *, compact):
     if kind == "current":
         task_id = status = title = None
         due_values = []
@@ -67,9 +73,11 @@ def read_records_lines(project_id, kind, lines):
                 if not line[0].isspace():
                     title = line
                 saw_goal = False
+                if compact:
+                    break
         if status in {"empty", "backlog", None} and task_id in {None, "TASK-YYYYMMDD-NNN"}:
             return []
-        if not task_id or not (task_id.startswith(f"TASK-{project_id}-") or re.fullmatch(r"TASK-\d{8}-\d{3}|FT-\d{8}-\d+", task_id)):
+        if not task_id or not _valid_task_id(project_id, task_id):
             raise ValueError("invalid_current_task_id")
         if status not in {"active", "ready", "in_progress", "waiting", "blocked", "review", "paused", "done", "completed"}:
             raise ValueError("invalid_status")
@@ -81,6 +89,7 @@ def read_records_lines(project_id, kind, lines):
         records = []
         heading = task_id = status = None
         due_values = []
+        metadata_done = False
 
         def flush_paused():
             if heading is None:
@@ -88,8 +97,7 @@ def read_records_lines(project_id, kind, lines):
             match = re.fullmatch(r"### \d{4}-\d{2}-\d{2} — (.+)", heading)
             if not match:
                 return
-            valid_id = task_id and (task_id.startswith(f"TASK-{project_id}-") or re.fullmatch(r"TASK-\d{8}-\d{3}|FT-\d{8}-\d+", task_id))
-            if not valid_id or status != "paused":
+            if not _valid_task_id(project_id, task_id) or status != "paused":
                 raise ValueError("invalid_paused_record")
             records.append({"task_id": task_id, "title": match.group(1), "status": "paused", "due": _finish_due(due_values)})
 
@@ -98,16 +106,22 @@ def read_records_lines(project_id, kind, lines):
             if line.startswith("### "):
                 flush_paused()
                 heading, task_id, status, due_values = line, None, None, []
+                metadata_done = False
                 continue
-            if heading is None:
+            if heading is None or (compact and metadata_done):
                 continue
             if task_id is None and line.startswith("Task ID: "):
                 task_id = line[9:]
+                continue
             if status is None and line.startswith("Status: "):
                 status = line[8:]
+                continue
             due = _due_value(line)
             if due is not None:
                 due_values.append(due)
+                continue
+            if compact and task_id is not None and status is not None and line.strip() and not line.startswith(("Priority: ", "Source: ", "Created: ")):
+                metadata_done = True
         flush_paused()
         return records
 
@@ -117,6 +131,7 @@ def read_records_lines(project_id, kind, lines):
     records = []
     heading = status = None
     due_values = []
+    metadata_done = False
 
     def flush_future():
         if heading is None:
@@ -136,20 +151,31 @@ def read_records_lines(project_id, kind, lines):
         if line.startswith("### "):
             flush_future()
             heading, status, due_values = line, None, []
+            metadata_done = False
             continue
-        if heading is None:
+        if heading is None or (compact and metadata_done):
             continue
         if status is None and line.startswith("Status: "):
             status = line.split(": ", 1)[1]
+            continue
         due = _due_value(line)
         if due is not None:
             due_values.append(due)
+            continue
+        if compact and status is not None and line.strip() and not line.startswith(("Priority: ", "Source: ", "Created: ")):
+            metadata_done = True
     flush_future()
     return records
 
 
+def read_records_lines(project_id, kind, lines):
+    """Parse only compact discovery metadata from a streaming line iterator."""
+    return _read_records_lines(project_id, kind, lines, compact=True)
+
+
 def read_records(project_id, kind, text):
-    return read_records_lines(project_id, kind, text.splitlines())
+    """Parse a complete canonical record while preserving full strict validation."""
+    return _read_records_lines(project_id, kind, text.splitlines(), compact=False)
 
 
 def read_project_records(project_id, current_text, future_text, paused_text):
