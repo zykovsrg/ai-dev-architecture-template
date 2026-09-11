@@ -22,7 +22,22 @@ if [ -f hub-template/AGENTS.md ] && [ -f hub-template/CLAUDE.md ] && cmp -s <(no
 else
   bad "hub entry parity" "Hub entry semantic content differs"
 fi
-[ -f hub-template/ai/architecture.md ] || missing "hub architecture" "hub-template/ai/architecture.md"
+architecture="hub-template/ai/architecture.md"
+[ -f "$architecture" ] || missing "hub architecture" "$architecture"
+
+# Final canonical source-of-truth model must be explicit rather than inferred
+# from scattered routing prose.
+if [ -f "$architecture" ]; then
+  source_section="$(awk '/^## Source Of Truth$/ {p=1; next} /^## / && p {exit} p {print}' "$architecture")"
+  if [ -z "$source_section" ]; then
+    bad "source of truth" "missing ## Source Of Truth section"
+  else
+    for needle in 'project-registry.md' 'ai/current-task.md' 'ai/paused-tasks.md' 'ai/future-tasks.md' 'ai/project-context.md' 'ai/decisions.md' 'ai/changelog.md' 'knowledge/' 'Git'; do
+      grep -Fq "$needle" <<<"$source_section" || bad "source of truth" "missing $needle"
+    done
+    [ "$fail" -ne 0 ] || ok "source of truth" "registry, project memory, knowledge, and Git authorities are explicit"
+  fi
+fi
 
 hub_rule_files="hub-template/AGENTS.md hub-template/CLAUDE.md hub-template/ai/architecture.md"
 skill_count=0
@@ -76,7 +91,7 @@ else
 fi
 
 for skill in hub-knowledge-enable hub-knowledge-capture hub-knowledge-review; do [ -f "hub-template/ai/skills/$skill/SKILL.md" ] || missing "knowledge safeguards" "$skill"; done
-if grep -Eqi 'optional .*knowledge|optional `knowledge/`|knowledge.*on-demand' hub-template/ai/architecture.md; then ok "knowledge safeguards" "knowledge skills remain optional"; else bad "knowledge safeguards" "knowledge is not documented as optional/on-demand"; fi
+if grep -Eqi 'optional .*knowledge|optional `knowledge/`|knowledge.*on-demand' "$architecture"; then ok "knowledge safeguards" "knowledge skills remain optional"; else bad "knowledge safeguards" "knowledge is not documented as optional/on-demand"; fi
 
 assistant="scripts/assistant-workflows.sh"
 if [ ! -x "$assistant" ]; then
