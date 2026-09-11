@@ -108,27 +108,49 @@ def emit(payload):
     print(json.dumps(payload, sort_keys=True, separators=(",", ":")))
 
 
+def load_installed_manifest(installed_file):
+    if installed_file.is_symlink():
+        raise ValueError("unsafe installed release metadata")
+    if not installed_file.is_file():
+        return {"files": []}
+    manifest = json.loads(installed_file.read_text(encoding="utf-8"))
+    if not isinstance(manifest.get("files", []), list):
+        raise ValueError("invalid installed release metadata")
+    return manifest
+
+
 def preview(source, hub, source_sha=None):
     source_sha = normalize_source_sha(source_sha)
     manifest = build_manifest(source)
     hub = hub.resolve()
     installed_file = hub / ".local" / "hub-release" / "installed.json"
-    installed = {}
-    if installed_file.is_symlink():
-        raise ValueError("unsafe installed release metadata")
-    if installed_file.is_file():
-        installed = {entry["target"]: entry["sha256"]
-                     for entry in json.loads(installed_file.read_text(encoding="utf-8")).get("files", [])}
+    installed_manifest = load_installed_manifest(installed_file)
+    installed_entries = {entry["target"]: entry for entry in installed_manifest.get("files", [])}
+    incoming_targets = {entry["target"] for entry in manifest["files"]}
     operations = []
+
     for entry in manifest["files"]:
         destination = target_path(hub, entry["target"])
         current = digest(destination) if destination.is_file() else None
+        previous = installed_entries.get(entry["target"])
+        previous_sha = previous.get("sha256") if previous else None
         if entry["policy"] == "create-if-missing":
             action = "create" if current is None else "keep"
         else:
-            action = decide(current, installed.get(entry["target"]), entry["sha256"])
+            action = decide(current, previous_sha, entry["sha256"])
         operations.append({"target": entry["target"], "action": action,
                            "current_sha256": current, "incoming_sha256": entry["sha256"]})
+
+    for target, previous in installed_entries.items():
+        if target in incoming_targets or previous.get("policy") != "managed":
+            continue
+        destination = target_path(hub, target)
+        current = digest(destination) if destination.is_file() else None
+        action = decide(current, previous.get("sha256"), None)
+        operations.append({"target": target, "action": action,
+                           "current_sha256": current, "incoming_sha256": None})
+
+    operations.sort(key=lambda row: row["target"])
     payload = {"manifest": manifest, "operations": operations, "source_sha": source_sha}
     payload["plan_sha256"] = hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
     return payload
@@ -146,8 +168,10 @@ def apply(source, hub, confirmed_plan, source_sha=None, confirmed_source_sha=Non
     conflicts = [row["target"] for row in plan["operations"] if row["action"] == "conflict"]
     if conflicts:
         raise ValueError("conflicting local changes: " + ", ".join(conflicts))
+
     entries = {entry["target"]: entry for entry in plan["manifest"]["files"]}
-    changed = [row for row in plan["operations"] if row["action"] in {"create", "replace"}]
+    mutations = [row for row in plan["operations"] if row["action"] in {"create", "replace", "remove"}]
+    staged_changes = [row for row in mutations if row["action"] in {"create", "replace"}]
     operation_id = uuid.uuid4().hex
     state = hub / ".local" / "hub-release"
     installed_file = state / "installed.json"
@@ -158,24 +182,29 @@ def apply(source, hub, confirmed_plan, source_sha=None, confirmed_source_sha=Non
     metadata_stage = None
     metadata_replaced = False
     try:
-        for row in changed:
+        for row in staged_changes:
             entry = entries[row["target"]]
             staged = staging / row["target"]
             staged.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(source_root(source) / entry["source"], staged)
             os.chmod(staged, entry["mode"])
+
         if installed_file.exists():
             backup_root.mkdir(parents=True, exist_ok=True)
             metadata_backup = backup_root / ".installed.json.before"
             shutil.copy2(installed_file, metadata_backup)
-        for row in changed:
+
+        for row in mutations:
             target = target_path(hub, row["target"])
             backup = backup_root / row["target"]
             if target.exists():
                 backup.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(target, backup)
-            target.parent.mkdir(parents=True, exist_ok=True)
-            os.replace(staging / row["target"], target)
+            if row["action"] == "remove":
+                target.unlink()
+            else:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                os.replace(staging / row["target"], target)
             applied.append((target, backup if backup.exists() else None))
 
         state.mkdir(parents=True, exist_ok=True)
@@ -187,7 +216,7 @@ def apply(source, hub, confirmed_plan, source_sha=None, confirmed_source_sha=Non
         os.replace(metadata_stage, installed_file)
         metadata_replaced = True
         metadata_stage = None
-        return {"operation_id": operation_id, "changed": [row["target"] for row in changed]}
+        return {"operation_id": operation_id, "changed": [row["target"] for row in mutations]}
     except Exception:
         if metadata_replaced:
             if metadata_backup is None:
@@ -199,6 +228,7 @@ def apply(source, hub, confirmed_plan, source_sha=None, confirmed_source_sha=Non
             if backup is None:
                 target.unlink(missing_ok=True)
             else:
+                target.parent.mkdir(parents=True, exist_ok=True)
                 os.replace(backup, target)
         shutil.rmtree(backup_root, ignore_errors=True)
         raise
