@@ -52,9 +52,15 @@ bash scripts/update-installed-hub.sh --hub /path/to/_ai-hub --source /path/to/pi
 bash scripts/update-installed-hub.sh --hub /path/to/_ai-hub --source /path/to/pinned-repository --apply --confirm-plan <PLAN_SHA256>
 ```
 
-Для remote branch/tag preview дополнительно печатает `Resolved revision: <COMMIT_SHA>`. При apply передавайте именно этот SHA как `--ref <COMMIT_SHA>` вместе с подтверждённым plan hash. Если source bytes или план изменились, apply откажется продолжать.
+Для remote branch/tag сначала сделайте preview. Он печатает `Resolved revision: <COMMIT_SHA>` и `Plan SHA256`. Remote apply должен использовать именно этот immutable SHA и оба подтверждения:
 
-Updater не перезаписывает изменённые managed files без baseline, не заменяет существующую пользовательскую Hub memory и делает rollback уже заменённых файлов при ошибке apply. Инструкции вида `curl ... | bash` не являются поддерживаемым update path.
+```bash
+bash scripts/update-installed-hub.sh --hub /path/to/_ai-hub --ref <COMMIT_SHA> --apply --confirm-source-sha <COMMIT_SHA> --confirm-plan <PLAN_SHA256>
+```
+
+Если source bytes или план изменились, apply откажется продолжать. Updater не перезаписывает изменённые managed files без baseline, не заменяет существующую пользовательскую Hub memory и делает rollback уже заменённых файлов при ошибке apply. Инструкции вида `curl ... | bash` не являются поддерживаемым update path.
+
+Подробная пошаговая инструкция, разбор preview/conflicts, rollback и готовый блок для AI-агента: [`docs/update.md`](docs/update.md).
 
 ## Source Of Truth / Канонические источники
 
