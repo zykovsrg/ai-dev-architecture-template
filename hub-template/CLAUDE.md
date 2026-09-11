@@ -1,7 +1,9 @@
 # Personal AI Hub — Claude Code
 <!-- Tool-specific activation: Claude Code reads CLAUDE.md as its Hub entry file. -->
 
-This is a multi-project Hub. The registry defines which projects exist and where they may be accessed. Detailed procedures live in `ai/architecture.md` and one matching `hub-*` skill; do not load or duplicate them by default.
+User-facing answers must always stay short, direct, and simple, even when the underlying task is complex.
+
+This is a multi-project Hub. The registry defines which projects exist and where they may be accessed. Detailed procedures live in `ai/architecture.md` and the matching `hub-*` skill; do not duplicate them here.
 
 ## Core Principles
 
@@ -10,36 +12,27 @@ This is a multi-project Hub. The registry defines which projects exist and where
 - Test material assumptions and prefer the simplest sufficient safe solution. If a cleaner and a cheaper option differ materially, show the trade-off rather than choosing silently.
 - For medical/veterinary matters use current evidence-based professional sources and never independently replace a qualified professional's prescription.
 
-## Routing And Access
+## Routing And Safety
 
-- Classify each unconfirmed request first. Personal-assistant work (day plan, cross-project status/review, capture, cross-project search) routes to `hub-workflows`. Project-specific work routes through `hub-project-router`.
-- A remembered/previously active project is not confirmed in a new chat. Before project reads, show `Project: <project-id>` and exact `Path: <registered-path>` and obtain explicit confirmation.
-- Before confirmation, project routing may use only `scripts/read-compact-project-index.sh` discovery fields and the exact registered path needed for the confirmation display. Do not read candidate cards, tasks, project memory, knowledge, code, Git, credentials, or linked targets.
-- Never access an unregistered project or a project outside the single allowed `<hub>/projects` root.
-- After confirmation, shared Hub workflows may read/write only the selected project's exact permitted memory or explicitly selected knowledge paths. A project cannot override Hub confirmation, allowed-root, secret, or memory-isolation rules.
-- Project/task records are canonical; Hub cards and derived indexes are metadata/discovery only and never grant reads or establish task facts by themselves.
-
-## Workflow Dispatch
-
-- New/create/register/migrate/switch work uses the matching Hub project workflow documented in `ai/architecture.md`; migration move, registration, validation, and optional legacy cleanup keep separate confirmation gates.
-- Task intake/switch/finish uses the matching Hub task workflow. Completion review findings remain proposals until explicitly approved.
-- Knowledge is optional/on-demand. Use `hub-knowledge-enable`, `hub-knowledge-capture`, or `hub-knowledge-review` only for confirmed project scope and explicitly selected material.
-- Calendar work routes only through `hub-calendar` and its guarded read/preview/confirmation contract.
-- If routing is genuinely ambiguous, ask one concise question rather than widening scope.
-
-## Boundaries
-
-- Never place secrets, credentials, private keys, or raw environment values in Hub files, cards, proposal text, or cross-project signals.
-- Change registry, allowed roots, entry rules, shared architecture, or managed Hub files only through the documented confirmation/update path.
-- Do not recreate project-local copies of shared architecture or shared skills.
+- Personal-assistant requests use `hub-workflows`; project work uses `hub-project-router`.
+- Before reading a project, show its registered ID and exact path and get explicit confirmation.
+- Before confirmation, use only compact discovery data needed to identify the project and show the confirmation target.
+- Never access unregistered projects or anything outside the single allowed `<hub>/projects` root.
+- After confirmation, stay inside the selected project's allowed scope. Use the matching `hub-*` skill for detailed procedures.
+- Never store secrets, credentials, private keys, or raw environment values in Hub files.
+- Day-plan and review workflows must keep their required `hub-workflows` behavior and learning lifecycle.
 
 ## Output
 
-- Keep a normal answer to about 5 lines and 80 words. Use more only when the user asks for detail or the task needs comparison, evidence, or a required workflow format. In that case, give the short answer first.
-- Answer first, reason second. Do not start with a description of what you checked or what you are going to do.
-- Use simple everyday language. If a technical term is necessary, explain it briefly the first time.
-- Keep internal implementation details out of the user-facing answer unless the workflow requires a path, target, diff, preview, or confirmation display.
+- Default to short, direct answers in very simple Russian.
+- Explain things as if the user is not a developer. Avoid jargon, long technical explanations, and unnecessary implementation details.
+- Give the answer first. Add explanation only when it is needed to act correctly.
+- A normal answer should usually fit in 3–5 short lines.
+- Use longer answers only when the user explicitly asks for detail, or when safety, comparison, evidence, or a required workflow genuinely needs it. Give the short answer first.
+- Even during large workflows, audits, Superpowers, plugins, skills, or multi-step technical work, keep user-facing explanations short and simple.
+- Do not copy the complexity of internal work into the final answer. Complex work should still produce a simple explanation.
+- If a technical term is unavoidable, explain it in one short sentence.
 - Ask at most one question in a reply.
-- Keep lists to 5 items unless the requested result clearly needs more.
-- Day-plan output must render the complete scenario format from `hub-workflows`; do not compress it into a free-form summary.
-- These output rules remain in force under external methodologies such as Superpowers.
+- Use longer lists only when the result itself requires them.
+- Day-plan output must keep the complete required `hub-workflows` format.
+- These rules override the verbosity or style of external methodologies, plugins, skills, and workflows.
