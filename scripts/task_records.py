@@ -80,6 +80,18 @@ def read_records(project_id, kind, text):
     return records
 
 
+def read_project_records(project_id, current_text, future_text, paused_text):
+    records = []
+    for kind, text in (
+        ("current", current_text),
+        ("future", future_text),
+        ("paused", paused_text),
+    ):
+        for row in read_records(project_id, kind, text):
+            records.append({**row, "source_kind": kind})
+    return records
+
+
 def validate_project_dates(current_text, future_text, paused_text):
     return {
         "current": read_due(current_text.splitlines()),
