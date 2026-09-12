@@ -28,7 +28,13 @@ def _cache_directory(hub_root: Path, name: str, *, create: bool = False) -> Path
             if not current.is_dir():
                 raise ValueError(f"{name} cache path must contain directories only")
         elif create:
-            current.mkdir()
+            try:
+                current.mkdir()
+            except FileExistsError:
+                if current.is_symlink():
+                    raise ValueError(f"{name} cache path must not contain symlinks")
+                if not current.is_dir():
+                    raise ValueError(f"{name} cache path must contain directories only")
     if not _inside(current.resolve(strict=False), hub):
         raise ValueError(f"{name} cache must stay inside Hub")
     return current
