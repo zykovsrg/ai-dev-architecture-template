@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 import pytest
 
 from fake_backend import FakeCalendarBackend
-from hub_calendar_policy.evening_review import write_snapshot
+from hub_calendar_policy.evening_review import pending_friction, prior_snapshots, write_snapshot
 from hub_calendar_policy.models import CalendarRef, EventRef
 from hub_calendar_policy.policy import CalendarPolicy, PolicyError
 from hub_calendar_policy.preview import PreviewGrantStore
@@ -108,6 +108,45 @@ async def test_prepare_evening_review_does_not_write_snapshot_after_permission_f
         await make_server(tmp_path, permission="denied").prepare_evening_review("2026-09-10", ZONE)
 
     assert not (tmp_path / "ai/tmp/calendar-snapshots").exists()
+
+
+def test_pending_friction_rejects_source_symlink_outside_hub(tmp_path: Path) -> None:
+    cache = tmp_path / "ai/tmp/workflow-friction"
+    cache.mkdir(parents=True)
+    outside = tmp_path.parent / f"{tmp_path.name}-outside-friction.txt"
+    outside.write_text("secret\n", encoding="utf-8")
+    try:
+        cache.joinpath("2026-09-10.txt").symlink_to(outside)
+        with pytest.raises(ValueError, match="source must not be a symlink"):
+            pending_friction(tmp_path, "2026-09-10")
+    finally:
+        outside.unlink(missing_ok=True)
+
+
+def test_snapshot_cache_symlink_cannot_escape_hub(tmp_path: Path) -> None:
+    (tmp_path / "ai/tmp").mkdir(parents=True)
+    outside = tmp_path.parent / f"{tmp_path.name}-outside-snapshots"
+    outside.mkdir()
+    try:
+        (tmp_path / "ai/tmp/calendar-snapshots").symlink_to(outside, target_is_directory=True)
+        with pytest.raises(ValueError, match="cache path must not contain symlinks"):
+            write_snapshot(tmp_path, "2026-09-10", [])
+        assert list(outside.iterdir()) == []
+    finally:
+        outside.rmdir()
+
+
+def test_prior_snapshots_rejects_symlinked_snapshot_file(tmp_path: Path) -> None:
+    directory = tmp_path / "ai/tmp/calendar-snapshots"
+    directory.mkdir(parents=True)
+    outside = tmp_path.parent / f"{tmp_path.name}-outside-snapshot.txt"
+    outside.write_text("secret\n", encoding="utf-8")
+    try:
+        directory.joinpath("2026-09-10-linked.txt").symlink_to(outside)
+        with pytest.raises(ValueError, match="snapshot must not be a symlink"):
+            prior_snapshots(tmp_path, "2026-09-10")
+    finally:
+        outside.unlink(missing_ok=True)
 
 
 def test_write_snapshot_is_atomic_under_stale_directory_view(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
