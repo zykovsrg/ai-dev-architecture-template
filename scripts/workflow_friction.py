@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import json
 import os
+import stat
 import tempfile
 from pathlib import Path
 
@@ -13,17 +14,48 @@ def observation_id(day, ordinal, text):
     return hashlib.sha256(f"{day}\0{ordinal}\0{text}".encode("utf-8")).hexdigest()
 
 
-def friction_dir(hub):
-    path = Path(hub) / "ai" / "tmp" / "workflow-friction"
+def _inside(path, root):
+    return path == root or root in path.parents
+
+
+def _cache_directory(hub, *, create=False):
+    hub_root = Path(hub).resolve(strict=True)
+    current = hub_root
+    for part in ("ai", "tmp", "workflow-friction"):
+        current = current / part
+        if current.is_symlink():
+            raise ValueError("workflow friction cache path must not contain symlinks")
+        if current.exists():
+            if not current.is_dir():
+                raise ValueError("workflow friction cache path must contain directories only")
+        elif create:
+            current.mkdir()
+    resolved = current.resolve(strict=False)
+    if not _inside(resolved, hub_root):
+        raise ValueError("workflow friction cache must stay inside Hub")
+    return current
+
+
+def _regular_cache_file(directory, name, label):
+    root = directory.resolve(strict=False)
+    path = directory / name
     if path.is_symlink():
-        raise ValueError("workflow-friction directory must not be a symlink")
+        raise ValueError(f"{label} must not be a symlink")
+    if not _inside(path.resolve(strict=False), root):
+        raise ValueError(f"{label} must stay inside workflow friction cache")
+    if path.exists() and not stat.S_ISREG(path.lstat().st_mode):
+        raise ValueError(f"{label} must be a regular file")
     return path
+
+
+def friction_dir(hub, *, create=False):
+    return _cache_directory(hub, create=create)
 
 
 def source_file(hub, day):
     if not __import__("re").fullmatch(r"\d{4}-\d{2}-\d{2}", day):
         raise ValueError("day must be YYYY-MM-DD")
-    return friction_dir(hub) / f"{day}.txt"
+    return _regular_cache_file(friction_dir(hub), f"{day}.txt", "workflow friction source")
 
 
 def read_source(hub, day):
@@ -33,15 +65,13 @@ def read_source(hub, day):
 
 
 def state_file(hub, day):
-    return friction_dir(hub) / f"{day}.state.json"
+    return _regular_cache_file(friction_dir(hub), f"{day}.state.json", "workflow friction state")
 
 
 def load_state(hub, day):
     path = state_file(hub, day)
     if not path.exists():
         return {"format": 1, "entries": {}}
-    if path.is_symlink():
-        raise ValueError("workflow friction state must not be a symlink")
     state = json.loads(path.read_text(encoding="utf-8"))
     if state.get("format") != 1 or not isinstance(state.get("entries"), dict):
         raise ValueError("invalid workflow friction state")
@@ -64,8 +94,7 @@ def list_pending(hub, day):
 def resolve(hub, day, source_sha, identifier, decision):
     if decision not in {"accepted", "rejected"}:
         raise ValueError("explicit accepted or rejected disposition required")
-    directory = friction_dir(hub)
-    directory.mkdir(parents=True, exist_ok=True)
+    directory = friction_dir(hub, create=True)
     _, _, actual_sha = read_source(hub, day)
     if actual_sha != source_sha:
         raise ValueError("source changed; list pending observations again")
@@ -78,10 +107,16 @@ def resolve(hub, day, source_sha, identifier, decision):
         raise ValueError("conflicting disposition")
     state["entries"][identifier] = {"disposition": decision, "source_sha256": source_sha}
     destination = state_file(hub, day)
-    with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=directory, delete=False) as output:
-        json.dump(state, output, sort_keys=True, separators=(",", ":"))
-        temp_name = output.name
-    os.replace(temp_name, destination)
+    temp_name = None
+    try:
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=directory, delete=False) as output:
+            json.dump(state, output, sort_keys=True, separators=(",", ":"))
+            temp_name = output.name
+        os.replace(temp_name, destination)
+        temp_name = None
+    finally:
+        if temp_name is not None:
+            Path(temp_name).unlink(missing_ok=True)
 
 
 def main():
