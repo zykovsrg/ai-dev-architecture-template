@@ -49,6 +49,16 @@ class HubWorkflowProgressiveDisclosureTests(unittest.TestCase):
         ):
             self.assertNotIn(phrase, core)
 
+    def test_learning_state_machine_stays_in_its_resource(self):
+        core = SKILL.read_text(encoding="utf-8")
+        evening = (RESOURCE_DIR / "evening-review.md").read_text(encoding="utf-8")
+        lifecycle = (RESOURCE_DIR / "learning-lifecycle.md").read_text(encoding="utf-8")
+        self.assertIn("resources/learning-lifecycle.md", core)
+        self.assertIn("resources/learning-lifecycle.md", evening)
+        for invariant in ("accepted: journal_append", "rejected: no_journal_append", "append_failure: pending"):
+            self.assertIn(invariant, lifecycle)
+            self.assertNotIn(invariant, evening)
+
 
 if __name__ == "__main__":
     unittest.main()
