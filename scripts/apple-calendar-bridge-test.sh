@@ -30,6 +30,17 @@ grep -Fq 'exclusiveEnd(event.endDate)' "$BRIDGE/hub_eventkit_bridge.swift" \
 grep -Fq 'byAdding: .day' "$BRIDGE/hub_eventkit_bridge.swift" \
   || fail "bridge shifts all-day boundaries by seconds instead of calendar days"
 
+grep -Fq 'func isoText(_ date: Date, timezone: TimeZone)' "$BRIDGE/hub_eventkit_bridge.swift" \
+  || fail "bridge does not format event times in their timezone"
+grep -Fq 'formatter.timeZone = timezone' "$BRIDGE/hub_eventkit_bridge.swift" \
+  || fail "bridge timestamp formatter ignores the event timezone"
+grep -Fq 'let eventZone = event.timeZone ?? TimeZone.current' "$BRIDGE/hub_eventkit_bridge.swift" \
+  || fail "bridge has no local-timezone fallback"
+grep -Fq '"start": isoText(event.startDate, timezone: eventZone)' "$BRIDGE/hub_eventkit_bridge.swift" \
+  || fail "bridge start timestamp is not timezone-aware"
+grep -Fq '"end": isoText(event.isAllDay ? (exclusiveEnd(event.endDate) ?? event.endDate) : event.endDate, timezone: eventZone)' "$BRIDGE/hub_eventkit_bridge.swift" \
+  || fail "bridge end timestamp is not timezone-aware"
+
 # Without this key macOS refuses the Calendar prompt without ever showing it.
 /usr/libexec/PlistBuddy -c 'Print :NSCalendarsFullAccessUsageDescription' "$BRIDGE/Info.plist" >/dev/null 2>&1 \
   || fail "Info.plist is missing NSCalendarsFullAccessUsageDescription"

@@ -22,7 +22,12 @@ func parseDate(_ text: String) -> Date? {
     withFractions.date(from: text) ?? plain.date(from: text)
 }
 
-func isoText(_ date: Date) -> String { plain.string(from: date) }
+func isoText(_ date: Date, timezone: TimeZone) -> String {
+    let formatter = ISO8601DateFormatter()
+    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    formatter.timeZone = timezone
+    return formatter.string(from: date)
+}
 
 // EventKit stores the end of an all-day event inclusively: a single day ends on
 // that same day. The policy layer speaks the iCal convention, where the end is
@@ -120,13 +125,14 @@ guard allowed else { fail("CALENDAR_ACCESS_DENIED") }
 let localZone = TimeZone.current.identifier
 
 func describe(_ event: EKEvent) -> [String: Any] {
-    [
+    let eventZone = event.timeZone ?? TimeZone.current
+    return [
         "id": event.calendarItemIdentifier,
         "calendar_id": event.calendar.calendarIdentifier,
         "title": event.title ?? "",
-        "start": isoText(event.startDate),
-        "end": isoText(event.isAllDay ? (exclusiveEnd(event.endDate) ?? event.endDate) : event.endDate),
-        "timezone": event.timeZone?.identifier ?? localZone,
+        "start": isoText(event.startDate, timezone: eventZone),
+        "end": isoText(event.isAllDay ? (exclusiveEnd(event.endDate) ?? event.endDate) : event.endDate, timezone: eventZone),
+        "timezone": eventZone.identifier,
         "all_day": event.isAllDay,
     ]
 }
