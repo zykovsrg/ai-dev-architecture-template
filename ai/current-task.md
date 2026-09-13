@@ -1,16 +1,12 @@
 # Current Task
 
-Status: done
+Status: active
 
-Task ID: TASK-ai-dev-architecture-20260910-007
+Task ID: TASK-ai-dev-architecture-20260913-008
 
 Allowed statuses: empty / active / review / blocked / done / paused
 
-Note: `paused` is a transient status used only while `task-switch` is moving this
-task into `ai/paused-tasks.md`. After the switch this file holds the new task and
-the paused one lives in `ai/paused-tasks.md`.
-
-Stage: task-finish
+Stage: spec
 
 Allowed stages: intake / spec / planning / implementation / review / task-finish
 
@@ -20,33 +16,31 @@ implementation / review / task-finish / architecture-update
 
 ## Goal
 
-Сделать обязательный автоматический цикл аналитики и обучения для вечернего ревью.
+Исправить мост Apple Calendar: возвращать время событий с корректным часовым
+поясом календаря, чтобы планы дня не сдвигались по времени.
 
 ## Use Superpowers
 
-no
+yes
 
 ## Relevant files
 
-- `docs/superpowers/specs/2026-09-10-evening-review-learning-design.md`
-- `scripts/assistant-workflows.sh`
-- `calendar-policy/`
+- `calendar-policy/bridge/hub_eventkit_bridge.swift`
+- `calendar-policy/tests/`
+- `docs/superpowers/specs/2026-09-13-calendar-timezone-design.md`
 
 ## Done criteria
 
-- Запуск вечернего ревью автоматически получает календарные события, сохраняет снимок и возвращает историю снимков и нерассмотренные наблюдения.
-- Модель получает структурированные данные для анализа без ручного вызова вспомогательных скриптов.
-- Новые наблюдения и изменения правил остаются предложениями до явного подтверждения пользователя.
-- Интеграционный тест доказывает полный цикл и предотвращает регрессию.
+- Время события, возвращённое мостом, содержит смещение часового пояса события.
+- Тест подтверждает правильное время для `Europe/Kirov`.
+- Текущие проверки календарной политики проходят.
 
 ## Agent handoff
 
-Last agent:
+Last agent: Codex
 
-What changed:
+What changed: Started the calendar timezone correction task.
 
-Open risks:
+Open risks: EventKit all-day event boundaries must retain their existing behavior.
 
-Next agent should check:
-- Session review: ai/session-reviews/2026-09-10-automatic-evening-review-learning.md
-- Live evening-review execution after the application restart.
+Next agent should check: bridge output and timezone regression tests.
