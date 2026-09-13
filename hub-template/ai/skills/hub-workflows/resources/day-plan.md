@@ -51,6 +51,12 @@ After rendering, every user statement that changes or adds work becomes a propos
 
 Preserve the exact user-stated task title unless the user explicitly replaces it. Each proposal keeps its own exact target and diff. When a task carries a schedule, emit its complete calendar preview beside the task diff; one confirmation may approve only that exact shown pair under `hub-calendar`. A selectable package may span active projects, but every proposal retains its own project ID, `target_path`, and diff.
 
+For a new or changed action with relative and explicit dates, resolve the date
+in the calendar timezone. Preserve an explicit interval unchanged. A date-only
+statement uses the first 30-minute free interval on that date; never move an
+existing event. Put the result in `Запланировано: YYYY-MM-DD HH:MM-HH:MM` in
+the exact task diff and show its complete calendar preview beside it; one confirmation may approve only that exact pair. A past date does not infer completion.
+
 Do not guess project ownership. If one active registered project cannot be identified, ask which project owns the statement and emit no task/calendar proposal. If the canonical record already contains the statement, say so rather than emitting an empty diff.
 
 ## Recommendations and validation

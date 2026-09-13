@@ -59,6 +59,18 @@ class HubWorkflowProgressiveDisclosureTests(unittest.TestCase):
             self.assertIn(invariant, lifecycle)
             self.assertNotIn(invariant, evening)
 
+    def test_dated_day_plan_actions_pair_task_and_timed_event(self):
+        day_plan = (RESOURCE_DIR / "day-plan.md").read_text(encoding="utf-8")
+        for phrase in (
+            "relative and explicit dates",
+            "30-minute free interval",
+            "Запланировано: YYYY-MM-DD HH:MM-HH:MM",
+            "explicit interval unchanged",
+            "past date does not infer completion",
+            "one confirmation may approve only that exact pair",
+        ):
+            self.assertIn(phrase, day_plan)
+
 
 if __name__ == "__main__":
     unittest.main()

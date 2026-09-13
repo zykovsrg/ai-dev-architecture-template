@@ -348,13 +348,18 @@ the exact title of their canonical task and never a generated summary.
 An explicit new action or reminder stated during day planning is not merely a
 calendar item: when it belongs to one confirmed project, `hub-workflows`
 creates an exact `create_task` or `update_task` proposal for that project's
-canonical task record alongside any calendar proposal. The task proposal uses
-the exact stated title and has its own exact target path and diff; it remains
-independently selectable and needs the normal project-write confirmation. The
-workflow never guesses the owning project. It asks the user to identify one
-confirmed project when the action is ambiguous, and emits neither task nor
-calendar proposal until then. Every overdue task is rendered with its exact
-canonical task title, never a generated summary or translation.
+canonical task record and a paired timed calendar proposal. Relative and
+explicit dates are resolved in the calendar timezone. An explicit interval is
+preserved; a date-only statement uses the first free 30-minute interval without
+moving an existing event. The task diff records
+`Запланировано: YYYY-MM-DD HH:MM-HH:MM`, and its complete calendar preview is
+shown beside it. One confirmation covers exactly that pair. A past date never
+implies completion. The task proposal uses the exact stated title and has its
+own exact target path and diff. The workflow never guesses the owning project.
+It asks the user to identify one confirmed project when the action is ambiguous,
+and emits neither task nor calendar proposal until then. Every overdue task is
+rendered with its exact canonical task title, never a generated summary or
+translation.
 
 Clear day-planning requests, including «распланируем сегодняшний день»,
 «распланируем остаток дня», «план на сегодня», «план на остаток дня», and
