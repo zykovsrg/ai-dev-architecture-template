@@ -1,12 +1,12 @@
 # Current Task
 
-Status: active
+Status: done
 
 Task ID: TASK-ai-dev-architecture-20260913-008
 
 Allowed statuses: empty / active / review / blocked / done / paused
 
-Stage: spec
+Stage: task-finish
 
 Allowed stages: intake / spec / planning / implementation / review / task-finish
 
@@ -39,8 +39,10 @@ yes
 
 Last agent: Codex
 
-What changed: Started the calendar timezone correction task.
+What changed: EventKit bridge now serializes event times in the event timezone;
+the installed calendar policy and live reads were verified.
 
-Open risks: EventKit all-day event boundaries must retain their existing behavior.
+Open risks: none.
 
-Next agent should check: bridge output and timezone regression tests.
+Next agent should check:
+- Session review: ai/session-reviews/2026-09-13-calendar-timezone-closure.md

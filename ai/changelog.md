@@ -1,5 +1,13 @@
 # Changelog
 
+### 2026-09-13 — Часовой пояс событий Apple Calendar
+
+- Change: Мост EventKit теперь сериализует начало и конец события в часовом
+  поясе календаря, а не в UTC с ошибочной подписью локального пояса.
+- Verification: регрессионные проверки календарной политики прошли; живое
+  чтение вернуло время Kirov с корректным смещением `+03:00`.
+- Session review: `ai/session-reviews/2026-09-13-calendar-timezone-closure.md`.
+
 ### 2026-09-10
 
 - Change: Added and installed the guarded `prepare_evening_review` calendar tool. It gathers allowlisted calendar events, creates a noncanonical snapshot, and returns prior snapshots and pending friction for confirmation-gated learning proposals.
