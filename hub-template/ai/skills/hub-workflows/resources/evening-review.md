@@ -18,7 +18,7 @@ Render these headings in this exact order:
 
 ## Calendar and project mapping
 
-Render today's and tomorrow's calendar by the same guarded calendar-read rules as `resources/day-plan.md`: successful metadata first, then exactly the allowed IDs, verbatim event titles, no invented free day.
+Render today's and tomorrow's calendar by the same guarded calendar-read rules as `resources/day-plan.md`: successful metadata first, then exactly the allowed IDs, verbatim event titles, no invented free day. Render each all-day event separately as `- весь день — <title>`. Keep event titles verbatim: do not shorten, translate, group, or paraphrase them.
 
 Under `## События и проекты`, map each rendered event to at most one registered project in the allowed scope using only the event title, the `категория/проект/задача` naming convention, and canonical task records as evidence. Render `<HH:MM> <title> → <project-id|нет совпадения>; основание: <evidence>; уверенность: <высокая|низкая>`. A calendar match is inference only: it never proves completion, widens scope, or authorizes another read. Leave ambiguous events unmatched.
 

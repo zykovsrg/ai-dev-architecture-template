@@ -17,7 +17,7 @@ If the local context buffer was written, replace the core no-changes line with e
 
 ## Calendar rendering
 
-Under `## Текущий календарь`, first call `list_calendar_metadata`. Only after a successful response call `read_events` with exactly the returned calendar IDs and the calendar timezone. Render each event separately, in start order, as `- <HH:MM>–<HH:MM> — <title>`. Include the calendar name only when needed to disambiguate. Keep event titles verbatim: do not shorten, translate, group, or paraphrase them.
+Under `## Текущий календарь`, first call `list_calendar_metadata`. Only after a successful response call `read_events` with exactly the returned calendar IDs and the calendar timezone. Render each timed event separately, in start order, as `- <HH:MM>–<HH:MM> — <title>`. Render each all-day event separately as `- весь день — <title>`. Include the calendar name only when needed to disambiguate. Keep event titles verbatim: do not shorten, translate, group, or paraphrase them.
 
 Never call `read_events` before successful metadata. If the MCP is unreachable, permission is missing, or the allowlist is empty, state which condition occurred rather than inventing an empty schedule. Do not report an empty allowlist without a successful metadata response and never claim a free day you could not read. On `CALENDAR_NOT_ALLOWED`, read the local allowlist file and retry with exactly its IDs; report an empty allowlist only when that file is confirmed empty.
 
@@ -35,7 +35,7 @@ Under `## Предлагаемый календарь`, render one chronological
 
 `- <HH:MM>–<HH:MM> — <title>; статус: <сохраняется|предлагается>; основание: <calendar|canonical-path>; duration: stated|estimate`
 
-Use a stated duration when present in the canonical task; otherwise mark `estimate`. Apply learned rules and active numeric goal progress as planning constraints without adding another output section. Never remove an existing event or invent a time merely to fit work. Put work that cannot fit under `Не вошло`. Retained events keep their calendar titles verbatim; proposed blocks use exact canonical task titles. The proposed calendar is read-only until the separate `hub-calendar` preview/confirmation path is completed.
+Use a stated duration when present in the canonical task; otherwise mark `estimate`. Apply learned rules and active numeric goal progress as planning constraints without adding another output section. Never remove an existing event or invent a time merely to fit work. Put work that cannot fit under `Не вошло`. Retained timed events keep the normal timed format; retained all-day events use `- весь день — <title>; статус: сохраняется; основание: calendar; duration: stated`. Keep every retained calendar title verbatim: do not shorten, translate, group, or paraphrase it. Proposed blocks use exact canonical task titles. The proposed calendar is read-only until the separate `hub-calendar` preview/confirmation path is completed.
 
 ## Editing the plan
 

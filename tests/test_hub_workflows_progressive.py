@@ -71,6 +71,18 @@ class HubWorkflowProgressiveDisclosureTests(unittest.TestCase):
         ):
             self.assertIn(phrase, day_plan)
 
+    def test_day_plan_and_evening_review_preserve_all_day_events(self):
+        required = (
+            "each all-day event separately",
+            "весь день",
+            "Keep event titles verbatim",
+            "do not shorten, translate, group, or paraphrase",
+        )
+        for filename in ("day-plan.md", "evening-review.md"):
+            text = (RESOURCE_DIR / filename).read_text(encoding="utf-8")
+            for phrase in required:
+                self.assertIn(phrase, text, f"{filename}: {phrase}")
+
 
 if __name__ == "__main__":
     unittest.main()
