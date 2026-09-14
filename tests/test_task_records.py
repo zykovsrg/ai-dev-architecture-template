@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.task_records import read_due, read_project_records, read_records, validate_project_dates
+from scripts.task_records import _valid_task_id, read_due, read_project_records, read_records, validate_project_dates
 
 
 CURRENT = """Status: active
@@ -30,6 +30,18 @@ Status: paused
 
 
 class TaskRecordTests(unittest.TestCase):
+    def test_project_scoped_id_requires_compact_date(self):
+        self.assertTrue(
+            _valid_task_id(
+                "zdorove-babushki", "TASK-zdorove-babushki-20260914-001"
+            )
+        )
+        self.assertFalse(
+            _valid_task_id(
+                "zdorove-babushki", "TASK-zdorove-babushki-2026-09-14-001"
+            )
+        )
+
     def test_accepts_both_due_spellings(self):
         self.assertEqual(read_due(["Due: 2026-09-10"]), "2026-09-10")
         self.assertEqual(read_due(["due: 2026-09-10"]), "2026-09-10")

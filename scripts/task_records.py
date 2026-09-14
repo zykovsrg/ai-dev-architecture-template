@@ -50,9 +50,12 @@ def _finish_due(values):
 
 
 def _valid_task_id(project_id, task_id):
-    return task_id and (
-        task_id.startswith(f"TASK-{project_id}-")
-        or re.fullmatch(r"TASK-\d{8}-\d{3}|FT-\d{8}-\d+", task_id)
+    return bool(
+        task_id
+        and re.fullmatch(
+            rf"(?:TASK-{re.escape(project_id)}-\d{{8}}-\d{{3}}|TASK-\d{{8}}-\d{{3}}|FT-\d{{8}}-\d+)",
+            task_id,
+        )
     )
 
 
