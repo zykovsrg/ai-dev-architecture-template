@@ -196,7 +196,7 @@ class ReleaseDecisionTests(unittest.TestCase):
     def test_existing_installed_state_rolls_back_if_metadata_replace_fails(self):
         with tempfile.TemporaryDirectory() as directory:
             hub, old, installed_bytes = self.existing_installed_hub(Path(directory))
-            installed = hub / ".local/hub-release/installed.json"
+            installed = (hub / ".local/hub-release/installed.json").resolve()
             plan = preview(ROOT, hub)
             original_replace = os.replace
 
@@ -214,7 +214,7 @@ class ReleaseDecisionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             hub = Path(directory) / "hub"
             hub.mkdir()
-            installed = hub / ".local/hub-release/installed.json"
+            installed = (hub / ".local/hub-release/installed.json").resolve()
             plan = preview(ROOT, hub)
             original_replace = os.replace
 

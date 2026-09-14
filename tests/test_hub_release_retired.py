@@ -99,7 +99,7 @@ class RetiredManagedFileTests(unittest.TestCase):
             original_replace = os.replace
 
             def fail_later_replace(src, dst):
-                if Path(dst) == hub / "ai/architecture.md":
+                if Path(dst).resolve() == (hub / "ai/architecture.md").resolve():
                     raise OSError("failure after removal")
                 return original_replace(src, dst)
 
