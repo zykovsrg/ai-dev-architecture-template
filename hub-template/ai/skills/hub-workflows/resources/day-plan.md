@@ -51,6 +51,13 @@ After rendering, every user statement that changes or adds work becomes a propos
 
 Preserve the exact user-stated task title unless the user explicitly replaces it. Each proposal keeps its own exact target and diff. When a task carries a schedule, emit its complete calendar preview beside the task diff; one confirmation may approve only that exact shown pair under `hub-calendar`. A selectable package may span active projects, but every proposal retains its own project ID, `target_path`, and diff.
 
+For a direct, unambiguous user statement about one canonical task, emit exactly
+one `update_task`, `update_due`, or `update_waiting` proposal with the project
+ID, exact target path, and exact diff. Pair a calendar preview only when the
+task schedule changes. If the task reference is ambiguous, emit no proposal and
+ask which task is meant. After the user confirms the exact displayed package,
+apply only that canonical task-record diff and its paired calendar preview.
+
 For a new or changed action with relative and explicit dates, resolve the date
 in the calendar timezone. Preserve an explicit interval unchanged. A date-only
 statement uses the first 30-minute free interval on that date; never move an

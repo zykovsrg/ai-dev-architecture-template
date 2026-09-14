@@ -28,10 +28,17 @@ Fill `## Сделано` from selected `--review-input` section `## Done`, `## �
 
 Without selected review input, `## Сделано` may use past events of the requested date that matched a project, but every such line must be marked `предположение из календаря`, cite the event/project, and state that the completion was not confirmed by the user. Never present a calendar-derived line as stated completion.
 
-Derive `## Follow-ups` and the at-most-three executable results for tomorrow only from structured canonical fields. A stated completion, carry-over, waiting fact, or due-date change is a report fact, not an automatic canonical mutation.
+Derive `## Follow-ups` and the at-most-three executable results for tomorrow only from structured canonical fields. A stated completion, carry-over, waiting fact, or due-date change is a report fact, not an automatic canonical mutation before confirmation.
 
 ## Proposals and learning
 
 Every possible write appears independently under `## Подтвердить` using the core proposal envelope. Every matched event or calendar-derived completion may yield at most one `update_task` proposal for the matched project's canonical task record, with exact target path and diff. Emit no proposal for an unmatched event, a low-confidence match, or a project outside scope.
+
+For a direct, unambiguous user statement about one canonical task, emit exactly
+one `update_task`, `update_due`, or `update_waiting` proposal with the project
+ID, exact target path, and exact diff. Pair a calendar preview only when the
+task schedule changes. If the task reference is ambiguous, emit no proposal and
+ask which task is meant. After the user confirms the exact displayed package,
+apply only that canonical task-record diff and its paired calendar preview.
 
 For active numeric goals, ask for the stated amount and offer a separate confirmed `goal_progress` proposal. For each grounded pending friction issue, offer one `add_observation` proposal. Proposal display must leave that observation pending; all acceptance, rejection, journal ordering, and append-failure behavior is defined only in `resources/learning-lifecycle.md`.

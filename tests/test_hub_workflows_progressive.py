@@ -31,7 +31,7 @@ class HubWorkflowProgressiveDisclosureTests(unittest.TestCase):
             "## Fixed sequence",
             "## Proposal envelope",
             "## Confirmation boundary",
-            "Never write or apply a proposal automatically",
+            "Never write or apply a proposal before the user confirms",
             "scripts/read-compact-task-index.py",
         ):
             self.assertIn(phrase, core)
@@ -82,6 +82,25 @@ class HubWorkflowProgressiveDisclosureTests(unittest.TestCase):
             text = (RESOURCE_DIR / filename).read_text(encoding="utf-8")
             for phrase in required:
                 self.assertIn(phrase, text, f"{filename}: {phrase}")
+
+    def test_day_plan_and_evening_review_require_exact_task_sync(self):
+        required = (
+            "update_task",
+            "update_due",
+            "update_waiting",
+            "exact target path",
+            "exact diff",
+            "ambiguous",
+        )
+        for filename in ("day-plan.md", "evening-review.md"):
+            text = (RESOURCE_DIR / filename).read_text(encoding="utf-8")
+            for phrase in required:
+                self.assertIn(phrase, text, f"{filename}: {phrase}")
+
+    def test_architecture_requires_task_diff_before_workflow_sync(self):
+        architecture = (ROOT / "hub-template/ai/architecture.md").read_text(encoding="utf-8")
+        self.assertIn("Calendar events never prove completion", architecture)
+        self.assertIn("exact canonical task-record diff", architecture)
 
 
 if __name__ == "__main__":

@@ -11,7 +11,8 @@ description: |
 # Hub Workflows
 
 Use this skill for `day-plan`, `evening-review`, `weekly-review`, or `capture`.
-It is proposal-only. Never write or apply a proposal automatically.
+It is proposal-first. Never write or apply a proposal before the user confirms
+the exact displayed package.
 
 Read schedules only through the guarded `hub_calendar` MCP and only with its
 read tools. Never call `preview_change` or `apply_change` here; Calendar writes
@@ -153,9 +154,12 @@ source: <workflow and selected source record>
 requires_confirmation: true
 ```
 
-After envelopes, state that apply is unavailable in this worker. Project, task,
-meeting, knowledge, deadline, waiting, Calendar, and learning writes remain
-independent proposals with exact targets and diffs. A create-project proposal
+After envelopes, state that nothing has been applied until the user confirms.
+A confirmed `day-plan` or `evening-review` task package applies only its exact
+canonical task-record diffs and paired calendar previews; it never authorizes
+an unshown or changed write. Project, task, meeting, knowledge, deadline,
+waiting, Calendar, and learning writes otherwise remain independent proposals
+with exact targets and diffs. A create-project proposal
 names its exact direct-child target and planned scaffold/registry/card files but
 must not create or inspect that target.
 
@@ -165,8 +169,8 @@ Source selection, recorder export consent, project scope confirmation, and
 proposal confirmation are separate gates; none substitutes for another. One
 package confirmation authorizes only unchanged named proposals that remain
 selected. A capture package is applied by its owning confirmed project workflow.
-A day-plan package may span active registered projects only within the exact
-three task-record write boundary above. Unknown, pending, failed, or ambiguous
+A day-plan or evening-review package may span active registered projects only
+within the exact three task-record write boundary above. Unknown, pending, failed, or ambiguous
 targets remain read-only proposals or questions.
 
 ## Preserved learning lifecycle

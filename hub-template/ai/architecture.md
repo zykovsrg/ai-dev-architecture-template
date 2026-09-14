@@ -345,6 +345,15 @@ and numeric goal progress constrain the proposal without creating extra chat
 sections. Existing calendar titles are copied verbatim; proposed new blocks use
 the exact title of their canonical task and never a generated summary.
 
+All-day events are calendar events too: day planning and evening review render
+each one separately as `весь день — <exact title>`. They never group,
+paraphrase, or interpret an all-day title. Calendar events never prove completion.
+A direct, unambiguous user decision that a known task is complete,
+moved, or waiting produces an exact canonical task-record diff and, only when
+the schedule changes, its complete guarded calendar preview. The exact package
+applies only after the user confirms it; an ambiguous task reference creates no
+proposal or mutation.
+
 An explicit new action or reminder stated during day planning is not merely a
 calendar item: when it belongs to one confirmed project, `hub-workflows`
 creates an exact `create_task` or `update_task` proposal for that project's
