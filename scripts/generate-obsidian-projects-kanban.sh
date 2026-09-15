@@ -126,7 +126,8 @@ if printf '%s\n' "${IDS[@]}" | uniq -d | grep -q .; then die 'duplicate project 
 REGISTRY_IDS=(); while IFS= read -r id; do REGISTRY_IDS+=("$id"); done < <(sed -nE 's/^## ([a-z0-9][a-z0-9-]*)$/\1/p' "$REGISTRY" | sort)
 [ "${#REGISTRY_IDS[@]}" -gt 0 ] || die 'registry is empty'
 if printf '%s\n' "${REGISTRY_IDS[@]}" | uniq -d | grep -q .; then die 'duplicate project ID in registry'; fi
-if [ "$MODE" = write ] && ! cmp -s <(printf '%s\n' "${IDS[@]}") <(printf '%s\n' "${REGISTRY_IDS[@]}"); then die 'write scope must match all registered project IDs'; fi
+FULL_SCOPE=0
+if cmp -s <(printf '%s\n' "${IDS[@]}") <(printf '%s\n' "${REGISTRY_IDS[@]}"); then FULL_SCOPE=1; fi
 
 TASK_IDS=() TASK_COLUMNS=() TASK_TITLES=() TASK_PROJECTS=() TASK_PROJECT_IDS=() TASK_DUES=() TASK_DONE=() TASK_SOURCE_FILES=() TASK_SOURCE_HASHES=()
 SOURCE_IDS=() SOURCE_PATHS=() SOURCE_CARDS=() SOURCE_HASHES=(); OVERVIEW_ROWS=''
@@ -241,6 +242,7 @@ if [ -e "$TARGET_MANIFEST" ] || [ -e "$TARGET_OVERVIEW" ]; then
   manifest_format="$(/usr/bin/jq -r '.format_version // empty' "$TARGET_MANIFEST" 2>/dev/null || true)"
   manifest_has_project_boards="$(/usr/bin/jq -r '(.project_boards | type == "array" and length > 0)' "$TARGET_MANIFEST" 2>/dev/null || true)"
   if [ "$manifest_format" != 4 ]; then
+    [ "$FULL_SCOPE" -eq 1 ] || die 'proposal pending: partial refresh requires manifest v4; legacy migration needs a separately confirmed full scope'
     [ "$manifest_format" = 3 ] && [ "$CONFIRM" -eq 1 ] || die 'proposal pending: manifest v3 requires a fresh confirmed rebuild'
     [ -f "$TARGET_LEGACY" ] && [ ! -L "$TARGET_LEGACY" ] || die 'proposal pending: legacy task board is missing or unsafe'
     recorded_legacy_target="$(/usr/bin/jq -r '.views.tasks_kanban.target // empty' "$TARGET_MANIFEST")"
@@ -273,7 +275,9 @@ if [ -e "$TARGET_MANIFEST" ] || [ -e "$TARGET_OVERVIEW" ]; then
     done
   fi
 
-  if [ "$manifest_format" = 4 ]; then
+  # Removing a project from this invocation is not permission to inspect or
+  # delete its board. Only a complete registry refresh retires old boards.
+  if [ "$manifest_format" = 4 ] && [ "$FULL_SCOPE" -eq 1 ]; then
     while IFS=$'\t' read -r previous_id previous_target previous_hash; do
       [ -n "$previous_id" ] || continue
       if ! printf '%s\n' "${IDS[@]}" | grep -Fxq -- "$previous_id"; then
@@ -284,6 +288,36 @@ if [ -e "$TARGET_MANIFEST" ] || [ -e "$TARGET_OVERVIEW" ]; then
   fi
 else
   for rel in "${BOARD_TARGETS[@]}"; do [ ! -e "$TARGET_DIR/$rel" ] || die 'proposal pending: manual project board exists outside generated manifest'; done
+fi
+
+# Merge shared metadata from the verified generated files, never by opening
+# another project's card, task source, or board. Keep foreign records as-is.
+if [ "$FULL_SCOPE" -eq 0 ] && [ -f "$TARGET_MANIFEST" ]; then
+  /usr/bin/jq -e '
+    (.tasks | type == "array") and (.sources | type == "array") and
+    ([.tasks[] | .project_id | type == "string"] | all) and
+    ([.sources[] | .id | type == "string"] | all)
+  ' "$TARGET_MANIFEST" >/dev/null || die 'proposal pending: generated manifest merge records are invalid'
+  OVERVIEW_RENDER="$(/usr/bin/jq -nr --rawfile old "$TARGET_OVERVIEW" \
+    --arg fresh "$OVERVIEW_RENDER" --argjson incoming "$MANIFEST_RENDER" '
+    reduce $incoming.project_boards[].project_id as $id ($old;
+      ("| [[Projects/" + $id + "/Kanban\\|") as $prefix |
+      ($fresh | split("\n") | map(select(startswith($prefix)))) as $new |
+      (split("\n") | map(select(startswith($prefix))) | length) as $count |
+      if ($new | length) != 1 or $count > 1 then error("ambiguous scoped overview row")
+      elif $count == 0 then . + "\n" + $new[0]
+      else split("\n") | map(if startswith($prefix) then $new[0] else . end) | join("\n") end)
+  ')" || die 'proposal pending: cannot merge scoped overview rows'
+  OVERVIEW_HASH="$(hash_text "$OVERVIEW_RENDER")"
+  MANIFEST_RENDER="$(/usr/bin/jq --argjson incoming "$MANIFEST_RENDER" --arg overview_sha "$OVERVIEW_HASH" '
+    ($incoming.project_boards | map(.project_id)) as $ids |
+    def outside_scope($id): $ids | index($id) | not;
+    .generated_at = $incoming.generated_at |
+    .views.projects_overview.sha256 = $overview_sha |
+    .project_boards = ([.project_boards[] | select(outside_scope(.project_id))] + $incoming.project_boards) |
+    .tasks = ([.tasks[] | select(outside_scope(.project_id))] + $incoming.tasks) |
+    .sources = ([.sources[] | select(outside_scope(.id))] + $incoming.sources)
+  ' "$TARGET_MANIFEST")" || die 'proposal pending: cannot merge scoped manifest entries'
 fi
 
 transaction_dir="$TARGET_DIR/.AI-Architecture.generated-write.transaction"

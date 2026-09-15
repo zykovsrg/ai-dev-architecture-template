@@ -1,5 +1,24 @@
 # Changelog
 
+### 2026-09-15 — Scoped Obsidian forward refresh
+
+- Change: Partial scope now refreshes only selected boards and their shared
+  overview/manifest entries, without reading other projects or deleting their
+  boards. Full-registry behavior and manual-edit protection remain intact.
+- Installed: Updated the Hub generator and the four explicitly approved task
+  workflow instructions; refreshed only their five release-manifest hashes.
+- Verification: 15 synthetic-fixture tests passed against the installed script;
+  the existing full Kanban contract, syntax, diff checks, and source parity passed.
+- Limits: Existing local-rule-directory and release-metadata issues remain;
+  the older reverse-sync suite stops at a calendar gate on both baseline and
+  changed code. These unrelated fixes are deferred, not silently applied.
+- Closure: User explicitly approved closure, working-Hub update, and GitHub
+  publication. The current-task record now names this completed work; its ID
+  was allocated at closure. Release metadata was rebuilt against existing
+  source files, resolving stale metadata without changing additional rules.
+- Session review: `ai/session-reviews/2026-09-15-scoped-obsidian-refresh-closure.md`.
+- Details: `docs/superpowers/specs/2026-09-15-scoped-obsidian-refresh.md`.
+
 ### 2026-09-14 — Единая проверка ID задач
 
 - Change: Все проектные ID задач теперь принимаются только в формате

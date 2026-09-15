@@ -24,6 +24,13 @@ bash scripts/obsidian-task-sync.sh scan --project-id <confirmed-project-id> --hu
 bash scripts/obsidian-task-sync.sh apply --project-id <confirmed-project-id> --confirm-proposal <sha256> --hub <hub> --scope <scope-file> --vault <hub>/projects/ai-dev-architecture/obsidian-vault
 ```
 
+Use a scope file containing only the confirmed project ID. Never expand scope
+to bypass a refresh error. A partial refresh updates only scoped boards, their
+overview rows, and their manifest entries; it preserves all other projects
+without reading their files. A full-registry refresh requires explicit
+authorization for that full scope. If a partial refresh is blocked, report the
+blocker and leave the generated views unchanged.
+
 1. Read the selected project's `ai/current-task.md` and the smallest relevant
    `ai/decisions.md`, `ai/changelog.md`, or `ai/future-tasks.md` file.
 2. Check recorded Done criteria and report any missing verification or open
