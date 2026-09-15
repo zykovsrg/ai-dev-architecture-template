@@ -29,7 +29,7 @@ while IFS=$'\t' read -r project_id project_path; do
       failed=1
       continue
     fi
-    if ! python3 "$SCRIPT_DIR/task_records.py" read --file "$task_file" --project-id "$project_id" --kind "$kind" >/dev/null; then
+    if ! python3 "$SCRIPT_DIR/task_records.py" read --file "$task_file" --project-id "$project_id" --kind "$kind" --strict-headings >/dev/null; then
       echo "ERROR: $project_id: invalid $kind task records" >&2
       failed=1
     fi

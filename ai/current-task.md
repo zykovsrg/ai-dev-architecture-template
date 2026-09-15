@@ -1,33 +1,33 @@
 # Current Task
 
 Status: done
-Task ID: TASK-ai-dev-architecture-20260915-001
+Task ID: TASK-ai-dev-architecture-20260915-002
 Stage: task-finish
 
 ## Goal
 
-Support a single confirmed project in the guarded Obsidian board refresh,
-without reading or modifying other projects, while preserving full refresh.
+Stop task discovery from silently skipping task records whose headings do not
+match the machine-read format, and document that format.
 
 ## Done criteria
 
-- Partial writes update only scoped boards and their shared metadata entries.
-- Registration, path, manual-edit and rollback protection remains enabled.
-- Single-project and full-registry fixture tests pass.
-- Approved workflow instructions are installed in the working Hub.
+- The compact task index warns on stderr about every skipped `###` heading.
+- `check-all-task-records.sh` fails on skipped headings; template examples pass.
+- `hub-workflows` requires surfacing those warnings to the user.
+- `task-record-format.md` documents future and paused heading formats.
+- Tests cover warnings, strict check, and paused due after `Paused:` metadata.
 
 ## Agent handoff
 
-Last agent: Codex
+Last agent: Claude
 
-What changed: Scoped refresh implemented and installed; task closed by explicit
-user instruction. This task ID was allocated at closure, not during execution.
+What changed: Heading warnings and strict check added in `task_records.py`,
+`read-compact-task-index.py`, `check-all-task-records.sh`; paused compact
+parsing now reads due after `Paused:`/`Stage:` lines; instructions updated;
+release manifest rebuilt. Installed and verified in the working Hub first.
 
-Verification: 15 fixture tests, full generator contract, installed/source parity,
-Bash syntax, and diff checks passed. Release metadata was rebuilt at closure.
+Verification: 106 unit tests and all shell tests passed; release manifest
+check passed; working Hub check-all-task-records passed with no warnings.
 
-Open risks: Existing consistency/smoke local-rule-directory failure and the
-baseline reverse-sync calendar gate remain outside this task's scope.
-
-Session review: ai/session-reviews/2026-09-15-scoped-obsidian-refresh-closure.md
-Result details: docs/superpowers/specs/2026-09-15-scoped-obsidian-refresh.md
+Open risks: Records without IDs created by other tools still need manual
+normalization when warnings appear.

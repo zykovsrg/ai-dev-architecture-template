@@ -1,5 +1,15 @@
 # Changelog
 
+### 2026-09-15 — Warnings for skipped task headings
+
+- Problem: A future task without an ID heading was silently skipped and missed
+  a day plan; 55 such records existed across 9 projects.
+- Change: The compact task index warns about skipped headings, the full record
+  check fails on them, day plans must surface warnings, and the task record
+  format now documents future and paused headings. Paused compact parsing reads
+  due dates placed after `Paused:` or `Stage:` lines.
+- Verification: 106 unit tests, shell tests and release manifest check passed.
+
 ### 2026-09-15 — Scoped Obsidian forward refresh
 
 - Change: Partial scope now refreshes only selected boards and their shared

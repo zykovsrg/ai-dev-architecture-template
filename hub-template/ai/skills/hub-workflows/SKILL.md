@@ -46,7 +46,10 @@ It never grants project code, knowledge records, credentials, arbitrary files,
 or inactive/archived projects.
 
 For personal-assistant day-plan, weekly-review, overdue, and blocked-work
-discovery, start with `scripts/read-compact-task-index.py`. That derived index
+discovery, start with `scripts/read-compact-task-index.py`. Capture its stderr:
+every `WARNING: unrecognized task heading skipped` line is a record invisible to
+discovery and must be reported to the user in the workflow output (in a day
+plan, under `## Рекомендации`) with its project and line. That derived index
 may contain only normalized discovery fields from active registered projects.
 Use it to select relevant task records; open the corresponding canonical
 `ai/current-task.md`, `ai/future-tasks.md`, or `ai/paused-tasks.md` only when a

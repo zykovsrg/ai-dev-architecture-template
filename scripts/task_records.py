@@ -129,7 +129,7 @@ def _read_records_lines(project_id, kind, lines, *, compact):
             if due is not None:
                 due_values.append(due)
                 continue
-            if compact and task_id is not None and status is not None and line.strip() and not line.startswith(("Priority: ", "Source: ", "Created: ")):
+            if compact and task_id is not None and status is not None and line.strip() and not line.startswith(("Priority: ", "Source: ", "Created: ", "Paused: ", "Stage: ")):
                 metadata_done = True
         flush_paused()
         return records
@@ -177,6 +177,24 @@ def _read_records_lines(project_id, kind, lines, *, compact):
     return records
 
 
+FUTURE_HEADING_RE = re.compile(r"### (?:TASK-[a-z0-9-]+-\d{8}-\d{3}|FT-\d{8}-\d+) — .+")
+PAUSED_HEADING_RE = re.compile(r"### \d{4}-\d{2}-\d{2} — .+")
+TEMPLATE_HEADINGS = {"### FT-YYYYMMDD-001 — Task title", "### YYYY-MM-DD — Task title"}
+
+
+def unrecognized_headings(kind, lines):
+    """Return (line_number, heading) for `###` headings that record parsing would skip."""
+    if kind == "current":
+        return []
+    pattern = FUTURE_HEADING_RE if kind == "future" else PAUSED_HEADING_RE
+    found = []
+    for number, raw in enumerate(lines, 1):
+        line = raw.rstrip("\r\n")
+        if line.startswith("### ") and line not in TEMPLATE_HEADINGS and not pattern.fullmatch(line):
+            found.append((number, line))
+    return found
+
+
 def read_records_lines(project_id, kind, lines):
     """Parse only compact discovery metadata from a streaming line iterator."""
     return _read_records_lines(project_id, kind, lines, compact=True)
@@ -209,6 +227,7 @@ def main():
     parser.add_argument("--validate-project-dates", action="store_true")
     parser.add_argument("--project-id")
     parser.add_argument("--kind", choices=("current", "future", "paused"))
+    parser.add_argument("--strict-headings", action="store_true")
     args = parser.parse_args()
     try:
         if args.current_file or args.future_file or args.paused_file:
@@ -228,6 +247,12 @@ def main():
         text = args.file.read_text(encoding="utf-8")
         if args.project_id and args.kind:
             print(json.dumps({"records": read_records(args.project_id, args.kind, text)}, ensure_ascii=False))
+            if args.strict_headings:
+                skipped = unrecognized_headings(args.kind, text.splitlines())
+                for number, heading in skipped:
+                    print(f"unrecognized_heading:{number}: {heading}", file=sys.stderr)
+                if skipped:
+                    return 2
             return 0
         due = read_due(text.splitlines())
     except ValueError as error:

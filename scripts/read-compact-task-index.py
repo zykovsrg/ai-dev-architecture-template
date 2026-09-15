@@ -7,7 +7,7 @@ import re
 import sys
 from pathlib import Path
 
-from task_records import read_records_lines
+from task_records import read_records_lines, unrecognized_headings
 
 SOURCE_FILES = {
     "current": "ai/current-task.md",
@@ -80,6 +80,9 @@ def build_index(hub: Path) -> list[dict[str, object]]:
             path = safe_record(project_root, relative)
             with path.open("r", encoding="utf-8") as stream:
                 records = read_records_lines(project["project_id"], kind, stream)
+            with path.open("r", encoding="utf-8") as stream:
+                for number, heading in unrecognized_headings(kind, stream):
+                    print(f"WARNING: unrecognized task heading skipped: {project['project_id']} {relative}:{number}: {heading}", file=sys.stderr)
             for record in records:
                 rows.append({
                     "project_id": project["project_id"],
