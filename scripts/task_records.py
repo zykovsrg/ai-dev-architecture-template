@@ -213,8 +213,31 @@ def read_project_records(project_id, current_text, future_text, paused_text):
     return records
 
 
+def read_due_per_record(lines):
+    """Validate due dates inside each `###` record; return the earliest date or None.
+
+    Future and paused files hold many records, so different records may carry
+    different dates. Only one record with two different dates is a conflict.
+    """
+    values = []
+    chunk = []
+    for line in list(lines) + ["### "]:
+        if line.startswith("### "):
+            due = read_due(chunk)
+            if due is not None:
+                values.append(due)
+            chunk = []
+        else:
+            chunk.append(line)
+    return min(values) if values else None
+
+
 def validate_project_dates(current_text, future_text, paused_text):
-    return {"current": read_due(current_text.splitlines()), "future": read_due(future_text.splitlines()), "paused": read_due(paused_text.splitlines())}
+    return {
+        "current": read_due(current_text.splitlines()),
+        "future": read_due_per_record(future_text.splitlines()),
+        "paused": read_due_per_record(paused_text.splitlines()),
+    }
 
 
 def main():

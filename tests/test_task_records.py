@@ -93,6 +93,20 @@ Status: idea
         due_dates = validate_project_dates(CURRENT.replace("Due: 2026-09-10\n", ""), FUTURE, PAUSED)
         self.assertEqual(due_dates, {"current": None, "future": "2026-09-11", "paused": None})
 
+    def test_future_records_may_have_different_due_dates(self):
+        future = FUTURE + "\n### FT-20260909-002 — Later report\n\nStatus: ready\nDue: 2026-09-30\n"
+        due_dates = validate_project_dates(CURRENT, future, PAUSED)
+        self.assertEqual(due_dates["future"], "2026-09-11")
+
+    def test_one_record_with_two_due_dates_conflicts(self):
+        future = FUTURE.replace("due: 2026-09-11\n", "due: 2026-09-11\nDue: 2026-09-12\n")
+        with self.assertRaisesRegex(ValueError, "conflicting_due"):
+            validate_project_dates(CURRENT, future, PAUSED)
+
+    def test_current_task_with_two_due_dates_still_conflicts(self):
+        with self.assertRaisesRegex(ValueError, "conflicting_due"):
+            validate_project_dates(CURRENT + "due: 2026-09-12\n", FUTURE, PAUSED)
+
     def test_read_project_records_combines_all_kinds(self):
         records = read_project_records("demo", CURRENT, FUTURE, PAUSED)
         self.assertEqual([row["source_kind"] for row in records], ["current", "future", "paused"])

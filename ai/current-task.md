@@ -1,33 +1,30 @@
 # Current Task
 
-Status: done
-Task ID: TASK-ai-dev-architecture-20260915-002
-Stage: task-finish
+Status: empty
+Stage: intake
 
 ## Goal
 
-Stop task discovery from silently skipping task records whose headings do not
-match the machine-read format, and document that format.
+No active task.
+
+## Relevant files
+
+None yet.
 
 ## Done criteria
 
-- The compact task index warns on stderr about every skipped `###` heading.
-- `check-all-task-records.sh` fails on skipped headings; template examples pass.
-- `hub-workflows` requires surfacing those warnings to the user.
-- `task-record-format.md` documents future and paused heading formats.
-- Tests cover warnings, strict check, and paused due after `Paused:` metadata.
+Define during task intake.
 
 ## Agent handoff
 
-Last agent: Claude
+Last agent: Claude (Opus 5)
 
-What changed: Heading warnings and strict check added in `task_records.py`,
-`read-compact-task-index.py`, `check-all-task-records.sh`; paused compact
-parsing now reads due after `Paused:`/`Stage:` lines; instructions updated;
-release manifest rebuilt. Installed and verified in the working Hub first.
+What changed: TASK-ai-dev-architecture-20260915-002 закрыта 2026-09-18.
+Предупреждения о пропущенных заголовках задач работают: дневной план 2026-09-18
+не дал ни одного предупреждения, строгая проверка проходит по всем проектам.
+Session review: `ai/session-reviews/2026-09-18-skipped-heading-warnings-closure.md`.
 
-Verification: 106 unit tests and all shell tests passed; release manifest
-check passed; working Hub check-all-task-records passed with no warnings.
+Open risks: записи без ID, созданные другими инструментами, всё ещё требуют
+ручной нормализации при появлении предупреждений.
 
-Open risks: Records without IDs created by other tools still need manual
-normalization when warnings appear.
+Next agent should check: FT-20260918-002 — перенос хаба на арендованный сервер.

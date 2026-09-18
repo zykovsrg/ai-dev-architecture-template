@@ -9,6 +9,11 @@
   format now documents future and paused headings. Paused compact parsing reads
   due dates placed after `Paused:` or `Stage:` lines.
 - Verification: 106 unit tests, shell tests and release manifest check passed.
+- Closed 2026-09-18. Session review:
+  `ai/session-reviews/2026-09-18-skipped-heading-warnings-closure.md` — result
+  issues-found (F1: the delivered strict check was not invoked by any workflow;
+  fixed by requiring `check-all-task-records.sh` after confirmed task-record
+  writes in `hub-workflows`).
 
 ### 2026-09-15 — Scoped Obsidian forward refresh
 
