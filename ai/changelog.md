@@ -1,5 +1,46 @@
 # Changelog
 
+### 2026-09-21 — Calendar ↔ task sync (TASK-ai-dev-architecture-20260921-001)
+
+- Problem: a rescheduled task had to be moved by hand in both the task record
+  and Apple Calendar.
+- Change: optional task line `Событие: <calendar-id>/<event-id> · синхронизировано: …`;
+  read-only `scripts/calendar_task_sync.py` detects calendar_moved, task_moved,
+  both_moved, stale_sync, event_missing, closed_with_future_event and unlinked,
+  converting event times to the calendar timezone; the day plan gains
+  `## Синхронизация` and the evening review lists the same items under
+  «Подтвердить». Every change stays behind the joint confirmation; `Due:` is
+  never moved by sync.
+- Verification: all tests pass; a real-calendar run found 3 `unlinked` items.
+  Hub commits af18899..40c17f2. Spec and plan in `docs/superpowers/`.
+- Deferred: recurring events are detected only by repeat dates in the window;
+  a linked event turned all-day reports `event_missing`; short event titles
+  (e.g. `хадасса/кардиология/…`) need a manual first link.
+- Session review: `ai/session-reviews/2026-09-21-calendar-task-sync-closure.md`.
+
+### 2026-09-18 — Shorter day plan and evening review, productive window
+
+- Problem: the day plan ran ~90 lines. «Задачи вне календаря» mixed overdue,
+  dated and undated work into one list, and «Предлагаемый календарь» restated
+  the whole day. Planning ignored the user's productive hours.
+- Change: the day plan is four sections — «Конфликты» and «Предлагаемый
+  календарь» removed, and «Задачи вне календаря» now holds only tasks due on the
+  requested date with no calendar event. The evening review is six sections —
+  «Сделано», «Перенос» and «Три главных действия завтра» removed; stated
+  completions and carry-overs become proposals under «Подтвердить» instead of
+  narrative output. «Рекомендации» now applies the rules in
+  `<hub>/ai/workflow-context.md`, where the productive window lives as data
+  rather than in the workflow text, so changing the hours edits one line.
+  Task weight is read only from a stated duration or the number of `## Scope`
+  items, never estimated. When the window is occupied the plan may suggest one
+  swap of a project work block, and never touches events with other people,
+  sleep, meals or travel.
+- Verification: new `tests/test-validate-day-plan-output.sh`; all six test files,
+  the workflow-memory check and the task-record check pass. Today's plan
+  regenerated under the new structure: 46 lines instead of ~90.
+- No task record: the work was requested and done directly in conversation.
+  Hub commit `2f641fd` in `personal-ai-hub`.
+
 ### 2026-09-15 — Warnings for skipped task headings
 
 - Problem: A future task without an ID heading was silently skipped and missed
