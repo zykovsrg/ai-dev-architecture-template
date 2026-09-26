@@ -7,6 +7,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from .backend import CalendarBackend
+from .eventkit_backend import BridgeError
 from .models import CalendarRef, ChangeRequest, EventRef
 from .policy import CalendarPolicy, PolicyError
 from .preview import PreviewGrantStore
@@ -42,11 +43,19 @@ class GuardedCalendarServer:
         await self._require_permission()
         start, end = day_bounds(day, timezone)
         calendar_ids = set(self._policy.allowed_calendar_ids)
-        await self._authorize_calendar_ids(calendar_ids, timezone)
-        events = await self._backend.read_events(calendar_ids, start, end)
+        events, unavailable = await self._read_calendar_events(calendar_ids, start, end, timezone)
         previous = prior_snapshots(self._hub_root, day)
-        snapshot = write_snapshot(self._hub_root, day, events)
-        return {"source": SOURCE, "timezone": timezone, "events": [item.model_dump(mode="json") for item in events], "snapshot": str(snapshot), "prior_snapshots": previous, "pending_friction": pending_friction(self._hub_root, day)}
+        snapshot = None if unavailable else write_snapshot(self._hub_root, day, events)
+        return {
+            "source": SOURCE,
+            "timezone": timezone,
+            "events": [item.model_dump(mode="json") for item in events],
+            "unavailable_calendar_ids": unavailable,
+            "availability_complete": not unavailable,
+            "snapshot": str(snapshot) if snapshot else None,
+            "prior_snapshots": previous,
+            "pending_friction": pending_friction(self._hub_root, day),
+        }
 
     async def calendar_status(self) -> dict[str, object]:
         return {
@@ -71,18 +80,29 @@ class GuardedCalendarServer:
     ) -> dict[str, object]:
         await self._require_permission()
         self._validate_range(start, end, timezone)
-        await self._authorize_calendar_ids(calendar_ids, timezone)
-        events = await self._backend.read_events(calendar_ids, start, end)
-        return {"source": SOURCE, "timezone": timezone, "events": [item.model_dump(mode="json") for item in events]}
+        events, unavailable = await self._read_calendar_events(calendar_ids, start, end, timezone)
+        return {
+            "source": SOURCE,
+            "timezone": timezone,
+            "events": [item.model_dump(mode="json") for item in events],
+            "unavailable_calendar_ids": unavailable,
+            "availability_complete": not unavailable,
+        }
 
     async def find_free_slots(
         self, calendar_ids: set[str], start: datetime, end: datetime, timezone: str
     ) -> dict[str, object]:
         await self._require_permission()
         self._validate_range(start, end, timezone)
-        await self._authorize_calendar_ids(calendar_ids, timezone)
-        slots = await self._backend.free_slots(calendar_ids, start, end)
-        return {"source": SOURCE, "timezone": timezone, "slots": [{"start": left.isoformat(), "end": right.isoformat()} for left, right in slots]}
+        events, unavailable = await self._read_calendar_events(calendar_ids, start, end, timezone)
+        slots = [] if unavailable else self._free_slots(events, start, end)
+        return {
+            "source": SOURCE,
+            "timezone": timezone,
+            "slots": [{"start": left.isoformat(), "end": right.isoformat()} for left, right in slots],
+            "unavailable_calendar_ids": unavailable,
+            "availability_complete": not unavailable,
+        }
 
     async def preview_change(self, request: ChangeRequest) -> dict[str, object]:
         await self._require_permission()
@@ -125,14 +145,51 @@ class GuardedCalendarServer:
         assert calendar is not None
         return calendar
 
-    async def _authorize_calendar_ids(self, calendar_ids: set[str], timezone: str) -> None:
+    async def _read_calendar_events(
+        self, calendar_ids: set[str], start: datetime, end: datetime, timezone: str
+    ) -> tuple[list[EventRef], list[str]]:
         if not calendar_ids:
             raise PolicyError("CALENDAR_ID_REQUIRED")
+
+        # Validate the entire request before treating any configured calendar as
+        # temporarily unavailable. Unknown IDs remain hard errors.
         for calendar_id in calendar_ids:
-            calendar = await self._calendar(calendar_id)
+            self._policy.authorize_read(calendar_id, timezone)
+
+        calendars = {item.id: item for item in await self._backend.list_calendars()}
+        events: list[EventRef] = []
+        unavailable: list[str] = []
+        for calendar_id in sorted(calendar_ids):
+            calendar = calendars.get(calendar_id)
+            if calendar is None:
+                unavailable.append(calendar_id)
+                continue
             if calendar.timezone != timezone:
                 raise PolicyError("CALENDAR_TIMEZONE_MISMATCH")
-            self._policy.authorize_read(calendar_id, timezone)
+            try:
+                events.extend(await self._backend.read_events({calendar_id}, start, end))
+            except (BridgeError, PolicyError) as error:
+                if str(error) not in {"CALENDAR_NOT_FOUND", "CALENDAR_UNAVAILABLE"}:
+                    raise
+                unavailable.append(calendar_id)
+        events.sort(key=lambda item: item.start)
+        return events, unavailable
+
+    @staticmethod
+    def _free_slots(
+        events: list[EventRef], start: datetime, end: datetime
+    ) -> list[tuple[datetime, datetime]]:
+        cursor = start
+        slots: list[tuple[datetime, datetime]] = []
+        for event in sorted(events, key=lambda item: item.start):
+            if event.start > cursor:
+                slots.append((cursor, min(event.start, end)))
+            cursor = max(cursor, event.end)
+            if cursor >= end:
+                break
+        if cursor < end:
+            slots.append((cursor, end))
+        return slots
 
     async def _current_event(self, request: ChangeRequest) -> EventRef | None:
         if request.action == "create":

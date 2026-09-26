@@ -20,6 +20,14 @@ available calendar. Do not report an empty allowlist when this call was not
 made or failed: state instead whether the calendar bridge is unavailable or
 permission was denied.
 
+Every successful `read_events`, `find_free_slots`, and `prepare_evening_review`
+response includes `availability_complete` and `unavailable_calendar_ids`. If
+that list is non-empty, say the result is partial and name the affected IDs.
+Never describe partial event data as a free day, use partial free-slot output
+to recommend availability, ingest partial events into rolling context, or write
+a snapshot from them. Partial `find_free_slots` responses contain no slots;
+partial evening-review responses have `snapshot: null`.
+
 Для создания и явного переименования используй название
 `категория/проект/задача`. Каждая часть обязательна, набрана строчными
 буквами, а `/` не окружён пробелами. Предпочитай категории `маша`,

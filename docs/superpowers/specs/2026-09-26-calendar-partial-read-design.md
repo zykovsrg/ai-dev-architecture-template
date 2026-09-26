@@ -11,7 +11,7 @@ other calendars that remain readable.
 
 Keep the explicit allowlist and process each requested calendar independently.
 Return events from calendars that can be read, plus a structured
-`unavailable_calendars` field naming any calendars skipped because EventKit no
+`unavailable_calendar_ids` field naming any calendars skipped because EventKit no
 longer resolves them. Permission failures, malformed requests, and unrelated
 bridge errors still fail the complete operation.
 
@@ -20,7 +20,7 @@ keep its event result and snapshot consistent: if any configured calendar is
 unavailable, do not create a snapshot from incomplete data; report the
 unavailable IDs with the events and leave the snapshot unchanged.
 
-Consumers must treat a non-empty `unavailable_calendars` list as partial data
+Consumers must treat a non-empty `unavailable_calendar_ids` list as partial data
 and must not claim the day is free. The calendar workflow documentation will
 state this rule. No allowlist change or calendar write is included.
 

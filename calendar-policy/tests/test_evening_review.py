@@ -58,6 +58,28 @@ async def test_prepare_evening_review_returns_snapshot_and_pending_friction(tmp_
 
 
 @pytest.mark.asyncio
+async def test_partial_evening_review_does_not_write_snapshot(tmp_path: Path) -> None:
+    start = datetime(2026, 9, 10, 9, 0, tzinfo=ZoneInfo(ZONE))
+    available = CalendarRef(id="calendar-1", name="Work", timezone=ZONE, writable=True)
+    stale = CalendarRef(id="calendar-2", name="Birthdays", timezone=ZONE, writable=False)
+    backend = FakeCalendarBackend([available, stale], [], unavailable_on_read={stale.id})
+    server = GuardedCalendarServer(
+        backend,
+        CalendarPolicy(allowed_calendar_ids=frozenset({available.id, stale.id})),
+        PreviewGrantStore(clock=lambda: start),
+        hub_root=tmp_path,
+    )
+
+    result = await server.prepare_evening_review("2026-09-10", ZONE)
+
+    assert result["events"] == []
+    assert result["unavailable_calendar_ids"] == [stale.id]
+    assert result["availability_complete"] is False
+    assert result["snapshot"] is None
+    assert not (tmp_path / "ai/tmp/calendar-snapshots").exists()
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("disposition", ["accepted", "rejected"])
 async def test_prepare_evening_review_excludes_resolved_friction(tmp_path: Path, disposition: str) -> None:
     day = "2026-09-10"

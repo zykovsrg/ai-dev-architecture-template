@@ -32,16 +32,17 @@
 
 **Interfaces:**
 - Add one internal helper returning `(events, unavailable_calendar_ids)`.
-- `read_events` returns `events` and `unavailable_calendar_ids`.
+- `read_events` returns `events`, `availability_complete`, and
+  `unavailable_calendar_ids`.
 
-- [ ] Add a fake-backend scenario where one allowlisted calendar disappears
+- [x] Add a fake-backend scenario where one allowlisted calendar disappears
   between metadata validation and event retrieval.
-- [ ] Run the focused test and confirm the current implementation fails by
+- [x] Run the focused test and confirm the current implementation fails by
   raising `CALENDAR_UNAVAILABLE` or `CALENDAR_NOT_FOUND`.
-- [ ] Implement per-calendar reads, skipping only those two missing-calendar
+- [x] Implement per-calendar reads, skipping only those two missing-calendar
   errors; re-raise permission and all unrelated failures.
-- [ ] Return a stable sorted list of unavailable calendar IDs with the events.
-- [ ] Run the focused test and the complete calendar-policy test suite.
+- [x] Return a stable sorted list of unavailable calendar IDs with the events.
+- [x] Run the focused test and the complete calendar-policy test suite.
 
 ### Task 2: Prevent unsafe derived availability and snapshots
 
@@ -50,17 +51,17 @@
 - Test: `calendar-policy/tests/test_server.py`
 
 **Interfaces:**
-- `find_free_slots` returns no slots and the unavailable IDs when any requested
-  calendar could not be read.
+- `find_free_slots` returns no slots, `availability_complete: false`, and the
+  unavailable IDs when any requested calendar could not be read.
 - `prepare_evening_review` returns partial events and unavailable IDs, with no
   new snapshot written when the event set is incomplete.
 
-- [ ] Add failing tests for no free-slot claims and unchanged snapshot state on
+- [x] Add failing tests for no free-slot claims and unchanged snapshot state on
   a partial read.
-- [ ] Run the focused tests to verify those failures occur for the intended
+- [x] Run the focused tests to verify those failures occur for the intended
   reason.
-- [ ] Implement safe behavior using the Task 1 helper.
-- [ ] Run the focused tests and complete calendar-policy suite.
+- [x] Implement safe behavior using the Task 1 helper.
+- [x] Run the focused tests and complete calendar-policy suite.
 
 ### Task 3: Document partial responses
 
@@ -69,10 +70,10 @@
 - Test: `calendar-policy/tests/test_mcp_surface.py` (only if response shape is
   asserted there)
 
-- [ ] Document that consumers must surface `unavailable_calendar_ids` and
-  treat event data as incomplete; free-slot results with unavailable IDs are
-  unusable.
-- [ ] Run documentation checks and the focused API-surface tests.
-- [ ] Review the final diff and report that deployment of the changed local
+- [x] Document that consumers must surface `unavailable_calendar_ids` and
+  `availability_complete`, treat event data as incomplete, and not use a
+  partial result to write a rolling cache or recommend free time.
+- [x] Run documentation checks and the focused API-surface tests.
+- [x] Review the final diff and report that deployment of the changed local
   connector is a separate operational step if the running MCP is packaged from
   another location.

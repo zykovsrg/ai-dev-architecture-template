@@ -1,13 +1,23 @@
 from datetime import datetime, timedelta
 
 from hub_calendar_policy.models import CalendarRef, ChangeRequest, EventRef
+from hub_calendar_policy.eventkit_backend import BridgeError
 
 
 class FakeCalendarBackend:
-    def __init__(self, calendars: list[CalendarRef], events: list[EventRef], permission: str = "granted") -> None:
+    def __init__(
+        self,
+        calendars: list[CalendarRef],
+        events: list[EventRef],
+        permission: str = "granted",
+        unavailable_on_read: set[str] | None = None,
+        read_error_codes: dict[str, str] | None = None,
+    ) -> None:
         self.calendars = {calendar.id: calendar for calendar in calendars}
         self.events = {event.id: event for event in events}
         self.permission = permission
+        self.unavailable_on_read = unavailable_on_read or set()
+        self.read_error_codes = read_error_codes or {}
         self.writes: list[tuple[str, str | None, str | None]] = []
         self.lookups: list[tuple[str, datetime | None]] = []
 
@@ -18,6 +28,12 @@ class FakeCalendarBackend:
         return list(self.calendars.values())
 
     async def read_events(self, calendar_ids: set[str], start: datetime, end: datetime) -> list[EventRef]:
+        unavailable = calendar_ids & self.unavailable_on_read
+        if unavailable:
+            raise BridgeError("CALENDAR_NOT_FOUND")
+        for calendar_id in sorted(calendar_ids):
+            if calendar_id in self.read_error_codes:
+                raise BridgeError(self.read_error_codes[calendar_id])
         return [
             event for event in self.events.values()
             if event.calendar_id in calendar_ids and event.start < end and event.end > start

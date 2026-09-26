@@ -4,6 +4,7 @@ from zoneinfo import ZoneInfo
 import pytest
 
 from fake_backend import FakeCalendarBackend
+from hub_calendar_policy.eventkit_backend import BridgeError
 from hub_calendar_policy.models import CalendarRef, ChangeRequest, EventRef
 from hub_calendar_policy.policy import CalendarPolicy, PolicyError
 from hub_calendar_policy.preview import PreviewGrantStore
@@ -79,8 +80,73 @@ async def test_calendar_metadata_lists_only_allowed_calendars(now: datetime) -> 
 
 @pytest.mark.asyncio
 async def test_unavailable_calendar_is_denied(server: GuardedCalendarServer, now: datetime) -> None:
-    with pytest.raises(PolicyError, match="CALENDAR_UNAVAILABLE"):
+    with pytest.raises(PolicyError, match="CALENDAR_NOT_ALLOWED"):
         await server.read_events({"missing"}, now, now + timedelta(days=1), ZONE)
+
+
+@pytest.mark.asyncio
+async def test_read_events_returns_available_events_and_names_missing_calendar(now: datetime) -> None:
+    available = CalendarRef(id="calendar-1", name="Work", timezone=ZONE, writable=True)
+    stale = CalendarRef(id="calendar-2", name="Birthdays", timezone=ZONE, writable=False)
+    first = EventRef(id="event-1", calendar_id="calendar-1", title="Work", start=now, end=now + timedelta(hours=1), timezone=ZONE)
+    backend = FakeCalendarBackend([available, stale], [first], unavailable_on_read={stale.id})
+    server = GuardedCalendarServer(
+        backend, CalendarPolicy(allowed_calendar_ids=frozenset({available.id, stale.id})),
+        PreviewGrantStore(clock=lambda: now),
+    )
+
+    result = await server.read_events({available.id, stale.id}, now, now + timedelta(days=1), ZONE)
+
+    assert [item["id"] for item in result["events"]] == ["event-1"]
+    assert result["unavailable_calendar_ids"] == [stale.id]
+    assert result["availability_complete"] is False
+
+
+@pytest.mark.asyncio
+async def test_read_events_reports_configured_calendar_missing_from_eventkit(now: datetime) -> None:
+    available = CalendarRef(id="calendar-1", name="Work", timezone=ZONE, writable=True)
+    stale_id = "calendar-2"
+    backend = FakeCalendarBackend([available], [])
+    server = GuardedCalendarServer(
+        backend, CalendarPolicy(allowed_calendar_ids=frozenset({available.id, stale_id})),
+        PreviewGrantStore(clock=lambda: now),
+    )
+
+    result = await server.read_events({available.id, stale_id}, now, now + timedelta(days=1), ZONE)
+
+    assert result["events"] == []
+    assert result["unavailable_calendar_ids"] == [stale_id]
+    assert result["availability_complete"] is False
+
+
+@pytest.mark.asyncio
+async def test_read_events_does_not_hide_unrelated_bridge_errors(now: datetime) -> None:
+    calendar = CalendarRef(id="calendar-1", name="Work", timezone=ZONE, writable=True)
+    backend = FakeCalendarBackend([calendar], [], read_error_codes={calendar.id: "EVENTKIT_BRIDGE_FAILED"})
+    server = GuardedCalendarServer(
+        backend, CalendarPolicy(allowed_calendar_ids=frozenset({calendar.id})),
+        PreviewGrantStore(clock=lambda: now),
+    )
+
+    with pytest.raises(BridgeError, match="EVENTKIT_BRIDGE_FAILED"):
+        await server.read_events({calendar.id}, now, now + timedelta(days=1), ZONE)
+
+
+@pytest.mark.asyncio
+async def test_find_free_slots_makes_no_claim_when_any_calendar_is_unavailable(now: datetime) -> None:
+    available = CalendarRef(id="calendar-1", name="Work", timezone=ZONE, writable=True)
+    stale = CalendarRef(id="calendar-2", name="Birthdays", timezone=ZONE, writable=False)
+    backend = FakeCalendarBackend([available, stale], [], unavailable_on_read={stale.id})
+    server = GuardedCalendarServer(
+        backend, CalendarPolicy(allowed_calendar_ids=frozenset({available.id, stale.id})),
+        PreviewGrantStore(clock=lambda: now),
+    )
+
+    result = await server.find_free_slots({available.id, stale.id}, now, now + timedelta(hours=2), ZONE)
+
+    assert result["slots"] == []
+    assert result["unavailable_calendar_ids"] == [stale.id]
+    assert result["availability_complete"] is False
 
 
 @pytest.mark.asyncio
