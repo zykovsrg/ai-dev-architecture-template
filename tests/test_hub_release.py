@@ -59,6 +59,12 @@ class ReleaseDecisionTests(unittest.TestCase):
         self.assertIn("scripts/check-all-task-records.sh", targets)
         self.assertIn("scripts/read-compact-task-index.py", targets)
 
+    def test_release_includes_planning_runtime_scripts(self):
+        targets = {entry["target"] for entry in build_manifest(ROOT)["files"]}
+        for name in ("scripts/calendar_task_sync.py", "scripts/calendar-context.py",
+                     "scripts/validate-day-plan-output.py"):
+            self.assertIn(name, targets)
+
     def test_equal_current_and_incoming_is_kept(self):
         self.assertEqual(decide("new", "old", "new"), "keep")
 

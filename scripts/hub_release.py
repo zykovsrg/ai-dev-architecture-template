@@ -27,6 +27,8 @@ RUNTIME_SCRIPTS = (
     "scripts/check-all-task-records.sh",
     "scripts/lib/calendar-date.sh", "scripts/workflow_friction.py",
     "scripts/task_records.py",
+    "scripts/calendar_task_sync.py", "scripts/calendar-context.py",
+    "scripts/validate-day-plan-output.py",
 )
 
 

@@ -16,6 +16,7 @@ REQUIRED_HEADERS = (
     "Review ID", "Project ID", "Task ID", "Session ID", "Trigger", "Coverage",
     "Evidence range", "Missing evidence", "Result", "Supplements",
 )
+CHRONOLOGY_HEADERS = ("Chronology audit", "Claim action audit", "Prior review audit")
 REQUIRED_SECTIONS = ("Goal and result", "Findings", "Improvement proposals", "Follow-up")
 
 
@@ -34,7 +35,7 @@ def parse_headers(text):
     headers = {}
     for line in text.splitlines():
         match = re.fullmatch(r"([A-Za-z ][A-Za-z ]+): (.*)", line)
-        if match and match.group(1) in REQUIRED_HEADERS:
+        if match and match.group(1) in REQUIRED_HEADERS + CHRONOLOGY_HEADERS:
             headers[match.group(1)] = match.group(2).strip()
     return headers
 
@@ -52,7 +53,7 @@ def fields(body):
     return {key: value.strip() for key, value in re.findall(r"^([A-Za-z ]+): (.+)$", body, re.M)}
 
 
-def validate(project_arg, file_arg):
+def validate(project_arg, file_arg, require_chronology=False):
     try:
         project = resolve_real(project_arg)
         review = resolve_real(file_arg)
@@ -67,7 +68,8 @@ def validate(project_arg, file_arg):
 
     text = review.read_text(encoding="utf-8")
     headers = parse_headers(text)
-    missing = [key for key in REQUIRED_HEADERS if not headers.get(key)]
+    required_headers = REQUIRED_HEADERS + (CHRONOLOGY_HEADERS if require_chronology else ())
+    missing = [key for key in required_headers if not headers.get(key)]
     if missing:
         return fail("missing header: " + ", ".join(missing))
     for key, allowed in ENUMS.items():
@@ -81,6 +83,8 @@ def validate(project_arg, file_arg):
         return fail("complete coverage requires Missing evidence: none")
     if headers["Coverage"] == "partial" and headers["Missing evidence"] == "none":
         return fail("partial coverage requires a missing evidence description")
+    if require_chronology and headers["Coverage"] == "partial" and headers["Result"] == "no-issue-observed":
+        return fail("partial coverage requires insufficient-evidence when chronology is required")
 
     sections = {name: section(text, name) for name in REQUIRED_SECTIONS}
     absent = [name for name, content in sections.items() if content is None]
@@ -126,8 +130,9 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--project", required=True, type=Path)
     parser.add_argument("--file", required=True, type=Path)
+    parser.add_argument("--require-chronology", action="store_true")
     args = parser.parse_args()
-    return validate(args.project, args.file)
+    return validate(args.project, args.file, args.require_chronology)
 
 
 if __name__ == "__main__":

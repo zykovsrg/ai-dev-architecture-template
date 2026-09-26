@@ -1,0 +1,127 @@
+#!/usr/bin/env python3
+"""Read-only drift detection between task schedules and linked calendar events."""
+
+import argparse
+import importlib.util
+import json
+import sys
+from collections import Counter
+from datetime import datetime
+from pathlib import Path
+from zoneinfo import ZoneInfo
+
+SCRIPTS = Path(__file__).resolve().parent
+sys.path.insert(0, str(SCRIPTS))
+from task_records import read_records  # noqa: E402
+
+_spec = importlib.util.spec_from_file_location("compact_index", SCRIPTS / "read-compact-task-index.py")
+_index = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_index)
+
+CLOSED = {"done", "completed", "dropped"}
+
+
+def collect_tasks(hub):
+    hub = Path(hub).resolve()
+    rows = []
+    for project in sorted(_index.parse_registry(hub / "ai/project-registry.md"), key=lambda p: p["project_id"]):
+        if project["status"] != "active":
+            continue
+        root = _index.registered_project_root(hub, project)
+        for kind, relative in _index.SOURCE_FILES.items():
+            path = _index.safe_record(root, relative)
+            for rec in read_records(project["project_id"], kind, path.read_text(encoding="utf-8")):
+                if rec["scheduled"] is None and rec["event_link"] is None:
+                    continue
+                rows.append({"project_id": project["project_id"], "task_id": rec["task_id"],
+                             "title": rec["title"], "status": rec["status"], "source_path": str(path),
+                             "scheduled": rec["scheduled"], "event_link": rec["event_link"], "due": rec["due"]})
+    return rows
+
+
+def _local(value, tz=None):
+    dt = datetime.fromisoformat(value)
+    if tz is not None:
+        dt = dt.astimezone(ZoneInfo(tz))
+    return dt.strftime("%Y-%m-%d %H:%M")
+
+
+def _span(ev, tz=None):
+    return (_local(ev["start"], tz), _local(ev["end"], tz))
+
+
+def find_discrepancies(tasks, events, now, tz=None):
+    timed = [e for e in events if not e.get("all_day")]
+    dates_per_id = Counter()
+    for eid in {(e["id"], _local(e["start"], tz)[:10]) for e in timed}:
+        dates_per_id[eid[0]] += 1
+    by_id = {}
+    for e in timed:
+        by_id.setdefault(e["id"], e)
+    out = []
+    for t in tasks:
+        link = t["event_link"]
+        item = {"project_id": t["project_id"], "task_id": t["task_id"], "source_path": t["source_path"],
+                "task": list(t["scheduled"]) if t["scheduled"] else None, "event": None, "synced": None,
+                "event_id": None, "calendar_id": None, "event_title": None, "due": t.get("due")}
+        if link is None:
+            if t["status"] in CLOSED or t["scheduled"] is None:
+                continue
+            hits = [e for e in timed if _span(e, tz) == tuple(t["scheduled"]) and dates_per_id[e["id"]] == 1
+                    and e["title"].split("/")[1:2] == [t["project_id"]]]
+            if len(hits) == 1:
+                e = hits[0]
+                out.append({**item, "kind": "unlinked", "event": list(_span(e, tz)), "event_id": e["id"],
+                            "calendar_id": e["calendar_id"], "event_title": e["title"]})
+            continue
+        synced = (link["synced_start"], link["synced_end"])
+        item.update(synced=list(synced), event_id=link["event_id"], calendar_id=link["calendar_id"])
+        e = by_id.get(link["event_id"])
+        if e is None:
+            if t["status"] not in CLOSED:
+                out.append({**item, "kind": "event_missing"})
+            continue
+        span = _span(e, tz)
+        item.update(event=list(span), event_title=e["title"])
+        if t["status"] in CLOSED:
+            if span[0] > now:
+                out.append({**item, "kind": "closed_with_future_event"})
+            continue
+        sched = tuple(t["scheduled"]) if t["scheduled"] else None
+        ev_moved, task_moved = span != synced, sched != synced
+        if ev_moved and task_moved:
+            kind = "stale_sync" if sched == span else "both_moved"
+        elif ev_moved:
+            kind = "calendar_moved"
+        elif task_moved:
+            kind = "task_moved"
+        else:
+            continue
+        out.append({**item, "kind": kind})
+    return out
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--hub", required=True, type=Path)
+    parser.add_argument("--now", required=True)
+    args = parser.parse_args()
+    try:
+        datetime.strptime(args.now, "%Y-%m-%d %H:%M")
+    except ValueError as error:
+        print(str(error), file=sys.stderr)
+        return 2
+    try:
+        payload = json.loads(sys.stdin.read())
+        events = payload["events"]
+        tz = payload.get("timezone")
+        result = find_discrepancies(collect_tasks(args.hub), events, args.now, tz=tz)
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        print(str(error), file=sys.stderr)
+        return 2
+    print(json.dumps(result, ensure_ascii=False, indent=1))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
