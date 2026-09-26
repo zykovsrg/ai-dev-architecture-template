@@ -257,6 +257,15 @@ class DriftTests(unittest.TestCase):
             (hub / "scripts/__pycache__/x.cpython-313.pyc").write_bytes(b"\0")
             self.assertEqual(drift(ROOT, hub)["unmanaged"], ["scripts/extra_tool.py"])
 
+    def test_unmanaged_files_across_roots_are_globally_sorted(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            hub = self.installed_hub(Path(tmp))
+            (hub / "scripts/extra_tool.py").write_text("print(1)\n", encoding="utf-8")
+            (hub / "ai/skills/extra").mkdir(parents=True)
+            (hub / "ai/skills/extra/SKILL.md").write_text("# extra\n", encoding="utf-8")
+            self.assertEqual(drift(ROOT, hub)["unmanaged"],
+                              ["ai/skills/extra/SKILL.md", "scripts/extra_tool.py"])
+
 
 if __name__ == "__main__":
     unittest.main()

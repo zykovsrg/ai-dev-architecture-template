@@ -175,7 +175,7 @@ def drift(source, hub):
             target = str(path.relative_to(hub))
             if target not in managed:
                 unmanaged.append(target)
-    return {"conflicts": conflicts, "unmanaged": unmanaged}
+    return {"conflicts": conflicts, "unmanaged": sorted(unmanaged)}
 
 
 def apply(source, hub, confirmed_plan, source_sha=None, confirmed_source_sha=None):
