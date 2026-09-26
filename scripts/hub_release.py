@@ -156,6 +156,28 @@ def preview(source, hub, source_sha=None):
     return payload
 
 
+DRIFT_ROOTS = ("scripts", "ai/skills")
+
+
+def drift(source, hub):
+    payload = preview(source, hub)
+    managed = {entry["target"] for entry in payload["manifest"]["files"]}
+    conflicts = sorted(row["target"] for row in payload["operations"] if row["action"] == "conflict")
+    hub = hub.resolve()
+    unmanaged = []
+    for name in DRIFT_ROOTS:
+        base = hub / name
+        if not base.is_dir():
+            continue
+        for path in sorted(base.rglob("*")):
+            if not path.is_file() or "__pycache__" in path.parts or path.suffix == ".pyc":
+                continue
+            target = str(path.relative_to(hub))
+            if target not in managed:
+                unmanaged.append(target)
+    return {"conflicts": conflicts, "unmanaged": unmanaged}
+
+
 def apply(source, hub, confirmed_plan, source_sha=None, confirmed_source_sha=None):
     source_sha = normalize_source_sha(source_sha)
     confirmed_source_sha = normalize_source_sha(confirmed_source_sha)
@@ -250,6 +272,9 @@ def main():
     preview_command.add_argument("--source", required=True, type=Path)
     preview_command.add_argument("--hub", required=True, type=Path)
     preview_command.add_argument("--source-sha")
+    drift_command = commands.add_parser("drift")
+    drift_command.add_argument("--source", required=True, type=Path)
+    drift_command.add_argument("--hub", required=True, type=Path)
     apply_command = commands.add_parser("apply")
     apply_command.add_argument("--source", required=True, type=Path)
     apply_command.add_argument("--hub", required=True, type=Path)
@@ -260,6 +285,10 @@ def main():
     if args.command == "preview":
         emit(preview(args.source, args.hub, source_sha=args.source_sha))
         return 0
+    if args.command == "drift":
+        report = drift(args.source, args.hub)
+        emit(report)
+        return 1 if report["conflicts"] or report["unmanaged"] else 0
     if args.command == "apply":
         emit(apply(args.source, args.hub, args.confirm_plan,
                    source_sha=args.source_sha, confirmed_source_sha=args.confirm_source_sha))

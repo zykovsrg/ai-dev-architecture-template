@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from scripts.hub_release import RUNTIME_SCRIPTS, apply, build_manifest, decide, preview, target_path
+from scripts.hub_release import RUNTIME_SCRIPTS, apply, build_manifest, decide, drift, preview, target_path
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -227,6 +227,35 @@ class ReleaseDecisionTests(unittest.TestCase):
                 with self.assertRaisesRegex(OSError, "metadata replace failure"):
                     apply(ROOT, hub, plan["plan_sha256"])
             self.assert_absent_before_state(hub)
+
+
+class DriftTests(unittest.TestCase):
+    def installed_hub(self, root):
+        hub = root / "hub"
+        hub.mkdir()
+        plan = preview(ROOT, hub)
+        apply(ROOT, hub, plan["plan_sha256"])
+        return hub
+
+    def test_fresh_install_has_no_drift(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            hub = self.installed_hub(Path(tmp))
+            self.assertEqual(drift(ROOT, hub), {"conflicts": [], "unmanaged": []})
+
+    def test_locally_edited_managed_file_is_a_conflict(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            hub = self.installed_hub(Path(tmp))
+            target = hub / "ai/skills/hub-workflows/SKILL.md"
+            target.write_text(target.read_text(encoding="utf-8") + "\nlocal edit\n", encoding="utf-8")
+            self.assertEqual(drift(ROOT, hub)["conflicts"], ["ai/skills/hub-workflows/SKILL.md"])
+
+    def test_hub_only_runtime_file_is_unmanaged(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            hub = self.installed_hub(Path(tmp))
+            (hub / "scripts/extra_tool.py").write_text("print(1)\n", encoding="utf-8")
+            (hub / "scripts/__pycache__").mkdir(exist_ok=True)
+            (hub / "scripts/__pycache__/x.cpython-313.pyc").write_bytes(b"\0")
+            self.assertEqual(drift(ROOT, hub)["unmanaged"], ["scripts/extra_tool.py"])
 
 
 if __name__ == "__main__":
