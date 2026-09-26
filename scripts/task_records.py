@@ -110,8 +110,6 @@ def _read_records_lines(project_id, kind, lines, *, compact):
                 if not line[0].isspace():
                     title = line
                 saw_goal = False
-                if compact:
-                    break
         if status in {"empty", "backlog", None} and task_id in {None, "TASK-YYYYMMDD-NNN"}:
             return []
         if not task_id or not _valid_task_id(project_id, task_id):

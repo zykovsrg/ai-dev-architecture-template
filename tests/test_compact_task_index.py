@@ -118,36 +118,33 @@ class CompactTaskIndexTests(unittest.TestCase):
             self.assertNotIn("BODY_MARKER_MUST_NOT_BE_FULL_READ", output)
             self.assertEqual({row["project_id"] for row in rows}, {"alpha", "beta"})
 
-    def test_current_parser_physically_stops_before_body_after_compact_metadata(self):
+    def test_current_record_parses_scheduled_and_link_after_goal_in_compact_mode(self):
         module = self.load_index_module()
-
-        class BodyGuard:
-            def __init__(self):
-                self.lines = iter([
-                    "Status: active\n",
-                    "Task ID: TASK-demo-20260911-001\n",
-                    "Due: 2026-09-12\n",
-                    "\n",
-                    "## Goal\n",
-                    "\n",
-                    "Compact title\n",
-                ])
-
-            def __iter__(self):
-                return self
-
-            def __next__(self):
-                try:
-                    return next(self.lines)
-                except StopIteration:
-                    raise AssertionError("body was read")
-
-        records = module.read_records_lines("demo", "current", BodyGuard())
+        text = (
+            "Status: active\n"
+            "Task ID: TASK-demo-20260911-001\n"
+            "Due: 2026-09-12\n"
+            "\n"
+            "## Goal\n"
+            "\n"
+            "Compact title\n"
+            "\n"
+            "Запланировано: 2026-09-27 10:00-11:00\n"
+            "Событие: cal/evt · синхронизировано: 2026-09-27 10:00-11:00\n"
+        )
+        records = module.read_records_lines("demo", "current", iter(text.splitlines(keepends=True)))
         self.assertEqual(records, [{
             "task_id": "TASK-demo-20260911-001",
             "title": "Compact title",
             "status": "active",
             "due": "2026-09-12",
+            "scheduled": ("2026-09-27 10:00", "2026-09-27 11:00"),
+            "event_link": {
+                "calendar_id": "cal",
+                "event_id": "evt",
+                "synced_start": "2026-09-27 10:00",
+                "synced_end": "2026-09-27 11:00",
+            },
         }])
 
     def test_compact_parser_preserves_strict_validation(self):
