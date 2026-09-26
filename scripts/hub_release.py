@@ -162,10 +162,16 @@ DRIFT_ROOTS = ("scripts", "ai/skills")
 
 
 def drift(source, hub):
+    hub_root = hub.resolve()
+    if not hub_root.is_dir():
+        raise ValueError(f"hub directory not found: {hub_root}")
+    installed_file = hub_root / ".local" / "hub-release" / "installed.json"
+    if not installed_file.is_file():
+        raise ValueError(f"hub release metadata not found: {installed_file}")
     payload = preview(source, hub)
     managed = {entry["target"] for entry in payload["manifest"]["files"]}
     conflicts = sorted(row["target"] for row in payload["operations"] if row["action"] == "conflict")
-    hub = hub.resolve()
+    hub = hub_root
     unmanaged = []
     for name in DRIFT_ROOTS:
         base = hub / name

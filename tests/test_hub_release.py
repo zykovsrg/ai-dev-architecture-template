@@ -3,6 +3,8 @@ import json
 import os
 import shutil
 import stat
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -271,6 +273,51 @@ class DriftTests(unittest.TestCase):
             (hub / "ai/skills/extra/SKILL.md").write_text("# extra\n", encoding="utf-8")
             self.assertEqual(drift(ROOT, hub)["unmanaged"],
                               ["ai/skills/extra/SKILL.md", "scripts/extra_tool.py"])
+
+    def test_missing_hub_directory_raises(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            hub = Path(tmp) / "does-not-exist"
+            with self.assertRaises(ValueError):
+                drift(ROOT, hub)
+
+    def test_hub_without_installed_manifest_raises(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            hub = Path(tmp) / "hub"
+            hub.mkdir()
+            with self.assertRaises(ValueError):
+                drift(ROOT, hub)
+
+
+class DriftCliTests(unittest.TestCase):
+    def installed_hub(self, root):
+        hub = root / "hub"
+        hub.mkdir()
+        plan = preview(ROOT, hub)
+        apply(ROOT, hub, plan["plan_sha256"])
+        return hub
+
+    def run_drift_cli(self, hub):
+        return subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "hub_release.py"), "drift",
+             "--source", str(ROOT), "--hub", str(hub)],
+            capture_output=True, text=True, check=False,
+        )
+
+    def test_cli_drift_exit_code_clean(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            hub = self.installed_hub(Path(tmp))
+            result = self.run_drift_cli(hub)
+            self.assertEqual(result.returncode, 0)
+            self.assertEqual(json.loads(result.stdout), {"conflicts": [], "unmanaged": []})
+
+    def test_cli_drift_exit_code_unmanaged(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            hub = self.installed_hub(Path(tmp))
+            (hub / "scripts" / "extra_tool.py").write_text("print(1)\n", encoding="utf-8")
+            result = self.run_drift_cli(hub)
+            self.assertEqual(result.returncode, 1)
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload["unmanaged"], ["scripts/extra_tool.py"])
 
 
 if __name__ == "__main__":
