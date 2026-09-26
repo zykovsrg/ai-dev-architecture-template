@@ -19,6 +19,7 @@ read empty days have events=[]; missing coverage is never an empty day.
 
 ## Update procedure
 
+- Before ingesting each response, require `availability_complete: true` and an empty `unavailable_calendar_ids`. If coverage is partial, skip ingest for that range, preserve prior cache contents, and report the coverage as missing or stale. A partial response with `events: []` is never evidence of an empty calendar.
 - Run `scripts/calendar-context.py plan --hub <hub> --anchor <D>
   --timezone <IANA> --calendar-id <allowed-id>` (repeat `--calendar-id` for
   each allowed calendar). For every returned half-open range, call guarded

@@ -16,3 +16,8 @@ skipped by task discovery and never reaches day plans or reviews.
   (pause date), followed by `Task ID:` and `Status: paused` before any prose.
 - `NNN` is the next free number for that date within the project.
 - Never write a task under a free-text `###` heading without an ID.
+- Optional schedule link, directly after `Запланировано:`:
+  `Событие: <calendar-id>/<event-id> · синхронизировано: YYYY-MM-DD HH:MM-HH:MM`.
+  Write it whenever a confirmed change creates or moves a timed, non-recurring
+  event for the task; refresh `синхронизировано` on every confirmed sync. A
+  malformed line fails the canonical check.

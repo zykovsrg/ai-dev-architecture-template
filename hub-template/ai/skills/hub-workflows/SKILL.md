@@ -166,6 +166,12 @@ with exact targets and diffs. A create-project proposal
 names its exact direct-child target and planned scaffold/registry/card files but
 must not create or inspect that target.
 
+After applying any confirmed task-record write, run
+`scripts/check-all-task-records.sh --hub <hub>` and report its result. A failure
+means the applied record is not canonical: repair it in the same reply and
+rerun until it passes. Never report a task write as complete without that
+passing check.
+
 ## Confirmation boundary
 
 Source selection, recorder export consent, project scope confirmation, and

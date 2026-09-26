@@ -4,17 +4,16 @@ This resource defines only the `evening-review` scenario. The core `SKILL.md` re
 
 For a calendar-only evening review, first call `prepare_evening_review` with the requested date and calendar timezone. Its events, snapshot history, and pending friction are the complete learning input. Proposal display never creates durable learning by itself.
 
+Inspect `availability_complete` and `unavailable_calendar_ids` in every calendar response. If coverage is incomplete, name the unavailable calendar IDs and do not infer absence or completion from them. Skip calendar-task sync for a partial window. `snapshot: null` means no new complete snapshot was created.
+
 Render these headings in this exact order:
 
 1. `## Сегодняшний календарь`
 2. `## События и проекты`
-3. `## Сделано`
-4. `## Перенос`
-5. `## Ожидания`
-6. `## Follow-ups`
-7. `## Завтрашний Calendar`
-8. `## Три главных действия завтра`
-9. `## Подтвердить`
+3. `## Ожидания`
+4. `## Follow-ups`
+5. `## Завтрашний Calendar`
+6. `## Подтвердить`
 
 ## Calendar and project mapping
 
@@ -24,15 +23,15 @@ Under `## События и проекты`, map each rendered event to at most 
 
 ## Review sections
 
-Fill `## Сделано` from selected `--review-input` section `## Done`, `## Перенос` only from `## Carry over`, and the user-stated portion of `## Ожидания` only from `## Waiting`. Append canonical waiting records separately with canonical citations.
+Fill the user-stated portion of `## Ожидания` only from selected `--review-input` section `## Waiting`. Append canonical waiting records separately with canonical citations.
 
-Without selected review input, `## Сделано` may use past events of the requested date that matched a project, but every such line must be marked `предположение из календаря`, cite the event/project, and state that the completion was not confirmed by the user. Never present a calendar-derived line as stated completion.
+A selected review input may also carry `## Done` and `## Carry over`. The review renders no section for them: a stated completion or carry-over becomes an `update_task` or `update_due` proposal under `## Подтвердить` and appears nowhere else. Never list stated or calendar-derived completions as narrative output.
 
-Derive `## Follow-ups` and the at-most-three executable results for tomorrow only from structured canonical fields. A stated completion, carry-over, waiting fact, or due-date change is a report fact, not an automatic canonical mutation before confirmation.
+Derive `## Follow-ups` only from structured canonical fields. A stated completion, carry-over, waiting fact, or due-date change is a report fact, not an automatic canonical mutation before confirmation.
 
 ## Proposals and learning
 
-Every possible write appears independently under `## Подтвердить` using the core proposal envelope. Every matched event or calendar-derived completion may yield at most one `update_task` proposal for the matched project's canonical task record, with exact target path and diff. Emit no proposal for an unmatched event, a low-confidence match, or a project outside scope.
+Every possible write appears independently under `## Подтвердить` using the core proposal envelope. Every matched event or stated completion may yield at most one `update_task` proposal for the matched project's canonical task record, with exact target path and diff. Emit no proposal for an unmatched event, a low-confidence match, or a project outside scope.
 
 For a direct, unambiguous user statement about one canonical task, emit exactly
 one `update_task`, `update_due`, or `update_waiting` proposal with the project
@@ -42,3 +41,6 @@ ask which task is meant. After the user confirms the exact displayed package,
 apply only that canonical task-record diff and its paired calendar preview.
 
 For active numeric goals, ask for the stated amount and offer a separate confirmed `goal_progress` proposal. For each grounded pending friction issue, offer one `add_observation` proposal. Proposal display must leave that observation pending; all acceptance, rejection, journal ordering, and append-failure behavior is defined only in `resources/learning-lifecycle.md`.
+
+Run the same sync check as `resources/day-plan.md` "Sync section" and render
+its items under `## Подтвердить` with the same mapping and gates.

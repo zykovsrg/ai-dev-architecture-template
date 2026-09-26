@@ -8,6 +8,9 @@ Trigger: <task-close|user-request>
 Coverage: <complete|partial>
 Evidence range: <visible message IDs/range or honest description>
 Missing evidence: <none|concrete missing span>
+Chronology audit: <every available message reviewed|partial; explain omitted span>
+Claim action audit: <material claims and their preceding evidence|no material claims>
+Prior review audit: <reviewed records, recurring mechanisms and reused proposals|none found>
 Result: <no-issue-observed|issues-found|insufficient-evidence>
 Supplements: <earlier review path|none>
 

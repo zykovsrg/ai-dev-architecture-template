@@ -65,7 +65,9 @@ timezone, existing event ID, and recurrence scope. A `Запланировано
 becomes a timed event; a `Due:` date alone becomes an all-day event on that
 date. Creating a task creates the event, changing its schedule updates it, and
 closing or dropping the task deletes a future event and leaves a past one
-untouched.
+untouched. After the event is created or moved, the same confirmed task diff
+writes or refreshes the `Событие:` link line from task-record-format.md;
+closing or dropping removes it together with the future event.
 
 Show the exact task-memory diff and that calendar preview together as one
 confirmation screen, and treat one user confirmation as approval of exactly the
