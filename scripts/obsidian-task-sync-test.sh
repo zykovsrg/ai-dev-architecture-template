@@ -421,26 +421,30 @@ assert_equal "$(cat "$TMP_DIR/stale-board-before.txt")" "$(source_hashes)" 'stal
 rm -f "$PROPOSAL"
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --write --refresh-from-architecture --replace-confirmed-board --confirm-generated-write >/dev/null
 
-# Applying a due-date change rewrites only the named future record and view.
+# A dated set_due change must be refused: it needs the joint task-and-calendar
+# confirmation, not the plain task-only proposal confirmation.
+source_hashes > "$TMP_DIR/due-refusal-before.txt"
 perl -0pi -e 's/📅 2026-08-28/📅 2026-09-01/' "$TASKS"
 scan > "$TMP_DIR/due-scan.out"
-apply > "$TMP_DIR/due-apply.out"
-assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" 'Due: 2026-09-01'
-assert_contains "$TASKS" '📅 2026-09-01'
-assert_not_exists "$PROPOSAL"
+DUE_APPLY_STATUS=0
+apply > "$TMP_DIR/due-apply.out" 2>&1 || DUE_APPLY_STATUS=$?
+assert_equal "$DUE_APPLY_STATUS" 3 'dated set_due apply did not exit 3'
+assert_contains "$TMP_DIR/due-apply.out" 'calendar-confirmation-required'
+assert_equal "$(cat "$TMP_DIR/due-refusal-before.txt")" "$(source_hashes)" 'refused set_due apply changed canonical source files'
+assert_file "$PROPOSAL"
+rm -f "$PROPOSAL"
+refresh_board
 
 # A single proposal may rename, reschedule, and promote a future task. Promotion
 # must consume the staged source record and carry the changed values into current.
 perl -0pi -e 's{(## Ideas\n\n)- \[ \] Renamed idea \^ai-dev-architecture--FT-20260826-001\n  - project: Architecture project\n\n}{$1}' "$TASKS"
-perl -0pi -e 's{(## Active\n)}{$1\n- [ ] Promoted renamed idea ^ai-dev-architecture--FT-20260826-001\n  - project: Architecture project\n  - 📅 2026-09-03\n} ' "$TASKS"
+perl -0pi -e 's{(## Active\n)}{$1\n- [ ] Promoted renamed idea ^ai-dev-architecture--FT-20260826-001\n  - project: Architecture project\n} ' "$TASKS"
 scan > "$TMP_DIR/combined-promote-scan.out"
 assert_contains "$PROPOSAL" '"operation": "rename"'
-assert_contains "$PROPOSAL" '"operation": "set_due"'
 assert_contains "$PROPOSAL" '"operation": "promote_to_current"'
 apply > "$TMP_DIR/combined-promote-apply.out"
 assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Task ID: FT-20260826-001'
 assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Promoted renamed idea'
-assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Due: 2026-09-03'
 assert_contains "$ARCHITECTURE_PROJECT/ai/paused-tasks.md" 'Task ID: TASK-20260826-001'
 assert_contains "$ARCHITECTURE_PROJECT/ai/future-tasks.md" 'Status: promoted'
 assert_contains "$TASKS" 'Promoted renamed idea ^ai-dev-architecture--FT-20260826-001'
@@ -453,7 +457,6 @@ cat >> "$EXTRA_BOARD" <<'EOF'
 
 - [ ] Applied new future task
   - project: Extra project
-  - 📅 2026-09-02
 EOF
 scan extra-project > "$TMP_DIR/create-scan.out"
 apply extra-project > "$TMP_DIR/create-apply.out"
@@ -795,6 +798,15 @@ for goal_shape in trailing-heading-space no-blank-line; do
   printf '%s\n' 'No paused tasks.' > "$ARCHITECTURE_PROJECT/ai/paused-tasks.md"
   refresh_board
   perl -0pi -e 's/Shape goal \^ai-dev-architecture--TASK-20260827-960/Renamed shape goal ^ai-dev-architecture--TASK-20260827-960/' "$TASKS"
+  if [ "$goal_shape" = trailing-heading-space ]; then
+    # task_records.py now requires an exact "## Goal" heading, so a trailing
+    # space must be refused as an invalid canonical task record.
+    if scan > "$TMP_DIR/shape-${goal_shape}-scan.out" 2>&1; then
+      fail 'scanner accepted a current task record with a trailing space after ## Goal'
+    fi
+    assert_contains "$TMP_DIR/shape-${goal_shape}-scan.out" 'invalid canonical task record'
+    continue
+  fi
   scan > "$TMP_DIR/shape-${goal_shape}-scan.out"
   apply > "$TMP_DIR/shape-${goal_shape}-apply.out"
   assert_contains "$ARCHITECTURE_PROJECT/ai/current-task.md" 'Renamed shape goal'
