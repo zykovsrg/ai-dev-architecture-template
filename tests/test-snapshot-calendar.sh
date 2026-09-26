@@ -3,13 +3,15 @@ set -uo pipefail
 
 SCRIPT="$(cd "$(dirname "$0")/.." && pwd -P)/scripts/snapshot-calendar.sh"
 FAILED=0
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
 
 pass() { echo "ok   - $1"; }
 fail() { echo "FAIL - $1"; [ -n "${2:-}" ] && echo "       $2"; FAILED=1; }
 
 make_hub() {
   local dir
-  dir="$(mktemp -d)"
+  dir="$(mktemp -d "$TMP/hub.XXXXXX")"
   dir="$(cd "$dir" && pwd -P)"
   mkdir -p "$dir/ai/tmp"
   echo "$dir"
