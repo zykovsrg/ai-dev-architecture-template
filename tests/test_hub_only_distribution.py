@@ -70,12 +70,8 @@ class HubOnlyDistributionTests(unittest.TestCase):
         self.assertNotIn('SOURCE_DIR="$REPO_ROOT/template"', text)
         self.assertNotIn('rsync -av --exclude=".DS_Store" "$SOURCE_DIR/" "$TARGET_DIR/"', text)
 
-    def test_legacy_updater_is_read_only_retirement_entrypoint(self):
-        text = (ROOT / "scripts/update-installed-architecture.sh").read_text(encoding="utf-8")
-        self.assertIn("retired", text.lower())
-        self.assertNotIn("template/AGENTS.md", text)
-        self.assertNotIn("rsync", text)
-        self.assertNotIn("cp ", text)
+    def test_legacy_updater_is_removed(self):
+        self.assertFalse((ROOT / "scripts/update-installed-architecture.sh").exists())
 
     def test_active_docs_do_not_offer_standalone_install_or_update(self):
         roots = [ROOT / "README.md", ROOT / "getting-started", ROOT / "docs"]

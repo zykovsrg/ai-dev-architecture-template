@@ -29,7 +29,7 @@ this does not mean the conversation's work or closure review never happened.
 ## Стек
 
 - Markdown для правил, документации, skills и рабочей памяти.
-- Bash для install/update/smoke-test скриптов.
+- Bash для install и проверочных скриптов.
 - Git/GitHub как основной способ сохранять и распространять изменения.
 
 ## Как запустить локально
@@ -53,7 +53,6 @@ bash scripts/install.sh /tmp/ai-dev-architecture-install-check
 
 ```bash
 bash scripts/check-consistency.sh
-bash scripts/smoke-test.sh
 ```
 
 ## Главные папки и файлы
@@ -63,9 +62,7 @@ bash scripts/smoke-test.sh
 - `docs/` — документация для установки, обновления и использования.
 - `ai/superpowers/plans/` — планы для сложных изменений архитектуры.
 - `scripts/install.sh` — установка шаблона в проект.
-- `scripts/update-installed-architecture.sh` — обновление архитектуры в уже установленном проекте.
 - `scripts/check-consistency.sh` — проверка canonical lists.
-- `scripts/smoke-test.sh` — smoke tests установки и обновления.
 - `AGENTS.md`, `CLAUDE.md`, `ai/*` в корне — установленная рабочая память для доработки самой архитектуры.
 
 ## Главные экраны или модули
