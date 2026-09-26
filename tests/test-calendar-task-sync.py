@@ -1,0 +1,150 @@
+#!/usr/bin/env python3
+import importlib.util
+import json
+import subprocess
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
+spec = importlib.util.spec_from_file_location("calendar_task_sync", ROOT / "scripts/calendar_task_sync.py")
+sync = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(sync)
+
+LINK = "Событие: CAL/EV-1 · синхронизировано: 2026-09-22 15:00-17:00"
+
+
+def make_hub(tmp: Path, future_body: str) -> Path:
+    project = tmp / "projects" / "demo"
+    (project / "ai").mkdir(parents=True)
+    (tmp / "ai").mkdir()
+    (tmp / "ai/project-registry.md").write_text(f"## demo\n\nStatus: active\nPath: {project}\n", encoding="utf-8")
+    (project / "ai/current-task.md").write_text("# Current Task\n\nStatus: empty\n\n## Goal\n\nNo active task.\n", encoding="utf-8")
+    (project / "ai/paused-tasks.md").write_text("# Paused Tasks\n", encoding="utf-8")
+    (project / "ai/future-tasks.md").write_text("# Future Tasks\n\n" + future_body, encoding="utf-8")
+    return tmp
+
+
+class Collect(unittest.TestCase):
+    def test_collects_linked_and_scheduled_only(self):
+        body = ("### FT-20260915-001 — Связанная\n\nStatus: ready\nDue: 2026-09-23\nCreated: 2026-09-15\n"
+                "Запланировано: 2026-09-22 15:00-17:00 (Europe/Kirov).\n" + LINK + "\n\n"
+                "### FT-20260915-002 — Без времени\n\nStatus: ready\nCreated: 2026-09-15\n")
+        with tempfile.TemporaryDirectory() as tmp:
+            hub = make_hub(Path(tmp), body)
+            rows = sync.collect_tasks(hub)
+        self.assertEqual([r["task_id"] for r in rows], ["FT-20260915-001"])
+        self.assertEqual(rows[0]["project_id"], "demo")
+        self.assertEqual(rows[0]["event_link"]["event_id"], "EV-1")
+        self.assertEqual(rows[0]["due"], "2026-09-23")
+
+
+def task(sched=("2026-09-22 15:00", "2026-09-22 17:00"), synced=("2026-09-22 15:00", "2026-09-22 17:00"),
+         status="ready", link=True, due=None):
+    return {"project_id": "demo", "task_id": "FT-1", "title": "T", "status": status, "source_path": "p",
+            "scheduled": sched, "due": due,
+            "event_link": {"calendar_id": "CAL", "event_id": "EV-1",
+                           "synced_start": synced[0], "synced_end": synced[1]} if link else None}
+
+
+def event(start="2026-09-22T15:00:00+03:00", end="2026-09-22T17:00:00+03:00", eid="EV-1", title="хадасса/demo/задача"):
+    return {"id": eid, "calendar_id": "CAL", "title": title, "start": start, "end": end, "all_day": False}
+
+
+NOW = "2026-09-21 09:00"
+
+
+class Discrepancies(unittest.TestCase):
+    def kinds(self, tasks, events, now=NOW):
+        return [d["kind"] for d in sync.find_discrepancies(tasks, events, now)]
+
+    def test_in_sync(self):
+        self.assertEqual(self.kinds([task()], [event()]), [])
+
+    def test_due_carried_into_item(self):
+        [d] = sync.find_discrepancies([task(due="2026-09-23", sched=("2026-09-23 10:00", "2026-09-23 12:00"))],
+                                       [event()], NOW)
+        self.assertEqual(d["due"], "2026-09-23")
+
+    def test_tz_conversion_avoids_false_calendar_moved(self):
+        t = task(sched=("2026-09-22 15:00", "2026-09-22 17:00"), synced=("2026-09-22 15:00", "2026-09-22 17:00"))
+        evs = [event("2026-09-22T12:00:00+00:00", "2026-09-22T14:00:00+00:00")]
+        self.assertEqual(sync.find_discrepancies([t], evs, NOW, tz="Europe/Kirov"), [])
+
+    def test_without_tz_conversion_would_be_calendar_moved(self):
+        t = task(sched=("2026-09-22 15:00", "2026-09-22 17:00"), synced=("2026-09-22 15:00", "2026-09-22 17:00"))
+        evs = [event("2026-09-22T12:00:00+00:00", "2026-09-22T14:00:00+00:00")]
+        self.assertEqual(self.kinds([t], evs), ["calendar_moved"])
+
+    def test_calendar_moved(self):
+        self.assertEqual(self.kinds([task()], [event("2026-09-23T10:00:00+03:00", "2026-09-23T12:00:00+03:00")]), ["calendar_moved"])
+
+    def test_task_moved(self):
+        self.assertEqual(self.kinds([task(sched=("2026-09-23 10:00", "2026-09-23 12:00"))], [event()]), ["task_moved"])
+
+    def test_both_moved(self):
+        t = task(sched=("2026-09-24 10:00", "2026-09-24 11:00"))
+        self.assertEqual(self.kinds([t], [event("2026-09-23T10:00:00+03:00", "2026-09-23T12:00:00+03:00")]), ["both_moved"])
+
+    def test_stale_sync(self):
+        t = task(sched=("2026-09-23 10:00", "2026-09-23 12:00"))
+        self.assertEqual(self.kinds([t], [event("2026-09-23T10:00:00+03:00", "2026-09-23T12:00:00+03:00")]), ["stale_sync"])
+
+    def test_event_missing(self):
+        self.assertEqual(self.kinds([task()], []), ["event_missing"])
+
+    def test_closed_with_future_event(self):
+        self.assertEqual(self.kinds([task(status="done")], [event()]), ["closed_with_future_event"])
+        self.assertEqual(self.kinds([task(status="dropped")], [event()]), ["closed_with_future_event"])
+
+    def test_closed_with_past_event_is_quiet(self):
+        self.assertEqual(self.kinds([task(status="done")], [event()], now="2026-09-23 09:00"), [])
+
+    def test_closed_with_missing_event_is_quiet(self):
+        self.assertEqual(self.kinds([task(status="done")], []), [])
+
+    def test_unlinked_match(self):
+        t = task(link=False)
+        [d] = sync.find_discrepancies([t], [event()], NOW)
+        self.assertEqual((d["kind"], d["event_id"]), ("unlinked", "EV-1"))
+
+    def test_unlinked_needs_project_in_title(self):
+        self.assertEqual(self.kinds([task(link=False)], [event(title="дела/другое/задача")]), [])
+
+    def test_unlinked_ambiguous_is_quiet(self):
+        evs = [event(), event(eid="EV-2")]
+        self.assertEqual(self.kinds([task(link=False)], evs), [])
+
+    def test_recurring_never_unlinked_match(self):
+        evs = [event(), event("2026-09-23T15:00:00+03:00", "2026-09-23T17:00:00+03:00")]
+        self.assertEqual(self.kinds([task(link=False)], evs), [])
+
+
+class Cli(unittest.TestCase):
+    def test_cli_prints_json(self):
+        body = ("### FT-20260915-001 — Связанная\n\nStatus: ready\nCreated: 2026-09-15\n"
+                "Запланировано: 2026-09-22 15:00-17:00 (Europe/Kirov).\n" + LINK + "\n")
+        with tempfile.TemporaryDirectory() as tmp:
+            hub = make_hub(Path(tmp), body)
+            payload = json.dumps({"events": [event("2026-09-23T10:00:00+03:00", "2026-09-23T12:00:00+03:00")]})
+            res = subprocess.run([sys.executable, str(ROOT / "scripts/calendar_task_sync.py"), "--hub", str(hub),
+                                  "--now", NOW], input=payload, capture_output=True, text=True)
+        self.assertEqual(res.returncode, 0, res.stderr)
+        self.assertEqual([d["kind"] for d in json.loads(res.stdout)], ["calendar_moved"])
+
+    def test_cli_rejects_bad_json(self):
+        res = subprocess.run([sys.executable, str(ROOT / "scripts/calendar_task_sync.py"), "--hub", "/nonexistent",
+                              "--now", NOW], input="nope", capture_output=True, text=True)
+        self.assertEqual(res.returncode, 2)
+
+    def test_cli_rejects_bad_now(self):
+        res = subprocess.run([sys.executable, str(ROOT / "scripts/calendar_task_sync.py"), "--hub", "/nonexistent",
+                              "--now", "not-a-date"], input="{}", capture_output=True, text=True)
+        self.assertEqual(res.returncode, 2)
+        self.assertTrue(res.stderr.strip())
+
+
+if __name__ == "__main__":
+    unittest.main()
