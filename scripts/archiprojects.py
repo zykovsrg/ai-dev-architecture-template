@@ -14,64 +14,29 @@ from pathlib import Path
 HEADING_RE = re.compile(r"^## (.+)$")
 FIELD_RE = re.compile(r"^([A-Za-z_]+):\s*(.*)$")
 REQUIRED_FIELDS = ("id", "name", "status", "kind")
+ID_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
+STATUSES = ("active", "paused", "archived", "missing", "registration-pending")
 
 
-def parse_groups(path):
-    """Parse ai/archiprojects.md into {id: {"id","name","status","parent"}}.
+def _raw_entries(text):
+    """Yield (heading_id, fence_lines, unterminated) for each '## ' entry.
 
-    Skips template entries whose heading id contains "<". Raises ValueError
-    on a `kind: goal` entry, a duplicate id, or a missing required field.
+    `heading_id` is None for text before the first heading. `fence_lines` is
+    None when no fenced yaml block appeared. `unterminated` is True when the
+    fence was still open (never closed) when the entry ended.
     """
-    path = Path(path)
-    text = path.read_text(encoding="utf-8")
-    groups = {}
     heading = None
-    in_fence = False
     fence_lines = None
-
-    def flush(heading_id, fence_lines):
-        if heading_id is None:
-            return
-        if "<" in heading_id:
-            return
-        if fence_lines is None:
-            raise ValueError(f"missing YAML block for archiproject entry: {heading_id}")
-        fields = {}
-        for line in fence_lines:
-            match = FIELD_RE.match(line)
-            if not match:
-                raise ValueError(f"unrecognized YAML line in archiproject entry: {heading_id}")
-            key, value = match.group(1), match.group(2).strip()
-            if key in fields:
-                raise ValueError(f"duplicate field {key} in archiproject entry: {heading_id}")
-            fields[key] = value
-        for field in REQUIRED_FIELDS:
-            if field not in fields or not fields[field]:
-                raise ValueError(f"missing {field} in archiproject entry: {heading_id}")
-        if fields["kind"] == "goal":
-            raise ValueError(f"goal entry not allowed in archiprojects.md: {heading_id}")
-        if fields["kind"] != "group":
-            raise ValueError(f"invalid kind in archiproject entry: {heading_id}")
-        if fields["id"] != heading_id:
-            raise ValueError(f"archiproject entry ID mismatch: {heading_id}")
-        if heading_id in groups:
-            raise ValueError(f"duplicate archiproject ID: {heading_id}")
-        groups[heading_id] = {
-            "id": fields["id"],
-            "name": fields["name"],
-            "status": fields["status"],
-            "parent": fields.get("parent") or None,
-        }
-
+    in_fence = False
     for raw in text.splitlines():
         line = raw.rstrip("\n")
         match = HEADING_RE.match(line)
         if match:
-            flush(heading, fence_lines)
+            yield (heading, fence_lines, in_fence)
             candidate = match.group(1).strip()
             heading = None if candidate == "Schema" else candidate
-            in_fence = False
             fence_lines = None
+            in_fence = False
             continue
         if heading is None:
             continue
@@ -86,7 +51,89 @@ def parse_groups(path):
             in_fence = False
             continue
         fence_lines.append(line)
-    flush(heading, fence_lines)
+    yield (heading, fence_lines, in_fence)
+
+
+def _parse_fields(fence_lines, heading_id):
+    fields = {}
+    for line in fence_lines:
+        match = FIELD_RE.match(line)
+        if not match:
+            raise ValueError(f"unrecognized YAML line in archiproject entry: {heading_id}")
+        key, value = match.group(1), match.group(2).strip()
+        if key in fields:
+            raise ValueError(f"duplicate field {key} in archiproject entry: {heading_id}")
+        fields[key] = value
+    return fields
+
+
+def _validate_fields(heading_id, fields):
+    for field in REQUIRED_FIELDS:
+        if field not in fields or not fields[field]:
+            raise ValueError(f"missing {field} in archiproject entry: {heading_id}")
+    if fields["kind"] == "goal":
+        raise ValueError(f"goal entry not allowed in archiprojects.md: {heading_id}")
+    if fields["kind"] != "group":
+        raise ValueError(f"invalid kind in archiproject entry: {heading_id}")
+    if fields["id"] != heading_id:
+        raise ValueError(f"archiproject entry ID mismatch: {heading_id}")
+    if not ID_RE.match(fields["id"]):
+        raise ValueError(f"invalid archiproject ID: {heading_id}")
+    if fields["status"] not in STATUSES:
+        raise ValueError(f"invalid archiproject status: {heading_id}")
+
+
+def _parse_groups_with_errors(path):
+    """Parse ai/archiprojects.md, tolerating per-entry errors.
+
+    Returns (groups, errors): `groups` holds every entry that parsed cleanly;
+    `errors` holds one message per entry that did not (goal entry, missing or
+    unterminated YAML block, missing/invalid field, duplicate id).
+    Skips template entries whose heading id contains "<".
+    """
+    path = Path(path)
+    text = path.read_text(encoding="utf-8")
+    groups = {}
+    errors = []
+    for heading_id, fence_lines, unterminated in _raw_entries(text):
+        if heading_id is None or "<" in heading_id:
+            continue
+        if unterminated:
+            errors.append(f"unterminated archiproject registry entry: {heading_id}")
+            continue
+        if fence_lines is None:
+            errors.append(f"missing YAML block for archiproject entry: {heading_id}")
+            continue
+        try:
+            fields = _parse_fields(fence_lines, heading_id)
+            _validate_fields(heading_id, fields)
+        except ValueError as error:
+            errors.append(str(error))
+            continue
+        group_id = fields["id"]
+        if group_id in groups:
+            errors.append(f"duplicate archiproject ID: {heading_id}")
+            continue
+        groups[group_id] = {
+            "id": group_id,
+            "name": fields["name"],
+            "status": fields["status"],
+            "parent": fields.get("parent") or None,
+        }
+    return groups, errors
+
+
+def parse_groups(path):
+    """Parse ai/archiprojects.md into {id: {"id","name","status","parent"}}.
+
+    Skips template entries whose heading id contains "<". Raises ValueError
+    (the first problem found) on a `kind: goal` entry, a duplicate id, an
+    invalid id or status, an unterminated or missing YAML block, or a missing
+    field. Use `validate()` when every problem must be collected.
+    """
+    groups, errors = _parse_groups_with_errors(path)
+    if errors:
+        raise ValueError(errors[0])
     return groups
 
 
@@ -138,13 +185,12 @@ def _depth(groups, group_id):
 
 
 def validate(hub):
+    """Return every problem found: group-entry errors, unknown/cyclic/deep
+    parents, and card-level errors. Never stops at the first failure."""
     hub = Path(hub)
-    errors = []
     archiprojects_file = hub / "ai" / "archiprojects.md"
-    try:
-        groups = parse_groups(archiprojects_file)
-    except ValueError as error:
-        return [str(error)]
+    groups, errors = _parse_groups_with_errors(archiprojects_file)
+    errors = list(errors)
 
     for group_id, group in groups.items():
         parent = group["parent"]
@@ -276,14 +322,22 @@ def main():
         return 0
 
     if args.command == "tree":
-        groups = parse_groups(args.hub / "ai" / "archiprojects.md")
+        try:
+            groups = parse_groups(args.hub / "ai" / "archiprojects.md")
+        except ValueError as error:
+            print(f"ERROR: {error}", file=sys.stderr)
+            return 1
         cards = read_cards(args.hub)
         for line in render_tree(groups, cards):
             print(line)
         return 0
 
     if args.command == "members":
-        groups = parse_groups(args.hub / "ai" / "archiprojects.md")
+        try:
+            groups = parse_groups(args.hub / "ai" / "archiprojects.md")
+        except ValueError as error:
+            print(f"ERROR: {error}", file=sys.stderr)
+            return 1
         cards = read_cards(args.hub)
         try:
             for project_id in members(groups, cards, args.group):

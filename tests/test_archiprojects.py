@@ -201,6 +201,82 @@ class TreeTests(unittest.TestCase):
             )
 
 
+def goal_block(gid):
+    return (
+        f"## {gid}\n```yaml\nid: {gid}\nname: {gid}\nstatus: active\nkind: goal\n"
+        "target: 10\nunit: things\ndue: none\n```\n"
+    )
+
+
+class ValidateCollectsAllErrorsTests(unittest.TestCase):
+    def test_two_goal_entries_and_two_bad_cards_yield_four_errors(self):
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as tmp:
+            text = (
+                group_block("real", "Real")
+                + goal_block("goal1")
+                + goal_block("goal2")
+            )
+            hub = make_hub(
+                tmp,
+                text,
+                cards={
+                    "p1": card("p1", "real", extra="archiproject_contribution: architecture\nrelated_archiprojects: none\n"),
+                    "p2": card("p2", "real", extra="archiproject_contribution: architecture\nrelated_archiprojects: none\n"),
+                },
+            )
+            errors = validate(hub)
+            self.assertEqual(len(errors), 4, errors)
+            self.assertEqual(sum("goal entry not allowed" in e for e in errors), 2)
+            self.assertEqual(sum("archiproject_contribution" in e for e in errors), 2)
+
+
+class GroupFieldValidationTests(unittest.TestCase):
+    def test_non_kebab_id_is_error(self):
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as tmp:
+            hub = make_hub(tmp, group_block("Bad_ID", "Bad"))
+            errors = validate(hub)
+            self.assertTrue(any("invalid archiproject ID" in e for e in errors), errors)
+
+    def test_invalid_status_is_error(self):
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as tmp:
+            hub = make_hub(tmp, group_block("real", "Real", status="on-fire"))
+            errors = validate(hub)
+            self.assertTrue(any("invalid archiproject status" in e for e in errors), errors)
+
+    def test_unterminated_fence_is_error(self):
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as tmp:
+            text = "## real\n```yaml\nid: real\nname: Real\nstatus: active\nkind: group\n"
+            hub = make_hub(tmp, text)
+            errors = validate(hub)
+            self.assertTrue(any("unterminated" in e for e in errors), errors)
+            with self.assertRaises(ValueError):
+                parse_groups(hub / "ai" / "archiprojects.md")
+
+
+class CliErrorHandlingTests(unittest.TestCase):
+    def test_tree_cli_reports_parse_error_without_traceback(self):
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as tmp:
+            hub = make_hub(tmp, goal_block("goal1"))
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "tree", "--hub", str(hub)],
+                capture_output=True, text=True,
+            )
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("ERROR:", result.stderr)
+            self.assertNotIn("Traceback", result.stderr)
+
+    def test_members_cli_reports_parse_error_without_traceback(self):
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as tmp:
+            hub = make_hub(tmp, goal_block("goal1"))
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "members", "--hub", str(hub), "--group", "goal1"],
+                capture_output=True, text=True,
+            )
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("ERROR:", result.stderr)
+            self.assertNotIn("Traceback", result.stderr)
+
+
 class CliTests(unittest.TestCase):
     def test_validate_cli_ok_and_fail(self):
         with tempfile.TemporaryDirectory(dir="/private/tmp") as tmp:
