@@ -18,18 +18,9 @@ MEMORY_FILES = {
     "ai/project-registry.md", "ai/cross-project-signals.md", "ai/goal-log.md",
     "ai/workflow-observations.md", "ai/workflow-context.md",
 }
-RUNTIME_SCRIPTS = (
-    "scripts/check-hub-registry.sh", "scripts/read-compact-project-index.sh",
-    "scripts/read-compact-task-index.py",
-    "scripts/obsidian-task-sync.sh", "scripts/generate-obsidian-projects-kanban.sh",
-    "scripts/count-goal-progress.sh", "scripts/snapshot-calendar.sh",
-    "scripts/check-workflow-memory.sh", "scripts/check-session-review.py",
-    "scripts/check-all-task-records.sh",
-    "scripts/lib/calendar-date.sh", "scripts/workflow_friction.py",
-    "scripts/task_records.py",
-    "scripts/calendar_task_sync.py", "scripts/calendar-context.py",
-    "scripts/validate-day-plan-output.py",
-)
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from module_passports import install_pairs, installable, load_passports, render_modules_md, resolve_selection  # noqa: E402
 
 
 def digest(path):
@@ -88,22 +79,58 @@ def file_entry(root, source, target, policy):
             "mode": stat.S_IMODE(path.stat().st_mode), "policy": policy}
 
 
-def build_manifest(source):
+MODULES_FILE = "ai/modules.md"
+
+
+def is_memory_target(target):
+    return target in MEMORY_FILES or target.startswith(("ai/project-cards/", "ai/archive/"))
+
+
+def existing_install_pairs(root, passports, selected):
+    """Like install_pairs, but silently drops declared sources retired (deleted) from the source tree."""
+    try:
+        return install_pairs(root, passports, selected)
+    except ValueError:
+        pairs = []
+        for module_id in selected:
+            for source, target in passports[module_id].installs:
+                if source.endswith("/"):
+                    base = root / source
+                    if not base.is_dir():
+                        continue
+                    for path in sorted(base.rglob("*")):
+                        if not path.is_file() or "__pycache__" in path.parts or path.suffix == ".pyc":
+                            continue
+                        rel = path.relative_to(base).as_posix()
+                        pairs.append((source + rel, target + rel))
+                elif (root / source).is_file():
+                    pairs.append((source, target))
+        return sorted(pairs)
+
+
+def build_manifest(source, modules=None):
     root = source_root(source)
-    files = []
-    template = root / "hub-template"
-    for path in sorted(template.rglob("*")):
-        if not path.is_file() or path.is_symlink():
-            continue
-        target = str(path.relative_to(template))
-        policy = "create-if-missing" if target in MEMORY_FILES or target.startswith("ai/project-cards/") or target.startswith("ai/archive/") else "managed"
-        files.append(file_entry(root, str(path.relative_to(root)), target, policy))
-    for name in RUNTIME_SCRIPTS:
-        files.append(file_entry(root, name, name, "managed"))
+    passports = load_passports(root)
+    selected = sorted(modules) if modules is not None else installable(passports)
+    files = [file_entry(root, src, target, "create-if-missing" if is_memory_target(target) else "managed")
+             for src, target in existing_install_pairs(root, passports, selected)]
+    text = render_modules_md(passports, selected)
+    files.append({"source": None, "target": MODULES_FILE,
+                  "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+                  "mode": 0o644, "policy": "managed", "content": text})
     files.sort(key=lambda entry: entry["target"])
     if len({entry["target"] for entry in files}) != len(files):
         raise ValueError("duplicate manifest target")
-    return {"format": 1, "files": files, "remove": [], "ignore_lines": ["/.local/", "/projects/"]}
+    return {"format": 1, "modules": selected, "files": files, "remove": [],
+            "ignore_lines": ["/.local/", "/projects/"]}
+
+
+def release_sources(root):
+    root = source_root(root)
+    passports = load_passports(root)
+    sources = {src for src, _ in install_pairs(root, passports, installable(passports))}
+    sources |= {str(p.relative_to(root)) for p in root.glob("modules/*/module.md")}
+    return sorted(sources)
 
 
 def emit(payload):
@@ -121,12 +148,14 @@ def load_installed_manifest(installed_file):
     return manifest
 
 
-def preview(source, hub, source_sha=None):
+def preview(source, hub, source_sha=None, with_=(), without=()):
     source_sha = normalize_source_sha(source_sha)
-    manifest = build_manifest(source)
     hub = hub.resolve()
     installed_file = hub / ".local" / "hub-release" / "installed.json"
     installed_manifest = load_installed_manifest(installed_file)
+    previous_modules = installed_manifest.get("modules")
+    selected = resolve_selection(load_passports(source_root(source)), previous_modules, list(with_), list(without))
+    manifest = build_manifest(source, selected)
     installed_entries = {entry["target"]: entry for entry in installed_manifest.get("files", [])}
     incoming_targets = {entry["target"] for entry in manifest["files"]}
     operations = []
@@ -153,7 +182,8 @@ def preview(source, hub, source_sha=None):
                            "current_sha256": current, "incoming_sha256": None})
 
     operations.sort(key=lambda row: row["target"])
-    payload = {"manifest": manifest, "operations": operations, "source_sha": source_sha}
+    payload = {"manifest": manifest, "operations": operations, "source_sha": source_sha,
+               "modules": selected, "previous_modules": previous_modules}
     payload["plan_sha256"] = hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
     return payload
 
@@ -186,13 +216,13 @@ def drift(source, hub):
     return {"conflicts": conflicts, "unmanaged": sorted(unmanaged)}
 
 
-def apply(source, hub, confirmed_plan, source_sha=None, confirmed_source_sha=None):
+def apply(source, hub, confirmed_plan, source_sha=None, confirmed_source_sha=None, with_=(), without=()):
     source_sha = normalize_source_sha(source_sha)
     confirmed_source_sha = normalize_source_sha(confirmed_source_sha)
     if source_sha != confirmed_source_sha:
         raise ValueError("source revision changed; apply the reviewed source SHA")
     hub = hub.resolve()
-    plan = preview(source, hub, source_sha=source_sha)
+    plan = preview(source, hub, source_sha=source_sha, with_=with_, without=without)
     if plan["plan_sha256"] != confirmed_plan:
         raise ValueError("plan changed; preview again before applying")
     conflicts = [row["target"] for row in plan["operations"] if row["action"] == "conflict"]
@@ -216,7 +246,10 @@ def apply(source, hub, confirmed_plan, source_sha=None, confirmed_source_sha=Non
             entry = entries[row["target"]]
             staged = staging / row["target"]
             staged.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(source_root(source) / entry["source"], staged)
+            if entry.get("content") is not None:
+                staged.write_text(entry["content"], encoding="utf-8")
+            else:
+                shutil.copyfile(source_root(source) / entry["source"], staged)
             os.chmod(staged, entry["mode"])
 
         if installed_file.exists():
@@ -280,6 +313,8 @@ def main():
     preview_command.add_argument("--source", required=True, type=Path)
     preview_command.add_argument("--hub", required=True, type=Path)
     preview_command.add_argument("--source-sha")
+    preview_command.add_argument("--with", dest="with_", action="append", default=[])
+    preview_command.add_argument("--without", action="append", default=[])
     drift_command = commands.add_parser("drift")
     drift_command.add_argument("--source", required=True, type=Path)
     drift_command.add_argument("--hub", required=True, type=Path)
@@ -289,9 +324,11 @@ def main():
     apply_command.add_argument("--confirm-plan", required=True)
     apply_command.add_argument("--source-sha")
     apply_command.add_argument("--confirm-source-sha")
+    apply_command.add_argument("--with", dest="with_", action="append", default=[])
+    apply_command.add_argument("--without", action="append", default=[])
     args = parser.parse_args()
     if args.command == "preview":
-        emit(preview(args.source, args.hub, source_sha=args.source_sha))
+        emit(preview(args.source, args.hub, source_sha=args.source_sha, with_=args.with_, without=args.without))
         return 0
     if args.command == "drift":
         report = drift(args.source, args.hub)
@@ -299,7 +336,8 @@ def main():
         return 1 if report["conflicts"] or report["unmanaged"] else 0
     if args.command == "apply":
         emit(apply(args.source, args.hub, args.confirm_plan,
-                   source_sha=args.source_sha, confirmed_source_sha=args.confirm_source_sha))
+                   source_sha=args.source_sha, confirmed_source_sha=args.confirm_source_sha,
+                   with_=args.with_, without=args.without))
         return 0
     expected = build_manifest(args.source)
     if args.command == "build":

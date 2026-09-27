@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from scripts.hub_release import RUNTIME_SCRIPTS, apply, preview
+from scripts.hub_release import apply, preview, release_sources
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,8 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class RetiredManagedFileTests(unittest.TestCase):
     def source_copy(self, root):
         source = root / "source"
-        shutil.copytree(ROOT / "hub-template", source / "hub-template")
-        for relative in RUNTIME_SCRIPTS:
+        for relative in release_sources(ROOT):
             src = ROOT / relative
             dst = source / relative
             dst.parent.mkdir(parents=True, exist_ok=True)

@@ -10,7 +10,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from scripts.hub_release import RUNTIME_SCRIPTS, apply, build_manifest, decide, drift, preview, target_path
+from scripts.hub_release import apply, build_manifest, decide, drift, preview, release_sources, target_path
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,8 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class ReleaseDecisionTests(unittest.TestCase):
     def source_copy(self, root):
         source = root / "source"
-        shutil.copytree(ROOT / "hub-template", source / "hub-template")
-        for relative in RUNTIME_SCRIPTS:
+        for relative in release_sources(ROOT):
             src = ROOT / relative
             dst = source / relative
             dst.parent.mkdir(parents=True, exist_ok=True)
