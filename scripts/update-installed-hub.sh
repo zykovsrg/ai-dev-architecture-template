@@ -101,10 +101,18 @@ if prev is not None:
     change = [f"-{m}" for m in prev if m not in p["modules"]] + [f"+{m}" for m in p["modules"] if m not in prev]
     if change:
         print("Module change:", " ".join(change))
+    if "calendar" in prev and "calendar" not in p["modules"]:
+        print("Extra step: remove calendar server (tools/apple-calendar-policy, .mcp.json hub_calendar)")
+    elif "calendar" not in prev and "calendar" in p["modules"]:
+        print("Extra step: install calendar server")
 print("Plan SHA256:", p["plan_sha256"])
 if p.get("source_sha"):
     print("Source SHA:", p["source_sha"])
 PY
+}
+
+calendar_selected() {
+  PLAN_JSON="$PLAN_JSON" python3 -c 'import json, os; print("calendar" in json.loads(os.environ["PLAN_JSON"])["modules"])'
 }
 
 if [ "$MODE" = "check" ]; then
@@ -134,6 +142,14 @@ if [ -n "$RESOLVED_SHA" ]; then
     --source-sha "$RESOLVED_SHA" --confirm-source-sha "$CONFIRM_SOURCE_SHA" --confirm-plan "$CONFIRM_PLAN" ${MODULE_ARGS[@]+"${MODULE_ARGS[@]}"}
 else
   python3 "$SOURCE_REPO_ROOT/scripts/hub_release.py" apply --source "$SOURCE_REPO_ROOT" --hub "$HUB_DIR" --confirm-plan "$CONFIRM_PLAN" ${MODULE_ARGS[@]+"${MODULE_ARGS[@]}"}
+fi
+
+if [ -f "$SOURCE_REPO_ROOT/modules/calendar/scripts/sync-calendar-policy.sh" ]; then
+  if [ "$(calendar_selected)" = "True" ]; then
+    bash "$SOURCE_REPO_ROOT/modules/calendar/scripts/sync-calendar-policy.sh" --source "$SOURCE_REPO_ROOT" --hub "$HUB_DIR"
+  else
+    bash "$SOURCE_REPO_ROOT/modules/calendar/scripts/sync-calendar-policy.sh" --source "$SOURCE_REPO_ROOT" --hub "$HUB_DIR" --remove
+  fi
 fi
 
 if [ "$DO_COMMIT" -eq 1 ]; then
