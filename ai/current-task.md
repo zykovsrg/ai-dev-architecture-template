@@ -1,31 +1,61 @@
 # Current Task
 
-Status: empty
-Stage: intake
+Task ID: TASK-ai-dev-architecture-20260926-001
+Status: active
+Stage: verification
 
 ## Goal
 
-No active task.
+Перейти к модульной архитектуре: у модулей понятные границы, зоны
+ответственности, интерфейсы и правила зависимостей (кто про кого знает, что
+разрешено и запрещено); новая функциональность встраивается в существующие
+модули; планирование — отдельный отключаемый модуль; проекты объединяются в
+архипроекты (группы проектов). Цель — быстрее, логичнее, меньше токенов,
+автономные отключаемые модули, без мёртвого кода и техдолга. Исходить из
+существующей структуры; большой рефакторинг — позже, отдельными задачами.
+
+Объём этой задачи:
+1. Спецификация целевой схемы модулей, интерфейсов и зависимостей (включая
+   место архипроектов) и план шагов.
+2. Шаг 1: вернуть в шаблон всё, что есть только в живом хабе
+   (`calendar_task_sync.py`, `calendar-context.py`, `validate-day-plan-output.py`
+   и их место в списке выпуска), выровнять 10 расходящихся файлов навыков,
+   добавить проверку расхождений хаба и шаблона.
+3. Шаг 2: удалить мёртвое (`vendor/apple-calendar-mcp`, заглушку
+   `update-installed-architecture.sh`, старый мост Obsidian,
+   `project_rule_consolidation.py`, неиспользуемый `release/hub-files.json`,
+   устаревшие ссылки на `template/`), каждое — после проверки.
 
 ## Relevant files
 
-None yet.
+- `hub-template/ai/architecture.md`, `hub-template/ai/skills/*`
+- `hub-template/ai/archiprojects.md`
+- `scripts/hub_release.py`, `scripts/install-hub.sh`, `scripts/sync-calendar-policy.sh`
+- `calendar-policy/src/hub_calendar_policy/*`
+- Живой хаб (только сравнение): `<hub>/ai/skills/*`, `<hub>/scripts/*`
 
 ## Done criteria
 
-Define during task intake.
+- Спецификация записана и утверждена пользователем.
+- Хаб и шаблон совпадают по управляемым файлам; есть проверка, которая
+  находит расхождение.
+- Мёртвые файлы удалены после проверки ссылок.
+- Все тесты проекта зелёные.
 
 ## Agent handoff
 
-Last agent: Claude (Opus 5)
+Last agent: Claude (Opus 5.5)
 
-What changed: TASK-ai-dev-architecture-20260921-001 закрыта 2026-09-21.
-Синхронизация календаря и задач работает через раздел «Синхронизация» дневного
-плана и «Подтвердить» вечернего ревью. Session review:
-`ai/session-reviews/2026-09-21-calendar-task-sync-closure.md`.
+What changed: спецификация утверждена; шаги 1–2 выполнены в ветке
+`modular-steps-1-2` (519b7d3..b8b6220), каждое изменение прошло ревью; хаб
+обновлён, `hub_release.py drift` → exit 0. Итоги в `ai/changelog.md`
+(2026-09-27), правило — в `ai/decisions.md` (2026-09-27).
 
-Open risks: первый живой прогон в дневном плане ещё не сделан; повторяющиеся
-события определяются только по повтору дат в окне.
+Open risks: ветка не влита в `main` и не отправлена в GitHub, CI на ней не
+запускался. Не решено с пользователем: локальная папка `ai/skills/` (11 старых
+навыков вне git, из-за неё падает `check-consistency.sh`) и строка `/ai/` в
+`.git/info/exclude`; несохранённые правки в git хаба; папка `tests/` в хабе
+теперь дублирует тесты проекта.
 
-Next agent should check: на ближайшем плане дня записать связи для 3 найденных
-`unlinked` задач.
+Next agent should check: ответы пользователя по открытым пунктам, затем
+слияние ветки и `hub-task-finish`.

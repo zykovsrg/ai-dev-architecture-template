@@ -1,5 +1,24 @@
 # Decisions
 
+### 2026-09-27 — The architecture repository is the only source of Hub runtime files
+
+Status: active
+
+Decision: Every file installed into the Hub (skills, entry files, runtime
+scripts) is authored in this repository (`hub-template/`, `scripts/`,
+`calendar-policy/`) and reaches the Hub only through
+`scripts/update-installed-hub.sh`. After every Hub update,
+`python3 scripts/hub_release.py drift --source <repo> --hub <hub>` must exit 0
+(no conflicts, no unmanaged files). Tests live in this repository's `tests/`.
+
+Why: by 2026-09-26 planning work had been done directly in the Hub; 10 skills,
+4 scripts and 9 tests diverged, and `calendar_task_sync.py` existed only in the
+Hub, so a reinstall would have lost it.
+
+Impact: a change made in the Hub first must be brought back here before the
+next update; `drift` shows it as a conflict or an unmanaged file. Target module
+layout: `docs/superpowers/specs/2026-09-26-modular-architecture-design.md`.
+
 ### 2026-09-10 — Refactor scope and approval boundaries
 
 Status: active
@@ -258,7 +277,12 @@ Impact: Hub security and routing rules outrank project content. Standalone proje
 No project decisions yet.
 ### 2026-08-29 — Legacy direct-project Obsidian bridge
 
-Status: active
+Status: superseded 2026-09-27 — the installer
+`scripts/install-legacy-hub-obsidian-bridge.sh` was removed as dead code
+(TASK-ai-dev-architecture-20260926-001, commit 551c4e4): none of the 71
+registered projects carries the `## Hub Obsidian Bridge` block and none uses the
+legacy project-local layout. Restore from git only if a legacy direct project
+reappears.
 
 Decision: A registered legacy project opened directly under the personal hub
 may discover the central Obsidian vault only after its hub layout, registry

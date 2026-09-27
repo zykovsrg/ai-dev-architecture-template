@@ -1,5 +1,39 @@
 # Changelog
 
+### 2026-09-27 — Modular architecture, steps 1–2 (TASK-ai-dev-architecture-20260926-001)
+
+- Audit and spec: `docs/superpowers/specs/2026-09-26-modular-architecture-design.md`
+  (10 modules, passports, events, nested archiprojects, switch-off = not
+  installed); plan `docs/superpowers/plans/2026-09-26-modular-architecture-steps-1-2.md`.
+  Phases 4–8 recorded as FT-20260926-001…005.
+- Drift: new `hub_release.py drift` (conflicts + unmanaged Hub files; fails on a
+  missing Hub). Hub-only `calendar_task_sync.py`, newer `task_records.py`,
+  `check-session-review.py`, `validate-day-plan-output.py`, 6 Hub tests and 9
+  skill files brought back; `calendar-context.py`, `calendar_task_sync.py`,
+  `validate-day-plan-output.py` added to `RUNTIME_SCRIPTS`. Hub updated
+  (AGENTS.md, CLAUDE.md, hub-calendar/SKILL.md); drift exit 0.
+- Dead code removed (~18.6k lines): `vendor/apple-calendar-mcp`, retired
+  standalone updater and `smoke-test.sh`, legacy Obsidian bridge,
+  `project_rule_consolidation.py`, stale `release/hub-files.json`. Plans/specs
+  merged into `docs/superpowers/`.
+- Fixed stale `obsidian-task-sync-test.sh` (broken since 2026-09-09, not in CI)
+  and temp-dir leaks in two shell tests.
+- Branch `modular-steps-1-2`, commits 519b7d3..b8b6220; every task reviewed,
+  final whole-branch review fixes applied.
+- Known local-only test failures: `check-consistency.sh` (untracked local
+  `ai/skills/`), `hub-smoke-test.sh` (macOS `/tmp` symlink).
+
+### 2026-09-22 — Truthfulness and intellectual rigor instructions
+
+- Change: added the same `Truthfulness and Intellectual Rigor` section to the
+  active `AGENTS.md` and `CLAUDE.md` files and to both files under
+  `hub-template/`. Agents must question and verify material claims, prioritize
+  truth over agreement, state unsupported conclusions immediately, and separate
+  verified facts from inference and uncertainty.
+- Verification: the heading occurs exactly once in each of the four files; the
+  sections have identical SHA-256 digests; `git diff --check` passed.
+- Commits: `ee4b094`, `7002b41`, `d916ed5`.
+
 ### 2026-09-21 — Calendar ↔ task sync (TASK-ai-dev-architecture-20260921-001)
 
 - Problem: a rescheduled task had to be moved by hand in both the task record
