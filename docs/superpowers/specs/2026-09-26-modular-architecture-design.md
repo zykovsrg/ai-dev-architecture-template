@@ -280,3 +280,79 @@ CI stay green.
 
 Moving other modules into `modules/`; `before-task-confirmation`; planning and
 calendar switching; archiprojects; splitting the rest of `architecture.md`.
+
+## Stage 5 details (TASK-ai-dev-architecture-20260927-002)
+
+Status: approved in chat 2026-09-27. Scope: phase 5 — planning and calendar
+become switchable modules under `modules/`.
+
+### Split of `hub-workflows`
+
+- Capture and the cross-project overview (overdue, blocked, "что горит") belong
+  to tasks. They move into a new tasks skill `hub-task-overview`, together with
+  the shared personal-assistant contract now in `hub-workflows/SKILL.md`
+  (all-project read scope, compact task index, proposal envelope, confirmation
+  boundary). `hub-workflows` keeps day plan, evening and weekly review and
+  points to that contract instead of repeating it.
+- `ai/modules.md` also lists each installed module's skills.
+  `hub-project-router` routes capture and overview to `hub-task-overview`, and
+  day plan and reviews to the planning skill named in `ai/modules.md`; when
+  planning is not installed it says so and offers nothing else.
+
+### Events
+
+- `EVENTS` gains `after-calendar-change`, declared by calendar. A subscription
+  value is free text: a shell command or a pointer to a rules section.
+- `before-task-confirmation`: before asking to confirm a task write, the task
+  skills read `ai/modules.md`; each subscriber may add its items to the same
+  confirmation screen; one confirmation approves exactly the shown set; if a
+  subscriber cannot build its part, nothing is applied and the user is asked
+  again. The "Calendar sync for dated tasks" sections leave the task skills and
+  become planning's subscription (rules in `modules/planning/rules.md`,
+  installed as `ai/rules/planning.md`), including the `Событие:` link line.
+- `after-calendar-change`: `hub-calendar` fires it after a successful
+  `apply_change`; planning subscribes and writes the snapshot. `hub-calendar`
+  no longer names planning, tasks, or snapshot scripts. Its merged-gate
+  exception becomes generic: another installed module may show the complete
+  preview together with its own diff on one screen.
+- `joint-task-change.md` moves from `hub-calendar` to planning.
+
+### Calendar server cleanup
+
+- The MCP tool `prepare_evening_review` and `evening_review.py` are removed; the
+  server keeps only calendar tools. The evening review reads events with
+  `read_events`, writes and lists snapshots with `snapshot-calendar.sh`
+  (planning), and reads pending friction with `workflow_friction.py`
+  (learning, `uses_if_present`). Snapshots then have one writer.
+- After the Hub update the calendar server must be restarted (new session).
+
+### Layout and switching
+
+- Moves: `hub-workflows` and planning scripts to `modules/planning/`;
+  `hub-calendar`, `calendar-policy/`, `sync-calendar-policy.sh`,
+  `build-calendar-bridge.sh`, `grant-calendar-access.sh` to `modules/calendar/`.
+  Hub targets stay the same. Tests move with their module and CI runs them.
+- planning and calendar get `Switchable: yes`. Disabling calendar while planning
+  is selected is refused (existing dependency rule).
+- The calendar server is not in the release manifest. When calendar is added or
+  removed, `update-installed-hub.sh` lists the extra steps in the preview and,
+  after the same confirmation, runs `sync-calendar-policy.sh` (install) or its
+  new `--remove` mode: delete `tools/apple-calendar-policy` and the
+  `hub_calendar` entry in the Hub's `.mcp.json`, keeping other servers, the
+  allowlist, and snapshots. Install adds that `.mcp.json` entry if missing.
+
+### Working Hub
+
+Both modules stay enabled. The update applies the moved files and skill edits;
+`sync-calendar-policy.sh` refreshes the server without `prepare_evening_review`;
+`drift` exits 0. Disabling is tested only on fixture Hubs.
+
+### Tests
+
+A fixture Hub installed without planning and calendar has no calendar or
+planning skill, script, rules file, server, or `.mcp.json` entry, and its task
+skills still read `ai/modules.md` with no subscribers; strict test: no file of
+core, projects, or tasks names `hub-calendar`, `hub-workflows`, calendar MCP
+tools, or planning scripts; the calendar server exposes no evening-review tool;
+re-enabling restores everything. Baselines are taken at the branch base, and CI
+runs on the pushed branch before merging (session review P1 practice).
