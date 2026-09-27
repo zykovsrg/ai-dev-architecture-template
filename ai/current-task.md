@@ -25,7 +25,7 @@ What changed: TASK-ai-dev-architecture-20260927-003 закрыта 2026-09-27.
 PR #12 слит после зелёного CI.
 Session review: `ai/session-reviews/2026-09-27-archiprojects-groups-goals-closure.md`.
 
-Open risks: предложение P1 разбора сессии ждёт решения пользователя.
+Open risks: нет.
 
 Next agent should check: следующая задача — FT-20260926-004 (разрезать
 `architecture.md` и убрать повторы правил).

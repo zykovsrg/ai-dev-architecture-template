@@ -45,7 +45,7 @@ Change: produce any count quoted to the user with a command (`ls | wc -l`, `grep
 Rationale: second occurrence of stating a number or effect without checking it (after 2026-09-27 planning-calendar F1).
 Acceptance test: the next session review finds no count or effect stated to the user without a preceding command.
 Recovery: drop the practice.
-Disposition: proposed
+Disposition: rejected
 
 ## Follow-up
 

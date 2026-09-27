@@ -14,7 +14,7 @@
   Hub aa23ba8 (pushed): registry OK, drift 0, goal progress OK.
 - Correction: the promo set is 29 projects, not 30 as first told to the user.
 - Closed 2026-09-27. Session review:
-  `ai/session-reviews/2026-09-27-archiprojects-groups-goals-closure.md` (issues-found, P1 proposed).
+  `ai/session-reviews/2026-09-27-archiprojects-groups-goals-closure.md` (issues-found, P1 rejected).
 
 ### 2026-09-27 — Modular architecture stage 5: planning and calendar modules (TASK-ai-dev-architecture-20260927-002)
 
