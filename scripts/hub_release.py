@@ -86,34 +86,13 @@ def is_memory_target(target):
     return target in MEMORY_FILES or target.startswith(("ai/project-cards/", "ai/archive/"))
 
 
-def existing_install_pairs(root, passports, selected):
-    """Like install_pairs, but silently drops declared sources retired (deleted) from the source tree."""
-    try:
-        return install_pairs(root, passports, selected)
-    except ValueError:
-        pairs = []
-        for module_id in selected:
-            for source, target in passports[module_id].installs:
-                if source.endswith("/"):
-                    base = root / source
-                    if not base.is_dir():
-                        continue
-                    for path in sorted(base.rglob("*")):
-                        if not path.is_file() or "__pycache__" in path.parts or path.suffix == ".pyc":
-                            continue
-                        rel = path.relative_to(base).as_posix()
-                        pairs.append((source + rel, target + rel))
-                elif (root / source).is_file():
-                    pairs.append((source, target))
-        return sorted(pairs)
-
-
-def build_manifest(source, modules=None):
+def build_manifest(source, modules=None, passports=None):
     root = source_root(source)
-    passports = load_passports(root)
+    if passports is None:
+        passports = load_passports(root)
     selected = sorted(modules) if modules is not None else installable(passports)
     files = [file_entry(root, src, target, "create-if-missing" if is_memory_target(target) else "managed")
-             for src, target in existing_install_pairs(root, passports, selected)]
+             for src, target in install_pairs(root, passports, selected)]
     text = render_modules_md(passports, selected)
     files.append({"source": None, "target": MODULES_FILE,
                   "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
@@ -154,8 +133,9 @@ def preview(source, hub, source_sha=None, with_=(), without=()):
     installed_file = hub / ".local" / "hub-release" / "installed.json"
     installed_manifest = load_installed_manifest(installed_file)
     previous_modules = installed_manifest.get("modules")
-    selected = resolve_selection(load_passports(source_root(source)), previous_modules, list(with_), list(without))
-    manifest = build_manifest(source, selected)
+    passports = load_passports(source_root(source))
+    selected = resolve_selection(passports, previous_modules, list(with_), list(without))
+    manifest = build_manifest(source, selected, passports=passports)
     installed_entries = {entry["target"]: entry for entry in installed_manifest.get("files", [])}
     incoming_targets = {entry["target"] for entry in manifest["files"]}
     operations = []

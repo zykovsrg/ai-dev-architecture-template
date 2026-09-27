@@ -66,6 +66,14 @@ class ReleaseDecisionTests(unittest.TestCase):
                      "scripts/validate-day-plan-output.py"):
             self.assertIn(name, targets)
 
+    def test_build_manifest_raises_on_passport_declaring_missing_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = self.source_copy(root)
+            (source / "hub-template" / "CLAUDE.md").unlink()
+            with self.assertRaisesRegex(ValueError, "missing install file"):
+                build_manifest(source)
+
     def test_equal_current_and_incoming_is_kept(self):
         self.assertEqual(decide("new", "old", "new"), "keep")
 

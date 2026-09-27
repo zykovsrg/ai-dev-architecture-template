@@ -30,6 +30,18 @@ class RetiredManagedFileTests(unittest.TestCase):
     def operation(self, plan, target):
         return next(row for row in plan["operations"] if row["target"] == target)
 
+    def retire(self, source, relative):
+        """Model real upstream retirement: delete the source file AND drop its
+        'Installs' line from the owning passport, so the passport never
+        declares a source that no longer exists."""
+        (source / relative).unlink()
+        needle = f"- {relative} ->"
+        for passport in sorted((source / "modules").glob("*/module.md")):
+            lines = passport.read_text(encoding="utf-8").splitlines()
+            kept = [line for line in lines if not line.strip().startswith(needle)]
+            if kept != lines:
+                passport.write_text("\n".join(kept) + "\n", encoding="utf-8")
+
     def test_managed_file_disappeared_upstream_is_removed(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -37,7 +49,7 @@ class RetiredManagedFileTests(unittest.TestCase):
             hub = root / "hub"
             self.install(source, hub)
             retired = source / "hub-template/CLAUDE.md"
-            retired.unlink()
+            self.retire(source, "hub-template/CLAUDE.md")
 
             plan = preview(source, hub)
             self.assertEqual(self.operation(plan, "CLAUDE.md")["action"], "remove")
@@ -53,7 +65,7 @@ class RetiredManagedFileTests(unittest.TestCase):
             hub = root / "hub"
             self.install(source, hub)
             (hub / "CLAUDE.md").write_text("local edit\n", encoding="utf-8")
-            (source / "hub-template/CLAUDE.md").unlink()
+            self.retire(source, "hub-template/CLAUDE.md")
 
             plan = preview(source, hub)
             self.assertEqual(self.operation(plan, "CLAUDE.md")["action"], "conflict")
@@ -69,7 +81,7 @@ class RetiredManagedFileTests(unittest.TestCase):
             self.install(source, hub)
             memory = hub / "ai/project-registry.md"
             before = memory.read_bytes()
-            (source / "hub-template/ai/project-registry.md").unlink()
+            self.retire(source, "hub-template/ai/project-registry.md")
 
             plan = preview(source, hub)
             rows = [row for row in plan["operations"] if row["target"] == "ai/project-registry.md"]
@@ -87,7 +99,7 @@ class RetiredManagedFileTests(unittest.TestCase):
             before = retired_target.read_bytes()
             os.chmod(retired_target, 0o640)
             before_mode = stat.S_IMODE(retired_target.stat().st_mode)
-            (source / "hub-template/CLAUDE.md").unlink()
+            self.retire(source, "hub-template/CLAUDE.md")
 
             architecture = source / "hub-template/ai/architecture.md"
             architecture.write_text(architecture.read_text(encoding="utf-8") + "\n<!-- changed after removal -->\n", encoding="utf-8")
