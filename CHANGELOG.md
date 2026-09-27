@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### 2026-09-27 — All modules in `modules/`; strict boundary check
+
+- knowledge, goals, learning, then core, projects, and tasks moved their
+  skills, scripts, and data templates from `hub-template/`/`scripts/` into
+  `modules/<id>/{skills,scripts,data}`; `hub-template/` was removed.
+  Installed Hub target paths are unchanged (verified by comparing
+  `install_pairs` target sets before and after).
+- `check-module-boundaries.py --strict` is now a required check in
+  `architecture-test.sh`; boundary warnings dropped 27 → 0. core, projects,
+  and tasks — the three always-installed modules — may now reference each
+  other freely.
+- New events `before-task-close` (learning, knowledge) and
+  `after-project-create` (knowledge). `hub-project-router`/`CLAUDE.md`/
+  `AGENTS.md` resolve optional skills by role through `ai/modules.md`
+  instead of naming them.
+
 ### 2026-09-27 — Architecture 2.0: core split from module rules
 
 - `hub-template/ai/architecture.md` now holds only cross-module core (ownership

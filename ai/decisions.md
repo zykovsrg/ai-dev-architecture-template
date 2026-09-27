@@ -1,5 +1,60 @@
 # Decisions
 
+### 2026-09-27 — Все модули в `modules/`, строгие границы
+
+Status: active
+
+Decision: Every module — including core, projects and tasks, the three that
+stayed in `hub-template/` through stages 4–7 — now sources its skills,
+scripts, and data templates from `modules/<id>/{skills,scripts,data}`.
+`hub-template/` is removed; every passport's `## Installs` lines point at
+`modules/<id>/…` sources instead. Installed Hub target paths are unchanged
+(proved by comparing `install_pairs` target sets before and after this
+task). The dependency rule is refined: core, projects and tasks — the
+always-installed modules — may reference each other freely, since none of
+them can ever be missing; a reference to an optional module (knowledge,
+goals, learning, calendar, planning, obsidian) is still allowed only from
+itself, a module that lists it in `Depends:`/`Uses if present:`, or through
+an event or `ai/modules.md`. `check-module-boundaries.py --strict` now adds
+core, projects and tasks to every module's allowed set and is a failing test
+in `architecture-test.sh` (boundary warnings 27 → 0).
+
+Two new events: `before-task-close`, fired by `hub-task-finish` after Done
+criteria pass and before task memory is cleared (learning subscribes with
+the session review; knowledge subscribes with an optional, never
+auto-started, knowledge review; no subscriber → closure proceeds as before);
+and `after-project-create`, fired by `hub-project-create` after the
+confirmed scaffold is written (knowledge subscribes and creates the empty
+`knowledge/` scaffold on the same confirmation screen).
+
+`hub-project-router`, `CLAUDE.md`, and `AGENTS.md` no longer name an
+optional skill by name. They resolve the planning and learning skill by role
+through `ai/modules.md`'s `## Skills` section; if the role has no listed
+module, they say so instead of guessing a skill name.
+
+Amends: the 2026-08-15 skill-naming decision and the stage-7 decision
+(`ai/decisions.md` 2026-09-27 "Правила модулей живут в `ai/rules/<id>.md`")
+— both name `hub-template/CLAUDE.md`, `hub-template/AGENTS.md`, and
+`hub-template/ai/architecture.md` as live paths; those paths are now
+`modules/core/data/CLAUDE.md`, `modules/core/data/AGENTS.md`, and
+`modules/core/data/ai/architecture.md`. The historical decision text itself
+is left as written (it described the state at the time); this entry
+supersedes only the path mentions for anyone acting on them going forward.
+
+Why: Stage 8 of
+`docs/superpowers/specs/2026-09-26-modular-architecture-design.md` — the
+last three modules were the last exception to "every module lives in
+`modules/<id>/`", and a warning-only boundary check does not stop new
+violations from creeping back in.
+
+Impact: `hub-template/` no longer exists. Every live reference to it in
+tooling, tests, and active docs (README.md, docs/concepts.md,
+docs/file-roles.md, ai/project-context.md, ai/current-task.md) was updated
+to `modules/…`; historical records (changelogs, decisions, old specs and
+plans, session reviews, the paused/future task backlog) were left as
+written. `check-module-boundaries.py --strict` is now part of
+`architecture-test.sh`'s required test run.
+
 ### 2026-09-27 — Правила модулей живут в `ai/rules/<id>.md`
 
 Status: active
