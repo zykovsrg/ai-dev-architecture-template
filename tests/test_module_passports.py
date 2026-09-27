@@ -86,6 +86,26 @@ class ParseTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 parse_passport(path)
 
+    def test_install_target_under_projects_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "modules/demo/module.md"
+            write(path, PASSPORT.replace(
+                "modules/demo/rules.md -> ai/rules/demo.md",
+                "modules/demo/rules.md -> projects/x.md",
+            ))
+            with self.assertRaises(ValueError):
+                parse_passport(path)
+
+    def test_install_target_under_dot_local_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "modules/demo/module.md"
+            write(path, PASSPORT.replace(
+                "modules/demo/rules.md -> ai/rules/demo.md",
+                "modules/demo/rules.md -> .local/x",
+            ))
+            with self.assertRaises(ValueError):
+                parse_passport(path)
+
     def test_directory_install_expands(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

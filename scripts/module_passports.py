@@ -70,6 +70,10 @@ def parse_passport(path):
         if " -> " not in item:
             raise ValueError(f"{path}: install line needs 'source -> target': {item}")
         source, target = (part.strip().strip("`") for part in item.split(" -> ", 1))
+        if target.startswith(".local/") or (
+            target.startswith("projects/") and target != "projects/.gitkeep"
+        ):
+            raise ValueError(f"{path}: install target must not touch {target!r}")
         installs.append((source, target))
     subscribes = {}
     for item in bullets("Subscribes"):

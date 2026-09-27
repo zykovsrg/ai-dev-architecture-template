@@ -52,6 +52,11 @@ trusted only in that direction and still validates the manifest. A manual
 Obsidian edit makes the refresh stop with a pending proposal; it must not
 overwrite it.
 
+Obsidian is an optional module. Switch it on or off with
+`update-installed-hub.sh --with obsidian` / `--without obsidian` (see
+`docs/update.md`); `scripts/obsidian-task-sync.sh` exists in a Hub only while
+the module is installed.
+
 The reverse direction is a confirmed Obsidian-to-architecture proposal:
 scan the local board, inspect it, then apply only the shown hash.
 
@@ -80,13 +85,15 @@ task workflow.
 
 The optional local watcher only runs `scan`; it never applies a proposal. First
 preview its user launchd plist. Installation and removal are separate explicit
-actions, each with its own confirmation flag:
+actions, each with its own confirmation flag. The installer is repository-only
+and is not copied into an installed Hub; run it from the repository at
+`modules/obsidian/scripts/install-obsidian-task-sync.sh`:
 
 ```bash
-bash scripts/install-obsidian-task-sync.sh --hub /path/to/_ai-hub --scope /path/to/scope.txt --vault /path/to/_ai-hub/projects/ai-dev-architecture/obsidian-vault --preview
-bash scripts/install-obsidian-task-sync.sh --hub /path/to/_ai-hub --scope /path/to/scope.txt --vault /path/to/_ai-hub/projects/ai-dev-architecture/obsidian-vault --install --confirm-launchd-install
-bash scripts/install-obsidian-task-sync.sh --hub /path/to/_ai-hub --scope /path/to/scope.txt --vault /path/to/_ai-hub/projects/ai-dev-architecture/obsidian-vault --status
-bash scripts/install-obsidian-task-sync.sh --hub /path/to/_ai-hub --scope /path/to/scope.txt --vault /path/to/_ai-hub/projects/ai-dev-architecture/obsidian-vault --uninstall --confirm-launchd-uninstall
+bash modules/obsidian/scripts/install-obsidian-task-sync.sh --hub /path/to/_ai-hub --scope /path/to/scope.txt --vault /path/to/_ai-hub/projects/ai-dev-architecture/obsidian-vault --preview
+bash modules/obsidian/scripts/install-obsidian-task-sync.sh --hub /path/to/_ai-hub --scope /path/to/scope.txt --vault /path/to/_ai-hub/projects/ai-dev-architecture/obsidian-vault --install --confirm-launchd-install
+bash modules/obsidian/scripts/install-obsidian-task-sync.sh --hub /path/to/_ai-hub --scope /path/to/scope.txt --vault /path/to/_ai-hub/projects/ai-dev-architecture/obsidian-vault --status
+bash modules/obsidian/scripts/install-obsidian-task-sync.sh --hub /path/to/_ai-hub --scope /path/to/scope.txt --vault /path/to/_ai-hub/projects/ai-dev-architecture/obsidian-vault --uninstall --confirm-launchd-uninstall
 ```
 
 `.ai-architecture-sync/` holds only local proposals, locks, and watcher logs;
