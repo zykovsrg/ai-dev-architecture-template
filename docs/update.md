@@ -120,6 +120,32 @@ Preview покажет `Modules:` и, если выбор изменился, с
 
 Obsidian vault и `.local/` updater никогда не удаляет — выключение модуля убирает только его managed-скрипты и rules-файл.
 
+Ещё два переключаемых модуля — `planning` и `calendar`. `planning` зависит от `calendar`
+(day-plan и evening-review используют календарь), поэтому `--without calendar` без
+одновременного `--without planning` будет отклонён с ошибкой `module planning requires calendar`.
+
+```bash
+bash scripts/update-installed-hub.sh --hub /path/to/_ai-hub --source /path/to/pinned-repository \
+  --dry-run --without planning --without calendar
+```
+
+Когда `calendar` выходит из выбора модулей, preview дополнительно печатает:
+
+```text
+Extra step: remove calendar server (tools/apple-calendar-policy, .mcp.json hub_calendar)
+```
+
+а когда он входит в выбор — `Extra step: install calendar server`. После успешного apply
+updater сам вызывает `modules/calendar/scripts/sync-calendar-policy.sh` с `--hub` и, если
+`calendar` больше не выбран, с `--remove`: это удаляет `tools/apple-calendar-policy` и запись
+`hub_calendar` из `.mcp.json`, не трогая остальные MCP-серверы. Если `calendar` выбран, тот же
+шаг ставит/обновляет `tools/apple-calendar-policy` и добавляет запись `hub_calendar` в
+`.mcp.json`, только если её там ещё нет — существующую запись (в том числе изменённую
+пользователем) он никогда не перезаписывает.
+
+`.local/apple-calendar/allowlist.json` и снимки `ai/tmp/calendar-snapshots/` этот шаг не
+трогает ни при удалении, ни при повторной установке.
+
 ## Что updater сохраняет
 
 Hub update не является миграцией проектов и не должен изменять проектные репозитории.
@@ -182,7 +208,7 @@ Calendar policy имеет отдельный suite:
 
 ```bash
 (
-  cd calendar-policy
+  cd modules/calendar/policy
   python3 -m pytest -q
 )
 ```

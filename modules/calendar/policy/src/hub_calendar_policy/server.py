@@ -3,7 +3,6 @@
 from datetime import datetime
 from hashlib import sha256
 import json
-from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from .backend import CalendarBackend
@@ -11,7 +10,6 @@ from .eventkit_backend import BridgeError
 from .models import CalendarRef, ChangeRequest, EventRef
 from .policy import CalendarPolicy, PolicyError
 from .preview import PreviewGrantStore
-from .evening_review import day_bounds, pending_friction, prior_snapshots, write_snapshot
 
 
 SOURCE = "Apple Calendar / EventKit"
@@ -21,7 +19,7 @@ class GuardedCalendarServer:
     """Fail-closed facade; it has no raw upstream mutation tools."""
 
     tool_names = frozenset({
-        "calendar_status", "list_calendar_metadata", "read_events", "find_free_slots", "prepare_evening_review",
+        "calendar_status", "list_calendar_metadata", "read_events", "find_free_slots",
         "preview_change", "cancel_preview", "apply_change",
     })
 
@@ -30,32 +28,10 @@ class GuardedCalendarServer:
         backend: CalendarBackend,
         policy: CalendarPolicy,
         previews: PreviewGrantStore,
-        hub_root: Path | None = None,
     ) -> None:
         self._backend = backend
         self._policy = policy
         self._previews = previews
-        self._hub_root = hub_root
-
-    async def prepare_evening_review(self, day: str, timezone: str) -> dict[str, object]:
-        if self._hub_root is None:
-            raise PolicyError("HUB_ROOT_UNAVAILABLE")
-        await self._require_permission()
-        start, end = day_bounds(day, timezone)
-        calendar_ids = set(self._policy.allowed_calendar_ids)
-        events, unavailable = await self._read_calendar_events(calendar_ids, start, end, timezone)
-        previous = prior_snapshots(self._hub_root, day)
-        snapshot = None if unavailable else write_snapshot(self._hub_root, day, events)
-        return {
-            "source": SOURCE,
-            "timezone": timezone,
-            "events": [item.model_dump(mode="json") for item in events],
-            "unavailable_calendar_ids": unavailable,
-            "availability_complete": not unavailable,
-            "snapshot": str(snapshot) if snapshot else None,
-            "prior_snapshots": previous,
-            "pending_friction": pending_friction(self._hub_root, day),
-        }
 
     async def calendar_status(self) -> dict[str, object]:
         return {

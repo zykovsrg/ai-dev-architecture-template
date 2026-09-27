@@ -89,6 +89,11 @@ PLAN_SHA="$(printf '%s' "$PLAN_JSON" | python3 -c 'import json,sys; print(json.l
 DIFF_COUNT="$(printf '%s' "$PLAN_JSON" | python3 -c 'import json,sys; print(sum(1 for x in json.load(sys.stdin)["operations"] if x["action"] != "keep"))')"
 
 print_plan() {
+  # Every apply action must appear here: sync-calendar-policy.sh runs on every
+  # apply (see below), refreshing the server when calendar stays selected and
+  # removing it when it doesn't -- regardless of whether the selection just
+  # changed. previous_modules being unknown (fresh Hub, no installed.json yet)
+  # is not a reason to omit the line: the post-apply step still runs.
   PLAN_JSON="$PLAN_JSON" python3 - <<'PY'
 import json, os
 p = json.loads(os.environ["PLAN_JSON"])
@@ -101,10 +106,18 @@ if prev is not None:
     change = [f"-{m}" for m in prev if m not in p["modules"]] + [f"+{m}" for m in p["modules"] if m not in prev]
     if change:
         print("Module change:", " ".join(change))
+if "calendar" in p["modules"]:
+    print("Extra step: refresh calendar server (tools/apple-calendar-policy, bridge rebuild, .mcp.json hub_calendar if missing)")
+else:
+    print("Extra step: remove calendar server (tools/apple-calendar-policy, .mcp.json hub_calendar)")
 print("Plan SHA256:", p["plan_sha256"])
 if p.get("source_sha"):
     print("Source SHA:", p["source_sha"])
 PY
+}
+
+calendar_selected() {
+  PLAN_JSON="$PLAN_JSON" python3 -c 'import json, os; print("1" if "calendar" in json.loads(os.environ["PLAN_JSON"])["modules"] else "0")'
 }
 
 if [ "$MODE" = "check" ]; then
@@ -134,6 +147,16 @@ if [ -n "$RESOLVED_SHA" ]; then
     --source-sha "$RESOLVED_SHA" --confirm-source-sha "$CONFIRM_SOURCE_SHA" --confirm-plan "$CONFIRM_PLAN" ${MODULE_ARGS[@]+"${MODULE_ARGS[@]}"}
 else
   python3 "$SOURCE_REPO_ROOT/scripts/hub_release.py" apply --source "$SOURCE_REPO_ROOT" --hub "$HUB_DIR" --confirm-plan "$CONFIRM_PLAN" ${MODULE_ARGS[@]+"${MODULE_ARGS[@]}"}
+fi
+
+if [ -f "$SOURCE_REPO_ROOT/modules/calendar/scripts/sync-calendar-policy.sh" ]; then
+  CALENDAR_REMOVE_FLAG=""
+  if [ "$(calendar_selected)" = "0" ]; then CALENDAR_REMOVE_FLAG="--remove"; fi
+  if ! bash "$SOURCE_REPO_ROOT/modules/calendar/scripts/sync-calendar-policy.sh" --source "$SOURCE_REPO_ROOT" --hub "$HUB_DIR" ${CALENDAR_REMOVE_FLAG:+$CALENDAR_REMOVE_FLAG}; then
+    echo "Hub files were updated, but the calendar server step failed." >&2
+    echo "Rerun: bash \"$SOURCE_REPO_ROOT/modules/calendar/scripts/sync-calendar-policy.sh\" --source \"$SOURCE_REPO_ROOT\" --hub \"$HUB_DIR\" ${CALENDAR_REMOVE_FLAG}" >&2
+    exit 1
+  fi
 fi
 
 if [ "$DO_COMMIT" -eq 1 ]; then

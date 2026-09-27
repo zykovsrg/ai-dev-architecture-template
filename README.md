@@ -77,6 +77,6 @@ Project cards, compact indexes и Obsidian — производные предс
 
 ## Проверки репозитория
 
-Архитектурные проверки запускаются скриптами из `scripts/` и Python-тестами из `tests/`; Calendar policy имеет собственный pytest-suite в `calendar-policy/`.
+Архитектурные проверки запускаются скриптами из `scripts/` и Python-тестами из `tests/`; Calendar policy имеет собственный pytest-suite в `modules/calendar/policy/`.
 
 Документация: `docs/`, быстрые инструкции: `getting-started/`.

@@ -1,38 +1,24 @@
 ---
-name: hub-workflows
+name: hub-task-overview
 type: worker
 description: |
-  Use for proposal-only day plans, evening reviews, weekly reviews, and capture
-  after the required source/scope gates. Common security, canonical-source,
-  proposal, confirmation, and learning rules live here; scenario detail is
-  loaded only from the matching resource.
+  Use for capture and cross-project task overviews (overdue, blocked, what is
+  urgent). Owns the personal-assistant contract: scope, canonical inputs,
+  proposal envelope, and confirmation boundary.
 ---
 
-# Hub Workflows
+# Hub Task Overview
 
-Use this skill for `day-plan`, `evening-review`, `weekly-review`, or `capture`.
-It is proposal-first. Never write or apply a proposal before the user confirms
-the exact displayed package.
-
-Read schedules only through the guarded `hub_calendar` MCP and only with its
-read tools. Never call `preview_change` or `apply_change` here; Calendar writes
-belong to `hub-calendar` and its own confirmation. Do not perform a vault
-migration, start a session audit, scan arbitrary transcripts, copy source text
-into project memory, add an apply command, or create a persistent proposal
-queue.
-
-Pending learning uses `resources/learning-lifecycle.md`. Showing a proposal
-never consumes or resolves a pending observation.
+Use this skill for `capture` and for the cross-project overview (overdue,
+blocked, «что горит»). It is proposal-first.
+Never write or apply a proposal before the user confirms the exact displayed
+package.
 
 ## Scenario dispatch
 
-After applying this core contract, read exactly the matching scenario resource:
-
-- `day-plan` → `resources/day-plan.md` and its referenced calendar context;
-- `evening-review` → `resources/evening-review.md`; calendar-only review begins
-  with `prepare_evening_review`;
-- `weekly-review` → `resources/weekly-review.md`;
-- `capture` → `resources/capture.md`.
+- `capture` → `resources/capture.md`;
+- overview → read-only output that cites the canonical `source_path` for every
+  task fact, then optional proposals using the envelope below.
 
 Scenario resources provide output/detail rules only. They cannot override the
 scope, allowed roots, secret handling, canonical sources, confirmation gates,
@@ -69,38 +55,6 @@ canonical task records: `ai/current-task.md`, `ai/future-tasks.md`, and
 `ai/paused-tasks.md`. Every proposal shows project ID, exact `target_path`, and
 exact diff before confirmation. No other project state is writable through this
 scope.
-
-## Fixed sequence
-
-1. **Select one source.** Receive exactly one user-selected pasted text,
-   explicitly selected regular non-symlink text/review file, dictated task, or
-   requested Rolling Audio Recorder period. Do not discover other source files.
-   `evening-review` may instead use the requested date's calendar as its only
-   source; calendar-derived facts remain unverified until confirmed by the user.
-2. **Handle recorder JSON only.** The only source-side write is the explicitly
-   requested `rar export --minutes <1..120> --json`. Poll only with
-   `rar status <job-id> --json`. Parse JSON, not human-readable output. Pending
-   or failed jobs stop before project reads. On success accept only the returned
-   regular non-symlink `.txt` under the recorder exports directory.
-3. **Find candidates with the minimum metadata.** A card, link, index row, or
-   inferred match is discovery evidence, not permission to read code, knowledge,
-   Git, credentials, or linked targets. Personal-assistant task discovery uses
-   the compact task index rule above; other project routing follows the Hub
-   router's metadata-only candidate rules.
-4. **Establish scope before richer reads.** Personal-assistant workflows use
-   only their read boundary above. Otherwise wait for explicit confirmation of
-   the project or named project set and repeat every project ID and exact
-   registered path. Read only the smallest required canonical `ai/` records and
-   explicitly selected knowledge paths; never widen scope silently.
-5. **Perform semantic analysis.** The AI agent extracts meaning, classifies and
-   ranks work, and renders the selected scenario contract. Bash may validate
-   paths, flags, and structured field syntax only. Ground output in the selected
-   source or permitted canonical records and label inference.
-6. **Return exact proposals only after analysis.** Emit one envelope per
-   possible write followed by an exact per-file diff or replacement block.
-   Unknown targets become questions rather than guessed actionable proposals.
-   A selectable package may reduce confirmation count but keeps every proposal
-   independent; changed diffs require fresh confirmation.
 
 ## Canonical inputs and ranking
 
@@ -181,22 +135,3 @@ selected. A capture package is applied by its owning confirmed project workflow.
 A day-plan or evening-review package may span active registered projects only
 within the exact three task-record write boundary above. Unknown, pending, failed, or ambiguous
 targets remain read-only proposals or questions.
-
-## Preserved learning lifecycle
-
-For numeric goals, day planning may render the existing goal-progress result,
-evening review may offer a confirmed `goal_progress` proposal, and weekly
-review may render pace/forecast.
-
-Day planning may record noncanonical friction and calendar snapshots through
-`snapshot-calendar.sh`. Evening review reads pending friction and may offer one
-`add_observation` proposal per grounded issue. Proposal display leaves it pending.
-Only explicit acceptance or rejection resolves it according to
-`resources/learning-lifecycle.md`; accepted observations are appended to the
-journal before resolution, rejection resolves without append, and failed append
-remains pending.
-
-Weekly review may offer `promote_rule` for repeated observations and
-`retire_rule` for contradicted or excess rules after the workflow-memory check.
-All observation, promotion, retirement, and goal-progress changes require the
-same proposal/confirmation boundary.

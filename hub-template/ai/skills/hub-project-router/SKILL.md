@@ -15,7 +15,10 @@ Choose exactly one route before reading project data:
 1. A **personal-assistant request** asks for a day plan, cross-project status,
    overdue or blocked work, an evening or weekly review, capture of supplied
    task or meeting text, or cross-project knowledge search. Set `Mode:
-   assistant` and invoke `hub-workflows`.
+   assistant`. Capture and cross-project overviews (status, overdue, blocked)
+   invoke `hub-task-overview`. Day plans and evening/weekly reviews invoke the
+   planning skill listed under `## Skills` in `ai/modules.md`; if planning is
+   not listed, say planning is not installed and do not improvise a plan.
 2. A **project-specific request** asks to build, fix, review, or otherwise work
    inside one named or implied project. Keep `Mode: routing` and use the
    project-confirmation phases below.
@@ -26,10 +29,10 @@ Choose exactly one route before reading project data:
 Treat clear requests including «распланируем сегодняшний день», «распланируем
 остаток дня», «план на сегодня», «план на остаток дня», «составь план дня»,
 and “plan today” as `day-plan`. Invoke
-`hub-workflows` before writing a reply and render its six mandatory day-plan
+the planning skill before writing a reply and render its six mandatory day-plan
 sections. Do not return a preliminary free-form calendar summary.
 
-For a personal-assistant request, `hub-workflows` may read only
+For a personal-assistant request, the invoked skill may read only
 `ai/current-task.md`, `ai/future-tasks.md`, and `ai/paused-tasks.md` from all
 active registered projects. It must separate personal and work results, cite
 the project and canonical record for every fact, and skip inactive or archived

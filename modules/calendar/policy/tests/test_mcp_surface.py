@@ -24,4 +24,8 @@ async def test_mcp_exposes_exactly_the_guarded_tool_set() -> None:
     mcp = build_mcp(guarded)
 
     assert {tool.name for tool in await mcp.list_tools()} == guarded.tool_names
-    assert "prepare_evening_review" in guarded.tool_names
+    assert guarded.tool_names == frozenset({
+        "calendar_status", "list_calendar_metadata", "read_events", "find_free_slots",
+        "preview_change", "cancel_preview", "apply_change",
+    })
+    assert "prepare_evening_review" not in guarded.tool_names

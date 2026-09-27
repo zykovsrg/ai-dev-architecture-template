@@ -178,6 +178,32 @@ class RenderTests(unittest.TestCase):
             text = render_modules_md(passports, ["core"])
             self.assertIn("### after-task-write\n\n- —", text)
 
+    def test_modules_md_lists_skills(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write(root / "modules/demo/module.md", PASSPORT.replace(
+                "- modules/demo/scripts/ -> scripts/\n",
+                "- modules/demo/scripts/ -> scripts/\n- modules/demo/skills/ -> ai/skills/\n",
+            ))
+            write(root / "modules/demo/scripts/demo.sh", "echo\n")
+            write(root / "modules/demo/rules.md", "# rules\n")
+            write(root / "modules/demo/skills/hub-demo/SKILL.md", "# skill\n")
+            write(root / "modules/demo/skills/hub-demo/resources/x.md", "resource\n")
+            passports = load_passports(root)
+            text = render_modules_md(passports, ["demo"], root=root)
+            self.assertIn("## Skills", text)
+            self.assertIn("- demo: `hub-demo`", text)
+
+    def test_modules_md_omits_modules_without_skills(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write(root / "modules/demo/module.md", PASSPORT)
+            write(root / "modules/demo/scripts/demo.sh", "echo\n")
+            write(root / "modules/demo/rules.md", "# rules\n")
+            passports = load_passports(root)
+            text = render_modules_md(passports, ["demo"], root=root)
+            self.assertIn("## Skills\n\n\n## Events", text)
+
 
 class RepositoryPassportTests(unittest.TestCase):
     def test_every_spec_module_has_a_passport(self):
@@ -199,9 +225,17 @@ class RepositoryPassportTests(unittest.TestCase):
             for dep in p.depends + p.uses_if_present:
                 self.assertIn(dep, passports, f"{p.id} -> {dep}")
 
-    def test_only_obsidian_is_switchable(self):
+    def test_switchable_modules(self):
         passports = load_passports(ROOT)
-        self.assertEqual([p.id for p in passports.values() if p.switchable], ["obsidian"])
+        self.assertEqual({p.id for p in passports.values() if p.switchable},
+                         {"obsidian", "planning", "calendar"})
+
+    def test_after_calendar_change_is_a_known_event(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "modules/demo/module.md"
+            write(path, PASSPORT.replace("after-task-write:", "after-calendar-change:"))
+            p = parse_passport(path)
+            self.assertEqual(p.subscribes, {"after-calendar-change": "bash scripts/demo.sh --hub <hub>"})
 
     def test_release_installs_nothing(self):
         self.assertNotIn("release", installable(load_passports(ROOT)))

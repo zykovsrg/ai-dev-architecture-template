@@ -34,27 +34,18 @@ require or read duplicated project `AGENTS.md` or `CLAUDE.md` files.
    subscriber reports a pending proposal, show it and never apply it without
    its own explicit confirmation.
 
-## Calendar sync for dated tasks
+## Confirmation extensions
 
-A task carries a schedule when it has a `Запланировано: <YYYY-MM-DD> <HH:MM>-<HH:MM>`
-field or, failing that, a `Due: <YYYY-MM-DD>` field. Whenever an approved write
-in this workflow creates, reschedules, or closes such a task, prepare the
-matching Apple Calendar change in the same step, under the `hub-calendar`
-rules: allowlisted calendar IDs only, the `категория/проект/задача` title form,
-and a complete preview showing action, calendar, title, start and end with
-timezone, existing event ID, and recurrence scope. A `Запланировано:` field
-becomes a timed event; a `Due:` date alone becomes an all-day event on that
-date. Creating a task creates the event, changing its schedule updates it, and
-closing or dropping the task deletes a future event and leaves a past one
-untouched.
+Before asking the user to confirm a task write, run the
+`before-task-confirmation` event: read `<hub>/ai/modules.md`; each subscriber
+listed under `before-task-confirmation` may add its own items to the same
+confirmation screen by following its rules file. One confirmation approves
+exactly the shown set. If a subscriber cannot build its part, say which one and
+why, apply nothing, and ask again. With no subscribers, confirm the task write
+alone.
 
-Show the exact task-memory diff and that calendar preview together as one
-confirmation screen, and treat one user confirmation as approval of exactly the
-shown pair. If either part changes, or the calendar preview cannot be built —
-the MCP is unreachable, the permission is missing, or the calendar is not in
-the allowlist — say which it is, apply neither part, and ask again. A task
-without a schedule field produces no calendar item and keeps its usual single
-confirmation.
+After confirmation, each subscriber applies its items before the task write, as
+its rules say; if one fails, stop, report it, and do not write the task.
 
 This workflow cannot override hub confirmation, allowed roots, secret, or
 memory-isolation rules. It never changes task state during a project switch.

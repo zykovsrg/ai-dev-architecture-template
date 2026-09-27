@@ -41,6 +41,9 @@ jobs:
       - name: Obsidian module unit tests
         if: always()
         run: python3 -m unittest discover -s modules/obsidian/tests -v
+      - name: Planning module unit tests
+        if: always()
+        run: python3 -m unittest discover -s modules/planning/tests -v
 
   calendar-policy:
     runs-on: ubuntu-latest
@@ -52,7 +55,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install calendar policy and test dependencies
-        run: python3 -m pip install -e ./calendar-policy pytest pytest-asyncio
+        run: python3 -m pip install -e ./modules/calendar/policy pytest pytest-asyncio
       - name: Calendar policy tests
-        working-directory: calendar-policy
+        working-directory: modules/calendar/policy
         run: python3 -m pytest -q

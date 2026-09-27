@@ -93,7 +93,7 @@ def build_manifest(source, modules=None, passports=None):
     selected = sorted(modules) if modules is not None else installable(passports)
     files = [file_entry(root, src, target, "create-if-missing" if is_memory_target(target) else "managed")
              for src, target in install_pairs(root, passports, selected)]
-    text = render_modules_md(passports, selected)
+    text = render_modules_md(passports, selected, root=root)
     files.append({"source": None, "target": MODULES_FILE,
                   "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
                   "mode": 0o644, "policy": "managed", "content": text})

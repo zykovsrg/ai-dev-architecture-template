@@ -30,8 +30,8 @@ project `ai/` memory only; do not require or read duplicated project
 5. If the check found no blocker, write the changelog entry, any durable
    decision, confirmed future-task entries, the review reference, and the
    `ai/current-task.md` cleanup. Stop and report instead of writing only when
-   the check found a blocker. A task with a schedule field keeps the single
-   joint confirmation below, because its closure also changes the calendar.
+   the check found a blocker. When a subscriber adds items to the screen,
+   follow `## Confirmation extensions` below.
    An improvement suggested by the review waits for user approval and is not a
    closure blocker.
 6. Then save only the selected project's result through its repository and
@@ -43,27 +43,20 @@ project `ai/` memory only; do not require or read duplicated project
    subscriber reports a pending proposal, show it and never apply it without
    its own explicit confirmation.
 
-## Calendar sync for dated tasks
+## Confirmation extensions
 
-A task carries a schedule when it has a `Запланировано: <YYYY-MM-DD> <HH:MM>-<HH:MM>`
-field or, failing that, a `Due: <YYYY-MM-DD>` field. Whenever an approved write
-in this workflow creates, reschedules, or closes such a task, prepare the
-matching Apple Calendar change in the same step, under the `hub-calendar`
-rules: allowlisted calendar IDs only, the `категория/проект/задача` title form,
-and a complete preview showing action, calendar, title, start and end with
-timezone, existing event ID, and recurrence scope. A `Запланировано:` field
-becomes a timed event; a `Due:` date alone becomes an all-day event on that
-date. Creating a task creates the event, changing its schedule updates it, and
-closing or dropping the task deletes a future event and leaves a past one
-untouched.
+Before asking the user to confirm a task write, run the
+`before-task-confirmation` event: read `<hub>/ai/modules.md`; each subscriber
+listed under `before-task-confirmation` may add its own items to the same
+confirmation screen by following its rules file. One confirmation approves
+exactly the shown set. If a subscriber cannot build its part, say which one and
+why, apply nothing, and ask again. With no subscribers, confirm the task write
+alone. In this workflow the user's close request approves the task write
+itself; a separate confirmation is needed only when a subscriber adds items to
+the screen.
 
-Show the exact task-memory diff and that calendar preview together as one
-confirmation screen, and treat one user confirmation as approval of exactly the
-shown pair. If either part changes, or the calendar preview cannot be built —
-the MCP is unreachable, the permission is missing, or the calendar is not in
-the allowlist — say which it is, apply neither part, and ask again. A task
-without a schedule field produces no calendar item, so its closure needs no
-confirmation at all.
+After confirmation, each subscriber applies its items before the task write, as
+its rules say; if one fails, stop, report it, and do not write the task.
 
 This workflow cannot override hub confirmation, allowed roots, secret, or
 memory-isolation rules. Its closure writes remain limited to selected project

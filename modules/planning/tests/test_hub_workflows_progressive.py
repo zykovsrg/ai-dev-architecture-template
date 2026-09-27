@@ -3,13 +3,13 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILL = ROOT / "hub-template/ai/skills/hub-workflows/SKILL.md"
+REPO_ROOT = ROOT.parents[1]
+SKILL = ROOT / "skills/hub-workflows/SKILL.md"
 RESOURCE_DIR = SKILL.parent / "resources"
 RESOURCES = {
     "day-plan": "day-plan.md",
     "evening-review": "evening-review.md",
     "weekly-review": "weekly-review.md",
-    "capture": "capture.md",
 }
 
 
@@ -27,14 +27,22 @@ class HubWorkflowProgressiveDisclosureTests(unittest.TestCase):
     def test_common_authority_stays_in_core(self):
         core = SKILL.read_text(encoding="utf-8")
         for phrase in (
-            "## Personal-assistant scope",
             "## Fixed sequence",
+            "Never write or apply a proposal before the user confirms",
+            "`hub-task-overview`",
+        ):
+            self.assertIn(phrase, core)
+        overview = (REPO_ROOT / "hub-template/ai/skills/hub-task-overview/SKILL.md").read_text(encoding="utf-8")
+        for phrase in (
+            "## Personal-assistant scope",
             "## Proposal envelope",
             "## Confirmation boundary",
             "Never write or apply a proposal before the user confirms",
             "scripts/read-compact-task-index.py",
+            "resources/capture.md",
         ):
-            self.assertIn(phrase, core)
+            self.assertIn(phrase, overview)
+        self.assertTrue((REPO_ROOT / "hub-template/ai/skills/hub-task-overview/resources/capture.md").is_file())
 
     def test_detailed_scenario_formats_leave_core(self):
         core = SKILL.read_text(encoding="utf-8")
@@ -98,7 +106,7 @@ class HubWorkflowProgressiveDisclosureTests(unittest.TestCase):
                 self.assertIn(phrase, text, f"{filename}: {phrase}")
 
     def test_architecture_requires_task_diff_before_workflow_sync(self):
-        architecture = (ROOT / "hub-template/ai/architecture.md").read_text(encoding="utf-8")
+        architecture = (REPO_ROOT / "hub-template/ai/architecture.md").read_text(encoding="utf-8")
         self.assertIn("Calendar events never prove completion", architecture)
         self.assertIn("exact canonical task-record diff", architecture)
 

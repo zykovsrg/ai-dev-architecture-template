@@ -2,9 +2,24 @@
 
 This resource defines only the `evening-review` scenario. The core `SKILL.md` remains authoritative for scope, security, canonical-source rules, proposal envelopes, confirmation, and learning lifecycle. Nothing here widens those permissions.
 
-For a calendar-only evening review, first call `prepare_evening_review` with the requested date and calendar timezone. Its events, snapshot history, and pending friction are the complete learning input. Proposal display never creates durable learning by itself.
+For a calendar-only evening review, call `list_calendar_metadata` first, then
+`read_events` for the requested date and calendar timezone over the allowed
+calendar IDs. Its events are the calendar learning input. Proposal display
+never creates durable learning by itself.
 
-Inspect `availability_complete` and `unavailable_calendar_ids` in every calendar response. If coverage is incomplete, name the unavailable calendar IDs and do not infer absence or completion from them. Skip calendar-task sync for a partial window. `snapshot: null` means no new complete snapshot was created.
+Inspect `availability_complete` and `unavailable_calendar_ids` in every
+calendar response. If coverage is incomplete, name the unavailable calendar
+IDs and do not infer absence or completion from them. Skip calendar-task sync
+for a partial window.
+
+If coverage is complete, pipe one `HH:MM|HH:MM|<title>|<calendar>` line per
+event, in start-time order, to
+`bash scripts/snapshot-calendar.sh --hub <hub> --at <date>-<HHMM>`. List prior
+snapshots for the day with
+`bash scripts/snapshot-calendar.sh --hub <hub> --list --day <date>`.
+
+Read pending friction only when `learning` is listed in `ai/modules.md`, with
+`python3 scripts/workflow_friction.py --hub <hub> list --day <date>`.
 
 Render these headings in this exact order:
 
