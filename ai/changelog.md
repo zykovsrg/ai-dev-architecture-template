@@ -22,6 +22,10 @@
   final whole-branch review fixes applied.
 - Known local-only test failures: `check-consistency.sh` (untracked local
   `ai/skills/`), `hub-smoke-test.sh` (macOS `/tmp` symlink).
+- Merged to `main` and pushed; CI failed once on a locale warning in
+  `test-count-goal-progress.sh` (fixed in 0ccd68c, CI green).
+- Session review: `ai/session-reviews/2026-09-27-modular-architecture-steps-1-2-closure.md`
+  (issues-found, proposal P1 awaits approval).
 
 ### 2026-09-22 — Truthfulness and intellectual rigor instructions
 
