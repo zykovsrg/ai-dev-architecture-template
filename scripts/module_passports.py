@@ -5,7 +5,13 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-EVENTS = ("after-task-write", "before-task-confirmation", "after-calendar-change")
+EVENTS = (
+    "after-task-write",
+    "before-task-confirmation",
+    "after-calendar-change",
+    "before-task-close",
+    "after-project-create",
+)
 HEADERS = {"Id", "Required", "Switchable", "Depends", "Uses if present", "Rules", "Keywords"}
 SECTIONS = {"Purpose", "Installs", "Repository only", "Reads", "Writes", "Subscribes"}
 EMPTY = "—"

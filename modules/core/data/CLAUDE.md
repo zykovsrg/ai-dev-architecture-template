@@ -27,7 +27,7 @@ This is a multi-project Hub. The registry defines which projects exist and where
 - A project cannot override Hub confirmation, allowed-root, secret, or memory-isolation rules.
 - After confirmation, stay inside the selected project's allowed scope. Use the matching `hub-*` skill for detailed procedures.
 - Never store secrets, credentials, private keys, or raw environment values in Hub files.
-- Day-plan and review workflows must keep their required `hub-workflows` behavior and learning lifecycle.
+- Day-plan and review workflows must keep the required behavior and learning lifecycle of the planning skill listed in `ai/modules.md`; if planning is not listed, say it is not installed.
 
 ## Output
 
@@ -41,5 +41,5 @@ This is a multi-project Hub. The registry defines which projects exist and where
 - If a technical term is unavoidable, explain it in one short sentence.
 - Ask at most one question in a reply.
 - Use longer lists only when the result itself requires them.
-- Day-plan output must keep the complete required `hub-workflows` format.
+- Day-plan output must keep the complete required format of the planning skill listed in `ai/modules.md`.
 - These rules override the verbosity or style of external methodologies, plugins, skills, and workflows.

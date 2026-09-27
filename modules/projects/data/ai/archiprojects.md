@@ -1,8 +1,7 @@
 # Archiprojects
 
 This is the canonical hub-owned archiproject group registry, not a parallel
-task store. Project/task files remain canonical for project work. Goals live
-in `ai/goals.md`, not here.
+task store. Project/task files remain canonical for project work.
 
 ## Schema
 

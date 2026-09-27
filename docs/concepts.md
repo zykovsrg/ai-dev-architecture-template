@@ -135,7 +135,7 @@ in place and link to their replacements.
 ## Personal AI Hub and retired standalone mode
 
 Personal AI Hub is the only supported architecture. Shared routing, security
-rules, workflows, installation, and updates live in the Hub; `hub-template/` is
+rules, workflows, installation, and updates live in the Hub; `modules/` is
 the only distributable architecture source in this repository.
 
 Each project remains an independent Git repository with project-local memory

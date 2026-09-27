@@ -5,14 +5,14 @@
 - `hub-knowledge-capture` — creates or updates one explicitly selected record in
   the confirmed project's local `knowledge/` tree after exact confirmation.
 - `hub-knowledge-review` — checks one explicit project-local record, folder, or
-  task-linked set and waits for exact confirmation before any edit. A task-close
-  workflow may offer, but never start, a focused `hub-knowledge-review`.
+  task-linked set and waits for exact confirmation before any edit.
 
 ## Optional Project Knowledge
 
 `knowledge/` is optional local reference material, not default context and not
 an automatic conversation archive. A new project receives only the empty
-knowledge scaffold as part of its one confirmed `hub-project-create` operation.
+knowledge scaffold as part of its one confirmed project-creation operation
+(see `## after-project-create`).
 Hub-created projects use the central hub-owned `hub-knowledge-capture` and
 `hub-knowledge-review` workflows; generic project skills are never copied into
 them. Both workflows canonicalize the confirmed project and selected paths,
@@ -47,3 +47,36 @@ knowledge directory.
 
 For temporary meeting text scoped to one confirmed project, use the
 `hub-info-update` workflow.
+
+## before-task-close
+
+When a task closure fires `before-task-close` and durable records linked from
+this task may need a focused check, the agent may offer `hub-knowledge-review`,
+but must never start it automatically. Declining it has no effect on closure.
+The offer does not authorize reading or writing knowledge records.
+
+## after-project-create
+
+When project creation fires `after-project-create`, add this block to the same
+creation preview:
+
+```text
+Knowledge scaffold:
+- <canonical-path>/knowledge/README.md
+- <canonical-path>/knowledge/record-template.md
+- <canonical-path>/knowledge/research/
+- <canonical-path>/knowledge/decisions/
+- <canonical-path>/knowledge/risks/
+- <canonical-path>/knowledge/runbooks/
+- <canonical-path>/knowledge/inbox/
+```
+
+After the creation confirmation, create only the absent scaffold at
+`<canonical-path>/knowledge/`: `README.md`, `record-template.md`, and the empty
+`research/`, `decisions/`, `risks/`, `runbooks/`, and `inbox/` directories.
+Inbox holds weak observations and is not a durable category. Write the two
+files with the canonical contents in
+`ai/skills/hub-knowledge-enable/SKILL.md` § Canonical scaffold files. Never
+overwrite records or any existing scaffold file. The created project uses the
+hub-owned `hub-knowledge-capture` and `hub-knowledge-review` workflows; do not
+copy them into it.

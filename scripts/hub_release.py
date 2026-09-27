@@ -67,9 +67,9 @@ def target_path(root, relative):
 
 def source_root(source):
     source = source.resolve()
-    if (source / "hub-template").is_dir():
+    if (source / "modules").is_dir():
         return source
-    raise ValueError("source must be the architecture repository containing hub-template")
+    raise ValueError("source must be the architecture repository containing modules/")
 
 
 def file_entry(root, source, target, policy):

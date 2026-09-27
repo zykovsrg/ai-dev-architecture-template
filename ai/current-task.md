@@ -1,34 +1,42 @@
 # Current Task
 
-Status: empty
+Task ID: TASK-ai-dev-architecture-20260927-005
+
+Status: active
 Stage: intake
 
 ## Goal
 
-No active task.
+Этап 8 модульной архитектуры (FT-20260926-005): перенести в `modules/`
+оставшиеся модули — knowledge, goals, learning, затем core, projects, tasks.
+Строгая проверка границ (`check-module-boundaries.py --strict`) становится
+падающим тестом. Ядро подключается к строгой проверке «задачи и проекты не
+называют планирование и календарь».
 
 ## Relevant files
 
-None yet.
+- `modules/*/module.md`, `modules/*/{skills,scripts,data}`
+- `scripts/check-module-boundaries.py`, `tests/test_module_events.py`
+- `docs/superpowers/specs/2026-09-26-modular-architecture-design.md`
 
 ## Done criteria
 
-Define during task intake.
+- Все модули в своих папках `modules/<id>/`.
+- `check-module-boundaries.py --strict` даёт 0 предупреждений и входит в тесты.
+- core в списке строгой проверки «не называет планирование и календарь».
+- Результаты тестов не хуже, чем в начале ветки.
+- CI зелёный в pull request до слияния в `main`.
+- Рабочий хаб обновляется только после «да» пользователя; после этого
+  `hub_release.py drift` даёт exit 0.
 
 ## Agent handoff
 
 Last agent: Claude (Opus 5.5)
 
-What changed: TASK-ai-dev-architecture-20260927-004 закрыта 2026-09-27.
-`architecture.md` 2.0 — только ядро; правила модулей в `modules/<id>/rules.md`
-(ставятся как `ai/rules/<id>.md`); PR #13 слит после зелёного CI; рабочий хаб
-обновлён, drift чистый.
-Session review: `ai/session-reviews/2026-09-27-split-architecture-stage-7-closure.md`.
+What changed: задача взята из FT-20260926-005.
 
 Open risks: нет.
 
-Next agent should check: следующая задача — FT-20260926-005 (этап 8: перенос
-knowledge, goals, learning, затем core, projects, tasks; строгая проверка
-границ). Отложенные мелочи этапа 7: `hub-workflows` в `CLAUDE.md`/`AGENTS.md`
-шаблона, слово «calendar» в `modules/tasks/rules.md`; `.DS_Store` нет в
-`.gitignore` шаблона хаба.
+Next agent should check: спецификация (Stage 4–7 details), отложенные мелочи
+этапа 7 (`hub-workflows` в `CLAUDE.md`/`AGENTS.md` шаблона, «calendar» в
+`modules/tasks/rules.md`); перед удалением файла — поиск по `ai/decisions.md`.

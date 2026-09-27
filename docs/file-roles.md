@@ -4,14 +4,14 @@ This document explains which files belong to the Hub architecture and which belo
 
 ## 1. Shared Hub architecture files
 
-Shared routing, security rules, workflows, and architecture updates belong to Personal AI Hub. In this repository, `hub-template/` is the only distributable architecture source.
+Shared routing, security rules, workflows, and architecture updates belong to Personal AI Hub. In this repository, `modules/` is the only distributable architecture source.
 
 Key Hub-owned architecture files include:
 
-- `hub-template/AGENTS.md`
-- `hub-template/CLAUDE.md`
-- `hub-template/ai/architecture.md`
-- `hub-template/ai/skills/*/SKILL.md`
+- `modules/core/data/AGENTS.md`
+- `modules/core/data/CLAUDE.md`
+- `modules/core/data/ai/architecture.md`
+- `modules/*/skills/*/SKILL.md`
 
 They are changed only through approved architecture work. The supported model does not copy these shared files into every project.
 
@@ -107,7 +107,7 @@ use a Hub update to overwrite it.
 
 ## 4. Distributable architecture source
 
-`hub-template/` is the only supported distributable architecture source. Shared
+`modules/` is the only supported distributable architecture source. Shared
 Hub files are installed and updated from that tree through the supported Hub
 install/release path.
 
@@ -146,7 +146,7 @@ It should match Hub `AGENTS.md` in behavior apart from tool-specific wording.
 ### Hub `ai/architecture.md`
 
 The canonical shared Hub workflow reference. In this repository its source is
-`hub-template/ai/architecture.md`.
+`modules/core/data/ai/architecture.md`.
 
 ### `ai/current-task.md`
 

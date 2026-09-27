@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.task_records import _valid_task_id, read_due, read_project_records, read_records, validate_project_dates
+from modules.tasks.scripts.task_records import _valid_task_id, read_due, read_project_records, read_records, validate_project_dates
 
 
 CURRENT = """Status: active
@@ -132,7 +132,7 @@ Status: idea
             future.write_text(FUTURE, encoding="utf-8")
             paused.write_text(PAUSED, encoding="utf-8")
             result = subprocess.run([
-                sys.executable, "scripts/task_records.py",
+                sys.executable, "modules/tasks/scripts/task_records.py",
                 "--project-id", "demo",
                 "--current-file", str(current),
                 "--future-file", str(future),

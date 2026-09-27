@@ -5,7 +5,7 @@ from pathlib import Path
 from scripts.module_passports import install_pairs, load_passports
 
 ROOT = Path(__file__).resolve().parents[1]
-ARCH = ROOT / "hub-template/ai/architecture.md"
+ARCH = ROOT / "modules/core/data/ai/architecture.md"
 MODULE_HEADINGS = {
     "## Ownership And Registry", "## Local Router", "## Project Creation And Registration",
     "## Existing Project Migration", "## Repository Provisioning",
@@ -35,7 +35,7 @@ class RulesSplitTests(unittest.TestCase):
 
     def test_route_then_confirm_only_in_router(self):
         phrase = re.compile(r"read-compact-project-index\.sh")
-        for rel in ("hub-template/ai/architecture.md", "hub-template/CLAUDE.md", "hub-template/AGENTS.md"):
+        for rel in ("modules/core/data/ai/architecture.md", "modules/core/data/CLAUDE.md", "modules/core/data/AGENTS.md"):
             hits = phrase.findall((ROOT / rel).read_text(encoding="utf-8"))
             self.assertLessEqual(len(hits), 1, rel)
 

@@ -66,16 +66,16 @@ class CompactTaskIndexTests(unittest.TestCase):
 
     def run_index(self, hub: Path):
         return subprocess.run(
-            [sys.executable, "scripts/read-compact-task-index.py", "--hub", str(hub)],
+            [sys.executable, "modules/tasks/scripts/read-compact-task-index.py", "--hub", str(hub)],
             text=True, capture_output=True,
         )
 
     def load_index_module(self):
-        scripts = str(ROOT / "scripts")
+        scripts = str(ROOT / "modules" / "tasks" / "scripts")
         if scripts not in sys.path:
             sys.path.insert(0, scripts)
         spec = importlib.util.spec_from_file_location(
-            "compact_task_index_under_test", ROOT / "scripts/read-compact-task-index.py"
+            "compact_task_index_under_test", ROOT / "modules/tasks/scripts/read-compact-task-index.py"
         )
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
@@ -274,7 +274,7 @@ class CompactTaskIndexGroupFilterTests(unittest.TestCase):
 
     def run_index(self, hub: Path, extra_args=()):
         return subprocess.run(
-            [sys.executable, "scripts/read-compact-task-index.py", "--hub", str(hub), *extra_args],
+            [sys.executable, "modules/tasks/scripts/read-compact-task-index.py", "--hub", str(hub), *extra_args],
             text=True, capture_output=True,
         )
 

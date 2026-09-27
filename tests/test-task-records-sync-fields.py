@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-spec = importlib.util.spec_from_file_location("task_records", ROOT / "scripts/task_records.py")
+spec = importlib.util.spec_from_file_location("task_records", ROOT / "modules/tasks/scripts/task_records.py")
 tr = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(tr)
 

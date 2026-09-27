@@ -149,7 +149,9 @@ Acceptance criteria:
 
 ### FT-20260926-005 — Перенести остальные модули и включить строгую проверку
 
-Status: idea
+Status: promoted
+
+Promotion notes: стала TASK-ai-dev-architecture-20260927-005.
 
 Priority: low
 

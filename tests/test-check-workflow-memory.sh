@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-SCRIPT="$(cd "$(dirname "$0")/.." && pwd -P)/scripts/check-workflow-memory.sh"
+SCRIPT="$(cd "$(dirname "$0")/.." && pwd -P)/modules/learning/scripts/check-workflow-memory.sh"
 FAILED=0
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
@@ -36,6 +36,15 @@ if bash "$SCRIPT" --hub "$HUB" >/dev/null 2>&1; then
   pass "корректные файлы проходят проверку"
 else
   fail "корректные файлы проходят проверку"
+fi
+
+# 1b. без модуля planning файла правил нет — это не ошибка
+HUBN="$(make_hub)"
+rm "$HUBN/ai/workflow-context.md"
+if bash "$SCRIPT" --hub "$HUBN" >/dev/null 2>&1; then
+  pass "отсутствие workflow-context.md не ошибка"
+else
+  fail "отсутствие workflow-context.md не ошибка"
 fi
 
 # 2. битая строка журнала отвергается
@@ -108,9 +117,9 @@ else
   fail "строка-образец под «## Схема» в workflow-context.md не мешает проверке"
 fi
 
-# 5. отсутствующий файл отвергается
+# 5. отсутствующий журнал наблюдений отвергается
 HUB5="$(make_hub)"
-rm "$HUB5/ai/workflow-context.md"
+rm "$HUB5/ai/workflow-observations.md"
 if bash "$SCRIPT" --hub "$HUB5" >/dev/null 2>&1; then
   fail "отсутствующий файл отвергается" "скрипт завершился успешно"
 else

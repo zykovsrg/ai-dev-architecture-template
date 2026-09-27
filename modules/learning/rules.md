@@ -19,3 +19,15 @@ caches, written without confirmation and pruned after 14 days.
 These workflows remain independent of `hub-session-review`: a session review
 supplies improvement proposals but never automatically changes a rule or
 consumes a pending observation.
+
+## before-task-close
+
+When `hub-task-finish` fires `before-task-close` after the Done criteria pass,
+run `hub-session-review` for this task's current visible session before
+clearing task context. Save and validate the review, then add
+`Session review: ai/session-reviews/<file>.md` to the task so a closure retry
+can reuse it; on a retry, reuse the recorded review instead of writing a new
+one. A review-write failure leaves the task open and its context intact.
+Partial history is recorded honestly and does not alone block closure. Do not
+review the review or closure output again here. An improvement suggested by
+the review waits for user approval and is not a closure blocker.

@@ -4,11 +4,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.archiprojects import members, parse_groups, render_tree, validate
+from modules.projects.scripts.archiprojects import members, parse_groups, render_tree, validate
 from scripts.module_passports import install_pairs, load_passports
 
 ROOT = Path(__file__).resolve().parents[1]
-SCRIPT = ROOT / "scripts" / "archiprojects.py"
+SCRIPT = ROOT / "modules" / "projects" / "scripts" / "archiprojects.py"
 
 
 def write(path, text):
@@ -160,7 +160,7 @@ class MembersTests(unittest.TestCase):
                 },
             )
             groups = parse_groups(hub / "ai" / "archiprojects.md")
-            from scripts.archiprojects import read_cards
+            from modules.projects.scripts.archiprojects import read_cards
             cards = read_cards(hub)
             self.assertEqual(members(groups, cards, "top"), ["p1", "p2"])
             self.assertEqual(members(groups, cards, "sub"), ["p2"])
@@ -173,7 +173,7 @@ class MembersTests(unittest.TestCase):
                 cards={"p1": card("p1", "top").replace("Status: active", "Status: paused")},
             )
             groups = parse_groups(hub / "ai" / "archiprojects.md")
-            from scripts.archiprojects import read_cards
+            from modules.projects.scripts.archiprojects import read_cards
             cards = read_cards(hub)
             self.assertEqual(members(groups, cards, "top"), ["p1"])
 
@@ -188,7 +188,7 @@ class TreeTests(unittest.TestCase):
                 cards={"p1": card("p1", "top"), "p2": card("p2", "sub")},
             )
             groups = parse_groups(hub / "ai" / "archiprojects.md")
-            from scripts.archiprojects import read_cards
+            from modules.projects.scripts.archiprojects import read_cards
             cards = read_cards(hub)
             lines = render_tree(groups, cards)
             self.assertEqual(
@@ -340,7 +340,7 @@ class RegistryScriptTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(dir="/private/tmp") as tmp:
             hub = self._fixture(tmp, group_block("top", "Top"))
             result = subprocess.run(
-                ["bash", str(ROOT / "scripts" / "check-hub-registry.sh"), str(hub)],
+                ["bash", str(ROOT / "modules" / "core" / "scripts" / "check-hub-registry.sh"), str(hub)],
                 capture_output=True, text=True,
             )
             self.assertEqual(result.returncode, 0, result.stderr)
@@ -353,7 +353,7 @@ class RegistryScriptTests(unittest.TestCase):
                 card_extra="archiproject_contribution: architecture\nrelated_archiprojects: none\n",
             )
             result = subprocess.run(
-                ["bash", str(ROOT / "scripts" / "check-hub-registry.sh"), str(hub)],
+                ["bash", str(ROOT / "modules" / "core" / "scripts" / "check-hub-registry.sh"), str(hub)],
                 capture_output=True, text=True,
             )
             self.assertNotEqual(result.returncode, 0)
@@ -362,7 +362,7 @@ class RegistryScriptTests(unittest.TestCase):
 class DroppedCardFieldsRemovedTests(unittest.TestCase):
     # scripts/archiprojects.py is exempt: it must name the dropped fields to
     # reject cards that still carry them (FORBIDDEN_FIELDS), per task 1.
-    EXEMPT = {"scripts/archiprojects.py"}
+    EXEMPT = {"modules/projects/scripts/archiprojects.py"}
 
     def test_no_installed_file_mentions_dropped_fields(self):
         passports = load_passports(ROOT)

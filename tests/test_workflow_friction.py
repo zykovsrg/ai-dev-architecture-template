@@ -4,8 +4,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts import workflow_friction
-from scripts.workflow_friction import list_pending, resolve
+from modules.learning.scripts import workflow_friction
+from modules.learning.scripts.workflow_friction import list_pending, resolve
 
 
 def _resolve_with_replace_barrier(hub, day, source_sha, identifier, decision, barrier):

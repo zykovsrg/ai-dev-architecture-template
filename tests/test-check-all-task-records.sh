@@ -15,10 +15,10 @@ printf '%s\n' '# Current Task' '' 'Status: active' 'Task ID: TASK-demo-20260909-
 printf '%s\n' '# Future Tasks' '' '### FT-20260909-001 — Follow up' '' 'Status: ready' > "$PROJECT/ai/future-tasks.md"
 printf '%s\n' '# Paused Tasks' > "$PROJECT/ai/paused-tasks.md"
 
-bash "$ROOT/scripts/check-all-task-records.sh" --hub "$HUB" >/dev/null
+bash "$ROOT/modules/tasks/scripts/check-all-task-records.sh" --hub "$HUB" >/dev/null
 
 printf '%s\n' '# Future Tasks' '' '### FT-20260909-001 — Invalid state' '' 'Status: open' > "$PROJECT/ai/future-tasks.md"
-if bash "$ROOT/scripts/check-all-task-records.sh" --hub "$HUB" >/dev/null 2>&1; then
+if bash "$ROOT/modules/tasks/scripts/check-all-task-records.sh" --hub "$HUB" >/dev/null 2>&1; then
   echo 'FAIL: legacy status accepted' >&2
   exit 1
 fi

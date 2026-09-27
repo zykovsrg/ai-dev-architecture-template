@@ -22,9 +22,9 @@ validation, use these central hub-owned skills. They remove any need to copy
 - `hub-task-switch` — changes an unfinished task only after a separate explicit
   confirmation, using only the selected project's `ai/` memory.
 - `hub-task-finish` — verifies the selected project's task and, when its check
-  finds no blocker, first saves an evidence-based review of the current agent
-  session, then cleans task memory and saves the result. Only a task with a
-  schedule keeps the joint task-and-calendar confirmation.
+  finds no blocker, first runs the `before-task-close` subscribers listed in
+  `ai/modules.md`, then cleans task memory and saves the result. Only a task with a
+  schedule keeps the joint confirmation with its scheduled entry.
 
 Each shared workflow operates only after a confirmed registered project and
 only against that selected project's `ai/` memory or explicitly selected

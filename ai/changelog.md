@@ -1,5 +1,51 @@
 # Changelog
 
+### 2026-09-27 — Modular architecture stage 8: all modules in `modules/`, strict boundaries (TASK-ai-dev-architecture-20260927-005)
+
+- `check-module-boundaries.py` gained `core`, `projects`, `tasks` in every
+  module's allowed set (the three always-installed modules may reference each
+  other freely); `--strict` is now called from `architecture-test.sh` and
+  fails the build on any violation. Boundary warnings 27 → 0.
+- Two new events in `scripts/module_passports.py` `EVENTS`: `before-task-close`
+  (fired by `hub-task-finish` after Done criteria pass, before task memory is
+  cleared; learning subscribes with the session review, knowledge subscribes
+  with an optional never-auto-started review offer) and `after-project-create`
+  (fired by `hub-project-create` after the confirmed scaffold; knowledge
+  subscribes and creates the empty `knowledge/` scaffold on the same
+  confirmation screen).
+- `hub-project-router`, `CLAUDE.md`, `AGENTS.md` no longer name an optional
+  skill directly; they resolve the planning/learning skill by role through
+  `ai/modules.md`'s `## Skills` section.
+- knowledge, goals, and learning moved from `hub-template/`/`scripts/` into
+  `modules/<id>/{skills,scripts,data}`; then core, projects, and tasks — the
+  last three modules — moved the same way, and `hub-template/` was deleted.
+  Data templates keep their Hub-relative sub-path under `modules/<id>/data/`
+  (e.g. `modules/core/data/ai/architecture.md`, `modules/goals/data/ai/goals.md`).
+  A handful of cross-module script dependencies (e.g.
+  `count-goal-progress.sh` → `archiprojects.py`,
+  `check-workflow-memory.sh`/`check-hub-registry.sh`/
+  `read-compact-task-index.py` → `archiprojects.py`/`calendar-date.sh`) now
+  try the installed-Hub sibling path first and fall back to the other
+  module's repository path, since the two scripts only sit next to each
+  other after Hub installation, not in the repository source tree.
+- Installed Hub target paths are unchanged: `install_pairs` target sets
+  compared between commit `bd46313` (branch base) and the post-move tree are
+  identical (71 targets, byte-for-byte same sorted list).
+- Every live reference to `hub-template/` (scripts, tests, README.md,
+  docs/concepts.md, docs/file-roles.md, ai/project-context.md,
+  ai/current-task.md) was updated to `modules/…`; historical records
+  (changelogs, decisions, old specs/plans, session reviews, the
+  paused/future task backlog) were left as written.
+- Tests: `tests/` unittest discover 184 → 188 OK; `check-consistency.sh` 0
+  mismatches; `architecture-test.sh` 0 failures (was red after Task 1 by
+  design, green again from Task 3 on); `hub-smoke-test.sh` unchanged
+  environment-only symlink failure (green in CI); `pytest` 39 failed/265
+  passed (same pre-existing environment failures as the branch baseline, 4
+  more passing from the added event/passport tests). `architecture.md`
+  `Version:` unchanged at `2.0` (content untouched, only its path moved).
+- Decision: `ai/decisions.md` 2026-09-27 "Все модули в `modules/`, строгие
+  границы" (amends 2026-08-15 and the stage-7 decision).
+
 ### 2026-09-27 — Modular architecture stage 7: architecture.md split into core + modules (TASK-ai-dev-architecture-20260927-004)
 
 - Closed 2026-09-27: PR #13 merged after green CI; working Hub updated after

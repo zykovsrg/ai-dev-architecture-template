@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-SCRIPT="$(cd "$(dirname "$0")/.." && pwd -P)/scripts/count-goal-progress.sh"
+SCRIPT="$(cd "$(dirname "$0")/.." && pwd -P)/modules/goals/scripts/count-goal-progress.sh"
 FAILED=0
 
 pass() { echo "ok   - $1"; }

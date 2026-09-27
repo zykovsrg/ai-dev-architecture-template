@@ -4,7 +4,7 @@ Id: learning
 Required: no
 Switchable: no
 Depends: core
-Uses if present: —
+Uses if present: planning
 Rules: ai/rules/learning.md
 Keywords: —
 
@@ -16,11 +16,11 @@ findings, and track workflow friction over time.
 ## Installs
 
 - modules/learning/rules.md -> ai/rules/learning.md
-- hub-template/ai/skills/hub-session-review/ -> ai/skills/hub-session-review/
-- hub-template/ai/workflow-observations.md -> ai/workflow-observations.md
-- scripts/workflow_friction.py -> scripts/workflow_friction.py
-- scripts/check-session-review.py -> scripts/check-session-review.py
-- scripts/check-workflow-memory.sh -> scripts/check-workflow-memory.sh
+- modules/learning/skills/hub-session-review/ -> ai/skills/hub-session-review/
+- modules/learning/data/ai/workflow-observations.md -> ai/workflow-observations.md
+- modules/learning/scripts/workflow_friction.py -> scripts/workflow_friction.py
+- modules/learning/scripts/check-session-review.py -> scripts/check-session-review.py
+- modules/learning/scripts/check-workflow-memory.sh -> scripts/check-workflow-memory.sh
 
 ## Repository only
 
@@ -36,4 +36,4 @@ findings, and track workflow friction over time.
 
 ## Subscribes
 
-- —
+- before-task-close: follow ai/rules/learning.md § before-task-close

@@ -14,7 +14,7 @@ unit() {
   for test in "$ROOT"/tests/test-*.py; do python3 "$test"; done
   for test in "$ROOT"/modules/planning/tests/test-*.sh; do bash "$test"; done
   for test in "$ROOT"/modules/planning/tests/test-*.py; do python3 "$test"; done
-  python3 "$ROOT/scripts/check-module-boundaries.py" --source "$ROOT"
+  python3 "$ROOT/scripts/check-module-boundaries.py" --source "$ROOT" --strict
 }
 
 integration() {

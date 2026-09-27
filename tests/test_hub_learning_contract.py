@@ -4,7 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILL = ROOT / "modules/planning/skills/hub-workflows/SKILL.md"
-OVERVIEW = ROOT / "hub-template/ai/skills/hub-task-overview/SKILL.md"
+OVERVIEW = ROOT / "modules/tasks/skills/hub-task-overview/SKILL.md"
 LIFECYCLE = ROOT / "modules/planning/skills/hub-workflows/resources/learning-lifecycle.md"
 LEARNING_ACTIONS = {"goal_progress", "add_observation", "promote_rule", "retire_rule"}
 EXPECTED_INVARIANTS = {

@@ -215,8 +215,16 @@ class RepositoryPassportTests(unittest.TestCase):
         for module_id in passports:
             for source, _ in install_pairs(ROOT, passports, [module_id]):
                 owners.setdefault(source, []).append(module_id)
-        template = {str(p.relative_to(ROOT)) for p in (ROOT / "hub-template").rglob("*") if p.is_file()}
-        self.assertEqual(sorted(template - set(owners)), [])
+            for source in passports[module_id].repo_only:
+                owners.setdefault(source.rstrip("/"), []).append(module_id)
+        distributable = set()
+        for base in ("skills", "scripts", "data"):
+            for p in (ROOT / "modules").glob(f"*/{base}/**/*"):
+                if p.is_file() and "__pycache__" not in p.parts and p.suffix != ".pyc":
+                    distributable.add(str(p.relative_to(ROOT)))
+        for p in (ROOT / "modules").glob("*/rules.md"):
+            distributable.add(str(p.relative_to(ROOT)))
+        self.assertEqual(sorted(distributable - set(owners)), [])
         self.assertEqual({s: o for s, o in owners.items() if len(o) > 1}, {})
 
     def test_dependencies_reference_known_modules(self):

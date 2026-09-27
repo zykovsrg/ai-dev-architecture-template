@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CHECKER = ROOT / "scripts" / "check-session-review.py"
+CHECKER = ROOT / "modules" / "learning" / "scripts" / "check-session-review.py"
 
 
 def document(*, result="no-issue-observed", findings="none", proposals="none", coverage="complete", missing="none"):

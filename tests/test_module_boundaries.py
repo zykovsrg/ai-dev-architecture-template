@@ -56,6 +56,21 @@ class BoundaryTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stdout)
             self.assertNotIn("WARN", result.stdout)
 
+    def test_always_installed_module_is_allowed_optional_is_not(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.fixture(root, "core")
+            write(root / "modules/tasks/module.md", passport("tasks", "core", [("tasks/skills/hub-task-x/SKILL.md", "ai/skills/hub-task-x/SKILL.md")]))
+            write(root / "tasks/skills/hub-task-x/SKILL.md", "tasks\n")
+            write(root / "a/skills/hub-a/SKILL.md", "Use `hub-task-x`.\n")
+            result = self.run_check(root, "--strict")
+            self.assertEqual(result.returncode, 0, result.stdout)
+            write(root / "a/skills/hub-a/SKILL.md", "Use `hub-task-x` and `b-tool.sh`.\n")
+            result = self.run_check(root, "--strict")
+            self.assertEqual(result.returncode, 1, result.stdout)
+            self.assertIn("WARN a/skills/hub-a/SKILL.md: b via b-tool.sh", result.stdout)
+            self.assertNotIn("tasks via", result.stdout)
+
     def test_repository_runs_in_warning_mode(self):
         result = self.run_check(ROOT)
         self.assertEqual(result.returncode, 0, result.stderr)

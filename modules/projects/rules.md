@@ -37,12 +37,9 @@ Use `hub-project-create` when the user requests a new project. After one complet
 preview and explicit confirmation, it creates exactly one direct-child project
 under the validated `<hub>/projects` root: only its `ai/` memory files (`current-task.md`,
 `paused-tasks.md`, `future-tasks.md`, `project-context.md`, `decisions.md`, and
-`changelog.md`), its empty optional `knowledge/` scaffold, a card, a registry
-entry, and an active-project selection. The scaffold consists only of
-`knowledge/README.md`, `knowledge/record-template.md`, and the four empty
-directories `knowledge/research/`, `knowledge/decisions/`, `knowledge/risks/`,
-`knowledge/runbooks/`, and `knowledge/inbox/`. Inbox holds weak observations;
-it is not a durable knowledge category. Git initialization is covered by Repository
+`changelog.md`), a card, a registry entry, an active-project selection, and
+only the items that `after-project-create` subscribers add to the same preview
+(listed in `ai/modules.md`). Git initialization is covered by Repository
 Provisioning below. It must not create code, dependencies, services, duplicate
 registry entries, or any other project files. Use
 `hub-project-register` for an existing folder; it does not replace the new-project
