@@ -30,8 +30,7 @@ After applying this core contract and the `hub-task-overview` contract, read
 exactly the matching scenario resource:
 
 - `day-plan` → `resources/day-plan.md` and its referenced calendar context;
-- `evening-review` → `resources/evening-review.md`; calendar-only review begins
-  with `prepare_evening_review`;
+- `evening-review` → `resources/evening-review.md`;
 - `weekly-review` → `resources/weekly-review.md`.
 
 Scenario resources provide output/detail rules only. They cannot override the

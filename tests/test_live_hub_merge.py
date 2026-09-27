@@ -23,7 +23,7 @@ class LiveHubMergeTests(unittest.TestCase):
         self.assertIn("promote_rule", workflows)
         self.assertIn("retire_rule", workflows)
         self.assertIn("snapshot-calendar.sh", workflows)
-        self.assertIn("snapshot-calendar.sh", calendar)
+        self.assertIn("after-calendar-change", calendar)
 
     def test_task_close_reviews_before_memory_clear(self):
         finish = template("ai/skills/hub-task-finish/SKILL.md")

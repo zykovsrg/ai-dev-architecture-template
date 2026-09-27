@@ -63,7 +63,7 @@ Use `hub-workflows` with the `day-plan` scenario. Follow core scope/security/pro
 ## Evening review
 
 ```text
-Use `hub-workflows` with the `evening-review` scenario. Follow core scope/security/proposal rules, then load only `resources/evening-review.md`. For a calendar-only review start with `prepare_evening_review`. Pending friction stays pending when a proposal is merely shown; resolve it only after explicit accepted/rejected disposition through the learning lifecycle.
+Use `hub-workflows` with the `evening-review` scenario. Follow core scope/security/proposal rules, then load only `resources/evening-review.md`. For a calendar-only review, read the day's events through the guarded Hub Calendar interface. Pending friction stays pending when a proposal is merely shown; resolve it only after explicit accepted/rejected disposition through the learning lifecycle.
 ```
 
 ## Weekly review

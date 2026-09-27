@@ -51,7 +51,6 @@ def build_server() -> GuardedCalendarServer:
         EventKitBackend(bridge_path),
         CalendarPolicy(allowed_calendar_ids=allowed),
         PreviewGrantStore(clock=clock),
-        hub_root=allowlist_path.parent.parent.parent,
     )
 
 
