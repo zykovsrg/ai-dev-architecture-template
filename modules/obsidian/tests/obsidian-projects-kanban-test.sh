@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-GENERATOR="$ROOT/scripts/generate-obsidian-projects-kanban.sh"
+ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 TMP_DIR="$(mktemp -d /private/tmp/obsidian-projection.XXXXXX)"
 trap 'rm -rf "$TMP_DIR"' EXIT
+STAGE="$TMP_DIR/stage"
+bash "$ROOT/modules/obsidian/tests/stage-scripts.sh" "$STAGE"
+GENERATOR="$STAGE/generate-obsidian-projects-kanban.sh"
 fail() { echo "FAIL: $*" >&2; exit 1; }
 assert_file() { [ -f "$1" ] || fail "missing file: $1"; }
 assert_not_exists() { [ ! -e "$1" ] || fail "unexpected path: $1"; }

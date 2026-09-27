@@ -38,6 +38,9 @@ jobs:
       - name: Architecture unit tests
         if: always()
         run: python3 -m unittest discover -s tests -v
+      - name: Obsidian module unit tests
+        if: always()
+        run: python3 -m unittest discover -s modules/obsidian/tests -v
 
   calendar-policy:
     runs-on: ubuntu-latest

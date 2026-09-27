@@ -1,6 +1,6 @@
 # Personal AI Hub Architecture
 
-Version: 1.12
+Version: 1.13
 
 ## Purpose
 
@@ -218,23 +218,12 @@ project-local `knowledge/` paths. It cannot weaken hub confirmation,
 allowed-root, secret, personal/client-data, or memory-isolation rules. It never
 reads, writes, pauses, finishes, or copies another project's memory or records.
 
-## Central Obsidian Projection
+## Module Rules
 
-The hub has one central Obsidian vault at `<hub>/projects/ai-dev-architecture/obsidian-vault`.
-Workflows derive this path from the confirmed hub root; they must not ask for
-or accept a per-project vault path. The selected board is
-`Obsidian/Projects/<project-id>/Kanban.md` inside that vault. A reverse
-proposal always selects exactly one confirmed project board by its registered
-project ID. Use these commands with the real hub, scope, and vault values:
-
-```text
-bash scripts/obsidian-task-sync.sh scan --project-id <confirmed-project-id> --hub <hub> --scope <scope-file> --vault <hub>/projects/ai-dev-architecture/obsidian-vault
-bash scripts/obsidian-task-sync.sh apply --project-id <confirmed-project-id> --confirm-proposal <sha256> --hub <hub> --scope <scope-file> --vault <hub>/projects/ai-dev-architecture/obsidian-vault
-```
-
-The ID is mandatory for both scan and apply. Manual Obsidian edits are never
-written to canonical records automatically: they produce a reviewable
-proposal only.
+Optional modules install their rules as `ai/rules/<id>.md`. The installer
+lists installed modules and event subscribers in the generated
+`ai/modules.md`. A module's rules are read only when one of its commands or
+subscriptions runs; a module that is not installed is never called.
 
 ## Optional Project Knowledge
 

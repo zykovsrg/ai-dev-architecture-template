@@ -2,8 +2,7 @@
 # Focused concurrency contract for the proposal watcher.
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-WATCHER="$ROOT/scripts/obsidian-task-sync-watch.sh"
+ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 TMP_DIR="$(mktemp -d /private/tmp/obsidian-task-sync-watch.XXXXXX)"
 WATCH_PID=''
 cleanup() {
@@ -11,6 +10,9 @@ cleanup() {
   rm -rf "$TMP_DIR"
 }
 trap cleanup EXIT
+STAGE="$TMP_DIR/stage"
+bash "$ROOT/modules/obsidian/tests/stage-scripts.sh" "$STAGE"
+WATCHER="$STAGE/obsidian-task-sync-watch.sh"
 
 fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
 

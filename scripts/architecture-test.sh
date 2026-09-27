@@ -6,15 +6,17 @@ MODE="${1:---unit}"
 
 unit() {
   python3 -m unittest discover -s "$ROOT/tests" -p 'test_*.py' -v
+  python3 -m unittest discover -s "$ROOT/modules/obsidian/tests" -p 'test_*.py' -v
   bash "$ROOT/tests/test_hub_update_check.sh"
+  bash "$ROOT/modules/obsidian/tests/obsidian-task-sync-watch-test.sh"
   for test in "$ROOT"/tests/test-*.sh; do bash "$test"; done
   for test in "$ROOT"/tests/test-*.py; do python3 "$test"; done
 }
 
 integration() {
   bash "$ROOT/scripts/assistant-workflows-test.sh"
-  bash "$ROOT/scripts/obsidian-projects-kanban-test.sh"
-  bash "$ROOT/scripts/obsidian-task-sync-test.sh"
+  bash "$ROOT/modules/obsidian/tests/obsidian-projects-kanban-test.sh"
+  bash "$ROOT/modules/obsidian/tests/obsidian-task-sync-test.sh"
   bash "$ROOT/scripts/hub-smoke-test.sh"
 }
 

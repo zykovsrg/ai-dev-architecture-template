@@ -8,8 +8,26 @@ import tempfile
 import unittest
 
 
-ROOT = Path(__file__).resolve().parents[1]
-GENERATOR = Path(os.environ.get("OBSIDIAN_GENERATOR", ROOT / "scripts/generate-obsidian-projects-kanban.sh"))
+ROOT = Path(__file__).resolve().parents[3]
+_STAGE_DIR = None
+GENERATOR = Path(os.environ["OBSIDIAN_GENERATOR"]) if os.environ.get("OBSIDIAN_GENERATOR") else None
+
+
+def setUpModule():
+    global _STAGE_DIR, GENERATOR
+    if GENERATOR is not None:
+        return
+    _STAGE_DIR = tempfile.mkdtemp(dir="/private/tmp")
+    subprocess.run(
+        ["bash", str(ROOT / "modules/obsidian/tests/stage-scripts.sh"), _STAGE_DIR],
+        check=True, capture_output=True, text=True, timeout=30)
+    GENERATOR = Path(_STAGE_DIR) / "generate-obsidian-projects-kanban.sh"
+
+
+def tearDownModule():
+    if _STAGE_DIR:
+        import shutil
+        shutil.rmtree(_STAGE_DIR, ignore_errors=True)
 
 
 class ScopedRefreshTests(unittest.TestCase):

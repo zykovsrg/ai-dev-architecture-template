@@ -2,13 +2,15 @@
 # Contract tests for the non-writing Obsidian proposal scanner.
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-GENERATOR="$ROOT/scripts/generate-obsidian-projects-kanban.sh"
-SYNC="$ROOT/scripts/obsidian-task-sync.sh"
-WATCHER="$ROOT/scripts/obsidian-task-sync-watch.sh"
-INSTALLER="$ROOT/scripts/install-obsidian-task-sync.sh"
+ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 TMP_DIR="$(mktemp -d /private/tmp/obsidian-task-sync.XXXXXX)"
 trap 'rm -rf "$TMP_DIR"' EXIT
+STAGE="$TMP_DIR/stage"
+bash "$ROOT/modules/obsidian/tests/stage-scripts.sh" "$STAGE"
+GENERATOR="$STAGE/generate-obsidian-projects-kanban.sh"
+SYNC="$STAGE/obsidian-task-sync.sh"
+WATCHER="$STAGE/obsidian-task-sync-watch.sh"
+INSTALLER="$STAGE/install-obsidian-task-sync.sh"
 
 fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
 assert_file() { [ -f "$1" ] || fail "missing file: $1"; }

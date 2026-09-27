@@ -70,6 +70,11 @@ class ModuleSelectionTests(unittest.TestCase):
             if entry["source"] is not None:
                 self.assertIn(entry["source"], sources)
 
+    def test_obsidian_rules_command_matches_subscription(self):
+        from scripts.module_passports import load_passports
+        command = load_passports(ROOT)["obsidian"].subscribes["after-task-write"]
+        self.assertIn(command, (ROOT / "modules/obsidian/rules.md").read_text(encoding="utf-8"))
+
 
 if __name__ == "__main__":
     unittest.main()
