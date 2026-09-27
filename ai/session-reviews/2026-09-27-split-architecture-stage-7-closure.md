@@ -43,7 +43,7 @@ Change: when `update-installed-hub.sh` refuses for a safeguard (dirty tree, conf
 Rationale: an approval of an update does not approve disabling its checks.
 Acceptance test: the next Hub update that hits a safeguard shows a question to the user instead of a bypass-flag command.
 Recovery: drop the practice.
-Disposition: proposed
+Disposition: accepted
 
 ## Follow-up
 
