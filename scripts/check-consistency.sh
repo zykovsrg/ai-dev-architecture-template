@@ -35,7 +35,7 @@ else
   [ "$fail" -ne 0 ] || ok "source of truth" "shared workflows, registry, project memory, knowledge, and Git authorities are explicit"
 fi
 
-hub_rule_files="hub-template/AGENTS.md hub-template/CLAUDE.md hub-template/ai/architecture.md"
+hub_rule_files="hub-template/AGENTS.md hub-template/CLAUDE.md hub-template/ai/architecture.md $(ls modules/*/rules.md 2>/dev/null | tr '\n' ' ')"
 skill_count=0
 find_skill_dirs() {
   find hub-template/ai/skills modules/*/skills -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort
