@@ -124,7 +124,7 @@ if [ -n "$registry_rows" ]; then
   while IFS="$TAB" read -r project_id name tags status; do
     card_rel="ai/project-cards/$project_id.md"
     require_safe_regular_file "$card_rel"
-    purpose="$(awk -v project_id="$project_id" -v tab="$TAB" -v cr="$CR" '
+    card_fields="$(awk -v project_id="$project_id" -v tab="$TAB" -v cr="$CR" '
       function die(message) {
         print "ERROR: " message > "/dev/stderr"
         exit 1
@@ -134,20 +134,29 @@ if [ -n "$registry_rows" ]; then
         purpose_count++
         purpose = substr($0, 10)
       }
+      /^primary_archiproject: / {
+        group_count++
+        group = substr($0, 23)
+      }
 
       END {
         if (purpose_count != 1 || purpose == "") die("missing or duplicate Purpose in compact index: " project_id)
         if (index(purpose, tab) > 0 || index(purpose, cr) > 0) die("compact index field contains forbidden control character in purpose_brief")
-        print purpose
+        if (group_count > 1) die("duplicate primary_archiproject in compact index: " project_id)
+        if (group_count == 0 || group == "") group = "none"
+        if (index(group, tab) > 0 || index(group, cr) > 0) die("compact index field contains forbidden control character in group")
+        print purpose "\t" group
       }
     ' "$HUB_DIR/$card_rel")" || exit 1
+    purpose="${card_fields%%"$TAB"*}"
+    group="${card_fields#*"$TAB"}"
 
-    row="$project_id$TAB$name$TAB$tags$TAB$status$TAB$purpose"
+    row="$project_id$TAB$name$TAB$tags$TAB$status$TAB$purpose$TAB$group"
     rows+="${rows:+$'\n'}$row"
   done <<< "$registry_rows"
 fi
 
-printf 'project_id\tname\ttags\tstatus\tpurpose_brief\n'
+printf 'project_id\tname\ttags\tstatus\tpurpose_brief\tgroup\n'
 if [ -n "$rows" ]; then
   printf '%s\n' "$rows" | LC_ALL=C sort -t "$TAB" -k1,1
 fi

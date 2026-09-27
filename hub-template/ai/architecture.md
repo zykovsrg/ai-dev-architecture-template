@@ -1,6 +1,6 @@
 # Personal AI Hub Architecture
 
-Version: 1.14
+Version: 1.17
 
 ## Purpose
 
@@ -51,7 +51,10 @@ Hub-owned files are the routing inventory:
 - `ai/project-registry.md` maps each project ID to its name, status, path,
   tags, and card.
 - `ai/project-cards/<id>.md` holds compact hub metadata for that ID.
-- `ai/archiprojects.md` is the canonical hub-owned archiproject registry.
+- `ai/archiprojects.md` is the canonical hub-owned archiproject group
+  registry.
+- `ai/goals.md` is the canonical hub-owned numeric goal registry; each goal
+  references a group in `ai/archiprojects.md` via `group`.
 - `ai/goal-log.md` is the canonical hub-owned progress log for numeric goals.
 - `ai/active-project.md` is a convenience record, never a new-chat permission.
 - `ai/cross-project-signals.md` holds sanitized, explicitly scoped signals.
@@ -60,11 +63,11 @@ Project-owned files are the selected project's code, memory, instructions,
 configuration, and history. A project card must not contain copied task memory,
 source code, credentials, or an instruction that overrides the project itself.
 Project/task files remain canonical; project cards are metadata only and a link
-never grants a project read. A card may optionally use all three archiproject
-fields: `primary_archiproject:`, `archiproject_contribution:`, and
-`related_archiprojects:`. Use `none` where absent. Related archiproject links never add
-contribution. Waiting is task/subtask-only: do not place a project in Waiting
-while other work is actionable.
+never grants a project read. A card declares only one archiproject field:
+`primary_archiproject: <group-id|none>`. A project belongs to exactly one,
+most specific group; it is also a member of every ancestor group. Waiting is
+task/subtask-only: do not place a project in Waiting while other work is
+actionable.
 
 The registry is the authority for an ID, status, and exact path. The card is
 supporting metadata only. An absent, invalid, or unregistered card/path blocks
@@ -92,7 +95,7 @@ Use this sequence for every new chat or unconfirmed request:
    remains a reviewed proposal that needs explicit confirmation.
 3. For a project-specific request, run
    `scripts/read-compact-project-index.sh` and match using only `project_id`,
-   `name`, `tags`, `status`, and `purpose_brief`.
+   `name`, `tags`, `status`, `purpose_brief`, and `group`.
 4. For a selected candidate, read its exact registered path only to display
    `Project: <id>`, `Path: <path>`, and `Mode: routing`.
 5. Ask for explicit confirmation of that project and path. Before confirmation,
@@ -419,12 +422,12 @@ authority by itself and is not a durable queue item.
 
 ## Goal Progress
 
-Numeric goals live in `ai/archiprojects.md` as `kind: goal` blocks with
-`target`, `unit`, and `due`. Their progress lives in the canonical
-`ai/goal-log.md`, one line per event: date, goal id, amount in the goal's unit,
-optional project, optional note. Adding a goal is a registry change only; the
-counter, the evening question, and the weekly figures follow from it with no
-further edit.
+Numeric goals live in `ai/goals.md` as blocks with `group`, `target`, `unit`,
+and `due`; `group` must name a known group in `ai/archiprojects.md`. Their
+progress lives in the canonical `ai/goal-log.md`, one line per event: date,
+goal id, amount in the goal's unit, optional project, optional note. Adding a
+goal is a registry change only; the counter, the evening question, and the
+weekly figures follow from it with no further edit.
 
 `scripts/count-goal-progress.sh` is the only computation of progress, pace, and
 forecast, and the only validator of the log. Workflows render its output
@@ -514,7 +517,7 @@ Load the smallest useful context in layers:
    `ai/paused-tasks.md` for each active project. Do not load cards, knowledge,
    code, Git, credentials, or arbitrary project files.
 2. For an unconfirmed project-specific request: the entry file and the
-   five-field result of `scripts/read-compact-project-index.sh`; read an exact
+   six-field result of `scripts/read-compact-project-index.sh`; read an exact
    registered path only to display a selected candidate. Do not load cards,
    signals, project memory, knowledge, code, Git, or linked targets.
 3. After project confirmation: the hub-owned `hub-environment-check`, the

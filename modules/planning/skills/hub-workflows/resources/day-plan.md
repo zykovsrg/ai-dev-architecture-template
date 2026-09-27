@@ -2,6 +2,13 @@
 
 This resource defines only the `day-plan` scenario. The core `SKILL.md` remains authoritative for scope, security, canonical-source rules, proposal envelopes, confirmation, and learning lifecycle. Nothing here widens those permissions.
 
+When the request names an archiproject group, resolve it via
+`scripts/archiprojects.py tree --hub <hub>` and pass `--group <group-id>` to
+`scripts/read-compact-task-index.py`, same as the core `SKILL.md` group
+filter; report an unknown group instead of guessing. This only narrows task
+discovery to the group's member projects — it never substitutes for project
+confirmation elsewhere.
+
 Read `resources/calendar-context.md` on every run. Day planning may maintain that local noncanonical calendar context buffer; calendar events and project task records still require their normal confirmation boundaries.
 
 A successful `day-plan` renders these headings in this exact order:

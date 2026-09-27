@@ -52,11 +52,13 @@ access; do not read unrelated history.
 Apply these phases only to a project-specific request.
 
 1. Run `scripts/read-compact-project-index.sh`. Before confirmation, use only
-   its five fields: `project_id`, `name`, `tags`, `status`, `purpose_brief`.
-   Do not read candidate cards, signals, project memory, knowledge, source code,
-   configuration, arbitrary hub files, or linked targets.
-2. Match the request against those five fields and select a maximum of three
-   candidates. An unregistered path is never a candidate.
+   its six fields: `project_id`, `name`, `tags`, `status`, `purpose_brief`,
+   `group`. Do not read candidate cards, signals, project memory, knowledge,
+   source code, configuration, arbitrary hub files, or linked targets.
+2. Match the request against those six fields and select a maximum of three
+   candidates. An unregistered path is never a candidate. A group match by
+   itself is not a project confirmation: it narrows candidates, and the
+   normal single-project confirmation in step 4 still applies.
 3. Classify routing confidence as `high, medium, or low` and preserve evidence
    confidence from the hub architecture (`verified`, `stated`, `inferred`, or
    `unknown`). High means a direct registered ID/name match; medium means a

@@ -18,4 +18,6 @@ Under `## Три результата недели`, render exactly three number
 
 If `ai/archiprojects.md` is missing or has no scoped archiproject, state that under `## Архипроекты`, omit invented archiproject blocks, still show safe project-level risks, then keep all three result slots.
 
+When the request names an archiproject group, resolve it via `scripts/archiprojects.py tree --hub <hub>` and pass `--group <group-id>` to `scripts/read-compact-task-index.py`, same as the core `SKILL.md` group filter; report an unknown group instead of guessing. This only narrows which projects' task records are read — it never substitutes for project confirmation elsewhere.
+
 For learning, render active numeric goal pace/forecast and read the observation journal. Group repeated friction/calendar drift and offer `promote_rule` after three repeats or two in one week; offer `retire_rule` for contradicted or excess rules. Before either rule-change proposal run `check-workflow-memory.sh`; failure blocks rule changes only. All learning changes use the core proposal/confirmation contract.

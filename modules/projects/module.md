@@ -18,6 +18,7 @@ audit the registered hub projects.
 - hub-template/ai/project-registry.md -> ai/project-registry.md
 - hub-template/ai/project-cards/.gitkeep -> ai/project-cards/.gitkeep
 - hub-template/ai/archiprojects.md -> ai/archiprojects.md
+- scripts/archiprojects.py -> scripts/archiprojects.py
 - hub-template/ai/cross-project-signals.md -> ai/cross-project-signals.md
 - hub-template/ai/skills/hub-project-create/ -> ai/skills/hub-project-create/
 - hub-template/ai/skills/hub-project-register/ -> ai/skills/hub-project-register/

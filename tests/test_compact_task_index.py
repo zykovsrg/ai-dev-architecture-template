@@ -226,5 +226,81 @@ class CompactTaskIndexTests(unittest.TestCase):
             self.assertIn("invalid registered project path", result.stderr)
 
 
+class CompactTaskIndexGroupFilterTests(unittest.TestCase):
+    """--group ID: read task files only for archiprojects.members(...)."""
+
+    def write_project(self, path: Path, project: str):
+        (path / "ai").mkdir(parents=True)
+        (path / "ai/current-task.md").write_text(CURRENT.format(project=project), encoding="utf-8")
+        (path / "ai/future-tasks.md").write_text(FUTURE.format(project=project), encoding="utf-8")
+        (path / "ai/paused-tasks.md").write_text(PAUSED.format(project=project), encoding="utf-8")
+
+    def write_registry(self, hub: Path, entries):
+        rows = []
+        for project, status, path in entries:
+            rows.append(
+                f"## {project}\nName: {project.title()}\nType: work\nStatus: {status}\n"
+                f"Path: {path}\nTags: fixture\nCard: ai/project-cards/{project}.md\n"
+            )
+        (hub / "ai/project-registry.md").write_text(
+            "# Project Registry\n\n" + "\n".join(rows), encoding="utf-8"
+        )
+
+    def write_card(self, hub: Path, project: str, primary: str):
+        (hub / "ai/project-cards").mkdir(parents=True, exist_ok=True)
+        (hub / f"ai/project-cards/{project}.md").write_text(
+            f"# Project Card\nProject ID: {project}\nName: {project.title()}\n"
+            f"primary_archiproject: {primary}\nPurpose: fixture.\n",
+            encoding="utf-8",
+        )
+
+    def make_hub(self, root: Path):
+        hub = root / "hub"
+        (hub / "ai").mkdir(parents=True)
+        (hub / "ai/archiprojects.md").write_text(
+            "# Archiprojects\n\n## Schema\n\n"
+            "## top\n```yaml\nid: top\nname: Top\nstatus: active\nkind: group\n```\n",
+            encoding="utf-8",
+        )
+        projects = hub / "projects"
+        entries = []
+        for project, primary in (("alpha", "top"), ("beta", "none")):
+            path = projects / project
+            self.write_project(path, project)
+            self.write_card(hub, project, primary)
+            entries.append((project, "active", path))
+        self.write_registry(hub, entries)
+        return hub, projects
+
+    def run_index(self, hub: Path, extra_args=()):
+        return subprocess.run(
+            [sys.executable, "scripts/read-compact-task-index.py", "--hub", str(hub), *extra_args],
+            text=True, capture_output=True,
+        )
+
+    def test_group_filter_limits_to_member_projects_and_never_opens_others(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            hub, projects = self.make_hub(Path(tmp))
+            # Make the non-member project's task files unreadable; the group
+            # filter must never open them.
+            for name in ("current-task.md", "future-tasks.md", "paused-tasks.md"):
+                (projects / "beta" / "ai" / name).chmod(0o000)
+            try:
+                result = self.run_index(hub, ["--group", "top"])
+            finally:
+                for name in ("current-task.md", "future-tasks.md", "paused-tasks.md"):
+                    (projects / "beta" / "ai" / name).chmod(0o644)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            rows = json.loads(result.stdout)
+            self.assertEqual({row["project_id"] for row in rows}, {"alpha"})
+
+    def test_unknown_group_exits_2(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            hub, _projects = self.make_hub(Path(tmp))
+            result = self.run_index(hub, ["--group", "ghost"])
+            self.assertEqual(result.returncode, 2)
+            self.assertIn("unknown archiprojects group: ghost", result.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()

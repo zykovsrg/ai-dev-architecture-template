@@ -43,6 +43,13 @@ detail absent from the index is required. The compact index is not canonical
 evidence and never replaces the source record. Final factual output cites the
 canonical `source_path` for every task fact.
 
+For a request scoped to an archiproject group, resolve the group id or name
+via `scripts/archiprojects.py tree --hub <hub>`, then call
+`scripts/read-compact-task-index.py --group <group-id>` to limit discovery to
+that group's member projects. A group match is not a project confirmation:
+the normal read-only personal-assistant scope and canonical-source rules
+below still apply, and an unknown group is reported rather than guessed.
+
 Separate personal and work results and retain project identity for every item.
 The scope applies to day plans, overdue/blocked-work overviews, evening and
 weekly reviews, and capture after its selected source is received. Richer

@@ -80,10 +80,10 @@ and `ai/skills/*/SKILL.md`. The Hub updater can replace managed Hub files under
 the release contract, but preserves Hub-managed user memory and project-local
 memory. A project card is metadata, not permission to read a project.
 Project/task files remain canonical; project cards are metadata only and a link
-never grants a project read. Cards may optionally use the all-or-nothing fields
-`primary_archiproject:`, `archiproject_contribution:`, and
-`related_archiprojects:`; use `none` where absent, and related archiproject links never
-add contribution. Waiting is task/subtask-only: do not place a project in
+never grants a project read. A card declares only one archiproject field:
+`primary_archiproject: <group-id|none>`. A project belongs to exactly one,
+most specific group; it is also a member of every ancestor group. Goals live
+in `ai/goals.md`. Waiting is task/subtask-only: do not place a project in
 Waiting while other work is actionable.
 
 Project memory remains scoped to one project. Do not copy it into Hub memory or

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)"
 HUB_DIR="."
 GOAL_FILTER=""
 AS_OF=""
@@ -21,20 +22,34 @@ done
 case "$FORMAT" in text|tsv) ;; *) die "unknown format: $FORMAT" ;; esac
 case "$AS_OF" in [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) ;; *) die "--as-of must be YYYY-MM-DD, got: $AS_OF" ;; esac
 HUB_DIR="$(cd "$HUB_DIR" && pwd -P)"
-ARCHI_FILE="$HUB_DIR/ai/archiprojects.md"
+GOALS_FILE="$HUB_DIR/ai/goals.md"
 LOG_FILE="$HUB_DIR/ai/goal-log.md"
-[ -f "$ARCHI_FILE" ] || die "missing $ARCHI_FILE"
+[ -f "$GOALS_FILE" ] || die "missing $GOALS_FILE"
 
 parse_goals() {
   awk '
-    /^```/ { if (inblock) { if (kind == "goal" && id != "" && id !~ /[<>]/) print id "\t" name "\t" status "\t" target "\t" unit "\t" due; inblock=0 } else { inblock=1; id=""; name=""; status=""; kind=""; target=""; unit=""; due="" }; next }
-    inblock { line=$0; if (line !~ /:/) next; key=line; sub(/:.*/,"",key); gsub(/[ \t]/,"",key); val=line; sub(/^[^:]*:[ \t]*/,"",val); sub(/[ \t]+$/,"",val); if(key=="id")id=val; else if(key=="name")name=val; else if(key=="status")status=val; else if(key=="kind")kind=val; else if(key=="target")target=val; else if(key=="unit")unit=val; else if(key=="due")due=val }
+    /^```/ { if (inblock) { if (id != "" && id !~ /[<>]/) print id "\t" name "\t" status "\t" group "\t" target "\t" unit "\t" due; inblock=0 } else { inblock=1; id=""; name=""; status=""; group=""; target=""; unit=""; due="" }; next }
+    inblock { line=$0; if (line !~ /:/) next; key=line; sub(/:.*/,"",key); gsub(/[ \t]/,"",key); val=line; sub(/^[^:]*:[ \t]*/,"",val); sub(/[ \t]+$/,"",val); if(key=="id")id=val; else if(key=="name")name=val; else if(key=="status")status=val; else if(key=="group")group=val; else if(key=="target")target=val; else if(key=="unit")unit=val; else if(key=="due")due=val }
   ' "$1"
 }
-GOALS_TSV="$(parse_goals "$ARCHI_FILE")"
+GOALS_TSV="$(parse_goals "$GOALS_FILE")"
 DUP_GOAL_ID="$(printf '%s\n' "$GOALS_TSV" | awk -F'\t' '{if(seen[$1]++)print $1}' | head -n1)"
-[ -z "$DUP_GOAL_ID" ] || die "duplicate goal_id in $ARCHI_FILE: $DUP_GOAL_ID"
+[ -z "$DUP_GOAL_ID" ] || die "duplicate goal_id in $GOALS_FILE: $DUP_GOAL_ID"
 goal_field() { printf '%s\n' "$GOALS_TSV" | awk -F'\t' -v id="$1" -v n="$2" '$1==id{print $n;found=1} END{exit found?0:1}'; }
+
+check_group() {
+  local goal_id="$1" group="$2" err rc=0
+  err="$(python3 "$SCRIPT_DIR/archiprojects.py" members --hub "$HUB_DIR" --group "$group" 2>&1 >/dev/null)" || rc=$?
+  [ "$rc" -eq 0 ] && return 0
+  if [ "$rc" -eq 2 ]; then
+    die "unknown archiproject group for goal $goal_id in $GOALS_FILE: $group"
+  fi
+  die "group registry invalid: $err"
+}
+printf '%s\n' "$GOALS_TSV" | while IFS=$'\t' read -r id _ _ group _ _ _; do
+  [ -n "$id" ] || continue
+  check_group "$id" "$group"
+done
 
 read_log() {
   [ -f "$LOG_FILE" ] || return 0
@@ -63,15 +78,15 @@ EOF_SUM
 printf '%s\n' "$total"; }
 ru() { LC_ALL=C awk -v v="$1" 'BEGIN{printf "%.1f",v}' | tr '.' ','; }
 report_goal() {
-  local id="$1" name status target unit due achieved remaining days_left rate7 rate28 needed verdict
-  name="$(goal_field "$id" 2)"; status="$(goal_field "$id" 3)"; target="$(goal_field "$id" 4)"; unit="$(goal_field "$id" 5)"; due="$(goal_field "$id" 6)"
+  local id="$1" name status group target unit due achieved remaining days_left rate7 rate28 needed verdict
+  name="$(goal_field "$id" 2)"; status="$(goal_field "$id" 3)"; group="$(goal_field "$id" 4)"; target="$(goal_field "$id" 5)"; unit="$(goal_field "$id" 6)"; due="$(goal_field "$id" 7)"
   achieved="$(sum_between "$id" 0)"; remaining=$((target-achieved)); [ "$remaining" -lt 0 ] && remaining=0
   rate7="$(sum_between "$id" $((AS_OF_EPOCH-6*DAY)))"; rate28="$(LC_ALL=C awk -v v="$(sum_between "$id" $((AS_OF_EPOCH-27*DAY)))" 'BEGIN{print v/4}')"
   case "$due" in [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) days_left=$((( $(epoch_of "$due")-AS_OF_EPOCH)/DAY)); [ "$days_left" -lt 0 ] && days_left=0 ;; *) days_left="" ;; esac
   if [ -n "$days_left" ] && [ "$days_left" -gt 0 ]; then needed="$(LC_ALL=C awk -v r="$remaining" -v d="$days_left" 'BEGIN{print r/(d/7)}')"; else needed="$remaining"; fi
   verdict="$(LC_ALL=C awk -v a="$rate7" -v n="$needed" 'BEGIN { print (a >= n) ? "ok" : "slow" }')"
-  if [ "$FORMAT" = tsv ]; then printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$id" "$achieved" "$target" "$unit" "$remaining" "$due" "${days_left:-—}" "$rate7" "$rate28" "$needed" "$status" "$verdict"; return; fi
-  printf '%s — %s\n' "$id" "$name"; if [ -n "$days_left" ]; then printf 'выпущено %s / %s %s; осталось %s; срок %s (%s дн.)\n' "$achieved" "$target" "$unit" "$remaining" "$due" "$days_left"; else printf 'выпущено %s / %s %s; осталось %s; срока нет\n' "$achieved" "$target" "$unit" "$remaining"; fi
+  if [ "$FORMAT" = tsv ]; then printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$id" "$achieved" "$target" "$unit" "$remaining" "$due" "${days_left:-—}" "$rate7" "$rate28" "$needed" "$status" "$verdict" "$group"; return; fi
+  printf '%s — %s (группа: %s)\n' "$id" "$name" "$group"; if [ -n "$days_left" ]; then printf 'выпущено %s / %s %s; осталось %s; срок %s (%s дн.)\n' "$achieved" "$target" "$unit" "$remaining" "$due" "$days_left"; else printf 'выпущено %s / %s %s; осталось %s; срока нет\n' "$achieved" "$target" "$unit" "$remaining"; fi
   printf 'темп: %s/нед за 7 дней, %s/нед за 28 дней\n' "$(ru "$rate7")" "$(ru "$rate28")"; if [ "$verdict" = ok ]; then printf 'нужно %s/нед — текущего темпа хватает\n' "$(ru "$needed")"; else printf 'нужно %s/нед — текущего темпа не хватает\n' "$(ru "$needed")"; fi
 }
 if [ -n "$GOAL_FILTER" ]; then goal_field "$GOAL_FILTER" 1 >/dev/null || die "unknown goal: $GOAL_FILTER"; report_goal "$GOAL_FILTER"; else printf '%s\n' "$GOALS_TSV" | while IFS=$'\t' read -r id _ status _; do [ -n "$id" ] && [ "$status" = active ] || continue; report_goal "$id"; [ "$FORMAT" = text ] && echo ""; done; fi
