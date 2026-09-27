@@ -10,7 +10,7 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 [ -f "$ROOT/hub-template/AGENTS.md" ] || fail "missing Hub AGENTS.md"
 [ -f "$ROOT/hub-template/CLAUDE.md" ] || fail "missing Hub CLAUDE.md"
 [ -f "$ROOT/hub-template/ai/architecture.md" ] || fail "missing Hub architecture"
-[ -f "$ROOT/hub-template/ai/skills/hub-workflows/SKILL.md" ] || fail "missing hub-workflows"
+[ -f "$ROOT/modules/planning/skills/hub-workflows/SKILL.md" ] || fail "missing hub-workflows"
 [ -f "$ROOT/hub-template/ai/skills/hub-knowledge-enable/SKILL.md" ] || fail "missing optional knowledge enable skill"
 [ -f "$ROOT/hub-template/ai/skills/hub-knowledge-capture/SKILL.md" ] || fail "missing optional knowledge capture skill"
 [ -f "$ROOT/hub-template/ai/skills/hub-knowledge-review/SKILL.md" ] || fail "missing optional knowledge review skill"
@@ -25,8 +25,8 @@ grep -Fq 'read-compact-project-index.sh' "$ROOT/hub-template/AGENTS.md" || fail 
 grep -Fq 'read-compact-task-index.py' "$ROOT/hub-template/ai/skills/hub-task-overview/SKILL.md" || fail "missing compact task discovery"
 
 for resource in day-plan evening-review weekly-review; do
-  [ -f "$ROOT/hub-template/ai/skills/hub-workflows/resources/$resource.md" ] || fail "missing workflow resource: $resource"
-  grep -Fq "resources/$resource.md" "$ROOT/hub-template/ai/skills/hub-workflows/SKILL.md" || fail "core does not dispatch $resource"
+  [ -f "$ROOT/modules/planning/skills/hub-workflows/resources/$resource.md" ] || fail "missing workflow resource: $resource"
+  grep -Fq "resources/$resource.md" "$ROOT/modules/planning/skills/hub-workflows/SKILL.md" || fail "core does not dispatch $resource"
 done
 grep -Fq "resources/capture.md" "$ROOT/hub-template/ai/skills/hub-task-overview/SKILL.md" || fail "hub-task-overview does not dispatch capture"
 [ -f "$ROOT/hub-template/ai/skills/hub-task-overview/resources/capture.md" ] || fail "missing capture resource"

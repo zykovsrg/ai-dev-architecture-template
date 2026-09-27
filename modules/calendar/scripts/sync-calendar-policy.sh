@@ -21,11 +21,11 @@ done
 [ -d "$SOURCE_ROOT" ] || die "--source directory not found: $SOURCE_ROOT"
 [ -d "$HUB_DIR" ] || die "--hub directory not found: $HUB_DIR"
 SOURCE_ROOT="$(cd "$SOURCE_ROOT" && pwd -P)"; HUB_DIR="$(cd "$HUB_DIR" && pwd -P)"
-POLICY_SRC="$SOURCE_ROOT/calendar-policy"
+POLICY_SRC="$SOURCE_ROOT/modules/calendar/policy"
 for required in src/hub_calendar_policy/__main__.py src/hub_calendar_policy/server.py bridge/hub_eventkit_bridge.swift bridge/SHA256SUMS pyproject.toml; do
-  [ -f "$POLICY_SRC/$required" ] || die "source is missing calendar-policy/$required"
+  [ -f "$POLICY_SRC/$required" ] || die "source is missing modules/calendar/policy/$required"
 done
-(cd "$POLICY_SRC/bridge" && shasum -a 256 -c SHA256SUMS >/dev/null 2>&1) || die "calendar-policy bridge checksum mismatch; refusing to install"
+(cd "$POLICY_SRC/bridge" && shasum -a 256 -c SHA256SUMS >/dev/null 2>&1) || die "calendar policy bridge checksum mismatch; refusing to install"
 TOOL_DIR="$HUB_DIR/tools/apple-calendar-policy"; ALLOWLIST_DIR="$HUB_DIR/.local/apple-calendar"; ALLOWLIST="$ALLOWLIST_DIR/allowlist.json"
 if [ "$MODE" = "dry-run" ]; then
   echo "Would install guarded Calendar policy MCP into $TOOL_DIR"

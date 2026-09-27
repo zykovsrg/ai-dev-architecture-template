@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-SCRIPT="$(cd "$(dirname "$0")/.." && pwd -P)/scripts/snapshot-calendar.sh"
+HERE="$(cd "$(dirname "$0")" && pwd -P)"
 FAILED=0
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
+STAGE="$TMP/stage"
+bash "$HERE/stage-scripts.sh" "$STAGE"
+SCRIPT="$STAGE/snapshot-calendar.sh"
 
 pass() { echo "ok   - $1"; }
 fail() { echo "FAIL - $1"; [ -n "${2:-}" ] && echo "       $2"; FAILED=1; }

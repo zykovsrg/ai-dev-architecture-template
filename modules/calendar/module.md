@@ -15,14 +15,15 @@ changes.
 
 ## Installs
 
-- hub-template/ai/skills/hub-calendar/ -> ai/skills/hub-calendar/
+- modules/calendar/skills/hub-calendar/ -> ai/skills/hub-calendar/
 
 ## Repository only
 
-- calendar-policy/
-- scripts/sync-calendar-policy.sh
-- scripts/grant-calendar-access.sh
-- scripts/build-calendar-bridge.sh
+- modules/calendar/policy/
+- modules/calendar/scripts/sync-calendar-policy.sh
+- modules/calendar/scripts/grant-calendar-access.sh
+- modules/calendar/scripts/build-calendar-bridge.sh
+- modules/calendar/tests/
 
 ## Reads
 

@@ -3,7 +3,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILL = ROOT / "hub-template/ai/skills/hub-workflows/SKILL.md"
+REPO_ROOT = ROOT.parents[1]
+SKILL = ROOT / "skills/hub-workflows/SKILL.md"
 RESOURCE_DIR = SKILL.parent / "resources"
 RESOURCES = {
     "day-plan": "day-plan.md",
@@ -31,7 +32,7 @@ class HubWorkflowProgressiveDisclosureTests(unittest.TestCase):
             "`hub-task-overview`",
         ):
             self.assertIn(phrase, core)
-        overview = (SKILL.parents[1] / "hub-task-overview/SKILL.md").read_text(encoding="utf-8")
+        overview = (REPO_ROOT / "hub-template/ai/skills/hub-task-overview/SKILL.md").read_text(encoding="utf-8")
         for phrase in (
             "## Personal-assistant scope",
             "## Proposal envelope",
@@ -41,7 +42,7 @@ class HubWorkflowProgressiveDisclosureTests(unittest.TestCase):
             "resources/capture.md",
         ):
             self.assertIn(phrase, overview)
-        self.assertTrue((SKILL.parents[1] / "hub-task-overview/resources/capture.md").is_file())
+        self.assertTrue((REPO_ROOT / "hub-template/ai/skills/hub-task-overview/resources/capture.md").is_file())
 
     def test_detailed_scenario_formats_leave_core(self):
         core = SKILL.read_text(encoding="utf-8")
@@ -105,7 +106,7 @@ class HubWorkflowProgressiveDisclosureTests(unittest.TestCase):
                 self.assertIn(phrase, text, f"{filename}: {phrase}")
 
     def test_architecture_requires_task_diff_before_workflow_sync(self):
-        architecture = (ROOT / "hub-template/ai/architecture.md").read_text(encoding="utf-8")
+        architecture = (REPO_ROOT / "hub-template/ai/architecture.md").read_text(encoding="utf-8")
         self.assertIn("Calendar events never prove completion", architecture)
         self.assertIn("exact canonical task-record diff", architecture)
 

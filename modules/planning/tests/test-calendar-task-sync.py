@@ -1,15 +1,21 @@
 #!/usr/bin/env python3
+import atexit
 import importlib.util
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "scripts"))
-spec = importlib.util.spec_from_file_location("calendar_task_sync", ROOT / "scripts/calendar_task_sync.py")
+HERE = Path(__file__).resolve().parent
+STAGE = Path(tempfile.mkdtemp(prefix="calendar-task-sync-stage-"))
+atexit.register(shutil.rmtree, STAGE, ignore_errors=True)
+subprocess.run(["bash", str(HERE / "stage-scripts.sh"), str(STAGE)], check=True)
+ROOT = STAGE
+sys.path.insert(0, str(ROOT))
+spec = importlib.util.spec_from_file_location("calendar_task_sync", ROOT / "calendar_task_sync.py")
 sync = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(sync)
 
@@ -129,18 +135,18 @@ class Cli(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             hub = make_hub(Path(tmp), body)
             payload = json.dumps({"events": [event("2026-09-23T10:00:00+03:00", "2026-09-23T12:00:00+03:00")]})
-            res = subprocess.run([sys.executable, str(ROOT / "scripts/calendar_task_sync.py"), "--hub", str(hub),
+            res = subprocess.run([sys.executable, str(ROOT / "calendar_task_sync.py"), "--hub", str(hub),
                                   "--now", NOW], input=payload, capture_output=True, text=True)
         self.assertEqual(res.returncode, 0, res.stderr)
         self.assertEqual([d["kind"] for d in json.loads(res.stdout)], ["calendar_moved"])
 
     def test_cli_rejects_bad_json(self):
-        res = subprocess.run([sys.executable, str(ROOT / "scripts/calendar_task_sync.py"), "--hub", "/nonexistent",
+        res = subprocess.run([sys.executable, str(ROOT / "calendar_task_sync.py"), "--hub", "/nonexistent",
                               "--now", NOW], input="nope", capture_output=True, text=True)
         self.assertEqual(res.returncode, 2)
 
     def test_cli_rejects_bad_now(self):
-        res = subprocess.run([sys.executable, str(ROOT / "scripts/calendar_task_sync.py"), "--hub", "/nonexistent",
+        res = subprocess.run([sys.executable, str(ROOT / "calendar_task_sync.py"), "--hub", "/nonexistent",
                               "--now", "not-a-date"], input="{}", capture_output=True, text=True)
         self.assertEqual(res.returncode, 2)
         self.assertTrue(res.stderr.strip())

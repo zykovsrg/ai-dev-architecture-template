@@ -13,12 +13,12 @@ fail() {
 
 make_source() {
   local dest="$WORK/$1"
-  mkdir -p "$dest/scripts" "$dest/calendar-policy"
-  cp -R "$ROOT/calendar-policy/src" "$dest/calendar-policy/src"
-  mkdir -p "$dest/calendar-policy/src/hub_calendar_policy/__pycache__"
-  : > "$dest/calendar-policy/src/hub_calendar_policy/__pycache__/server.cpython-314.pyc"
-  cp -R "$ROOT/calendar-policy/bridge" "$dest/calendar-policy/bridge"
-  cp "$ROOT/calendar-policy/pyproject.toml" "$dest/calendar-policy/pyproject.toml"
+  mkdir -p "$dest/scripts" "$dest/modules/calendar/policy"
+  cp -R "$ROOT/policy/src" "$dest/modules/calendar/policy/src"
+  mkdir -p "$dest/modules/calendar/policy/src/hub_calendar_policy/__pycache__"
+  : > "$dest/modules/calendar/policy/src/hub_calendar_policy/__pycache__/server.cpython-314.pyc"
+  cp -R "$ROOT/policy/bridge" "$dest/modules/calendar/policy/bridge"
+  cp "$ROOT/policy/pyproject.toml" "$dest/modules/calendar/policy/pyproject.toml"
   printf '%s\n' "$dest"
 }
 
@@ -73,7 +73,7 @@ grep -Fq 'chosen-calendar' "$hub/.local/apple-calendar/allowlist.json" \
 
 # A bridge that no longer matches its manifest must not be installed.
 tampered="$(make_source source-tampered)"
-printf '\n// tampered\n' >> "$tampered/calendar-policy/bridge/hub_eventkit_bridge.swift"
+printf '\n// tampered\n' >> "$tampered/modules/calendar/policy/bridge/hub_eventkit_bridge.swift"
 hub_tampered="$(make_hub hub-tampered)"
 if bash "$SYNC" --source "$tampered" --hub "$hub_tampered" >/dev/null 2>&1; then
   fail "a tampered bridge was installed"

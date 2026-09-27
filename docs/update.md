@@ -182,7 +182,7 @@ Calendar policy имеет отдельный suite:
 
 ```bash
 (
-  cd calendar-policy
+  cd modules/calendar/policy
   python3 -m pytest -q
 )
 ```

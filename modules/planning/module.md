@@ -15,17 +15,17 @@ the calendar snapshot.
 
 ## Installs
 
-- hub-template/ai/skills/hub-workflows/ -> ai/skills/hub-workflows/
+- modules/planning/skills/hub-workflows/ -> ai/skills/hub-workflows/
 - hub-template/ai/workflow-context.md -> ai/workflow-context.md
-- scripts/snapshot-calendar.sh -> scripts/snapshot-calendar.sh
-- scripts/calendar-context.py -> scripts/calendar-context.py
-- scripts/calendar_task_sync.py -> scripts/calendar_task_sync.py
-- scripts/validate-day-plan-output.py -> scripts/validate-day-plan-output.py
+- modules/planning/scripts/snapshot-calendar.sh -> scripts/snapshot-calendar.sh
+- modules/planning/scripts/calendar-context.py -> scripts/calendar-context.py
+- modules/planning/scripts/calendar_task_sync.py -> scripts/calendar_task_sync.py
+- modules/planning/scripts/validate-day-plan-output.py -> scripts/validate-day-plan-output.py
 - modules/planning/rules.md -> ai/rules/planning.md
 
 ## Repository only
 
-- —
+- modules/planning/tests/
 
 ## Reads
 

@@ -3,6 +3,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = ROOT / "hub-template/ai/skills"
+PLANNING_SKILLS = ROOT / "modules/planning/skills"
 
 
 def read(path):
@@ -17,7 +18,7 @@ class TaskOverviewSplitTests(unittest.TestCase):
         self.assertTrue((SKILLS / "hub-task-overview/resources/capture.md").is_file())
 
     def test_workflows_delegates_contract(self):
-        text = read(SKILLS / "hub-workflows/SKILL.md")
+        text = read(PLANNING_SKILLS / "hub-workflows/SKILL.md")
         self.assertNotIn("## Proposal envelope", text)
         self.assertIn("`hub-task-overview`", text)
 

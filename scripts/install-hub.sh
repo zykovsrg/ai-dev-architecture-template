@@ -42,8 +42,8 @@ mkdir -p "$PROJECTS_ROOT"
 grep -Fqx '/projects/' "$HUB_DIR/.gitignore" 2>/dev/null || printf '%s\n' '/projects/' >> "$HUB_DIR/.gitignore"
 printf '%s\n' '# Allowed Roots' '' "- $PROJECTS_ROOT" > "$HUB_DIR/ai/allowed-roots.md"
 
-if [ -d "$SOURCE_ROOT/calendar-policy" ]; then
-  bash "$SCRIPT_DIR/sync-calendar-policy.sh" --source "$SOURCE_ROOT" --hub "$HUB_DIR"
+if [ -d "$SOURCE_ROOT/modules/calendar/policy" ]; then
+  bash "$SOURCE_ROOT/modules/calendar/scripts/sync-calendar-policy.sh" --source "$SOURCE_ROOT" --hub "$HUB_DIR"
 fi
 
 if [ ! -e "$HUB_DIR/.git" ]; then git -C "$HUB_DIR" init >/dev/null 2>&1; fi
