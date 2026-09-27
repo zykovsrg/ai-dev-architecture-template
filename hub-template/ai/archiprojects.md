@@ -1,13 +1,14 @@
 # Archiprojects
 
-This is the canonical hub-owned archiproject registry, not a parallel task
-store. Project/task files remain canonical for project work.
+This is the canonical hub-owned archiproject group registry, not a parallel
+task store. Project/task files remain canonical for project work. Goals live
+in `ai/goals.md`, not here.
 
 ## Schema
 
-Use one human heading and one fenced YAML block for each concrete entry. A
-`group` organizes projects and has no fake metrics; a `goal` tracks a numeric
-target.
+Use one human heading and one fenced YAML block for each group. A group
+organizes projects and has no fake metrics. `parent:` is optional; when
+present it must name another group in this file.
 
 ## <archiproject-id>
 
@@ -16,16 +17,5 @@ id: <archiproject-id>
 name: <human name>
 status: <status>
 kind: group
-```
-
-## <archiproject-id>
-
-```yaml
-id: <archiproject-id>
-name: <human name>
-status: <status>
-kind: goal
-target: <target>
-unit: <unit>
-due: YYYY-MM-DD or none
+parent: <parent-archiproject-id>
 ```
