@@ -6,8 +6,7 @@ from scripts.module_passports import install_pairs, load_passports
 
 ROOT = Path(__file__).resolve().parents[1]
 NO_OBSIDIAN = ["core", "projects", "tasks", "knowledge", "calendar"]
-# Core joins this list in stage 7, when architecture.md is split by module.
-NO_PLANNING_CALENDAR = ["projects", "tasks"]
+NO_PLANNING_CALENDAR = ["core", "projects", "tasks"]
 PLANNING_CALENDAR_TERMS = re.compile(
     r"hub-calendar|hub-workflows|preview_change|apply_change|read_events|"
     r"snapshot-calendar\.sh|calendar_task_sync\.py|(?i:apple calendar)"

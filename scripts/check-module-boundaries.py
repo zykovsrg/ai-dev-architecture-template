@@ -9,6 +9,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from module_passports import install_pairs, load_passports  # noqa: E402
 
+# Always-installed modules can never be missing, so anyone may reference them.
+ALWAYS_INSTALLED = {"core", "projects", "tasks"}
 GENERIC = {"SKILL.md", ".gitkeep", "module.md", "README.md", "rules.md"}
 
 
@@ -29,7 +31,7 @@ def find_violations(root):
     tokens = {i: module_tokens(root, passports, i) for i in passports}
     violations = set()
     for module_id, passport in passports.items():
-        allowed = {module_id, "core", *passport.depends, *passport.uses_if_present}
+        allowed = {module_id, *ALWAYS_INSTALLED, *passport.depends, *passport.uses_if_present}
         for source, _ in install_pairs(root, passports, [module_id]):
             text = (root / source).read_text(encoding="utf-8", errors="replace")
             for other, other_tokens in tokens.items():
