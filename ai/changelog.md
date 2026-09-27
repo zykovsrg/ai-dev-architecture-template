@@ -13,6 +13,9 @@
 - Working Hub: Obsidian disabled (Hub commits 406b01c, 15520e1); drift exit 0;
   task records OK; vault unchanged. CI green on 2738139.
 - Plan `docs/superpowers/plans/2026-09-27-module-passports-obsidian-switch.md`.
+- Closed 2026-09-27. Session review:
+  `ai/session-reviews/2026-09-27-module-passports-obsidian-switch-closure.md`
+  (issues-found, proposal P1 awaits approval).
 - Deferred minors: projects passport doesn't name `archiprojects.md`; learning
   Writes mixes observations and friction notes; boundary-check GENERIC list small.
 
