@@ -24,7 +24,7 @@ validation, use these central hub-owned skills. They remove any need to copy
 - `hub-task-finish` — verifies the selected project's task and, when its check
   finds no blocker, first runs the `before-task-close` subscribers listed in
   `ai/modules.md`, then cleans task memory and saves the result. Only a task with a
-  schedule keeps the joint task-and-calendar confirmation.
+  schedule keeps the joint confirmation with its scheduled entry.
 
 Each shared workflow operates only after a confirmed registered project and
 only against that selected project's `ai/` memory or explicitly selected

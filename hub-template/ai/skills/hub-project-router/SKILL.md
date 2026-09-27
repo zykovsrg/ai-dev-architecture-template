@@ -42,8 +42,10 @@ write still uses the workflow's explicit proposal confirmation.
 
 A request such as “проверь эту сессию”, “разбери работу агента”, or
 “самопроверка сессии” is project-specific. Select and confirm the project
-first, then invoke `hub-session-review` for the current session or the exact
-session/range named by the user. If the requested history is unavailable,
+first, then invoke the learning skill listed under `## Skills` in
+`ai/modules.md` for the current session or the exact session/range named by
+the user. If learning is not listed, say session review is not installed and do
+not improvise one. If the requested history is unavailable,
 record insufficient evidence and ask only for the missing session selection or
 access; do not read unrelated history.
 

@@ -38,6 +38,15 @@ else
   fail "корректные файлы проходят проверку"
 fi
 
+# 1b. без модуля planning файла правил нет — это не ошибка
+HUBN="$(make_hub)"
+rm "$HUBN/ai/workflow-context.md"
+if bash "$SCRIPT" --hub "$HUBN" >/dev/null 2>&1; then
+  pass "отсутствие workflow-context.md не ошибка"
+else
+  fail "отсутствие workflow-context.md не ошибка"
+fi
+
 # 2. битая строка журнала отвергается
 HUB2="$(make_hub)"
 echo '- мусор без полей' >>"$HUB2/ai/workflow-observations.md"
@@ -108,9 +117,9 @@ else
   fail "строка-образец под «## Схема» в workflow-context.md не мешает проверке"
 fi
 
-# 5. отсутствующий файл отвергается
+# 5. отсутствующий журнал наблюдений отвергается
 HUB5="$(make_hub)"
-rm "$HUB5/ai/workflow-context.md"
+rm "$HUB5/ai/workflow-observations.md"
 if bash "$SCRIPT" --hub "$HUB5" >/dev/null 2>&1; then
   fail "отсутствующий файл отвергается" "скрипт завершился успешно"
 else

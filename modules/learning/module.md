@@ -4,7 +4,7 @@ Id: learning
 Required: no
 Switchable: no
 Depends: core
-Uses if present: —
+Uses if present: planning
 Rules: ai/rules/learning.md
 Keywords: —
 
