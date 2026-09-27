@@ -1,5 +1,22 @@
 # Decisions
 
+### 2026-09-27 — Nested groups; goals in `ai/goals.md`; cards keep only their group
+
+Status: active
+
+Decision: `ai/archiprojects.md` holds only groups, optionally nested with
+`parent:` (depth ≤ 3, no cycles). Goals live in `ai/goals.md` and name a group.
+A project card declares only `primary_archiproject: <group-id|none>`; the
+project also belongs to every ancestor group. `archiproject_contribution` and
+`related_archiprojects` are removed. Migrated 2026-09-27: `hadassah-promo`
+(29 projects, goal 32 promo pages) and `hadassah-seo` (8 projects, goal 80 SEO
+pages) under `hadassah`.
+
+Why: Stage 6 of `docs/superpowers/specs/2026-09-26-modular-architecture-design.md`.
+
+Impact: supersedes the contribution/related parts of decisions 2026-08-24 and
+2026-08-28. Group-wide overview and plans read only member projects.
+
 ### 2026-09-27 — Planning and calendar are switchable modules
 
 Status: active

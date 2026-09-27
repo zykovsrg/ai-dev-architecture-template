@@ -2,7 +2,7 @@
 
 Task ID: TASK-ai-dev-architecture-20260927-003
 Status: active
-Stage: intake
+Stage: review
 
 ## Goal
 
@@ -38,9 +38,8 @@ Archiprojects.
 
 Last agent: Claude (Opus 5.5)
 
-What changed: задача открыта 2026-09-27.
+What changed: all done criteria met 2026-09-27 — see `ai/changelog.md` (stage 6).
 
-Open risks: нет.
+Open risks: none known.
 
-Next agent should check: уточнить пробелы спецификации, дописать раздел
-этапа 6, написать план.
+Next agent should check: close with `hub-task-finish` after user approval.

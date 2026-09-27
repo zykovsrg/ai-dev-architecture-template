@@ -1,5 +1,19 @@
 # Changelog
 
+### 2026-09-27 — Modular architecture stage 6: nested groups and goals (TASK-ai-dev-architecture-20260927-003)
+
+- `scripts/archiprojects.py` (validate / tree / members); `check-hub-registry.sh`
+  uses it; group id/status/fence checks kept.
+- Goals in `ai/goals.md` with `group`; `count-goal-progress.sh` reads it and
+  tells an unknown group from a broken registry.
+- Cards keep only `primary_archiproject`; compact project index has a `group`
+  column; `read-compact-task-index.py --group` reads only member projects.
+- One-time migration script (validated on a temp copy, rollback on failure) run
+  on the working Hub: 29 promo + 8 SEO projects, 2 goals moved, 71 cards cleaned.
+- PR zykovsrg/ai-dev-architecture-template#12, CI green before merge (ca93876).
+  Hub aa23ba8 (pushed): registry OK, drift 0, goal progress OK.
+- Correction: the promo set is 29 projects, not 30 as first told to the user.
+
 ### 2026-09-27 — Modular architecture stage 5: planning and calendar modules (TASK-ai-dev-architecture-20260927-002)
 
 - New tasks skill `hub-task-overview` (capture, overview, personal-assistant
