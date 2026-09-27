@@ -14,8 +14,10 @@ Module rules: `ai/rules/projects.md`.
 
 ## Before confirmation: narrow read and validation boundary
 
-1. Read only `ai/allowed-roots.md`, `ai/project-registry.md`, and
-   `ai/active-project.md`. Do not read `ai/project-cards/`,
+1. Read only `ai/allowed-roots.md`, `ai/project-registry.md`,
+   `ai/active-project.md`, `ai/modules.md`, and the rules file of each
+   `after-project-create` subscriber it lists (needed to build the preview
+   below). Do not read `ai/project-cards/`,
    `ai/cross-project-signals.md`, `ai/archive/`, or any project directory in
    this phase. Canonicalize the hub directory and require that
    `ai/allowed-roots.md` has exactly one entry, exactly
