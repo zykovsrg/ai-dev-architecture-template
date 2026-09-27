@@ -2,6 +2,11 @@
 
 ### 2026-09-27 — Modular architecture stage 8: all modules in `modules/`, strict boundaries (TASK-ai-dev-architecture-20260927-005)
 
+- Closed 2026-09-27: PR #14 merged after green CI (one Codex fix: pre-confirmation
+  read list in `hub-project-create`); working Hub updated after the user's "да"
+  (Hub commit 5844019), drift clean; closure ran the session review through the
+  new `before-task-close` event.
+  Session review: `ai/session-reviews/2026-09-27-modules-strict-stage-8-closure.md`.
 - `check-module-boundaries.py` gained `core`, `projects`, `tasks` in every
   module's allowed set (the three always-installed modules may reference each
   other freely); `--strict` is now called from `architecture-test.sh` and

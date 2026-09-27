@@ -1,42 +1,33 @@
 # Current Task
 
-Task ID: TASK-ai-dev-architecture-20260927-005
-
-Status: active
+Status: empty
 Stage: intake
 
 ## Goal
 
-Этап 8 модульной архитектуры (FT-20260926-005): перенести в `modules/`
-оставшиеся модули — knowledge, goals, learning, затем core, projects, tasks.
-Строгая проверка границ (`check-module-boundaries.py --strict`) становится
-падающим тестом. Ядро подключается к строгой проверке «задачи и проекты не
-называют планирование и календарь».
+No active task.
 
 ## Relevant files
 
-- `modules/*/module.md`, `modules/*/{skills,scripts,data}`
-- `scripts/check-module-boundaries.py`, `tests/test_module_events.py`
-- `docs/superpowers/specs/2026-09-26-modular-architecture-design.md`
+None yet.
 
 ## Done criteria
 
-- Все модули в своих папках `modules/<id>/`.
-- `check-module-boundaries.py --strict` даёт 0 предупреждений и входит в тесты.
-- core в списке строгой проверки «не называет планирование и календарь».
-- Результаты тестов не хуже, чем в начале ветки.
-- CI зелёный в pull request до слияния в `main`.
-- Рабочий хаб обновляется только после «да» пользователя; после этого
-  `hub_release.py drift` даёт exit 0.
+Define during task intake.
 
 ## Agent handoff
 
 Last agent: Claude (Opus 5.5)
 
-What changed: задача взята из FT-20260926-005.
+What changed: TASK-ai-dev-architecture-20260927-005 закрыта 2026-09-27.
+Все модули в `modules/<id>/`, `hub-template/` удалён; строгая проверка границ
+(0 нарушений) входит в тесты; события `before-task-close` и
+`after-project-create`; PR #14 слит, рабочий хаб обновлён, drift чистый.
+Session review: `ai/session-reviews/2026-09-27-modules-strict-stage-8-closure.md`.
 
 Open risks: нет.
 
-Next agent should check: спецификация (Stage 4–7 details), отложенные мелочи
-этапа 7 (`hub-workflows` в `CLAUDE.md`/`AGENTS.md` шаблона, «calendar» в
-`modules/tasks/rules.md`); перед удалением файла — поиск по `ai/decisions.md`.
+Next agent should check: модульная архитектура (этапы 1–8) завершена.
+Мелочи: `.DS_Store` нет в `.gitignore` шаблона хаба; предложение P1 из
+разбора этапа 7 (не обходить защиту обновления хаба) ждёт решения
+пользователя.
