@@ -44,13 +44,19 @@ confirmation.
 ## Single preview and approval gate
 
 Show one complete preview after the checks succeed. It must include the name,
-ID, type, canonical path, exactly six `<path>/ai/` files, the empty knowledge
-scaffold, the draft card, the draft registry entry, and the active-project
+ID, type, canonical path, exactly six `<path>/ai/` files, the items added by
+`after-project-create` subscribers, the draft card, the draft registry entry, and the active-project
 selection decision. Before the preview, inspect `git status --short --
 ai/active-project.md` without writing. Preserve the current selection by
 default: do not overwrite it merely because a new project is created. Offer an
 explicit choice to switch to the new project. If that file has uncommitted
 changes, warn that switching would overwrite them.
+
+Before the preview, read `<hub>/ai/modules.md`; each subscriber listed under
+`after-project-create` adds its own items to this same preview by following
+its rules file. One confirmation approves exactly the shown set. If a
+subscriber cannot build its part, say which one and why, create nothing, and
+ask again. With no subscribers, show the project items alone.
 
 Use this shape:
 
@@ -61,8 +67,8 @@ ID: <project-id>
 Тип: <type>
 Путь: <canonical-path>
 
-Будет создано: папка <canonical-path>/ai/; шесть файлов памяти; пустой
-knowledge-scaffold; карточка; запись в реестре; локальный Git.
+Будет создано: папка <canonical-path>/ai/; шесть файлов памяти; пункты
+подключённых модулей; карточка; запись в реестре; локальный Git.
 Текущий активный проект будет сохранён. Чтобы переключиться на новый, добавьте
 к подтверждению: «и переключить активный проект».
 При доступной авторизации GitHub: приватный репозиторий <project-id>, первый
@@ -84,14 +90,7 @@ Memory files:
 - <canonical-path>/ai/decisions.md
 - <canonical-path>/ai/changelog.md
 
-Knowledge scaffold:
-- <canonical-path>/knowledge/README.md
-- <canonical-path>/knowledge/record-template.md
-- <canonical-path>/knowledge/research/
-- <canonical-path>/knowledge/decisions/
-- <canonical-path>/knowledge/risks/
-- <canonical-path>/knowledge/runbooks/
-- <canonical-path>/knowledge/inbox/
+<items added by each after-project-create subscriber, under its own heading>
 
 Card: ai/project-cards/<project-id>.md
 Project ID: <project-id>
@@ -143,14 +142,8 @@ The preview also explicitly excludes `ai/architecture.md`,
    `current-task.md`, `paused-tasks.md`, `future-tasks.md`,
    `project-context.md`, `decisions.md`, and `changelog.md`. Do not copy
    `ai/architecture.md` or `ai/external-tools.md`.
-3. Create only the absent knowledge scaffold at `<canonical-path>/knowledge/`:
-   `README.md`, `record-template.md`, and the empty `research/`, `decisions/`,
-   `risks/`, `runbooks/`, and `inbox/` directories. Inbox holds weak
-   observations and is not a durable category. Use the canonical contents below for
-   the two files. It must never overwrite records or any existing scaffold
-   file. The created project uses the hub-owned `hub-knowledge-capture` and
-   hub-owned `hub-knowledge-review` workflows; do not copy generic workflow skills,
-   project instructions, or any other project files into it.
+3. Do not copy generic workflow skills, project instructions, or any other
+   project files into the new project.
 4. Write the approved existing-schema card at
    `ai/project-cards/<project-id>.md` and the approved registry entry exactly
    as previewed. The card must retain all required fields and its
@@ -164,12 +157,16 @@ The preview also explicitly excludes `ai/architecture.md`,
 6. Only after successful validation and the explicit switching phrase, update
    `ai/active-project.md` with the confirmed ID and canonical path. It is a
    selection record, not permission for a future chat.
-7. Initialize a local Git repository and commit only the approved scaffold.
+7. Run the `after-project-create` event: read `<hub>/ai/modules.md`; for each
+   subscriber listed under `after-project-create`, read its rules file and
+   apply exactly its previewed items for the new project only. If one fails,
+   stop and report it; do not initialize Git or continue.
+8. Initialize a local Git repository and commit only the approved scaffold.
    If authenticated GitHub CLI access is available, verify that `<project-id>`
    is unused, create a private repository with that exact name, add `origin`,
    and push `main`. If this remote provisioning is unavailable, retain local
    Git and report `pending-sync`; never attach or overwrite an existing remote.
-8. Invoke hub-owned `hub-environment-check` and then hub-owned `hub-task-intake` for
+9. Invoke hub-owned `hub-environment-check` and then hub-owned `hub-task-intake` for
    the confirmed selected project. Those workflows operate only on the selected
    project's `ai/` memory and cannot override hub confirmation, allowed roots,
    secret, or memory-isolation rules.
@@ -264,60 +261,4 @@ No project decisions yet.
 ## Current changelog
 
 No notable changes yet.
-```
-
-### knowledge/README.md
-
-```markdown
-# Project Knowledge
-
-This local knowledge base is optional reference material. Read it only when a
-task or the user explicitly needs it. It is not default context and is not an
-automatic archive of conversations.
-
-Store records in the category that matches their purpose:
-
-- `research/` — investigated questions and evidence.
-- `decisions/` — durable choices and their rationale.
-- `risks/` — known risks, assumptions, and mitigations.
-- `runbooks/` — repeatable operational procedures.
-
-Create and update records only through the hub-owned `hub-knowledge-capture` or
-`hub-knowledge-review` workflow after its exact confirmation. Do not copy generic
-workflow skills into this project.
-
-Knowledge records must contain no secrets, personal data or client data. Never
-store credentials, passwords, tokens, private keys, raw environment values,
-personally identifying material, or client-confidential material. Omit or
-redact prohibited content without echoing the rejected value; refer to an
-approved secure location instead of recording it.
-
-The only allowed statuses are `draft`, `verified`, `needs-review`, `stale`, or
-`superseded`. Retain stale and superseded records at their original paths and
-link each one to its replacement under `Related records`; never silently delete
-it.
-```
-
-### knowledge/record-template.md
-
-```markdown
----
-type: research
-status: draft
-created: YYYY-MM-DD
-reviewed: YYYY-MM-DD
-sources: []
----
-
-# Record title
-
-## Statement
-
-## Evidence
-
-## Scope
-
-## Related records
-
-## Review notes
 ```

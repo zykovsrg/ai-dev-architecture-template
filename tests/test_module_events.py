@@ -2,7 +2,7 @@ import re
 import unittest
 from pathlib import Path
 
-from scripts.module_passports import install_pairs, load_passports
+from scripts.module_passports import install_pairs, load_passports, render_modules_md
 
 ROOT = Path(__file__).resolve().parents[1]
 NO_OBSIDIAN = ["core", "projects", "tasks", "knowledge", "calendar"]
@@ -48,6 +48,43 @@ class PlanningCalendarIsolationTests(unittest.TestCase):
         for skill in CONFIRMATION_SKILLS:
             text = (ROOT / f"hub-template/ai/skills/{skill}/SKILL.md").read_text(encoding="utf-8")
             self.assertIn("`before-task-confirmation`", text, skill)
+
+
+def event_block(text, event):
+    return text.split(f"### {event}\n", 1)[1].split("\n### ", 1)[0]
+
+
+class LifecycleEventTests(unittest.TestCase):
+    def skill(self, name):
+        return (ROOT / f"hub-template/ai/skills/{name}/SKILL.md").read_text(encoding="utf-8")
+
+    def test_task_finish_fires_before_task_close(self):
+        text = self.skill("hub-task-finish")
+        self.assertIn("`before-task-close`", text)
+        self.assertIn("ai/modules.md", text)
+        self.assertNotIn("hub-session-review", text)
+        self.assertNotIn("hub-knowledge-review", text)
+        self.assertLess(text.index("`before-task-close`"), text.index("clearing task context"))
+
+    def test_project_create_fires_after_project_create(self):
+        text = self.skill("hub-project-create")
+        self.assertIn("`after-project-create`", text)
+        self.assertIn("ai/modules.md", text)
+        self.assertNotIn("hub-knowledge-", text)
+
+    def test_modules_md_lists_lifecycle_subscribers(self):
+        passports = load_passports(ROOT)
+        full = render_modules_md(passports, list(passports), ROOT)
+        close = event_block(full, "before-task-close")
+        self.assertIn("- learning:", close)
+        self.assertIn("- knowledge:", close)
+        create = event_block(full, "after-project-create")
+        self.assertIn("- knowledge:", create)
+        self.assertNotIn("- learning:", create)
+        slim = [i for i in passports if i not in {"learning", "knowledge"}]
+        text = render_modules_md(passports, slim, ROOT)
+        self.assertEqual(event_block(text, "before-task-close").strip(), "- —")
+        self.assertEqual(event_block(text, "after-project-create").strip(), "- —")
 
 
 if __name__ == "__main__":

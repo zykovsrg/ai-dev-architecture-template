@@ -20,25 +20,21 @@ Module rules: `ai/rules/tasks.md`.
    risk. Do not change task memory during this check.
    Run the deterministic task-record and review checks before any model call;
    report a deterministic failure directly and leave the task open.
-3. If the Done criteria pass, run `hub-session-review` for this task's current
-   visible session before clearing task context. Save and validate the review,
-   then add `Session review: ai/session-reviews/<file>.md` to the task so a
-   closure retry can reuse it. A review-write failure leaves the task open and
-   its context intact. Partial history is recorded honestly and does not alone
-   block closure. Do not review the review or closure output again here.
-4. After the review, if durable records linked from this task may need a focused
-   check, the agent may offer `hub-knowledge-review`, but must never start it
-   automatically. Declining it has no effect on closure.
-5. If the check found no blocker, write the changelog entry, any durable
-   decision, confirmed future-task entries, the review reference, and the
-   `ai/current-task.md` cleanup. Stop and report instead of writing only when
+3. If the Done criteria pass, run the `before-task-close` event before
+   clearing task context: read `<hub>/ai/modules.md`; for each subscriber
+   listed under `before-task-close`, read its rules file and run its command
+   for this task of the confirmed project only. A subscriber failure leaves
+   the task open and its context intact. With no subscribers, continue.
+4. If the check found no blocker, write the changelog entry, any durable
+   decision, confirmed future-task entries, any reference a subscriber added,
+   and the `ai/current-task.md` cleanup. Stop and report instead of writing only when
    the check found a blocker. When a subscriber adds items to the screen,
    follow `## Confirmation extensions` below.
-   An improvement suggested by the review waits for user approval and is not a
-   closure blocker.
-6. Then save only the selected project's result through its repository and
+   An improvement suggested by a subscriber waits for user approval and is not
+   a closure blocker.
+5. Then save only the selected project's result through its repository and
    report every write, the commit, and whether it was pushed or stayed local.
-7. After a confirmed write to the selected project's task files, run the
+6. After a confirmed write to the selected project's task files, run the
    `after-task-write` event: read `<hub>/ai/modules.md`; for each subscriber
    listed under `after-task-write`, read its rules file and run its command
    for the confirmed project ID only. With no subscribers, do nothing. If a
@@ -63,4 +59,5 @@ its rules say; if one fails, stop, report it, and do not write the task.
 This workflow cannot override hub confirmation, allowed roots, secret, or
 memory-isolation rules. Its closure writes remain limited to selected project
 `ai/` memory. It never closes, copies, or cleans another project's task memory,
-and an optional review offer does not authorize reading or writing knowledge.
+and an optional subscriber offer does not authorize reading or writing
+project records.

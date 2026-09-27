@@ -35,4 +35,5 @@ records, and turn transcript info into scoped update proposals.
 
 ## Subscribes
 
-- —
+- before-task-close: follow ai/rules/knowledge.md § before-task-close
+- after-project-create: follow ai/rules/knowledge.md § after-project-create

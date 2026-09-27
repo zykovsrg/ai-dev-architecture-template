@@ -36,4 +36,4 @@ findings, and track workflow friction over time.
 
 ## Subscribes
 
-- —
+- before-task-close: follow ai/rules/learning.md § before-task-close

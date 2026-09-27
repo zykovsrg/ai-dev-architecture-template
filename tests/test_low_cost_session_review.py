@@ -6,6 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 REVIEW = ROOT / "hub-template/ai/skills/hub-session-review/SKILL.md"
 FINISH = ROOT / "hub-template/ai/skills/hub-task-finish/SKILL.md"
+LEARNING = ROOT / "modules/learning/rules.md"
 
 
 def section(text, heading):
@@ -43,11 +44,15 @@ class LowCostSessionReviewTests(unittest.TestCase):
     def test_closure_runs_checks_and_review_before_context_cleanup(self):
         finish = compact(FINISH.read_text(encoding="utf-8"))
         deterministic = finish.index("Run the deterministic task-record and review checks before any model call")
-        review = finish.index("run `hub-session-review`")
+        review = finish.index("run the `before-task-close` event")
         cleanup = finish.index("cleanup", review)
         self.assertLess(deterministic, review)
         self.assertLess(review, cleanup)
-        self.assertIn("A review-write failure leaves the task open and its context intact", finish)
+        self.assertIn("A subscriber failure leaves the task open and its context intact", finish)
+        learning = compact(LEARNING.read_text(encoding="utf-8"))
+        close = learning[learning.index("## before-task-close"):]
+        self.assertIn("run `hub-session-review`", close)
+        self.assertIn("A review-write failure leaves the task open and its context intact", close)
 
 
 if __name__ == "__main__":

@@ -33,7 +33,9 @@ class LiveHubMergeTests(unittest.TestCase):
 
     def test_task_close_reviews_before_memory_clear(self):
         finish = template("ai/skills/hub-task-finish/SKILL.md")
-        self.assertLess(finish.index("hub-session-review"), finish.index("clearing task context"))
+        self.assertLess(finish.index("`before-task-close`"), finish.index("clearing task context"))
+        learning = source("modules/learning/rules.md")
+        self.assertIn("hub-session-review", learning[learning.index("## before-task-close"):])
         self.assertIn("deterministic", finish)
 
 
