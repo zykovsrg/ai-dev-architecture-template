@@ -60,7 +60,7 @@ class ModuleSelectionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             hub = Path(tmp) / "hub"
             hub.mkdir()
-            for kw in ({"without": ["tasks"]}, {"without": ["planning"]}, {"with_": ["nope"]}):
+            for kw in ({"without": ["tasks"]}, {"without": ["projects"]}, {"with_": ["nope"]}):
                 with self.assertRaises(ValueError):
                     preview(ROOT, hub, **kw)
 

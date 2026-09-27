@@ -2,7 +2,7 @@
 
 Id: planning
 Required: no
-Switchable: no
+Switchable: yes
 Depends: core, projects, tasks, calendar
 Uses if present: goals, learning
 Rules: —

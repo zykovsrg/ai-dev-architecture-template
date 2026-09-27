@@ -2,7 +2,7 @@
 
 Id: calendar
 Required: no
-Switchable: no
+Switchable: yes
 Depends: core
 Uses if present: —
 Rules: —
