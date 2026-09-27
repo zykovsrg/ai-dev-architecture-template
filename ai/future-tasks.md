@@ -103,7 +103,9 @@ Acceptance criteria:
 
 ### FT-20260926-003 — Архипроекты: вложенные группы и работа с группой
 
-Status: idea
+Status: promoted
+
+Promotion notes: стала TASK-ai-dev-architecture-20260927-003.
 
 Priority: medium
 

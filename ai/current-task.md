@@ -1,33 +1,46 @@
 # Current Task
 
-Status: empty
+Task ID: TASK-ai-dev-architecture-20260927-003
+Status: active
 Stage: intake
 
 ## Goal
 
-No active task.
+Этап 6 модульной архитектуры: вложенные группы архипроектов (`parent:`, не
+глубже 3, без циклов), цели в `ai/goals.md` (модуль goals), шестое поле
+`group` в коротком списке проектов, скрипт дерева групп, «что горит по
+группе» и «план дня по группе». Разовый перенос данных (группа «Хадасса →
+Промо», проекты, 2 цели) — только после отдельного подтверждения.
+
+Источник: FT-20260926-003 (решение пользователя 2026-09-27). Спецификация:
+`docs/superpowers/specs/2026-09-26-modular-architecture-design.md`, раздел
+Archiprojects.
 
 ## Relevant files
 
-None yet.
+- `hub-template/ai/archiprojects.md`, `hub-template/ai/goal-log.md`
+- `scripts/check-hub-registry.sh`, `scripts/read-compact-project-index.sh`
+- `hub-template/ai/skills/hub-goal-progress/`, `scripts/count-goal-progress.sh`
+- `hub-template/ai/skills/hub-task-overview/`, `modules/planning/skills/hub-workflows/`
+- `modules/*/module.md`
 
 ## Done criteria
 
-Define during task intake.
+- Проверка реестра отклоняет циклы, потерянных родителей и глубину больше 3.
+- Цели живут в `ai/goals.md`; группы не ссылаются на цели; поля карточек
+  `related_archiprojects` и `archiproject_contribution` убраны.
+- Короткий список проектов показывает группу; скрипт печатает дерево групп.
+- Обзор и план по группе читают задачи только проектов группы и подгрупп.
+- Перенос данных в рабочем хабе сделан после отдельного подтверждения;
+  `drift` → exit 0; тесты и CI зелёные до слияния.
 
 ## Agent handoff
 
 Last agent: Claude (Opus 5.5)
 
-What changed: TASK-ai-dev-architecture-20260927-002 закрыта 2026-09-27.
-Планирование и календарь — выключаемые модули в `modules/`, навык
-`hub-task-overview`, события `before-task-confirmation` и
-`after-calendar-change`, сервер календаря без вечернего обзора; PR #11 слит
-после зелёного CI, рабочий хаб обновлён (оба модуля включены).
-Session review: `ai/session-reviews/2026-09-27-planning-calendar-modules-closure.md`.
+What changed: задача открыта 2026-09-27.
 
-Open risks: запущенный календарный MCP обновится только в новой сессии;
-shell-тесты календаря не входят в CI (было и раньше).
+Open risks: нет.
 
-Next agent should check: следующая задача — FT-20260926-003 (архипроекты:
-вложенные группы, `ai/goals.md`, работа с группой).
+Next agent should check: уточнить пробелы спецификации, дописать раздел
+этапа 6, написать план.
