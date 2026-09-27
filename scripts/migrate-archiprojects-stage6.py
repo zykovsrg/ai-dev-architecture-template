@@ -4,13 +4,15 @@
 Moves `kind: goal` entries out of `ai/archiprojects.md` into `ai/goals.md`
 under two new groups (`hadassah-promo`, `hadassah-seo`), and sets
 `primary_archiproject` on the promo/SEO project cards. See
-docs/superpowers/sdd task-5-brief.md for the full behaviour. Python stdlib
-only; run once per Hub, then delete or ignore (idempotent on re-run).
+.superpowers/sdd/2026-09-27-archiprojects-groups-goals/task-5-brief.md for
+the full behaviour. Python stdlib only; run once per Hub, then delete or
+ignore (idempotent on re-run).
 """
 
 import argparse
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -31,6 +33,8 @@ GOAL_ID_TO_GROUP = {
 
 PROMO_EXACT_IDS = {"promo-pages", "stranitsa-stomatologii", "stranitsa-vyezdnoy-sluzhby"}
 PROMO_PREFIX = "release-page-"
+
+KNOWN_GOAL_FIELDS = {"id", "name", "status", "kind", "target", "unit", "due"}
 
 FORBIDDEN_FIELDS = ("archiproject_contribution:", "related_archiprojects:")
 
@@ -143,6 +147,11 @@ def extract_goals_and_ensure_groups(text):
             goal_id = fields.get("id", heading)
             if goal_id not in GOAL_ID_TO_GROUP:
                 raise MigrationError(f"unknown goal id in ai/archiprojects.md: {goal_id}")
+            unknown_fields = sorted(set(fields) - KNOWN_GOAL_FIELDS)
+            if unknown_fields:
+                raise MigrationError(
+                    f"unknown field(s) in goal entry {goal_id}: {', '.join(unknown_fields)}"
+                )
             goal_entries.append({
                 "id": goal_id,
                 "name": fields.get("name", ""),
@@ -257,6 +266,11 @@ def plan_card_change(path):
     ):
         target_primary = "hadassah-seo"
 
+    if target_primary and current_primary is None:
+        raise MigrationError(
+            f"card matches {target_primary} but has no primary_archiproject line: {path}"
+        )
+
     change_lines = []
     new_lines = []
     changed = False
@@ -288,6 +302,39 @@ def atomic_write(path, text):
     finally:
         if os.path.exists(tmp_name):
             os.remove(tmp_name)
+
+
+def _validate_hub(hub):
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "archiprojects.py"), "validate", "--hub", str(hub)],
+        capture_output=True,
+        text=True,
+    )
+    return result.returncode, result.stdout, result.stderr
+
+
+def _prevalidate_in_temp_copy(archi_text, goals_text, cards_dir, card_texts):
+    """Materialize the planned post-migration ai/ tree in a scratch dir and
+    validate it, without ever touching the real Hub. Returns (returncode,
+    stdout, stderr); the scratch dir is always removed before returning."""
+    tmp_root = tempfile.mkdtemp(prefix="migrate-archiprojects-validate-")
+    try:
+        tmp_hub = Path(tmp_root)
+        (tmp_hub / "ai").mkdir(parents=True, exist_ok=True)
+        (tmp_hub / "ai" / "archiprojects.md").write_text(archi_text, encoding="utf-8")
+        if goals_text is not None:
+            (tmp_hub / "ai" / "goals.md").write_text(goals_text, encoding="utf-8")
+        tmp_cards_dir = tmp_hub / "ai" / "project-cards"
+        tmp_cards_dir.mkdir(parents=True, exist_ok=True)
+        if cards_dir.is_dir():
+            for card_path in cards_dir.glob("*.md"):
+                text = card_texts.get(card_path.name)
+                if text is None:
+                    text = card_path.read_text(encoding="utf-8")
+                (tmp_cards_dir / card_path.name).write_text(text, encoding="utf-8")
+        return _validate_hub(tmp_hub)
+    finally:
+        shutil.rmtree(tmp_root, ignore_errors=True)
 
 
 def run(hub, apply_changes):
@@ -339,21 +386,49 @@ def run(hub, apply_changes):
 
     archi_changed = new_archi_text != archi_text
     goals_changed = goals_text is None or new_goals_text != goals_text
-    if archi_changed:
-        atomic_write(archiprojects_path, new_archi_text)
-    if goals_changed:
-        atomic_write(goals_path, new_goals_text)
-    for card_path, new_text, _change_lines in card_changes:
-        atomic_write(card_path, new_text)
+    card_texts_by_name = {card_path.name: new_text for card_path, new_text, _ in card_changes}
 
-    validate_result = subprocess.run(
-        [sys.executable, str(ROOT / "archiprojects.py"), "validate", "--hub", str(hub)],
-        capture_output=True,
-        text=True,
+    # 1. Build the full post-migration ai/ tree in a scratch copy and
+    #    validate it there first. Never touch the real Hub on failure.
+    pre_code, pre_stdout, pre_stderr = _prevalidate_in_temp_copy(
+        new_archi_text, new_goals_text if goals_changed else goals_text, cards_dir, card_texts_by_name
     )
-    sys.stdout.write(validate_result.stdout)
-    sys.stderr.write(validate_result.stderr)
-    return validate_result.returncode
+    if pre_code != 0:
+        sys.stdout.write(pre_stdout)
+        sys.stderr.write(pre_stderr)
+        print("archiprojects validate failed on the planned migration; Hub left unchanged", file=sys.stderr)
+        return pre_code or 1
+
+    # 2. Back up originals so a failed write partway through can be undone.
+    originals = {archiprojects_path: (archi_text, True)}
+    originals[goals_path] = (goals_text, goals_path.exists())
+    for card_path, _new_text, _change_lines in card_changes:
+        originals[card_path] = (card_path.read_text(encoding="utf-8"), True)
+
+    writes_done = []
+    try:
+        if archi_changed:
+            atomic_write(archiprojects_path, new_archi_text)
+            writes_done.append(archiprojects_path)
+        if goals_changed:
+            atomic_write(goals_path, new_goals_text)
+            writes_done.append(goals_path)
+        for card_path, new_text, _change_lines in card_changes:
+            atomic_write(card_path, new_text)
+            writes_done.append(card_path)
+    except Exception:
+        for path in reversed(writes_done):
+            original_text, existed_before = originals[path]
+            if existed_before:
+                atomic_write(path, original_text)
+            else:
+                path.unlink(missing_ok=True)
+        raise
+
+    validate_result_code, validate_stdout, validate_stderr = _validate_hub(hub)
+    sys.stdout.write(validate_stdout)
+    sys.stderr.write(validate_stderr)
+    return validate_result_code
 
 
 def main():
@@ -368,6 +443,9 @@ def main():
         return run(args.hub, args.apply)
     except MigrationError as error:
         print(f"ERROR: {error}", file=sys.stderr)
+        return 1
+    except Exception as error:  # noqa: BLE001 - surface any restore-path failure to the CLI caller
+        print(f"ERROR: migration failed and was rolled back: {error}", file=sys.stderr)
         return 1
 
 

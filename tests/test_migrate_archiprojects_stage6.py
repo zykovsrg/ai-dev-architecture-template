@@ -1,3 +1,6 @@
+import contextlib
+import importlib.util
+import io
 import subprocess
 import sys
 import tempfile
@@ -6,6 +9,18 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "migrate-archiprojects-stage6.py"
+
+
+def load_module():
+    """Load migrate-archiprojects-stage6.py as an importable module.
+
+    The file uses a hyphenated name (matches the brief's required filename),
+    so it cannot be imported with a normal `import` statement.
+    """
+    spec = importlib.util.spec_from_file_location("migrate_archiprojects_stage6_under_test", SCRIPT)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 ARCHIPROJECTS_TEXT = """# Archiprojects
 
@@ -211,6 +226,130 @@ class MigrationTests(unittest.TestCase):
             after = (hub / "ai" / "archiprojects.md").read_text(encoding="utf-8")
             self.assertEqual(before, after)
             self.assertFalse((hub / "ai" / "goals.md").exists())
+
+    def test_unrelated_card_is_byte_for_byte_unchanged(self):
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as tmp:
+            hub = make_fixture(tmp)
+            card_path = hub / "ai" / "project-cards" / "unrelated-project.md"
+            before = card_path.read_text(encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "--hub", str(hub), "--apply"],
+                capture_output=True, text=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            after = card_path.read_text(encoding="utf-8")
+            self.assertEqual(before, after)
+
+    def test_unknown_goal_field_aborts_with_no_writes(self):
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as tmp:
+            hub = make_fixture(tmp)
+            bad_text = ARCHIPROJECTS_TEXT.replace(
+                "kind: goal\ntarget: 80", "kind: goal\nbogus: value\ntarget: 80"
+            )
+            self.assertNotEqual(bad_text, ARCHIPROJECTS_TEXT)
+            write(hub / "ai" / "archiprojects.md", bad_text)
+            before = bad_text
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "--hub", str(hub), "--apply"],
+                capture_output=True, text=True,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("bogus", result.stderr)
+            after = (hub / "ai" / "archiprojects.md").read_text(encoding="utf-8")
+            self.assertEqual(before, after)
+            self.assertFalse((hub / "ai" / "goals.md").exists())
+
+    def test_card_missing_primary_archiproject_aborts_with_no_writes(self):
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as tmp:
+            hub = make_fixture(tmp)
+            bad_card_path = hub / "ai" / "project-cards" / "release-page-missing-primary.md"
+            bad_card_text = (
+                "# Missing\n"
+                "Project ID: release-page-missing-primary\n"
+                "Name: Missing\n"
+                "Status: active\n"
+                "Purpose: fixture without a primary_archiproject line.\n"
+            )
+            write(bad_card_path, bad_card_text)
+            archi_before = (hub / "ai" / "archiprojects.md").read_text(encoding="utf-8")
+            other_card_before = (hub / "ai" / "project-cards" / "promo-pages.md").read_text(encoding="utf-8")
+
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "--hub", str(hub), "--apply"],
+                capture_output=True, text=True,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("release-page-missing-primary", result.stderr)
+            self.assertEqual(bad_card_text, bad_card_path.read_text(encoding="utf-8"))
+            self.assertEqual(archi_before, (hub / "ai" / "archiprojects.md").read_text(encoding="utf-8"))
+            self.assertEqual(other_card_before, (hub / "ai" / "project-cards" / "promo-pages.md").read_text(encoding="utf-8"))
+            self.assertFalse((hub / "ai" / "goals.md").exists())
+
+    def test_validation_failure_in_temp_copy_leaves_hub_unchanged(self):
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as tmp:
+            hub = make_fixture(tmp)
+            module = load_module()
+
+            archi_before = (hub / "ai" / "archiprojects.md").read_text(encoding="utf-8")
+            cards_before = {
+                p.name: p.read_text(encoding="utf-8")
+                for p in sorted((hub / "ai" / "project-cards").glob("*.md"))
+            }
+
+            original_parent = module.NEW_GROUPS["hadassah-promo"]["parent"]
+            module.NEW_GROUPS["hadassah-promo"]["parent"] = "no-such-parent"
+            try:
+                with contextlib.redirect_stdout(io.StringIO()):
+                    code = module.run(hub, apply_changes=True)
+            finally:
+                module.NEW_GROUPS["hadassah-promo"]["parent"] = original_parent
+
+            self.assertNotEqual(code, 0)
+            self.assertEqual(archi_before, (hub / "ai" / "archiprojects.md").read_text(encoding="utf-8"))
+            self.assertFalse((hub / "ai" / "goals.md").exists())
+            cards_after = {
+                p.name: p.read_text(encoding="utf-8")
+                for p in sorted((hub / "ai" / "project-cards").glob("*.md"))
+            }
+            self.assertEqual(cards_before, cards_after)
+
+    def test_injected_write_failure_after_first_file_restores_everything(self):
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as tmp:
+            hub = make_fixture(tmp)
+            module = load_module()
+
+            archi_before = (hub / "ai" / "archiprojects.md").read_text(encoding="utf-8")
+            cards_before = {
+                p.name: p.read_text(encoding="utf-8")
+                for p in sorted((hub / "ai" / "project-cards").glob("*.md"))
+            }
+
+            original_atomic_write = module.atomic_write
+            calls = []
+
+            def flaky_atomic_write(path, text):
+                calls.append(path)
+                if len(calls) == 2:
+                    raise OSError("injected failure for test")
+                return original_atomic_write(path, text)
+
+            module.atomic_write = flaky_atomic_write
+            try:
+                with contextlib.redirect_stdout(io.StringIO()):
+                    with self.assertRaises(OSError):
+                        module.run(hub, apply_changes=True)
+            finally:
+                module.atomic_write = original_atomic_write
+
+            self.assertGreaterEqual(len(calls), 2)
+            self.assertEqual(archi_before, (hub / "ai" / "archiprojects.md").read_text(encoding="utf-8"))
+            self.assertFalse((hub / "ai" / "goals.md").exists())
+            cards_after = {
+                p.name: p.read_text(encoding="utf-8")
+                for p in sorted((hub / "ai" / "project-cards").glob("*.md"))
+            }
+            self.assertEqual(cards_before, cards_after)
+
 
 if __name__ == "__main__":
     unittest.main()
