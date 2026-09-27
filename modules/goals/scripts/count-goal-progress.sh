@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)"
 if [ -f "$SCRIPT_DIR/archiprojects.py" ]; then
   ARCHIPROJECTS_PY="$SCRIPT_DIR/archiprojects.py"
 else
-  ARCHIPROJECTS_PY="$SCRIPT_DIR/../../../scripts/archiprojects.py"
+  ARCHIPROJECTS_PY="$SCRIPT_DIR/../../projects/scripts/archiprojects.py"
 fi
 HUB_DIR="."
 GOAL_FILTER=""
