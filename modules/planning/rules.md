@@ -50,3 +50,71 @@ After a successful `apply_change`, re-read the affected day through
 Use one `HH:MM|HH:MM|<title>|<calendar>` line per event in start-time order.
 This is a noncanonical cache, needs no additional confirmation, and a snapshot
 failure must be reported without undoing the already applied calendar change.
+
+## Plans and reviews
+
+Use the hub-owned `hub-workflows` skill for `day-plan`, `evening-review`, and
+`weekly-review`, and `hub-task-overview` for `capture`. The skill performs semantic AI analysis, while
+the optional Bash adapter only validates mechanical scope, paths, and recorder
+JSON. Neither layer applies project, task, knowledge, waiting, deadline,
+Calendar, or vault changes.
+
+The day-plan chat output has exactly six sections in this order: current
+calendar, grounded conflicts, actionable project tasks that are not in that
+calendar, overdue actionable tasks, one proposed calendar, and recommendations. A task appears
+in only one task section. The proposed calendar retains existing events and
+labels every suggested block's duration as stated or estimated; it lists work
+that does not fit instead of silently dropping it. Both calendars are
+chronological bullet lists: one `time — event` entry per line. Learned rules
+and numeric goal progress constrain the proposal without creating extra chat
+sections. Existing calendar titles are copied verbatim; proposed new blocks use
+the exact title of their canonical task and never a generated summary.
+
+All-day events are calendar events too: day planning and evening review render
+each one separately as `весь день — <exact title>`. They never group,
+paraphrase, or interpret an all-day title. Calendar events never prove completion.
+A direct, unambiguous user decision that a known task is complete,
+moved, or waiting produces an exact canonical task-record diff and, only when
+the schedule changes, its complete guarded calendar preview. The exact package
+applies only after the user confirms it; an ambiguous task reference creates no
+proposal or mutation.
+
+An explicit new action or reminder stated during day planning is not merely a
+calendar item: when it belongs to one confirmed project, `hub-workflows`
+creates an exact `create_task` or `update_task` proposal for that project's
+canonical task record and a paired timed calendar proposal. Relative and
+explicit dates are resolved in the calendar timezone. An explicit interval is
+preserved; a date-only statement uses the first free 30-minute interval without
+moving an existing event. The task diff records
+`Запланировано: YYYY-MM-DD HH:MM-HH:MM`, and its complete calendar preview is
+shown beside it. One confirmation covers exactly that pair. A past date never
+implies completion. The task proposal uses the exact stated title and has its
+own exact target path and diff. The workflow never guesses the owning project.
+It asks the user to identify one confirmed project when the action is ambiguous,
+and emits neither task nor calendar proposal until then. Every overdue task is
+rendered with its exact canonical task title, never a generated summary or
+translation.
+
+Clear day-planning requests, including «распланируем сегодняшний день»,
+«распланируем остаток дня», «план на сегодня», «план на остаток дня», and
+"plan today", invoke `hub-workflows` before any reply. Their
+reply uses the six mandatory day-plan sections; a free-form calendar summary
+is not a valid day-plan response.
+
+The general 5-line and 80-word output default does not apply to a day plan.
+Every day-plan response renders all six headings, even when a section contains
+only `- Нет.` or a precise data-access limitation.
+
+Day planning maintains local `ai/tmp/calendar-context.json`: 30 past days,
+today and 30 future days. Initial guarded reads populate it; subsequent runs
+prune expired days and fetch missing far-future days. Recommendations use the
+past month and next 14 days with canonical tasks and verified deadlines.
+The detailed lifecycle is in `hub-workflows/resources/calendar-context.md`.
+This noncanonical cache exception allows local context writes only; event
+data is never published, and no background job or automatic task write is added.
+
+`ai/workflow-context.md` contains the learned rules that `day-plan` and
+`evening-review` read, with at most 100 rules. `hub-workflows` writes
+`ai/workflow-context.md` and `ai/workflow-observations.md` only through a
+confirmed proposal. `scripts/snapshot-calendar.sh` writes snapshots after
+calendar changes and at the start of day and evening reviews.

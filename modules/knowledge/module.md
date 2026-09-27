@@ -5,7 +5,7 @@ Required: no
 Switchable: no
 Depends: core, projects
 Uses if present: —
-Rules: —
+Rules: ai/rules/knowledge.md
 Keywords: —
 
 ## Purpose
@@ -15,6 +15,7 @@ records, and turn transcript info into scoped update proposals.
 
 ## Installs
 
+- modules/knowledge/rules.md -> ai/rules/knowledge.md
 - hub-template/ai/skills/hub-knowledge-enable/ -> ai/skills/hub-knowledge-enable/
 - hub-template/ai/skills/hub-knowledge-capture/ -> ai/skills/hub-knowledge-capture/
 - hub-template/ai/skills/hub-knowledge-review/ -> ai/skills/hub-knowledge-review/

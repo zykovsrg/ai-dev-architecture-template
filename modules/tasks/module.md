@@ -5,7 +5,7 @@ Required: yes
 Switchable: no
 Depends: core, projects
 Uses if present: —
-Rules: —
+Rules: ai/rules/tasks.md
 Keywords: —
 
 ## Purpose
@@ -15,6 +15,7 @@ environment checks, backed by the compact task index.
 
 ## Installs
 
+- modules/tasks/rules.md -> ai/rules/tasks.md
 - hub-template/ai/skills/hub-task-intake/ -> ai/skills/hub-task-intake/
 - hub-template/ai/skills/hub-task-switch/ -> ai/skills/hub-task-switch/
 - hub-template/ai/skills/hub-task-finish/ -> ai/skills/hub-task-finish/

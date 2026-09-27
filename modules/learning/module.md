@@ -5,7 +5,7 @@ Required: no
 Switchable: no
 Depends: core
 Uses if present: —
-Rules: —
+Rules: ai/rules/learning.md
 Keywords: —
 
 ## Purpose
@@ -15,6 +15,7 @@ findings, and track workflow friction over time.
 
 ## Installs
 
+- modules/learning/rules.md -> ai/rules/learning.md
 - hub-template/ai/skills/hub-session-review/ -> ai/skills/hub-session-review/
 - hub-template/ai/workflow-observations.md -> ai/workflow-observations.md
 - scripts/workflow_friction.py -> scripts/workflow_friction.py
