@@ -28,11 +28,12 @@ the calendar snapshot.
 
 ## Reads
 
-- task files and the calendar snapshot
+- task files
 
 ## Writes
 
 - workflow context and day-plan proposals
+- calendar snapshots `ai/tmp/calendar-snapshots`
 
 ## Subscribes
 
