@@ -15,6 +15,8 @@
   on. The calendar server needs a new session to reload.
 - Boundary warnings 58 → 53. Deferred minors: calendar shell tests not in CI
   (pre-existing), untested symlink branches, bridge rebuilt on every apply.
+- Closed 2026-09-27. Session review:
+  `ai/session-reviews/2026-09-27-planning-calendar-modules-closure.md` (issues-found, no proposals).
 
 ### 2026-09-27 — Modular architecture stage 4: passports, Obsidian switch (TASK-ai-dev-architecture-20260927-001)
 
