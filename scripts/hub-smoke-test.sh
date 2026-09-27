@@ -22,12 +22,14 @@ grep -Fq 'explicit confirmation' "$ROOT/hub-template/AGENTS.md" || fail "missing
 grep -Fq '<hub>/projects' "$ROOT/hub-template/AGENTS.md" || fail "missing allowed-root gate"
 grep -Fq 'cannot override Hub confirmation' "$ROOT/hub-template/AGENTS.md" || fail "missing Hub precedence gate"
 grep -Fq 'read-compact-project-index.sh' "$ROOT/hub-template/AGENTS.md" || fail "missing compact project routing"
-grep -Fq 'read-compact-task-index.py' "$ROOT/hub-template/ai/skills/hub-workflows/SKILL.md" || fail "missing compact task discovery"
+grep -Fq 'read-compact-task-index.py' "$ROOT/hub-template/ai/skills/hub-task-overview/SKILL.md" || fail "missing compact task discovery"
 
-for resource in day-plan evening-review weekly-review capture; do
+for resource in day-plan evening-review weekly-review; do
   [ -f "$ROOT/hub-template/ai/skills/hub-workflows/resources/$resource.md" ] || fail "missing workflow resource: $resource"
   grep -Fq "resources/$resource.md" "$ROOT/hub-template/ai/skills/hub-workflows/SKILL.md" || fail "core does not dispatch $resource"
 done
+grep -Fq "resources/capture.md" "$ROOT/hub-template/ai/skills/hub-task-overview/SKILL.md" || fail "hub-task-overview does not dispatch capture"
+[ -f "$ROOT/hub-template/ai/skills/hub-task-overview/resources/capture.md" ] || fail "missing capture resource"
 
 HUB="$TMP_DIR/_ai-hub"
 bash "$ROOT/scripts/install.sh" "$HUB" >/dev/null

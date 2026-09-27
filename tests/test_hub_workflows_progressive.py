@@ -9,7 +9,6 @@ RESOURCES = {
     "day-plan": "day-plan.md",
     "evening-review": "evening-review.md",
     "weekly-review": "weekly-review.md",
-    "capture": "capture.md",
 }
 
 
@@ -27,14 +26,22 @@ class HubWorkflowProgressiveDisclosureTests(unittest.TestCase):
     def test_common_authority_stays_in_core(self):
         core = SKILL.read_text(encoding="utf-8")
         for phrase in (
-            "## Personal-assistant scope",
             "## Fixed sequence",
+            "Never write or apply a proposal before the user confirms",
+            "`hub-task-overview`",
+        ):
+            self.assertIn(phrase, core)
+        overview = (SKILL.parents[1] / "hub-task-overview/SKILL.md").read_text(encoding="utf-8")
+        for phrase in (
+            "## Personal-assistant scope",
             "## Proposal envelope",
             "## Confirmation boundary",
             "Never write or apply a proposal before the user confirms",
             "scripts/read-compact-task-index.py",
+            "resources/capture.md",
         ):
-            self.assertIn(phrase, core)
+            self.assertIn(phrase, overview)
+        self.assertTrue((SKILL.parents[1] / "hub-task-overview/resources/capture.md").is_file())
 
     def test_detailed_scenario_formats_leave_core(self):
         core = SKILL.read_text(encoding="utf-8")

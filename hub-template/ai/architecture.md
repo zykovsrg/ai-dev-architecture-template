@@ -1,6 +1,6 @@
 # Personal AI Hub Architecture
 
-Version: 1.13
+Version: 1.14
 
 ## Purpose
 
@@ -82,7 +82,9 @@ Use this sequence for every new chat or unconfirmed request:
    personal-assistant requests. Project implementation, debugging, review, and
    other work in one project are project-specific requests. Ask one concise
    question only if this distinction is genuinely unclear.
-2. For a personal-assistant request, invoke `hub-workflows`. It may read only
+2. For a personal-assistant request, invoke `hub-task-overview` for capture
+   and cross-project overviews, or the planning skill listed in
+   `ai/modules.md` for plans and reviews. It may read only
    `ai/current-task.md`, `ai/future-tasks.md`, and `ai/paused-tasks.md` from
    all active registered projects, separates personal from work output, and
    cites each canonical source. It does not read project code, knowledge,
@@ -280,7 +282,7 @@ ask for a separate confirmation.
 
 For temporary meeting text scoped to one confirmed project, use the
 `hub-info-update` workflow. For a cross-project meeting or other supplied
-capture, use `hub-workflows` with `capture`: it produces a selectable package
+capture, use `hub-task-overview` with `capture`: it produces a selectable package
 of independent proposals before any write and does not save the source
 transcript by default. A project-local info update may refine an existing task
 only under the hub-owned `hub-task-intake` rules; a new task or task replacement
@@ -317,8 +319,8 @@ permission, never as an empty allowlist.
 применяется. Слияние касается только этого шлюза: превью остаётся полным, а
 любое непоказанное или изменённое событие требует своего подтверждения.
 
-Use the hub-owned `hub-workflows` skill for `day-plan`, `evening-review`,
-`weekly-review`, and `capture`. The skill performs semantic AI analysis, while
+Use the hub-owned `hub-workflows` skill for `day-plan`, `evening-review`, and
+`weekly-review`, and `hub-task-overview` for `capture`. The skill performs semantic AI analysis, while
 the optional Bash adapter only validates mechanical scope, paths, and recorder
 JSON. Neither layer applies project, task, knowledge, waiting, deadline,
 Calendar, or vault changes.

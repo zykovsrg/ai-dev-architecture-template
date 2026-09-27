@@ -58,17 +58,20 @@ workflow_core="hub-template/ai/skills/hub-workflows/SKILL.md"
 if [ ! -f "$workflow_core" ]; then
   missing "hub workflows" "$workflow_core"
 else
-  for resource in day-plan evening-review weekly-review capture; do
+  for resource in day-plan evening-review weekly-review; do
     file="hub-template/ai/skills/hub-workflows/resources/$resource.md"
     [ -f "$file" ] || missing "hub workflow resources" "$resource.md"
     grep -Fq "resources/$resource.md" "$workflow_core" || bad "hub workflow resources" "core does not dispatch $resource.md"
     [ ! -f "$file" ] || grep -Fq 'core `SKILL.md`' "$file" || bad "hub workflow resources" "$resource.md does not defer to core authority"
   done
+  overview_core="hub-template/ai/skills/hub-task-overview/SKILL.md"
+  [ -f "hub-template/ai/skills/hub-task-overview/resources/capture.md" ] || missing "hub workflow resources" "hub-task-overview/resources/capture.md"
+  grep -Fq "resources/capture.md" "$overview_core" 2>/dev/null || bad "hub workflow resources" "hub-task-overview does not dispatch capture.md"
   [ "$fail" -ne 0 ] || ok "hub workflow resources" "all scenario resources exist and are core-dispatched"
 fi
 
 if [ -f "$workflow_core" ]; then
-  declared_actions="$(sed -n -E 's/^action: <(.*)>$/\1/p' "$workflow_core")"
+  declared_actions="$(sed -n -E 's/^action: <(.*)>$/\1/p' "hub-template/ai/skills/hub-task-overview/SKILL.md" 2>/dev/null)"
   referenced_learning="$(grep -rhoE '\`(goal_progress|add_observation|promote_rule|retire_rule)\`' hub-template/ai/skills/hub-workflows 2>/dev/null | tr -d '\`' | sort -u || true)"
   while IFS= read -r action; do
     [ -z "$action" ] && continue
@@ -80,7 +83,7 @@ EOF
   [ "$fail" -ne 0 ] || ok "workflow action schema" "learning actions and proposal schema agree"
 fi
 
-if grep -Fq 'scripts/read-compact-task-index.py ->' modules/*/module.md && grep -Fq 'scripts/read-compact-task-index.py' "$workflow_core"; then
+if grep -Fq 'scripts/read-compact-task-index.py ->' modules/*/module.md && grep -Fq 'scripts/read-compact-task-index.py' "hub-template/ai/skills/hub-task-overview/SKILL.md"; then
   ok "compact task index" "shipped via module passport and used for personal-assistant discovery"
 else
   bad "compact task index" "module passport or workflow routing is missing"

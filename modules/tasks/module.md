@@ -19,6 +19,7 @@ environment checks, backed by the compact task index.
 - hub-template/ai/skills/hub-task-switch/ -> ai/skills/hub-task-switch/
 - hub-template/ai/skills/hub-task-finish/ -> ai/skills/hub-task-finish/
 - hub-template/ai/skills/hub-environment-check/ -> ai/skills/hub-environment-check/
+- hub-template/ai/skills/hub-task-overview/ -> ai/skills/hub-task-overview/
 - scripts/read-compact-task-index.py -> scripts/read-compact-task-index.py
 - scripts/task_records.py -> scripts/task_records.py
 - scripts/check-all-task-records.sh -> scripts/check-all-task-records.sh

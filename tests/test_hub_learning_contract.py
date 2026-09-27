@@ -4,6 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILL = ROOT / "hub-template/ai/skills/hub-workflows/SKILL.md"
+OVERVIEW = ROOT / "hub-template/ai/skills/hub-task-overview/SKILL.md"
 LIFECYCLE = ROOT / "hub-template/ai/skills/hub-workflows/resources/learning-lifecycle.md"
 LEARNING_ACTIONS = {"goal_progress", "add_observation", "promote_rule", "retire_rule"}
 EXPECTED_INVARIANTS = {
@@ -25,7 +26,7 @@ def lifecycle_invariants():
 
 class HubLearningContractTests(unittest.TestCase):
     def test_proposal_actions_cover_learning_lifecycle(self):
-        text = SKILL.read_text(encoding="utf-8")
+        text = OVERVIEW.read_text(encoding="utf-8")
         match = re.search(r"^action: <([^>]+)>$", text, re.MULTILINE)
         self.assertIsNotNone(match, "canonical proposal action enum is missing")
         declared = set(match.group(1).split("|"))
@@ -49,7 +50,7 @@ class HubLearningContractTests(unittest.TestCase):
 
     def test_referenced_learning_actions_are_declared(self):
         text = SKILL.read_text(encoding="utf-8")
-        match = re.search(r"^action: <([^>]+)>$", text, re.MULTILINE)
+        match = re.search(r"^action: <([^>]+)>$", OVERVIEW.read_text(encoding="utf-8"), re.MULTILINE)
         self.assertIsNotNone(match)
         declared = set(match.group(1).split("|"))
         referenced = set(re.findall(r"`(goal_progress|add_observation|promote_rule|retire_rule)`", text))
