@@ -11,6 +11,7 @@ unit() {
   bash "$ROOT/modules/obsidian/tests/obsidian-task-sync-watch-test.sh"
   for test in "$ROOT"/tests/test-*.sh; do bash "$test"; done
   for test in "$ROOT"/tests/test-*.py; do python3 "$test"; done
+  python3 "$ROOT/scripts/check-module-boundaries.py" --source "$ROOT"
 }
 
 integration() {
