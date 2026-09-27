@@ -5,7 +5,7 @@ Required: no
 Switchable: yes
 Depends: core, projects, tasks, calendar
 Uses if present: goals, learning
-Rules: —
+Rules: ai/rules/planning.md
 Keywords: —
 
 ## Purpose
@@ -21,6 +21,7 @@ the calendar snapshot.
 - scripts/calendar-context.py -> scripts/calendar-context.py
 - scripts/calendar_task_sync.py -> scripts/calendar_task_sync.py
 - scripts/validate-day-plan-output.py -> scripts/validate-day-plan-output.py
+- modules/planning/rules.md -> ai/rules/planning.md
 
 ## Repository only
 
@@ -37,4 +38,5 @@ the calendar snapshot.
 
 ## Subscribes
 
-- —
+- before-task-confirmation: follow ai/rules/planning.md § before-task-confirmation
+- after-calendar-change: follow ai/rules/planning.md § after-calendar-change
