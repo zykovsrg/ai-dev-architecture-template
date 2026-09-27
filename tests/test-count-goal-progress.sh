@@ -279,7 +279,8 @@ rm -rf "$HUB"
 # --- tsv format always uses a dot decimal separator, regardless of locale ---
 HUB="$(make_pace_hub "2099-01-01")"
 echo "| 2026-09-01 | pace-test | 34 | — | forces a fractional rate28 |" >>"$HUB/ai/goal-log.md"
-out="$(LC_ALL=de_DE.UTF-8 bash "$SCRIPT" --hub "$HUB" --goal pace-test --as-of 2026-09-07 --format tsv 2>&1)"
+# stderr is kept apart: a runner without de_DE.UTF-8 prints a setlocale warning there.
+out="$(LC_ALL=de_DE.UTF-8 bash "$SCRIPT" --hub "$HUB" --goal pace-test --as-of 2026-09-07 --format tsv 2>"$HUB/stderr")"
 rate28="$(printf '%s' "$out" | awk -F'\t' '{print $9}')"
 [ "$rate28" = "8.5" ] \
   && pass "tsv format uses a dot decimal separator under a comma locale" \
