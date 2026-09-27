@@ -7,6 +7,8 @@ import re
 import sys
 from pathlib import Path
 
+from archiprojects import members as archiproject_members
+from archiprojects import parse_groups, read_cards
 from task_records import read_records_lines, unrecognized_headings
 
 SOURCE_FILES = {
@@ -69,11 +71,23 @@ def safe_record(project_root: Path, relative: str) -> Path:
     return path
 
 
-def build_index(hub: Path) -> list[dict[str, object]]:
+def resolve_group_project_ids(hub: Path, group_id: str) -> set[str]:
+    """Return the member project ids for `group_id` (KeyError if unknown)."""
+    groups = parse_groups(hub / "ai/archiprojects.md")
+    cards = read_cards(hub)
+    return set(archiproject_members(groups, cards, group_id))
+
+
+def build_index(hub: Path, group_id: str | None = None) -> list[dict[str, object]]:
     hub = hub.resolve()
+    allowed_project_ids = None
+    if group_id is not None:
+        allowed_project_ids = resolve_group_project_ids(hub, group_id)
     rows = []
     for project in sorted(parse_registry(hub / "ai/project-registry.md"), key=lambda item: item["project_id"]):
         if project["status"] != "active":
+            continue
+        if allowed_project_ids is not None and project["project_id"] not in allowed_project_ids:
             continue
         project_root = registered_project_root(hub, project)
         for kind, relative in SOURCE_FILES.items():
@@ -100,9 +114,19 @@ def build_index(hub: Path) -> list[dict[str, object]]:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--hub", required=True, type=Path)
+    parser.add_argument("--group")
     args = parser.parse_args()
+    if args.group is not None:
+        try:
+            resolve_group_project_ids(args.hub.resolve(), args.group)
+        except KeyError:
+            print(f"unknown archiprojects group: {args.group}", file=sys.stderr)
+            return 2
+        except ValueError as error:
+            print(str(error), file=sys.stderr)
+            return 2
     try:
-        print(json.dumps(build_index(args.hub), ensure_ascii=False, sort_keys=True, separators=(",", ":")))
+        print(json.dumps(build_index(args.hub, args.group), ensure_ascii=False, sort_keys=True, separators=(",", ":")))
     except (OSError, ValueError, json.JSONDecodeError) as error:
         print(str(error), file=sys.stderr)
         return 2

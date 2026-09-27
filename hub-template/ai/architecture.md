@@ -1,6 +1,6 @@
 # Personal AI Hub Architecture
 
-Version: 1.16
+Version: 1.17
 
 ## Purpose
 
@@ -95,7 +95,7 @@ Use this sequence for every new chat or unconfirmed request:
    remains a reviewed proposal that needs explicit confirmation.
 3. For a project-specific request, run
    `scripts/read-compact-project-index.sh` and match using only `project_id`,
-   `name`, `tags`, `status`, and `purpose_brief`.
+   `name`, `tags`, `status`, `purpose_brief`, and `group`.
 4. For a selected candidate, read its exact registered path only to display
    `Project: <id>`, `Path: <path>`, and `Mode: routing`.
 5. Ask for explicit confirmation of that project and path. Before confirmation,
@@ -517,7 +517,7 @@ Load the smallest useful context in layers:
    `ai/paused-tasks.md` for each active project. Do not load cards, knowledge,
    code, Git, credentials, or arbitrary project files.
 2. For an unconfirmed project-specific request: the entry file and the
-   five-field result of `scripts/read-compact-project-index.sh`; read an exact
+   six-field result of `scripts/read-compact-project-index.sh`; read an exact
    registered path only to display a selected candidate. Do not load cards,
    signals, project memory, knowledge, code, Git, or linked targets.
 3. After project confirmation: the hub-owned `hub-environment-check`, the
