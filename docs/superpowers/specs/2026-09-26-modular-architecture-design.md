@@ -1,7 +1,7 @@
 # Modular Architecture Design
 
 Task: TASK-ai-dev-architecture-20260926-001
-Status: approved in chat 2026-09-26 (sections 1–4); written spec pending user review.
+Status: approved in chat 2026-09-26 (sections 1–4); stage 4 details approved 2026-09-27.
 
 ## Problem
 
@@ -173,3 +173,110 @@ Later tasks (recorded in `ai/future-tasks.md`):
 ## Out of scope
 
 Separate repositories per module; moving the Hub to a server; a UI.
+
+## Stage 4 details (TASK-ai-dev-architecture-20260927-001)
+
+Status: approved in chat 2026-09-27. Scope: phase 4 plus the Obsidian part of
+phase 5 (Obsidian is the pilot switchable module).
+
+### Passports
+
+- Every module from the table above gets `modules/<id>/module.md`, including
+  `release`. The format is Markdown readable by the Python standard library:
+  header lines `Id:`, `Required: yes|no`, `Switchable: yes|no`, `Depends:`,
+  `Uses if present:`, `Rules:`, `Keywords:`, then sections `## Purpose`,
+  `## Installs`, `## Repository only`, `## Reads`, `## Writes`,
+  `## Subscribes`. Empty values are written as `—`.
+- `## Installs` lists `- <source> -> <hub target>` lines; a source ending in
+  `/` includes every file beneath it. Only `obsidian` moves physically in this
+  stage (`modules/obsidian/scripts`, `modules/obsidian/tests`,
+  `modules/obsidian/rules.md`); other passports list files at their current
+  paths. `hub-workflows` belongs to `planning` until phase 5 splits capture out.
+  `calendar-policy/` is listed under `## Repository only` of `calendar`
+  because `sync-calendar-policy.sh` installs it, not the release manifest.
+- The release manifest is built from the `## Installs` lists of the selected
+  modules and replaces `RUNTIME_SCRIPTS`. A test fails if any file under
+  `hub-template/` or any installed script has zero or more than one owner.
+  The create-if-missing policy for memory files and project cards is
+  unchanged.
+- Only `obsidian` has `Switchable: yes` in this stage.
+
+### Module selection and `ai/modules.md`
+
+- The manifest gains `modules`: the selected module IDs. Because the manifest is
+  saved as `.local/hub-release/installed.json`, the selection persists.
+- `update-installed-hub.sh` and `hub_release.py preview|apply|drift` accept
+  `--without <id>` and `--with <id>`. Without flags the previous selection is
+  used; a Hub whose metadata has no `modules` key gets all modules (today's
+  behavior). Refused: a required or non-switchable module, an unknown ID, or
+  removing a module that a selected module lists in `Depends:`.
+- The installer generates `ai/modules.md` (managed, not stored in
+  `hub-template/`): installed modules, and for each event its subscribers with
+  the command and rules path. With no subscribers an event shows `—`.
+- A module's rules install to `ai/rules/<id>.md`. The `Central Obsidian
+  Projection` section leaves `ai/architecture.md` for
+  `modules/obsidian/rules.md` (vault path, refresh, reverse scan/apply,
+  proposal gate); `architecture.md` keeps a one-line pointer and its
+  `Version:` is bumped.
+
+### Events
+
+- `after-task-write` only in this stage. `hub-task-intake`, `hub-task-switch`,
+  `hub-task-finish`, `hub-info-update`, and
+  `hub-calendar/resources/joint-task-change.md` replace their Obsidian blocks
+  with one rule: after a confirmed task-file write, read `ai/modules.md`; for
+  each `after-task-write` subscriber read its rules file and run its command;
+  no subscriber means no call. A subscriber that reports a pending proposal is
+  shown to the user and never applied without its own confirmation.
+- After this stage no file owned by core, projects, tasks, knowledge, or
+  calendar names an Obsidian script, the vault path, or `Obsidian`. A test
+  enforces this strictly.
+
+### Boundary check
+
+- `scripts/check-module-boundaries.py` (owner: release) maps each file to its
+  module through passports and searches it for other modules' identifiers:
+  installed file basenames, skill folder names, rules paths, and `Keywords:`.
+  A reference is allowed to self, core, `Depends:`, and `Uses if present:`.
+- Output: one `WARN <file>: <module> via <token>` line per violation; exit 0.
+  `--strict` exits 1 on any violation. Expected warnings now include
+  `hub-info-update` writing task files and calendar files naming tasks (fixed
+  in phase 5).
+- Per the 2026-08-15 decision, every new check is shown failing on a
+  deliberately broken fixture before it counts.
+
+### Disabling Obsidian
+
+- Disabling is the normal update with `--without obsidian`: the preview lists
+  the removed scripts and rules and the changed skills and `ai/modules.md`,
+  and applies only after plan-hash confirmation. A locally changed file is a
+  conflict, as today.
+- Never touched: the vault `projects/ai-dev-architecture/obsidian-vault`,
+  anything under `/projects/` or `.local/` except release metadata. After
+  disabling, boards stay as they are but stop refreshing, and Obsidian edits no
+  longer become proposals. No launchd watcher is installed on this Mac
+  (verified 2026-09-27), so none is removed. `--with obsidian` restores it.
+- The 2026-08-29 decision `Scoped Obsidian reverse proposals` applies only
+  while the module is installed; a new decision records this.
+
+### Working Hub
+
+1. The Hub has uncommitted files left from the previous update; ask the user
+   before committing them, because the update refuses a dirty Hub.
+2. Dry run with `--without obsidian`, show the list, apply after confirmation.
+3. `hub_release.py drift` exits 0; task skills read `ai/modules.md` and work
+   with no subscribers; `check-all-task-records.sh` passes.
+
+### Tests
+
+New: passport parsing and ownership; manifest with and without `obsidian`;
+selection persistence and refusals; `ai/modules.md` content; disable then
+re-enable on a fixture Hub with a vault fixture left byte-identical; boundary
+check warn and strict modes; strict "no Obsidian outside its module". The moved
+Obsidian tests keep running from `architecture-test.sh`. All existing tests and
+CI stay green.
+
+### Out of scope for this stage
+
+Moving other modules into `modules/`; `before-task-confirmation`; planning and
+calendar switching; archiprojects; splitting the rest of `architecture.md`.
