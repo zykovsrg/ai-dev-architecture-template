@@ -39,7 +39,7 @@ git -C "$ROOT" archive HEAD | tar -x -C "$WORK"
 git -C "$WORK" init -q
 git -C "$WORK" config user.name test
 git -C "$WORK" config user.email test@example.com
-git -C "$WORK" add -A
+git -C "$WORK" add -A -f
 git -C "$WORK" commit -q -m 'fixture: source A'
 git init -q --bare "$REMOTE"
 git -C "$WORK" remote add fixture "$REMOTE"
