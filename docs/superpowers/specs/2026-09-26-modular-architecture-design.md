@@ -473,3 +473,65 @@ points to its rules file in one line.
 ### Working Hub
 
 Updated only after the user's "yes"; afterwards `hub_release.py drift` exits 0.
+
+## Stage 8 details (TASK-ai-dev-architecture-20260927-005)
+
+Move the remaining modules into `modules/<id>/`, reach zero boundary
+violations, and make the strict check a failing test.
+
+### Dependency rule, refined
+
+The always-installed modules — core, projects, tasks — may reference each
+other freely: they can never be missing. The earlier line "core depends on —"
+now reads "core depends on no switchable or optional module". A reference to
+an optional module (knowledge, goals, learning, calendar, planning, obsidian)
+is allowed only from itself, a module that lists it in `Depends:` or
+`Uses if present:`, or through an event or `ai/modules.md`.
+`check-module-boundaries.py` adds core, projects and tasks to every module's
+allowed set.
+
+### New events
+
+- `before-task-close` — fired by `hub-task-finish` after Done criteria pass and
+  before task memory is cleared. learning subscribes (session review, its
+  result path goes into the task); knowledge subscribes (may offer, never
+  start, a focused knowledge review). No subscriber → closure proceeds as
+  today without a review.
+- `after-project-create` — fired by `hub-project-create` after the confirmed
+  scaffold is written. knowledge subscribes and creates the empty `knowledge/`
+  scaffold; the creation preview lists subscriber items on the same screen.
+
+### Finding optional skills by role
+
+`hub-project-router`, `CLAUDE.md` and `AGENTS.md` name no optional skill.
+They use "the planning skill listed in `ai/modules.md`" and "the learning
+skill listed in `ai/modules.md`" (section `## Skills`). If the module is not
+listed, say it is not installed and do not improvise.
+
+### Remaining text fixes
+
+`ai/archiprojects.md` template drops its mention of goals;
+`ai/workflow-observations.md` drops `hub-workflows`; learning gains
+`Uses if present: planning` because `check-workflow-memory.sh` validates
+`ai/workflow-context.md` only when present; `modules/tasks/rules.md` drops
+the word "calendar"; `check-workflow-memory.sh` stops using `calendar-date.sh`
+or tasks is allowed (always installed).
+
+### Layout
+
+knowledge, goals, learning, then core, projects, tasks move to
+`modules/<id>/` (skills, scripts, data templates, rules). Hub target paths do
+not change. `hub-template/` is removed once empty; every live reference to it
+(scripts, tests, README, getting-started, active docs) is updated. Historical
+records (changelogs, decisions, old specs and plans) are not rewritten.
+
+### Tests
+
+- `architecture-test.sh` runs `check-module-boundaries.py --strict`; shown
+  failing on a deliberately broken fixture first.
+- `tests/test_module_events.py` adds core to `NO_PLANNING_CALENDAR`.
+- Event tests: `hub-task-finish` fires `before-task-close`;
+  `hub-project-create` fires `after-project-create`; installing without
+  learning/knowledge yields no subscriber and the skills still read correctly.
+- After the working-Hub update: a day plan still renders and a closure still
+  runs the session review.
