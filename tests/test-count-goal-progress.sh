@@ -182,6 +182,29 @@ out="$(bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07 2>&1)"; rc=$?
   || fail "a goal with an unknown archiproject group is rejected" "rc=$rc out=$out"
 rm -rf "$HUB"
 
+# --- a broken group registry (archiprojects.py exit 1) is distinguished from
+# an unknown group (archiprojects.py exit 2): the message must say the
+# registry is invalid, not that the group is unknown. ---
+HUB="$(make_hub)"
+cat >"$HUB/ai/archiprojects.md" <<'ARCHI'
+# Archiprojects
+
+## hadassah
+
+```yaml
+id: hadassah
+name: Хадасса
+status: active
+```
+ARCHI
+out="$(bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07 2>&1)"; rc=$?
+if [ "$rc" -ne 0 ] && printf '%s' "$out" | grep -q "group registry invalid"; then
+  pass "a malformed archiprojects.md is reported as an invalid registry, not an unknown group"
+else
+  fail "a malformed archiprojects.md is reported as an invalid registry, not an unknown group" "rc=$rc out=$out"
+fi
+rm -rf "$HUB"
+
 # --- output includes the goal's group ---
 HUB="$(make_hub)"
 out="$(bash "$SCRIPT" --hub "$HUB" --goal promo-32 --as-of 2026-09-07 2>&1)"

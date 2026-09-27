@@ -38,9 +38,13 @@ DUP_GOAL_ID="$(printf '%s\n' "$GOALS_TSV" | awk -F'\t' '{if(seen[$1]++)print $1}
 goal_field() { printf '%s\n' "$GOALS_TSV" | awk -F'\t' -v id="$1" -v n="$2" '$1==id{print $n;found=1} END{exit found?0:1}'; }
 
 check_group() {
-  local goal_id="$1" group="$2"
-  python3 "$SCRIPT_DIR/archiprojects.py" members --hub "$HUB_DIR" --group "$group" >/dev/null 2>&1 \
-    || die "unknown archiproject group for goal $goal_id in $GOALS_FILE: $group"
+  local goal_id="$1" group="$2" err rc=0
+  err="$(python3 "$SCRIPT_DIR/archiprojects.py" members --hub "$HUB_DIR" --group "$group" 2>&1 >/dev/null)" || rc=$?
+  [ "$rc" -eq 0 ] && return 0
+  if [ "$rc" -eq 2 ]; then
+    die "unknown archiproject group for goal $goal_id in $GOALS_FILE: $group"
+  fi
+  die "group registry invalid: $err"
 }
 printf '%s\n' "$GOALS_TSV" | while IFS=$'\t' read -r id _ _ group _ _ _; do
   [ -n "$id" ] || continue
