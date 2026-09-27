@@ -100,6 +100,26 @@ bash scripts/update-installed-hub.sh \
 
 Если есть conflict, не используйте force overwrite. Сначала определите, что это за файл: пользовательская кастомизация, намеренное локальное изменение или устаревшая managed copy. Сохраните нужное состояние и выполните новый preview.
 
+## Модули
+
+Некоторые модули можно включать и выключать. Пример — Obsidian.
+
+Выключить при обновлении:
+
+```bash
+bash scripts/update-installed-hub.sh --hub /path/to/_ai-hub --source /path/to/pinned-repository --dry-run --without obsidian
+```
+
+Включить обратно:
+
+```bash
+bash scripts/update-installed-hub.sh --hub /path/to/_ai-hub --source /path/to/pinned-repository --dry-run --with obsidian
+```
+
+Preview покажет `Modules:` и, если выбор изменился, строку `Module change: -obsidian` или `+obsidian`, а также сами файлы модуля в `remove`/`create`. Выбор запоминается: следующий update без `--with`/`--without` сохранит текущий набор модулей. Apply нужен так же, как обычно — с тем же `--confirm-plan`.
+
+Obsidian vault и `.local/` updater никогда не удаляет — выключение модуля убирает только его managed-скрипты и rules-файл.
+
 ## Что updater сохраняет
 
 Hub update не является миграцией проектов и не должен изменять проектные репозитории.

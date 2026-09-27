@@ -12,10 +12,11 @@ DO_COMMIT=0
 ALLOW_DIRTY=0
 TMP_DIR=""
 RESOLVED_SHA=""
+MODULE_ARGS=()
 
 usage() {
   cat <<'EOF'
-Usage: update-installed-hub.sh [--check|--dry-run|--apply --confirm-plan SHA --confirm-source-sha SHA] [--hub DIR] [--source DIR | --ref REF] [--commit] [--allow-dirty]
+Usage: update-installed-hub.sh [--check|--dry-run|--apply --confirm-plan SHA --confirm-source-sha SHA] [--hub DIR] [--source DIR | --ref REF] [--commit] [--allow-dirty] [--with ID] [--without ID]
 
 Uses scripts/hub_release.py as the single preview/apply engine.
 Remote preview resolves one immutable commit SHA and includes it in the plan.
@@ -39,6 +40,7 @@ while [ "$#" -gt 0 ]; do
     --ref) shift; [ "$#" -gt 0 ] || die "--ref requires a ref"; REF="$1" ;;
     --confirm-plan) shift; [ "$#" -gt 0 ] || die "--confirm-plan requires a hash"; CONFIRM_PLAN="$1" ;;
     --confirm-source-sha) shift; [ "$#" -gt 0 ] || die "--confirm-source-sha requires a commit SHA"; CONFIRM_SOURCE_SHA="$1" ;;
+    --with|--without) opt="$1"; shift; [ "$#" -gt 0 ] || die "$opt requires a module id"; MODULE_ARGS+=("$opt" "$1") ;;
     -h|--help) usage; exit 0 ;;
     *) die "unknown option: $1" ;;
   esac
@@ -79,20 +81,30 @@ fi
 [ -d "$SOURCE_REPO_ROOT/hub-template" ] || die "source is missing hub-template/"
 
 if [ -n "$RESOLVED_SHA" ]; then
-  PLAN_JSON="$(python3 "$SOURCE_REPO_ROOT/scripts/hub_release.py" preview --source "$SOURCE_REPO_ROOT" --hub "$HUB_DIR" --source-sha "$RESOLVED_SHA")"
+  PLAN_JSON="$(python3 "$SOURCE_REPO_ROOT/scripts/hub_release.py" preview --source "$SOURCE_REPO_ROOT" --hub "$HUB_DIR" --source-sha "$RESOLVED_SHA" ${MODULE_ARGS[@]+"${MODULE_ARGS[@]}"})"
 else
-  PLAN_JSON="$(python3 "$SOURCE_REPO_ROOT/scripts/hub_release.py" preview --source "$SOURCE_REPO_ROOT" --hub "$HUB_DIR")"
+  PLAN_JSON="$(python3 "$SOURCE_REPO_ROOT/scripts/hub_release.py" preview --source "$SOURCE_REPO_ROOT" --hub "$HUB_DIR" ${MODULE_ARGS[@]+"${MODULE_ARGS[@]}"})"
 fi
 PLAN_SHA="$(printf '%s' "$PLAN_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["plan_sha256"])')"
 DIFF_COUNT="$(printf '%s' "$PLAN_JSON" | python3 -c 'import json,sys; print(sum(1 for x in json.load(sys.stdin)["operations"] if x["action"] != "keep"))')"
 
 print_plan() {
-  printf '%s' "$PLAN_JSON" | python3 -c 'import json,sys
-p=json.load(sys.stdin)
+  PLAN_JSON="$PLAN_JSON" python3 - <<'PY'
+import json, os
+p = json.loads(os.environ["PLAN_JSON"])
 for x in p["operations"]:
-    if x["action"] != "keep": print(f"{x['"'"'action'"'"']}: {x['"'"'target'"'"']}")
+    if x["action"] != "keep":
+        print(f"{x['action']}: {x['target']}")
+print("Modules:", ", ".join(p["modules"]))
+prev = p.get("previous_modules")
+if prev is not None:
+    change = [f"-{m}" for m in prev if m not in p["modules"]] + [f"+{m}" for m in p["modules"] if m not in prev]
+    if change:
+        print("Module change:", " ".join(change))
 print("Plan SHA256:", p["plan_sha256"])
-if p.get("source_sha"): print("Source SHA:", p["source_sha"])'
+if p.get("source_sha"):
+    print("Source SHA:", p["source_sha"])
+PY
 }
 
 if [ "$MODE" = "check" ]; then
@@ -119,9 +131,9 @@ fi
 
 if [ -n "$RESOLVED_SHA" ]; then
   python3 "$SOURCE_REPO_ROOT/scripts/hub_release.py" apply --source "$SOURCE_REPO_ROOT" --hub "$HUB_DIR" \
-    --source-sha "$RESOLVED_SHA" --confirm-source-sha "$CONFIRM_SOURCE_SHA" --confirm-plan "$CONFIRM_PLAN"
+    --source-sha "$RESOLVED_SHA" --confirm-source-sha "$CONFIRM_SOURCE_SHA" --confirm-plan "$CONFIRM_PLAN" ${MODULE_ARGS[@]+"${MODULE_ARGS[@]}"}
 else
-  python3 "$SOURCE_REPO_ROOT/scripts/hub_release.py" apply --source "$SOURCE_REPO_ROOT" --hub "$HUB_DIR" --confirm-plan "$CONFIRM_PLAN"
+  python3 "$SOURCE_REPO_ROOT/scripts/hub_release.py" apply --source "$SOURCE_REPO_ROOT" --hub "$HUB_DIR" --confirm-plan "$CONFIRM_PLAN" ${MODULE_ARGS[@]+"${MODULE_ARGS[@]}"}
 fi
 
 if [ "$DO_COMMIT" -eq 1 ]; then
