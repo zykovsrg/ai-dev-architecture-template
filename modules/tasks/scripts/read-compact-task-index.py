@@ -8,8 +8,8 @@ import sys
 from pathlib import Path
 
 # Installed Hub: archiprojects.py (owned by projects) sits next to this script
-# in the same scripts/ target directory. Repository source tree: projects has
-# not moved yet, so fall back to its repository-relative source directory.
+# in the same scripts/ target directory. Repository source tree: it lives
+# under modules/projects/scripts/ instead, so fall back to that path.
 _HERE = Path(__file__).resolve().parent
 if not (_HERE / "archiprojects.py").exists():
     sys.path.insert(0, str(_HERE / ".." / ".." / "projects" / "scripts"))

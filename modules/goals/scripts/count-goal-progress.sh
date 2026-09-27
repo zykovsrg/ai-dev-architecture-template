@@ -3,8 +3,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)"
 # Installed Hub: archiprojects.py (owned by projects) sits next to this script
-# in the same scripts/ target directory. Repository source tree: projects has
-# not moved yet, so fall back to the repository-relative path.
+# in the same scripts/ target directory. Repository source tree: it lives
+# under modules/projects/scripts/ instead, so fall back to that path.
 if [ -f "$SCRIPT_DIR/archiprojects.py" ]; then
   ARCHIPROJECTS_PY="$SCRIPT_DIR/archiprojects.py"
 else
