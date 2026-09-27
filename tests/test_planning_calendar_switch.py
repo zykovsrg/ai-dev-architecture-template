@@ -103,7 +103,10 @@ class PlanningCalendarSwitchTests(unittest.TestCase):
             dry = self.run_updater(hub, "--dry-run", "--with", "planning", "--with", "calendar",
                                     env={"HUB_CALENDAR_SKIP_BRIDGE": "1"})
             self.assertIn("Module change: +calendar +planning", dry.stdout)
-            self.assertIn("Extra step: install calendar server", dry.stdout)
+            self.assertIn(
+                "Extra step: refresh calendar server (tools/apple-calendar-policy, bridge rebuild, .mcp.json hub_calendar if missing)",
+                dry.stdout,
+            )
             applied = self.run_updater(hub, "--apply", "--with", "planning", "--with", "calendar",
                                         "--confirm-plan", self.plan_sha(dry.stdout),
                                         env={"HUB_CALENDAR_SKIP_BRIDGE": "1"})
@@ -125,6 +128,99 @@ class PlanningCalendarSwitchTests(unittest.TestCase):
                                        env={"HUB_CALENDAR_SKIP_BRIDGE": "1"})
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("calendar", result.stderr)
+
+    def test_unchanged_selection_preview_still_shows_extra_step(self):
+        # calendar is selected by default (fresh install); a preview with no
+        # --with/--without at all must still describe the post-apply step,
+        # because sync-calendar-policy.sh runs on every apply regardless of
+        # whether the module selection changed.
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as tmp:
+            hub = self.installed_hub(Path(tmp))
+            dry = self.run_updater(hub, "--dry-run", env={"HUB_CALENDAR_SKIP_BRIDGE": "1"})
+            self.assertEqual(dry.returncode, 0, dry.stderr)
+            self.assertNotIn("Module change:", dry.stdout)
+            self.assertIn(
+                "Extra step: refresh calendar server (tools/apple-calendar-policy, bridge rebuild, .mcp.json hub_calendar if missing)",
+                dry.stdout,
+            )
+
+
+class CalendarSyncScriptSafetyTests(unittest.TestCase):
+    SYNC = ROOT / "modules/calendar/scripts/sync-calendar-policy.sh"
+
+    def run_sync(self, hub, *args, env=None):
+        import os
+        full_env = dict(os.environ)
+        full_env["HUB_CALENDAR_SKIP_BRIDGE"] = "1"
+        if env:
+            full_env.update(env)
+        return subprocess.run(
+            ["bash", str(self.SYNC), "--source", str(ROOT), "--hub", str(hub), *args],
+            capture_output=True, text=True, check=False, env=full_env,
+        )
+
+    def make_hub(self, root):
+        hub = root / "_ai-hub"
+        hub.mkdir()
+        return hub
+
+    def test_malformed_mcp_json_blocks_install_and_remove(self):
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as tmp:
+            hub = self.make_hub(Path(tmp))
+            mcp_path = hub / ".mcp.json"
+            mcp_path.write_text("not json at all", encoding="utf-8")
+            before = mcp_path.read_text()
+
+            result = self.run_sync(hub)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("not valid JSON", result.stderr)
+            self.assertEqual(mcp_path.read_text(), before)
+            self.assertFalse((hub / "tools").exists())
+
+            dry = self.run_sync(hub, "--dry-run")
+            self.assertNotEqual(dry.returncode, 0)
+            self.assertIn("not valid JSON", dry.stderr)
+            self.assertEqual(mcp_path.read_text(), before)
+
+            result = self.run_sync(hub, "--remove")
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("not valid JSON", result.stderr)
+            self.assertEqual(mcp_path.read_text(), before)
+
+    def test_mcp_servers_not_an_object_blocks_install_and_remove(self):
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as tmp:
+            hub = self.make_hub(Path(tmp))
+            mcp_path = hub / ".mcp.json"
+            mcp_path.write_text(json.dumps({"mcpServers": ["not", "a", "dict"]}), encoding="utf-8")
+            before = mcp_path.read_text()
+
+            result = self.run_sync(hub)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("mcpServers", result.stderr)
+            self.assertEqual(mcp_path.read_text(), before)
+            self.assertFalse((hub / "tools").exists())
+
+            result = self.run_sync(hub, "--remove")
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("mcpServers", result.stderr)
+            self.assertEqual(mcp_path.read_text(), before)
+
+    def test_symlinked_tool_dir_blocks_remove(self):
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as tmp:
+            hub = self.make_hub(Path(tmp))
+            outside = Path(tmp) / "outside-target"
+            outside.mkdir()
+            (outside / "marker.txt").write_text("do not delete me\n", encoding="utf-8")
+            tools_dir = hub / "tools"
+            tools_dir.mkdir()
+            link = tools_dir / "apple-calendar-policy"
+            link.symlink_to(outside)
+
+            result = self.run_sync(hub, "--remove")
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("symlink", result.stderr)
+            self.assertTrue(link.is_symlink())
+            self.assertTrue((outside / "marker.txt").exists())
 
 
 if __name__ == "__main__":
