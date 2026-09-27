@@ -1,45 +1,31 @@
 # Current Task
 
-Task ID: TASK-ai-dev-architecture-20260927-003
-Status: active
-Stage: review
+Status: empty
+Stage: intake
 
 ## Goal
 
-Этап 6 модульной архитектуры: вложенные группы архипроектов (`parent:`, не
-глубже 3, без циклов), цели в `ai/goals.md` (модуль goals), шестое поле
-`group` в коротком списке проектов, скрипт дерева групп, «что горит по
-группе» и «план дня по группе». Разовый перенос данных (группа «Хадасса →
-Промо», проекты, 2 цели) — только после отдельного подтверждения.
-
-Источник: FT-20260926-003 (решение пользователя 2026-09-27). Спецификация:
-`docs/superpowers/specs/2026-09-26-modular-architecture-design.md`, раздел
-Archiprojects.
+No active task.
 
 ## Relevant files
 
-- `hub-template/ai/archiprojects.md`, `hub-template/ai/goal-log.md`
-- `scripts/check-hub-registry.sh`, `scripts/read-compact-project-index.sh`
-- `hub-template/ai/skills/hub-goal-progress/`, `scripts/count-goal-progress.sh`
-- `hub-template/ai/skills/hub-task-overview/`, `modules/planning/skills/hub-workflows/`
-- `modules/*/module.md`
+None yet.
 
 ## Done criteria
 
-- Проверка реестра отклоняет циклы, потерянных родителей и глубину больше 3.
-- Цели живут в `ai/goals.md`; группы не ссылаются на цели; поля карточек
-  `related_archiprojects` и `archiproject_contribution` убраны.
-- Короткий список проектов показывает группу; скрипт печатает дерево групп.
-- Обзор и план по группе читают задачи только проектов группы и подгрупп.
-- Перенос данных в рабочем хабе сделан после отдельного подтверждения;
-  `drift` → exit 0; тесты и CI зелёные до слияния.
+Define during task intake.
 
 ## Agent handoff
 
 Last agent: Claude (Opus 5.5)
 
-What changed: all done criteria met 2026-09-27 — see `ai/changelog.md` (stage 6).
+What changed: TASK-ai-dev-architecture-20260927-003 закрыта 2026-09-27.
+Вложенные группы, цели в `ai/goals.md`, колонка `group` и фильтр `--group`;
+перенос данных в рабочем хабе (Хадасса → Промо 29, Хадасса → SEO 8);
+PR #12 слит после зелёного CI.
+Session review: `ai/session-reviews/2026-09-27-archiprojects-groups-goals-closure.md`.
 
-Open risks: none known.
+Open risks: предложение P1 разбора сессии ждёт решения пользователя.
 
-Next agent should check: close with `hub-task-finish` after user approval.
+Next agent should check: следующая задача — FT-20260926-004 (разрезать
+`architecture.md` и убрать повторы правил).
