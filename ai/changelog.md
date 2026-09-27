@@ -9,8 +9,8 @@
   calendar); planning gained a "Plans and reviews" section from the same split.
 - Route-then-confirm is defined only in `hub-project-router`; `CLAUDE.md` and
   `AGENTS.md` now just point to it.
-- A `Module rules: ai/rules/<id>.md` pointer was added to the 17 skill files
-  of the six affected modules.
+- A `Module rules: ai/rules/<id>.md` pointer was added to skill files of the
+  affected modules (`grep -rl "Module rules:" hub-template/ai/skills modules/*/skills | wc -l` → 19).
 - `check-consistency.sh` § "hub skill naming" and § "knowledge safeguards" now
   read `modules/*/rules.md` too, not just the three core files.
 - Boundary warnings 55 → 27 (`check-module-boundaries.py`), because core no

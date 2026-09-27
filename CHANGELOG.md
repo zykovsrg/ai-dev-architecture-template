@@ -9,7 +9,7 @@
   permissions); per-module procedures moved to `modules/<id>/rules.md`
   (projects, tasks, knowledge, goals, learning, calendar, plus a new section
   in planning). Route-then-confirm is defined only in `hub-project-router`.
-- Hub architecture version raised `1.12` → `2.0`.
+- Hub architecture version raised `1.17` → `2.0`.
 
 ### 2026-09-11 — Hub-only consolidation
 
