@@ -17,6 +17,7 @@ entries to the canonical goal log.
 
 - hub-template/ai/skills/hub-goal-progress/ -> ai/skills/hub-goal-progress/
 - hub-template/ai/goal-log.md -> ai/goal-log.md
+- hub-template/ai/goals.md -> ai/goals.md
 - scripts/count-goal-progress.sh -> scripts/count-goal-progress.sh
 
 ## Repository only

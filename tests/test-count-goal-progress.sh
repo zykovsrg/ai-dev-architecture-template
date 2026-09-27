@@ -22,10 +22,7 @@ make_hub() {
 id: <archiproject-id>
 name: <human name>
 status: <status>
-kind: goal
-target: <target>
-unit: <unit>
-due: YYYY-MM-DD or none
+kind: group
 ```
 
 ## hadassah
@@ -36,6 +33,23 @@ name: Хадасса
 status: active
 kind: group
 ```
+ARCHI
+  cat >"$dir/ai/goals.md" <<'GOALS'
+# Goals
+
+## Schema
+
+## <goal-id>
+
+```yaml
+id: <goal-id>
+name: <human name>
+status: <status>
+group: <archiproject-group-id>
+target: <target>
+unit: <unit>
+due: YYYY-MM-DD or none
+```
 
 ## promo-32
 
@@ -43,12 +57,12 @@ kind: group
 id: promo-32
 name: 32 промо-страницы
 status: active
-kind: goal
+group: hadassah
 target: 32
 unit: pages
 due: 2026-09-30
 ```
-ARCHI
+GOALS
   cat >"$dir/ai/goal-log.md" <<'LOG'
 # Goal Log
 
@@ -66,8 +80,20 @@ make_pace_hub() {
   local dir
   dir="$(mktemp -d)"
   mkdir -p "$dir/ai"
-  cat >"$dir/ai/archiprojects.md" <<ARCHI
+  cat >"$dir/ai/archiprojects.md" <<'ARCHI'
 # Archiprojects
+
+## pace-group
+
+```yaml
+id: pace-group
+name: Pace group
+status: active
+kind: group
+```
+ARCHI
+  cat >"$dir/ai/goals.md" <<GOALS
+# Goals
 
 ## pace-test
 
@@ -75,12 +101,12 @@ make_pace_hub() {
 id: pace-test
 name: Pace test
 status: active
-kind: goal
+group: pace-group
 target: 100
 unit: units
 due: $due
 \`\`\`
-ARCHI
+GOALS
   cat >"$dir/ai/goal-log.md" <<'LOG'
 # Goal Log
 
@@ -97,9 +123,9 @@ out="$(bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07 --format tsv 2>&1)"
 # Check exactly one line of output
 line_count="$(printf '%s\n' "$out" | wc -l | tr -d ' ')"
 if [ "$line_count" != "1" ]; then
-  fail "only kind: goal blocks are counted, schema placeholder skipped" "expected 1 line, got $line_count: $out"
+  fail "goals are read from ai/goals.md, schema placeholder skipped" "expected 1 line, got $line_count: $out"
 else
-  # Verify content: id, target, unit, due in the 12-field report row
+  # Verify content: id, target, unit, due in the 13-field report row
   id="$(printf '%s\n' "$out" | cut -f1)"
   target="$(printf '%s\n' "$out" | cut -f3)"
   unit="$(printf '%s\n' "$out" | cut -f4)"
@@ -107,12 +133,65 @@ else
 
   if [ "$id" = "promo-32" ] && [ "$target" = "32" ] && \
      [ "$unit" = "pages" ] && [ "$due" = "2026-09-30" ]; then
-    pass "only kind: goal blocks are counted, schema placeholder skipped"
+    pass "goals are read from ai/goals.md, schema placeholder skipped"
   else
-    fail "only kind: goal blocks are counted, schema placeholder skipped" \
+    fail "goals are read from ai/goals.md, schema placeholder skipped" \
       "got: id=$id, target=$target, unit=$unit, due=$due"
   fi
 fi
+rm -rf "$HUB"
+
+# --- a goal in ai/archiprojects.md is no longer read ---
+HUB="$(make_hub)"
+cat >>"$HUB/ai/archiprojects.md" <<'ARCHI'
+
+## legacy-goal
+
+```yaml
+id: legacy-goal
+name: Legacy goal left in the group registry
+status: active
+kind: group
+```
+ARCHI
+out="$(bash "$SCRIPT" --hub "$HUB" --goal legacy-goal --as-of 2026-09-07 2>&1)"; rc=$?
+[ "$rc" -ne 0 ] && printf '%s' "$out" | grep -q "unknown goal: legacy-goal" \
+  && pass "a goal id present only in ai/archiprojects.md is not read as a goal" \
+  || fail "a goal id present only in ai/archiprojects.md is not read as a goal" "rc=$rc out=$out"
+rm -rf "$HUB"
+
+# --- unknown goal group fails ---
+HUB="$(make_hub)"
+cat >>"$HUB/ai/goals.md" <<'GOALS'
+
+## bad-group-goal
+
+```yaml
+id: bad-group-goal
+name: Goal with unknown group
+status: active
+group: no-such-group
+target: 10
+unit: pages
+due: 2026-09-30
+```
+GOALS
+out="$(bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07 2>&1)"; rc=$?
+[ "$rc" -ne 0 ] && printf '%s' "$out" | grep -q "no-such-group" \
+  && pass "a goal with an unknown archiproject group is rejected" \
+  || fail "a goal with an unknown archiproject group is rejected" "rc=$rc out=$out"
+rm -rf "$HUB"
+
+# --- output includes the goal's group ---
+HUB="$(make_hub)"
+out="$(bash "$SCRIPT" --hub "$HUB" --goal promo-32 --as-of 2026-09-07 2>&1)"
+printf '%s' "$out" | grep -q "группа: hadassah" \
+  && pass "text output shows the goal's group" \
+  || fail "text output shows the goal's group" "$out"
+out_tsv="$(bash "$SCRIPT" --hub "$HUB" --goal promo-32 --as-of 2026-09-07 --format tsv 2>&1)"
+[ "$(printf '%s' "$out_tsv" | awk -F'\t' '{print $13}')" = "hadassah" ] \
+  && pass "tsv output exposes the goal's group as the 13th field" \
+  || fail "tsv output exposes the goal's group as the 13th field" "$out_tsv"
 rm -rf "$HUB"
 
 # --- validation ---
@@ -256,7 +335,7 @@ expect_failure "oversized amount is rejected cleanly" \
 
 # --- duplicated goal id in the registry dies with a clear error ---
 HUB="$(make_hub)"
-cat >>"$HUB/ai/archiprojects.md" <<'ARCHI'
+cat >>"$HUB/ai/goals.md" <<'GOALS'
 
 ## promo-32-dup
 
@@ -264,12 +343,12 @@ cat >>"$HUB/ai/archiprojects.md" <<'ARCHI'
 id: promo-32
 name: Duplicate
 status: active
-kind: goal
+group: hadassah
 target: 10
 unit: pages
 due: 2026-09-30
 ```
-ARCHI
+GOALS
 out="$(bash "$SCRIPT" --hub "$HUB" --goal promo-32 --as-of 2026-09-07 2>&1)"; rc=$?
 [ "$rc" -ne 0 ] && printf '%s' "$out" | grep -q "duplicate goal_id.*promo-32" \
   && pass "duplicated goal id in the registry is rejected with a clear error" \

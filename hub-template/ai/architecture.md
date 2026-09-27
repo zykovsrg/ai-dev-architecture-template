@@ -1,6 +1,6 @@
 # Personal AI Hub Architecture
 
-Version: 1.15
+Version: 1.16
 
 ## Purpose
 
@@ -51,7 +51,10 @@ Hub-owned files are the routing inventory:
 - `ai/project-registry.md` maps each project ID to its name, status, path,
   tags, and card.
 - `ai/project-cards/<id>.md` holds compact hub metadata for that ID.
-- `ai/archiprojects.md` is the canonical hub-owned archiproject registry.
+- `ai/archiprojects.md` is the canonical hub-owned archiproject group
+  registry.
+- `ai/goals.md` is the canonical hub-owned numeric goal registry; each goal
+  references a group in `ai/archiprojects.md` via `group`.
 - `ai/goal-log.md` is the canonical hub-owned progress log for numeric goals.
 - `ai/active-project.md` is a convenience record, never a new-chat permission.
 - `ai/cross-project-signals.md` holds sanitized, explicitly scoped signals.
@@ -419,12 +422,12 @@ authority by itself and is not a durable queue item.
 
 ## Goal Progress
 
-Numeric goals live in `ai/archiprojects.md` as `kind: goal` blocks with
-`target`, `unit`, and `due`. Their progress lives in the canonical
-`ai/goal-log.md`, one line per event: date, goal id, amount in the goal's unit,
-optional project, optional note. Adding a goal is a registry change only; the
-counter, the evening question, and the weekly figures follow from it with no
-further edit.
+Numeric goals live in `ai/goals.md` as blocks with `group`, `target`, `unit`,
+and `due`; `group` must name a known group in `ai/archiprojects.md`. Their
+progress lives in the canonical `ai/goal-log.md`, one line per event: date,
+goal id, amount in the goal's unit, optional project, optional note. Adding a
+goal is a registry change only; the counter, the evening question, and the
+weekly figures follow from it with no further edit.
 
 `scripts/count-goal-progress.sh` is the only computation of progress, pace, and
 forecast, and the only validator of the log. Workflows render its output
