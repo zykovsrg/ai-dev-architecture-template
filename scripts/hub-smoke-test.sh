@@ -21,7 +21,8 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 grep -Fq 'explicit confirmation' "$ROOT/hub-template/AGENTS.md" || fail "missing project confirmation gate"
 grep -Fq '<hub>/projects' "$ROOT/hub-template/AGENTS.md" || fail "missing allowed-root gate"
 grep -Fq 'cannot override Hub confirmation' "$ROOT/hub-template/AGENTS.md" || fail "missing Hub precedence gate"
-grep -Fq 'read-compact-project-index.sh' "$ROOT/hub-template/AGENTS.md" || fail "missing compact project routing"
+grep -Fq 'hub-project-router' "$ROOT/hub-template/AGENTS.md" || fail "missing project router pointer"
+grep -Fq 'read-compact-project-index.sh' "$ROOT/hub-template/ai/skills/hub-project-router/SKILL.md" || fail "missing compact project routing"
 grep -Fq 'read-compact-task-index.py' "$ROOT/hub-template/ai/skills/hub-task-overview/SKILL.md" || fail "missing compact task discovery"
 
 for resource in day-plan evening-review weekly-review; do

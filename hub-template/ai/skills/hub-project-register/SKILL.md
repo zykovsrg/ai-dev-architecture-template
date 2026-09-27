@@ -9,6 +9,8 @@ Use this skill only for a user-requested registration. Registration starts in
 `Mode: routing` and requires explicit confirmation for every action that reads
 project context or changes hub metadata.
 
+Module rules: `ai/rules/projects.md`.
+
 ## Primary inventory (before individual project confirmation)
 
 1. Read `ai/allowed-roots.md` and canonicalize the hub directory. Require that

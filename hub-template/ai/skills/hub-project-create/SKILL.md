@@ -10,6 +10,8 @@ Use this workflow only to create a new project. It starts and remains in
 and exact path. `hub-project-register` is for an already existing project; do not
 invoke it for this creation workflow.
 
+Module rules: `ai/rules/projects.md`.
+
 ## Before confirmation: narrow read and validation boundary
 
 1. Read only `ai/allowed-roots.md`, `ai/project-registry.md`, and

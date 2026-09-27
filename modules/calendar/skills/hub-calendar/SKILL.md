@@ -9,6 +9,8 @@ description: Safely read selected Apple Calendar calendars and prepare one-time 
 Use only the guarded local Apple Calendar MCP. Never configure or call the raw
 upstream MCP. The local source is pinned; automatic updates are forbidden.
 
+Module rules: `ai/rules/calendar.md`.
+
 Read only calendar IDs listed in the local allowlist. Never infer IDs from
 names. Every read response must state `Apple Calendar / EventKit` and its IANA
 timezone. Reads never change events.

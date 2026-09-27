@@ -9,6 +9,8 @@ Use this skill when the user supplies temporary meeting text or asks to update
 selected project memories from it. Work in `Mode: review` until every proposed
 write has the required approval.
 
+Module rules: `ai/rules/knowledge.md`.
+
 ## Boundaries
 
 Do not save the source transcript by default. Treat it as temporary input and

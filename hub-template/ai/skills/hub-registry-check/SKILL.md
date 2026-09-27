@@ -8,6 +8,8 @@ description: Audit hub registration metadata and propose separately approved mai
 Use this skill to inspect hub registration health. It is read-only until approval: the audit must not edit allowed roots, registry entries, cards,
 signals, archives, active-project data, or any registered project.
 
+Module rules: `ai/rules/projects.md`.
+
 ## Audit procedure
 
 1. Run `scripts/check-hub-registry.sh` against the hub and record its output

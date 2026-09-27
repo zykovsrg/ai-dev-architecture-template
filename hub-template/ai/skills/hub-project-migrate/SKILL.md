@@ -10,6 +10,8 @@ into `<canonical-hub>/projects`. Stay in `Mode: routing` until the relevant
 confirmation gate is complete. Migration approval never authorizes project
 registration or project-content reads. Every approval below is an explicit confirmation of its displayed scope only.
 
+Module rules: `ai/rules/projects.md`.
+
 ## Temporary source gate
 
 1. Validate that `ai/allowed-roots.md` contains exactly the canonical

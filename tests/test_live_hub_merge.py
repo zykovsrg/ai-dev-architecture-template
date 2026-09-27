@@ -15,11 +15,13 @@ def source(path):
 
 class LiveHubMergeTests(unittest.TestCase):
     def test_template_keeps_existing_learning_and_adds_session_review(self):
-        text = template("ai/architecture.md")
-        self.assertIn("## Goal Progress", text)
-        self.assertIn("## Self-Learning Workflows", text)
-        self.assertIn("hub-session-review", text)
-        self.assertIn("snapshot-calendar.sh", text)
+        goals = source("modules/goals/rules.md")
+        learning = source("modules/learning/rules.md")
+        planning = source("modules/planning/rules.md")
+        self.assertIn("## Goal Progress", goals)
+        self.assertIn("## Self-Learning Workflows", learning)
+        self.assertIn("hub-session-review", learning)
+        self.assertIn("snapshot-calendar.sh", planning)
 
     def test_template_workflows_keep_calendar_and_rule_lifecycle(self):
         workflows = source("modules/planning/skills/hub-workflows/SKILL.md")

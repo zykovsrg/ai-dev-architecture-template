@@ -10,6 +10,8 @@ an enduring owner/boundary, and repeated work that does not require reading
 unrelated areas to understand it. Do not install a local router merely because
 the project has several folders or tags.
 
+Module rules: `ai/rules/projects.md`.
+
 ## Preconditions
 
 1. Confirm the active project's registered ID and exact path through the hub.
