@@ -1,5 +1,21 @@
 # Changelog
 
+### 2026-09-27 — Modular architecture stage 4: passports, Obsidian switch (TASK-ai-dev-architecture-20260927-001)
+
+- Passports `modules/<id>/module.md` for all 10 modules; `scripts/module_passports.py`.
+  The release manifest is built from passports (`RUNTIME_SCRIPTS` removed), a
+  missing declared file fails loudly, targets under `projects/`/`.local/` are refused.
+- Module selection persisted in `installed.json`; generated `ai/modules.md`;
+  `update-installed-hub.sh --with/--without <id>` (only obsidian is switchable).
+- Obsidian moved to `modules/obsidian/` with `ai/rules/obsidian.md`; task skills
+  and `joint-task-change.md` use the `after-task-write` event; architecture.md 1.13.
+- `scripts/check-module-boundaries.py` (warning mode, 58 warnings, none Obsidian).
+- Working Hub: Obsidian disabled (Hub commits 406b01c, 15520e1); drift exit 0;
+  task records OK; vault unchanged. CI green on 2738139.
+- Plan `docs/superpowers/plans/2026-09-27-module-passports-obsidian-switch.md`.
+- Deferred minors: projects passport doesn't name `archiprojects.md`; learning
+  Writes mixes observations and friction notes; boundary-check GENERIC list small.
+
 ### 2026-09-27 — Modular architecture, steps 1–2 (TASK-ai-dev-architecture-20260926-001)
 
 - Audit and spec: `docs/superpowers/specs/2026-09-26-modular-architecture-design.md`

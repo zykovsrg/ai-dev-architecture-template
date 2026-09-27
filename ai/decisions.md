@@ -1,5 +1,23 @@
 # Decisions
 
+### 2026-09-27 — Obsidian is an optional module, disabled in the working Hub
+
+Status: active
+
+Decision: Obsidian lives in `modules/obsidian/` and is installed only when
+selected. Task skills never call it directly; they fire `after-task-write`
+through the generated `ai/modules.md`. The working Hub runs without it
+(`update-installed-hub.sh --without obsidian`); the selection is stored in
+`.local/hub-release/installed.json`. Re-enable with `--with obsidian`.
+
+Why: Stage 4 of the modular architecture; Obsidian is the pilot switchable
+module (spec `docs/superpowers/specs/2026-09-26-modular-architecture-design.md`,
+section `Stage 4 details`).
+
+Impact: the 2026-08-29 decision `Scoped Obsidian reverse proposals` applies only
+while the module is installed. The vault and its boards stay untouched but no
+longer refresh. Release files come only from module passports.
+
 ### 2026-09-27 — The architecture repository is the only source of Hub runtime files
 
 Status: active

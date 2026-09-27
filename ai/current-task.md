@@ -2,7 +2,7 @@
 
 Task ID: TASK-ai-dev-architecture-20260927-001
 Status: active
-Stage: intake
+Stage: review
 
 ## Goal
 
@@ -37,11 +37,10 @@ Stage: intake
 
 Last agent: Claude (Opus 5.5)
 
-What changed: задача открыта 2026-09-27 после закрытия
-TASK-ai-dev-architecture-20260926-001.
+What changed: all done criteria met 2026-09-27 — see `ai/changelog.md`
+(stage 4 entry). Stage: review.
 
-Open risks: см. предыдущую передачу в `ai/changelog.md` (2026-09-27) —
-локальная папка `ai/skills/` и `/ai/` в `.git/info/exclude` не решены.
+Open risks: known local-only failures (`hub-smoke-test.sh` /tmp symlink,
+`check-consistency.sh` root project rules with untracked `ai/skills/`).
 
-Next agent should check: написать план (superpowers:writing-plans) по
-спецификации; уточнить с пользователем только то, чего нет в спецификации.
+Next agent should check: close the task with `hub-task-finish` after user approval.
