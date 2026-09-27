@@ -356,3 +356,66 @@ core, projects, or tasks names `hub-calendar`, `hub-workflows`, calendar MCP
 tools, or planning scripts; the calendar server exposes no evening-review tool;
 re-enabling restores everything. Baselines are taken at the branch base, and CI
 runs on the pushed branch before merging (session review P1 practice).
+
+## Stage 6 details (TASK-ai-dev-architecture-20260927-003)
+
+Status: approved in chat 2026-09-27. Scope: phase 6 — nested groups, goals file,
+group-wide work, one-time data migration.
+
+### Data format
+
+- `ai/archiprojects.md` (owner: projects) holds only `kind: group` entries with
+  an optional `parent: <group-id>`. Validation rejects unknown parents, cycles,
+  depth above 3 (a top group is depth 1), and any `kind: goal` left in the file.
+- `ai/goals.md` (owner: goals, create-if-missing) holds goal entries in the same
+  heading + fenced YAML style: `id`, `name`, `status`, `group`, `target`,
+  `unit`, `due`. `group` must be a known group. `ai/goal-log.md` is unchanged;
+  its `goal_id` now refers to `ai/goals.md`.
+- Project cards keep only `primary_archiproject: <group-id|none>`, which must be
+  a known group. `archiproject_contribution` and `related_archiprojects` are
+  removed from cards, templates, skills, and validation. This supersedes the
+  contribution/related parts of decisions 2026-08-24 and 2026-08-28.
+
+### Commands
+
+- `scripts/archiprojects.py` (projects): `validate --hub`, `tree --hub` (group
+  tree with member project IDs, indented by depth), `members --hub --group <id>`
+  (projects of the group and all subgroups, one per line). `check-hub-registry.sh`
+  calls `validate` instead of its own group parsing.
+- `read-compact-project-index.sh` gains a sixth column `group` (the card's
+  `primary_archiproject`).
+- `count-goal-progress.sh` (goals) reads goals from `ai/goals.md`.
+- `read-compact-task-index.py` gains `--group <id>`: it reads task files only for
+  `members` of that group; without it, behaviour is unchanged.
+
+### Group-wide work
+
+- `hub-task-overview`: "что горит по <группе>" resolves the group by id or name
+  from `archiprojects.py tree`, then uses `--group`; a group match is not a
+  project confirmation, and opening a project still needs it.
+- Planning's day plan and weekly review accept an optional group with the same
+  `--group` filter.
+- `hub-goal-progress` shows each goal with its group.
+
+### Migration (separately confirmed in the working Hub)
+
+- New groups: `hadassah-promo` («Промо», parent `hadassah`) and `hadassah-seo`
+  («SEO», parent `hadassah`).
+- `hadassah-promo`: all 30 promo projects — every `release-page-*`,
+  `stranitsa-stomatologii`, `stranitsa-vyezdnoy-sluzhby`, `promo-pages`.
+- `hadassah-seo`: SEO projects currently in `hadassah`, listed for the user
+  before the change (from card names/purposes containing SEO).
+- Goals: `hadassah-promo-32-aug-sep` → group `hadassah-promo`;
+  `seo-pages-80-sep` → group `hadassah-seo`; both move to `ai/goals.md`.
+- Remove the two dropped fields from all 71 cards. The migration is a script
+  with `--dry-run` (full diff list) and `--apply`; it never touches project
+  folders, only Hub `ai/` files.
+
+### Tests
+
+Validation fixtures for cycle, missing parent, depth 4, goal in the group file,
+unknown goal group, unknown card group; tree and members output; compact index
+six columns; `--group` reads only member projects (a non-member task file is
+not opened); goal progress from `ai/goals.md`; migration dry-run lists exactly
+the planned changes and apply is idempotent. The Obsidian generator tolerates
+cards without the dropped fields.
