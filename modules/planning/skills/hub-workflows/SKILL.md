@@ -14,6 +14,8 @@ Use this skill for `day-plan`, `evening-review`, or `weekly-review`.
 It is proposal-first. Never write or apply a proposal before the user confirms
 the exact displayed package.
 
+Module rules: `ai/rules/planning.md`.
+
 Read schedules only through the guarded `hub_calendar` MCP and only with its
 read tools. Never call `preview_change` or `apply_change` here; Calendar writes
 belong to `hub-calendar` and its own confirmation. Do not perform a vault

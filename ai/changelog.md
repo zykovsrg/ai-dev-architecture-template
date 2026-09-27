@@ -1,5 +1,34 @@
 # Changelog
 
+### 2026-09-27 — Modular architecture stage 7: architecture.md split into core + modules (TASK-ai-dev-architecture-20260927-004)
+
+- `hub-template/ai/architecture.md` cut down to core only: ownership map,
+  module-loading rules, context-loading budget, mode-based write permissions.
+  `Version: 2.0`. Per-module procedures moved into six new
+  `modules/<id>/rules.md` (projects, tasks, knowledge, goals, learning,
+  calendar); planning gained a "Plans and reviews" section from the same split.
+- Route-then-confirm is defined only in `hub-project-router`; `CLAUDE.md` and
+  `AGENTS.md` now just point to it.
+- A `Module rules: ai/rules/<id>.md` pointer was added to skill files of the
+  affected modules (`grep -rl "Module rules:" hub-template/ai/skills modules/*/skills | wc -l` → 19).
+- `check-consistency.sh` § "hub skill naming" and § "knowledge safeguards" now
+  read `modules/*/rules.md` too, not just the three core files.
+- Boundary warnings 55 → 27 (`check-module-boundaries.py`), because core no
+  longer names other modules' skills/files in running text.
+- Two duplicated planning paragraphs were dropped instead of copied (already
+  stated in `modules/planning/rules.md` and `hub-workflows/SKILL.md`): the
+  schedule-field/joint-confirmation paragraph, and the six-step workflow
+  contract plus its "no apply mode" follow-up.
+- Sizes for a typical project session (entry + router + architecture), before
+  → after: `CLAUDE.md` 3757 → 3624, `architecture.md` 31969 → 7550,
+  `hub-project-router/SKILL.md` 7302 → 7302 (unchanged); sum 43028 → 18476
+  chars, roughly 10757 → 4619 tokens (chars/4 estimate).
+- Tests: `tests/` unittest discover 180 → 184 OK (+4 new `test_rules_split`);
+  `check-consistency.sh` 0 mismatches both before and after;
+  `check-module-boundaries.py` 0 failures both before and after.
+- Decision: `ai/decisions.md` 2026-09-27 "Правила модулей живут в
+  `ai/rules/<id>.md`" (amends 2026-08-15).
+
 ### 2026-09-27 — Modular architecture stage 6: nested groups and goals (TASK-ai-dev-architecture-20260927-003)
 
 - `scripts/archiprojects.py` (validate / tree / members); `check-hub-registry.sh`

@@ -10,6 +10,8 @@ project and successful hub registry validation. Its scope is the selected
 project `ai/` memory only; do not require or read duplicated project
 `AGENTS.md` or `CLAUDE.md` files.
 
+Module rules: `ai/rules/tasks.md`.
+
 ## Procedure
 
 1. Restate the confirmed project ID and canonical registered path.

@@ -127,7 +127,9 @@ Acceptance criteria:
 
 ### FT-20260926-004 — Разрезать `architecture.md` и убрать повторы правил
 
-Status: idea
+Status: promoted
+
+Promotion notes: стала TASK-ai-dev-architecture-20260927-004.
 
 Priority: medium
 

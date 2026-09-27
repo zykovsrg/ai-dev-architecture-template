@@ -8,6 +8,8 @@ description: Switch between registered projects without turning a project switch
 Use this skill only when the user asks to leave a confirmed project for another
 project. A project switch is not a task switch. It must not modify the current task, pause a task, replace a task, or edit either project's task memory.
 
+Module rules: `ai/rules/projects.md`.
+
 ## Procedure
 
 1. Return to `Mode: routing`. Read the hub registry and active-project record

@@ -10,6 +10,8 @@ Use this skill to show progress toward the numeric goals registered in
 `ai/goals.md`, or to record one progress entry. It is the only writer
 of `ai/goal-log.md`.
 
+Module rules: `ai/rules/goals.md`.
+
 ## Scope
 
 Read only `ai/goals.md`, `ai/goal-log.md`, and the output of

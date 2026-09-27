@@ -10,6 +10,8 @@ project and after the hub-owned `hub-task-intake` classifies the request as a
 different task. Its scope is the selected project `ai/` memory only; do not
 require or read duplicated project `AGENTS.md` or `CLAUDE.md` files.
 
+Module rules: `ai/rules/tasks.md`.
+
 ## Procedure
 
 1. Read only the selected project's `ai/current-task.md` and

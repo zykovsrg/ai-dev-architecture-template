@@ -1,6 +1,6 @@
 # Personal AI Hub Architecture
 
-Version: 1.17
+Version: 2.0
 
 ## Purpose
 
@@ -42,126 +42,6 @@ Concise communication is the default. Add headings only when they improve naviga
 
 Hub routing and project isolation remain higher-priority safety constraints and cannot be removed in the name of simplicity.
 
-## Ownership And Registry
-
-Hub-owned files are the routing inventory:
-
-- `ai/allowed-roots.md` records exactly one physical directory: the hub's
-  `<hub>/projects` directory. It is the only directory eligible for projects.
-- `ai/project-registry.md` maps each project ID to its name, status, path,
-  tags, and card.
-- `ai/project-cards/<id>.md` holds compact hub metadata for that ID.
-- `ai/archiprojects.md` is the canonical hub-owned archiproject group
-  registry.
-- `ai/goals.md` is the canonical hub-owned numeric goal registry; each goal
-  references a group in `ai/archiprojects.md` via `group`.
-- `ai/goal-log.md` is the canonical hub-owned progress log for numeric goals.
-- `ai/active-project.md` is a convenience record, never a new-chat permission.
-- `ai/cross-project-signals.md` holds sanitized, explicitly scoped signals.
-
-Project-owned files are the selected project's code, memory, instructions,
-configuration, and history. A project card must not contain copied task memory,
-source code, credentials, or an instruction that overrides the project itself.
-Project/task files remain canonical; project cards are metadata only and a link
-never grants a project read. A card declares only one archiproject field:
-`primary_archiproject: <group-id|none>`. A project belongs to exactly one,
-most specific group; it is also a member of every ancestor group. Waiting is
-task/subtask-only: do not place a project in Waiting while other work is
-actionable.
-
-The registry is the authority for an ID, status, and exact path. The card is
-supporting metadata only. An absent, invalid, or unregistered card/path blocks
-routing; do not guess a replacement path. Validate maintained registry changes
-with `scripts/check-hub-registry.sh` before relying on them. Use the hub-owned
-`hub-registry-check` workflow to audit registration health; it is read-only
-until each individual fix receives its own approval.
-
-## Local Router
-
-Use this sequence for every new chat or unconfirmed request:
-
-1. Classify the request. Day plans, cross-project status or review, supplied
-   task or meeting capture, and cross-project knowledge search are
-   personal-assistant requests. Project implementation, debugging, review, and
-   other work in one project are project-specific requests. Ask one concise
-   question only if this distinction is genuinely unclear.
-2. For a personal-assistant request, invoke `hub-task-overview` for capture
-   and cross-project overviews, or the planning skill listed in
-   `ai/modules.md` for plans and reviews. It may read only
-   `ai/current-task.md`, `ai/future-tasks.md`, and `ai/paused-tasks.md` from
-   all active registered projects, separates personal from work output, and
-   cites each canonical source. It does not read project code, knowledge,
-   credentials, arbitrary files, or inactive/archived projects. A later write
-   remains a reviewed proposal that needs explicit confirmation.
-3. For a project-specific request, run
-   `scripts/read-compact-project-index.sh` and match using only `project_id`,
-   `name`, `tags`, `status`, `purpose_brief`, and `group`.
-4. For a selected candidate, read its exact registered path only to display
-   `Project: <id>`, `Path: <path>`, and `Mode: routing`.
-5. Ask for explicit confirmation of that project and path. Before confirmation,
-   do not read cards, signals, tasks, memory, knowledge, code, Git, or linked
-   targets.
-6. Only after confirmation, invoke the hub-owned `hub-environment-check` against
-   the selected project's `ai/` memory, then use the hub-managed project flow.
-
-This sequence is the hub-owned `hub-project-router` workflow. The router never
-discovers projects by listing arbitrary folders, follows a
-path outside `<hub>/projects`, or treats a remembered active project as confirmed
-in a new chat. If no single registered project matches, ask the user to choose
-from safe registry results; do not inspect likely directories to decide.
-
-Example: the request names "website metrics". The router may present
-`Project: metrics-site`, `Path: /work/demo/metrics-site`, and `Mode: routing`.
-It must wait for confirmation before opening `/work/demo/metrics-site`.
-
-## Project Creation And Registration
-
-Use `hub-project-create` when the user requests a new project. After one complete
-preview and explicit confirmation, it creates exactly one direct-child project
-under the validated `<hub>/projects` root: only its `ai/` memory files (`current-task.md`,
-`paused-tasks.md`, `future-tasks.md`, `project-context.md`, `decisions.md`, and
-`changelog.md`), its empty optional `knowledge/` scaffold, a card, a registry
-entry, and an active-project selection. The scaffold consists only of
-`knowledge/README.md`, `knowledge/record-template.md`, and the four empty
-directories `knowledge/research/`, `knowledge/decisions/`, `knowledge/risks/`,
-`knowledge/runbooks/`, and `knowledge/inbox/`. Inbox holds weak observations;
-it is not a durable knowledge category. Git initialization is covered by Repository
-Provisioning below. It must not create code, dependencies, services, duplicate
-registry entries, or any other project files. Use
-`hub-project-register` for an existing folder; it does not replace the new-project
-creation flow.
-
-## Existing Project Migration
-
-Use `hub-project-migrate` only when the user asks to move legacy project folders
-into `<hub>/projects`. It requires a separately confirmed temporary source that
-is never made an allowed root and expires when the workflow ends. Before any
-candidate preflight, inventory direct-child names only, exclude the target hub,
-and reject backups, archives, symlinks, and unknown folders without reading
-their contents.
-
-After a separately confirmed candidate or displayed batch preflight, show each
-exact source-to-destination mapping, narrow Git status, and collision result.
-Moving requires another explicit confirmation. Move the whole folder without
-copying, preserve its existing Git metadata, and stop the batch on the first
-failure or integrity concern. The order is `hub-project-migrate` move → separate
-`hub-project-register` confirmation → `scripts/check-hub-registry.sh` validation
-→ optional legacy cleanup confirmation. Neither source confirmation nor move
-confirmation authorizes registration or cleanup. The optional cleanup may only
-delete its explicit legacy standalone-rule allowlist after its own confirmation;
-it preserves project memory and is not needed for hub-based work.
-
-## Repository Provisioning
-
-Every new project has its own local Git repository. After the standard
-project-create scaffold and registry validation, the approved creation flow
-initializes Git and commits the initial scaffold. When GitHub CLI
-authentication is available and the project ID is unused, the same confirmed
-flow creates a private GitHub repository named after that ID and pushes `main`.
-The preview and confirmation disclose these actions. If GitHub access or remote
-creation is unavailable, local creation succeeds and is reported as
-`pending-sync`; the workflow never attaches or overwrites an existing remote.
-
 ## Confirmation And Confidence
 
 Use these confidence labels in router summaries and cross-project signals:
@@ -177,52 +57,6 @@ Only `verified` selection plus explicit confirmation permits project access.
 must not change a registry record, broaden the allowed-root boundary, or trigger a read.
 Label hypotheses as hypotheses and preserve their source when recording them.
 
-## Project Switches And Task Switches
-
-A project switch changes the selected project. It always returns to
-`Mode: routing`, shows the new exact registered path, and requires a new
-explicit confirmation before any read of the new project's memory or code.
-Use the hub-owned `hub-project-switch` workflow for this operation.
-
-A task switch happens inside an already confirmed project. Use that project's
-hub-owned `hub-task-switch` workflow and selected-project `ai/` memory; it is not
-a project switch. Do not pause, finish, copy, or rewrite one project's task
-memory while switching to another project. A request that mentions two projects
-needs separate confirmation for each project and a clear boundary for any
-shared output.
-
-## Hub-Managed Project Flow
-
-After an explicit confirmation of a registered project and successful registry
-validation, use these central hub-owned skills. They remove any need to copy
-`AGENTS.md`, `CLAUDE.md`, or workflow files into each project:
-
-- `hub-environment-check` — read-only readiness and current-state check of the
-  selected project's `ai/` memory.
-- `hub-task-intake` — records or classifies the requested work in the selected
-  project's `ai/current-task.md`.
-- `hub-task-switch` — changes an unfinished task only after a separate explicit
-  confirmation, using only the selected project's `ai/` memory.
-- `hub-task-finish` — verifies the selected project's task and, when its check
-  finds no blocker, first saves an evidence-based review of the current agent
-  session, then cleans task memory and saves the result. Only a task with a
-  schedule keeps the joint task-and-calendar confirmation. It may offer, but
-  never start, a focused `hub-knowledge-review`.
-- `hub-session-review` — reviews a completed task's current session or an
-  explicitly selected session. Reviews live only in the selected project's
-  `ai/session-reviews/`; findings are proposals and require explicit approval
-  before any improvement is applied.
-- `hub-knowledge-capture` — creates or updates one explicitly selected record in
-  the confirmed project's local `knowledge/` tree after exact confirmation.
-- `hub-knowledge-review` — checks one explicit project-local record, folder, or
-  task-linked set and waits for exact confirmation before any edit.
-
-Each shared workflow operates only after a confirmed registered project and
-only against that selected project's `ai/` memory or explicitly selected
-project-local `knowledge/` paths. It cannot weaken hub confirmation,
-allowed-root, secret, personal/client-data, or memory-isolation rules. It never
-reads, writes, pauses, finishes, or copies another project's memory or records.
-
 ## Module Rules
 
 Optional modules install their rules as `ai/rules/<id>.md`. The installer
@@ -230,40 +64,8 @@ lists installed modules and event subscribers in the generated
 `ai/modules.md`. A module's rules are read only when one of its commands or
 subscriptions runs; a module that is not installed is never called.
 
-## Optional Project Knowledge
-
-`knowledge/` is optional local reference material, not default context and not
-an automatic conversation archive. A new project receives only the empty
-knowledge scaffold as part of its one confirmed `hub-project-create` operation.
-Hub-created projects use the central hub-owned `hub-knowledge-capture` and
-`hub-knowledge-review` workflows; generic project skills are never copied into
-them. Both workflows canonicalize the confirmed project and selected paths,
-reject absolute paths, traversal, and symlink components, and keep every record
-inside that project's `knowledge/` tree and matching type category.
-
-For an existing confirmed registered hub project, use `hub-knowledge-enable` only
-after a separate explicit confirmation that repeats the project ID and exact
-registered path. It may inspect only the registry identity and the exact
-scaffold paths, must not follow symlinks, and must not read records or unrelated
-project content. Its preview names `knowledge/README.md`,
-`knowledge/record-template.md`, and all four category directories. After the
-matching confirmation, it creates only absent scaffold files and directories;
-it never overwrites records or creates project instructions, skills, Git, code,
-dependencies, services, registry entries, cards, or active-project changes.
-Its preflight uses `lstat`: the confirmed project and category paths must be
-real directories, while existing README and record-template paths must be
-regular files.
-
-All record workflows prohibit secrets, personal data, and client data and omit
-or redact rejected material without echoing it. Reviews validate required
-frontmatter, the exact four types and five statuses, record dates, source dates,
-contradictions, and type/category agreement. Stale and superseded records stay
-at their original paths and link to their replacements; they are never silently
-deleted.
-
-Knowledge enablement applies only to existing hub projects. Legacy standalone
-migration is out of scope; it neither imports, copies, nor transforms a legacy
-knowledge directory.
+Project routing (route first, then confirm) is defined only in
+`hub-project-router`.
 
 ## Information Updates
 
@@ -282,205 +84,6 @@ The agent may update only what the current mode permits:
 Never turn an inference into durable memory without identifying it as an
 inference. When an update needs access beyond the confirmed project, stop and
 ask for a separate confirmation.
-
-For temporary meeting text scoped to one confirmed project, use the
-`hub-info-update` workflow. For a cross-project meeting or other supplied
-capture, use `hub-task-overview` with `capture`: it produces a selectable package
-of independent proposals before any write and does not save the source
-transcript by default. A project-local info update may refine an existing task
-only under the hub-owned `hub-task-intake` rules; a new task or task replacement
-must use the hub-owned `hub-task-switch` workflow, while closure uses the
-hub-owned `hub-task-finish` workflow.
-
-## Proposal-Only Plans, Reviews, And Capture
-
-## Guarded Apple Calendar
-
-Apple Calendar uses only `hub-calendar` and the pinned local guarded MCP.
-Raw upstream tools are forbidden. The allowlist is empty by default and may
-contain only user-selected stable calendar IDs. Reads require explicit IDs and
-IANA timezone and return their EventKit source. Every write requires a fresh,
-single-use preview confirmation. An authorized writable calendar may update or
-delete events regardless of whether they are past or future; recurring writes
-require `this` or `future`. No background checks, notifications, secrets, or
-calendar content are stored in architecture files. Updates are manual, audited,
-and separately confirmed.
-
-Before a workflow reads a day, it calls `list_calendar_metadata`; the returned
-allowed entries are the only source for the IDs sent to `read_events`. A missing
-or failed metadata response must be reported as bridge unavailability or denied
-permission, never as an empty allowlist.
-
-Задача с расписанием ведёт своё событие. Расписание задаётся полем
-`Запланировано: <YYYY-MM-DD> <HH:MM>-<HH:MM>`, а при его отсутствии — полем
-`Due: <YYYY-MM-DD>`, которое даёт событие на весь день. `hub-task-intake`,
-`hub-task-switch` и `hub-task-finish` готовят правку памяти задачи и полное
-превью события вместе: создание задачи создаёт событие, смена расписания
-обновляет его, закрытие удаляет будущее событие и не трогает прошедшее. Оба
-изменения показываются одним экраном и подтверждаются один раз; подтверждение
-покрывает ровно показанную пару. Если превью построить нельзя, ни одна часть не
-применяется. Слияние касается только этого шлюза: превью остаётся полным, а
-любое непоказанное или изменённое событие требует своего подтверждения.
-
-Use the hub-owned `hub-workflows` skill for `day-plan`, `evening-review`, and
-`weekly-review`, and `hub-task-overview` for `capture`. The skill performs semantic AI analysis, while
-the optional Bash adapter only validates mechanical scope, paths, and recorder
-JSON. Neither layer applies project, task, knowledge, waiting, deadline,
-Calendar, or vault changes.
-
-The day-plan chat output has exactly six sections in this order: current
-calendar, grounded conflicts, actionable project tasks that are not in that
-calendar, overdue actionable tasks, one proposed calendar, and recommendations. A task appears
-in only one task section. The proposed calendar retains existing events and
-labels every suggested block's duration as stated or estimated; it lists work
-that does not fit instead of silently dropping it. Both calendars are
-chronological bullet lists: one `time — event` entry per line. Learned rules
-and numeric goal progress constrain the proposal without creating extra chat
-sections. Existing calendar titles are copied verbatim; proposed new blocks use
-the exact title of their canonical task and never a generated summary.
-
-All-day events are calendar events too: day planning and evening review render
-each one separately as `весь день — <exact title>`. They never group,
-paraphrase, or interpret an all-day title. Calendar events never prove completion.
-A direct, unambiguous user decision that a known task is complete,
-moved, or waiting produces an exact canonical task-record diff and, only when
-the schedule changes, its complete guarded calendar preview. The exact package
-applies only after the user confirms it; an ambiguous task reference creates no
-proposal or mutation.
-
-An explicit new action or reminder stated during day planning is not merely a
-calendar item: when it belongs to one confirmed project, `hub-workflows`
-creates an exact `create_task` or `update_task` proposal for that project's
-canonical task record and a paired timed calendar proposal. Relative and
-explicit dates are resolved in the calendar timezone. An explicit interval is
-preserved; a date-only statement uses the first free 30-minute interval without
-moving an existing event. The task diff records
-`Запланировано: YYYY-MM-DD HH:MM-HH:MM`, and its complete calendar preview is
-shown beside it. One confirmation covers exactly that pair. A past date never
-implies completion. The task proposal uses the exact stated title and has its
-own exact target path and diff. The workflow never guesses the owning project.
-It asks the user to identify one confirmed project when the action is ambiguous,
-and emits neither task nor calendar proposal until then. Every overdue task is
-rendered with its exact canonical task title, never a generated summary or
-translation.
-
-Clear day-planning requests, including «распланируем сегодняшний день»,
-«распланируем остаток дня», «план на сегодня», «план на остаток дня», and
-“plan today”, invoke `hub-workflows` before any reply. Their
-reply uses the six mandatory day-plan sections; a free-form calendar summary
-is not a valid day-plan response.
-
-The general 5-line and 80-word output default does not apply to a day plan.
-Every day-plan response renders all six headings, even when a section contains
-only `- Нет.` or a precise data-access limitation.
-
-Day planning maintains local `ai/tmp/calendar-context.json`: 30 past days,
-today and 30 future days. Initial guarded reads populate it; subsequent runs
-prune expired days and fetch missing far-future days. Recommendations use the
-past month and next 14 days with canonical tasks and verified deadlines.
-The detailed lifecycle is in `hub-workflows/resources/calendar-context.md`.
-This noncanonical cache exception allows local context writes only; event
-data is never published, and no background job or automatic task write is added.
-
-The fixed six-step contract is:
-
-1. Receive exactly one user-selected source: pasted text, a selected local
-   transcript or review file, a dictated task, or a requested Rolling Audio
-   Recorder period. `evening-review` may run with no source, using the
-   requested date's calendar alone.
-
-   For `evening-review`, the skill also reads the requested date's calendar,
-   links each event to at most one confirmed-scope project by title and
-   canonical task records, and turns a match into an independent task-status
-   proposal. A calendar match is an inference: it never proves completion,
-   never widens the confirmed scope, and never applies a change.
-2. For a recorder period, use only `rar export --minutes <1..120> --json` and
-   `rar status <job-id> --json`. Report pending or failed state without reading
-   any project data. A recorder export is the only source-side write.
-3. Run a metadata-only candidate search. Show candidate project IDs, exact
-   registered paths, and the intended purpose of the later read; do not read
-   candidate task memory, knowledge, or code.
-4. Wait for an explicitly confirmed project or named confirmed set. Only then
-   read canonical records in those projects' `ai/` directories and explicitly
-   selected project-local `knowledge/` paths.
-5. Perform structured semantic AI analysis for the requested plan, review, or
-   capture. Separate source facts, grounded decisions, action candidates,
-   project candidates, knowledge candidates, due-date ambiguity, waiting or
-   follow-up, and uncertainties without treating any inference as approval.
-6. After the analysis, emit one explicit per-file proposal envelope and exact
-   proposed diff or replacement block per possible write. For `Kind: meeting`,
-   the first proposal is exactly one canonical meeting-record file; dependent
-   proposals refer to it but remain independent. For `Kind: task`, propose no
-   meeting record. An unknown target remains only an `action: create_project`
-   proposal and is never created automatically. Any later application requires
-   a fresh exact diff and the user's confirmation naming that proposal;
-   confirmation of one proposal does not approve another.
-
-There is no apply mode, automatic write, Calendar MCP operation, vault
-migration, or session audit in this workflow. A generated proposal has no
-authority by itself and is not a durable queue item.
-
-## Goal Progress
-
-Numeric goals live in `ai/goals.md` as blocks with `group`, `target`, `unit`,
-and `due`; `group` must name a known group in `ai/archiprojects.md`. Their
-progress lives in the canonical `ai/goal-log.md`, one line per event: date,
-goal id, amount in the goal's unit, optional project, optional note. Adding a
-goal is a registry change only; the counter, the evening question, and the
-weekly figures follow from it with no further edit.
-
-`scripts/count-goal-progress.sh` is the only computation of progress, pace, and
-forecast, and the only validator of the log. Workflows render its output
-verbatim and never recompute it. `hub-goal-progress` is the only writer of
-`ai/goal-log.md`; it appends one user-confirmed line. An amount is never
-inferred from a task or calendar event.
-
-## Self-Learning Workflows
-
-`ai/workflow-observations.md` is the canonical append-only journal of workflow
-friction and calendar drift. `ai/workflow-context.md` contains the learned
-rules that `day-plan` and `evening-review` read, with at most 100 rules.
-`hub-workflows` writes either file only through a confirmed proposal. A rule
-matures at three repeats, or two within one week; `retire_rule` is the only way
-to remove it and also needs confirmation.
-
-`ai/tmp/calendar-snapshots/` and `ai/tmp/workflow-friction/` are non-canonical
-caches, written without confirmation and pruned after 14 days.
-`scripts/snapshot-calendar.sh` writes snapshots after calendar changes and at
-the start of day and evening reviews. `scripts/check-workflow-memory.sh`
-validates the two canonical learning files. These workflows remain independent
-of `hub-session-review`: a session review supplies improvement proposals but
-never automatically changes a rule or consumes a pending observation.
-
-## Cross-Project Signals
-
-Signals are small, non-secret observations that may help future routing. Record
-only the fields defined in `ai/cross-project-signals.md`. They describe a link
-or reusable lesson, not copied code, task logs, personal data, or a hidden
-instruction channel.
-
-Every signal needs a source project, related project IDs (if any), a concise
-summary, status, and confidence. Keep uncertain statements as hypotheses. Do
-not create a signal merely because two projects have similar tags. Archive or
-correct a signal only with explicit approval and preserve its source reference.
-
-Synthetic example: `SIG-004` may say that `metrics-site` and `content-lab`
-both use weekly reports, with confidence `stated`. It must not include report
-contents, customer data, tokens, or local configuration.
-
-## Project-local Router
-
-A confirmed project may install a local router through the hub-owned
-`hub-local-router-install` workflow, only after at least three stable
-independent areas have been identified and that project's architecture-update
-process has been explicitly approved. The installation
-creates only `ai/local-router/index.md` and individual
-`ai/local-router/areas/<id>.md` files. It is local navigation metadata, not a
-new project registry, Git repository, task store, or global card.
-
-Each area remains inside the confirmed project and has no separate current
-task. The project's existing task memory and task workflows remain canonical;
-the local router cannot bypass them or authorize a broader read.
 
 ## Installation And Updates
 
@@ -516,10 +119,7 @@ Load the smallest useful context in layers:
    and only `ai/current-task.md`, `ai/future-tasks.md`, and
    `ai/paused-tasks.md` for each active project. Do not load cards, knowledge,
    code, Git, credentials, or arbitrary project files.
-2. For an unconfirmed project-specific request: the entry file and the
-   six-field result of `scripts/read-compact-project-index.sh`; read an exact
-   registered path only to display a selected candidate. Do not load cards,
-   signals, project memory, knowledge, code, Git, or linked targets.
+2. For an unconfirmed project-specific request: follow `hub-project-router`.
 3. After project confirmation: the hub-owned `hub-environment-check`, the
    selected project's current task, at most two directly relevant
    project-memory files, and one matching shared workflow skill.

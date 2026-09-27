@@ -10,6 +10,8 @@ project and when the user asks to close its task. Its scope is the selected
 project `ai/` memory only; do not require or read duplicated project
 `AGENTS.md` or `CLAUDE.md` files.
 
+Module rules: `ai/rules/tasks.md`.
+
 ## Procedure
 
 1. Read the selected project's `ai/current-task.md` and the smallest relevant

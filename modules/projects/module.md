@@ -5,7 +5,7 @@ Required: yes
 Switchable: no
 Depends: core
 Uses if present: —
-Rules: —
+Rules: ai/rules/projects.md
 Keywords: —
 
 ## Purpose
@@ -15,6 +15,7 @@ audit the registered hub projects.
 
 ## Installs
 
+- modules/projects/rules.md -> ai/rules/projects.md
 - hub-template/ai/project-registry.md -> ai/project-registry.md
 - hub-template/ai/project-cards/.gitkeep -> ai/project-cards/.gitkeep
 - hub-template/ai/archiprojects.md -> ai/archiprojects.md

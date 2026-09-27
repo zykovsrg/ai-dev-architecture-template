@@ -13,6 +13,8 @@ workflow into a project. It may act only on the currently confirmed registered
 project and cannot override hub confirmation, allowed roots, secret, or
 memory-isolation rules.
 
+Module rules: `ai/rules/knowledge.md`.
+
 Every record edit requires explicit confirmation naming the exact path or set.
 
 ## Scope and containment

@@ -419,3 +419,57 @@ six columns; `--group` reads only member projects (a non-member task file is
 not opened); goal progress from `ai/goals.md`; migration dry-run lists exactly
 the planned changes and apply is idempotent. The Obsidian generator tolerates
 cards without the dropped fields.
+
+## Stage 7 details (TASK-ai-dev-architecture-20260927-004)
+
+Split `hub-template/ai/architecture.md` into core rules and per-module rules;
+keep each rule in exactly one place.
+
+### What stays in `architecture.md` (core)
+
+Purpose, Rule Precedence, Simplicity/Evidence, Confirmation And Confidence
+labels, Secret And Privacy Boundary, Installation And Updates, Context-Loading
+Budget, Module Rules (how `ai/rules/<id>.md` and `ai/modules.md` work), and a
+one-line pointer to `hub-project-router` for route-then-confirm. `Version:`
+becomes `2.0`. Core text names no optional module's skill or file.
+
+### Where the rest goes
+
+Each module gets `modules/<id>/rules.md`, installed as `ai/rules/<id>.md` and
+listed in its passport (`Rules:` and `Installs`):
+
+- projects — ownership and registry, creation, migration, repository
+  provisioning, project switches, cross-project signals, project-local router.
+- tasks — hub-managed project flow (task skills), task switches, information
+  updates that touch task memory.
+- knowledge — optional project knowledge, `hub-info-update`.
+- goals — goal progress.
+- learning — self-learning workflows, session review.
+- calendar — guarded Apple Calendar.
+- planning — plans and reviews that are not already in `hub-workflows`.
+
+projects and tasks get their rules files now, although their skills move in
+stage 8. The stale "Proposal-Only Plans, Reviews, And Capture" and calendar
+text is not copied blindly: a sentence moves only if no skill or module rules
+file already states it; otherwise it is dropped.
+
+### Duplicates
+
+Route-then-confirm lives only in `hub-project-router`. `architecture.md`,
+`CLAUDE.md`, and `AGENTS.md` keep a one-line pointer. Each skill of a module
+points to its rules file in one line.
+
+### Checks
+
+- `[hub skill naming]` in `check-consistency.sh` also accepts
+  `modules/*/rules.md`; a new decision amends the 2026-08-15 one.
+- Tests that search `architecture.md` for module phrases read the module rules
+  file instead.
+- A new test: every passport `Rules:` file exists and is installed; core
+  `architecture.md` has no heading owned by a module.
+- The reading budget is measured: characters of entry file + router skill +
+  `architecture.md` before and after, recorded in the changelog.
+
+### Working Hub
+
+Updated only after the user's "yes"; afterwards `hub_release.py drift` exits 0.

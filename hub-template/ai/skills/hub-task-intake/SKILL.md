@@ -10,6 +10,8 @@ project and after the hub-owned `hub-environment-check`. Its scope is the select
 project `ai/` memory only; do not require or read duplicated project
 `AGENTS.md` or `CLAUDE.md` files.
 
+Module rules: `ai/rules/tasks.md`.
+
 ## Procedure
 
 1. Read the selected project's `ai/current-task.md`.

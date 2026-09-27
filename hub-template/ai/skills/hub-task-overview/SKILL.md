@@ -14,6 +14,8 @@ blocked, «что горит»). It is proposal-first.
 Never write or apply a proposal before the user confirms the exact displayed
 package.
 
+Module rules: `ai/rules/tasks.md`.
+
 ## Scenario dispatch
 
 - `capture` → `resources/capture.md`;

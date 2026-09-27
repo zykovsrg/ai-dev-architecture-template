@@ -5,6 +5,8 @@ description: Review agent behavior for a confirmed project's task closure or an 
 
 # Session Review
 
+Module rules: `ai/rules/learning.md`.
+
 ## Inputs and authority
 
 Use a confirmed registered project. Trigger is task-close or user-request. At

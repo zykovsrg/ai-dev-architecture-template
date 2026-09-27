@@ -106,9 +106,9 @@ class HubWorkflowProgressiveDisclosureTests(unittest.TestCase):
                 self.assertIn(phrase, text, f"{filename}: {phrase}")
 
     def test_architecture_requires_task_diff_before_workflow_sync(self):
-        architecture = (REPO_ROOT / "hub-template/ai/architecture.md").read_text(encoding="utf-8")
-        self.assertIn("Calendar events never prove completion", architecture)
-        self.assertIn("exact canonical task-record diff", architecture)
+        rules = (REPO_ROOT / "modules/planning/rules.md").read_text(encoding="utf-8")
+        self.assertIn("Calendar events never prove completion", rules)
+        self.assertIn("exact canonical task-record diff", rules)
 
 
 if __name__ == "__main__":

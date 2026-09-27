@@ -12,6 +12,8 @@ Use this workflow only for an existing confirmed registered project. Legacy
 standalone migration is out of scope. Do not use this workflow to discover,
 register, move, import, copy, or transform a project or its records.
 
+Module rules: `ai/rules/knowledge.md`.
+
 ## Preconditions and read boundary
 
 1. The router must already have confirmed the registered project ID and exact

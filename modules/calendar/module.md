@@ -5,7 +5,7 @@ Required: no
 Switchable: yes
 Depends: core
 Uses if present: —
-Rules: —
+Rules: ai/rules/calendar.md
 Keywords: —
 
 ## Purpose
@@ -15,6 +15,7 @@ changes.
 
 ## Installs
 
+- modules/calendar/rules.md -> ai/rules/calendar.md
 - modules/calendar/skills/hub-calendar/ -> ai/skills/hub-calendar/
 
 ## Repository only
