@@ -37,25 +37,6 @@ authorize a project switch.
 
 ## Review-only procedure
 
-Obsidian uses the central Obsidian vault at `<hub>/projects/ai-dev-architecture/obsidian-vault`, derived from the confirmed
-hub root. The selected board is
-`Obsidian/Projects/<project-id>/Kanban.md` inside that vault. Select it by the
-confirmed registered project ID; do not ask for a per-project vault path. Any
-manual board edit is a proposal for review only and never a direct memory
-write. Run reverse proposals with the mandatory selector:
-
-```text
-bash scripts/obsidian-task-sync.sh scan --project-id <confirmed-project-id> --hub <hub> --scope <scope-file> --vault <hub>/projects/ai-dev-architecture/obsidian-vault
-bash scripts/obsidian-task-sync.sh apply --project-id <confirmed-project-id> --confirm-proposal <sha256> --hub <hub> --scope <scope-file> --vault <hub>/projects/ai-dev-architecture/obsidian-vault
-```
-
-Use a scope file containing only the confirmed project ID. Never expand scope
-to bypass a refresh error. A partial refresh updates only scoped boards, their
-overview rows, and their manifest entries; it preserves all other projects
-without reading their files. A full-registry refresh requires explicit
-authorization for that full scope. If a partial refresh is blocked, report the
-blocker and leave the generated views unchanged.
-
 Read only the supplied temporary text and the smallest selected-project `ai/`
 memory allowed by the hub-managed flow. Do not write while preparing the
 proposal. First present one meeting summary and a distinct `Affected projects`
@@ -127,12 +108,12 @@ explicit confirmation per affected project, naming the approved files and exact
 registered path. Ask separately for any hub signal write. After approval,
 perform only the approved writes in `Mode: implementation`. After every
 approved selected-project write to `ai/current-task.md` or
-`ai/future-tasks.md`, invoke the guarded trusted architecture-to-Obsidian
-refresh with `bash scripts/generate-obsidian-projects-kanban.sh --hub <hub> --scope <scope-file> --vault <hub>/projects/ai-dev-architecture/obsidian-vault --write --refresh-from-architecture`, keeping manifest
-validation enabled. If it detects a manual board edit, immediately run local
-`obsidian-task-sync scan --project-id <confirmed-project-id>` to create the pending proposal, report it, and do not
-overwrite the board. Then report each changed file and any item intentionally
-left as uncertain.
+`ai/future-tasks.md`, run the `after-task-write` event: read
+`<hub>/ai/modules.md`; for each subscriber listed under `after-task-write`,
+read its rules file and run its command for the confirmed project ID only.
+With no subscribers, do nothing. If a subscriber reports a pending proposal,
+show it and never apply it without its own explicit confirmation. Then report
+each changed file and any item intentionally left as uncertain.
 
 ## Russian proposal template
 

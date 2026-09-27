@@ -12,25 +12,6 @@ project `ai/` memory only; do not require or read duplicated project
 
 ## Procedure
 
-The central Obsidian vault is `<hub>/projects/ai-dev-architecture/obsidian-vault`, derived from the confirmed
-hub root. The selected board is
-`Obsidian/Projects/<project-id>/Kanban.md` inside that vault. Select it by the
-confirmed registered project ID; never ask for a per-project vault path.
-Manual Obsidian edits create a proposal only. Use these reverse commands with
-the mandatory selector:
-
-```text
-bash scripts/obsidian-task-sync.sh scan --project-id <confirmed-project-id> --hub <hub> --scope <scope-file> --vault <hub>/projects/ai-dev-architecture/obsidian-vault
-bash scripts/obsidian-task-sync.sh apply --project-id <confirmed-project-id> --confirm-proposal <sha256> --hub <hub> --scope <scope-file> --vault <hub>/projects/ai-dev-architecture/obsidian-vault
-```
-
-Use a scope file containing only the confirmed project ID. Never expand scope
-to bypass a refresh error. A partial refresh updates only scoped boards, their
-overview rows, and their manifest entries; it preserves all other projects
-without reading their files. A full-registry refresh requires explicit
-authorization for that full scope. If a partial refresh is blocked, report the
-blocker and leave the generated views unchanged.
-
 1. Read the selected project's `ai/current-task.md`.
 2. If it is empty, record the user's requested goal, scope, Done criteria, and
    `Stage: intake` in that same file. Write a concrete unique `Task ID:` in the
@@ -43,15 +24,12 @@ blocker and leave the generated views unchanged.
    `hub-task-switch` workflow.
 4. Keep out-of-scope ideas out of the current task until the user separately
    approves their project-memory update.
-5. After an approved selected-project task write, invoke the guarded trusted architecture-to-Obsidian refresh with
-   `bash scripts/generate-obsidian-projects-kanban.sh --hub <hub> --scope <scope-file> --vault <hub>/projects/ai-dev-architecture/obsidian-vault --write --refresh-from-architecture`.
-   This direction is trusted only from canonical `ai/` records to generated
-   Obsidian views. Keep manifest validation enabled. If it detects a manual
-   Obsidian edit, run the local `obsidian-task-sync scan --project-id <confirmed-project-id>` to create its pending
-   proposal, report that proposal, and do not overwrite the board.
-6. Obsidian-to-`ai/` is a confirmed Obsidian-to-architecture proposal only:
-   show its exact status and require `apply --project-id <confirmed-project-id> --confirm-proposal <sha256>` before
-   any canonical task write.
+5. After a confirmed write to the selected project's task files, run the
+   `after-task-write` event: read `<hub>/ai/modules.md`; for each subscriber
+   listed under `after-task-write`, read its rules file and run its command
+   for the confirmed project ID only. With no subscribers, do nothing. If a
+   subscriber reports a pending proposal, show it and never apply it without
+   its own explicit confirmation.
 
 ## Calendar sync for dated tasks
 
