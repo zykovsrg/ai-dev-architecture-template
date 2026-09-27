@@ -55,7 +55,9 @@ What to check before moving this task to `ai/current-task.md`.
 
 ### FT-20260926-001 — Модули: паспорта, `ai/modules.md`, проверка границ
 
-Status: idea
+Status: promoted
+
+Promotion notes: стала TASK-ai-dev-architecture-20260927-001 (пилот — Obsidian).
 
 Priority: high
 
