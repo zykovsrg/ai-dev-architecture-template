@@ -48,10 +48,10 @@ Impact: Low; both diffs were read in full.
 ## Improvement proposals
 
 ### P1
-Finding: F1, F2
+Finding: F2
 Scope: future multi-task plans executed with subagents in this project (next: FT-20260926-002).
 Change: (a) implementers compare test and consistency output against the branch base commit, not the previous task's HEAD; (b) the closing task pushes the feature branch and waits for CI before merging to `main`.
-Rationale: F2 repeats F3 of the 2026-09-27 steps 1–2 review (count 2); F1 shows the relative baseline hides regressions.
+Rationale: also covers F1 (relative baseline hid regressions). F2 repeats F3 of the 2026-09-27 steps 1–2 review (count 2); F1 shows the relative baseline hides regressions.
 Acceptance test: the next plan's briefs name the base commit as baseline, and its CI run precedes the merge commit on `main`.
 Recovery: drop the two plan lines.
 Disposition: proposed
