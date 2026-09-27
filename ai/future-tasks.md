@@ -78,7 +78,9 @@ Acceptance criteria:
 
 ### FT-20260926-002 — Вынести «Планирование + Календарь» в `modules/`
 
-Status: idea
+Status: promoted
+
+Promotion notes: стала TASK-ai-dev-architecture-20260927-002.
 
 Priority: high
 
