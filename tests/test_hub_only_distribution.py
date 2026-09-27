@@ -91,7 +91,7 @@ class HubOnlyDistributionTests(unittest.TestCase):
 
     def test_hub_knowledge_skills_remain_available(self):
         for name in ("hub-knowledge-enable", "hub-knowledge-capture", "hub-knowledge-review"):
-            self.assertTrue((ROOT / f"hub-template/ai/skills/{name}/SKILL.md").is_file(), name)
+            self.assertTrue((ROOT / f"modules/knowledge/skills/{name}/SKILL.md").is_file(), name)
 
     def test_no_standalone_distributable_template_tree(self):
         self.assertFalse((ROOT / "template").exists())

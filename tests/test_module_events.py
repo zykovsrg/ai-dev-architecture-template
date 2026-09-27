@@ -15,6 +15,15 @@ CONFIRMATION_SKILLS = ["hub-task-intake", "hub-task-switch", "hub-task-finish"]
 EVENT_SKILLS = ["hub-task-intake", "hub-task-switch", "hub-task-finish", "hub-info-update"]
 
 
+def _skill_source(root, passports, skill):
+    target = f"ai/skills/{skill}/"
+    for module_id in passports:
+        for source, dest in passports[module_id].installs:
+            if dest == target:
+                return source.rstrip("/")
+    raise AssertionError(f"no module installs skill {skill}")
+
+
 class ObsidianIsolationTests(unittest.TestCase):
     def test_no_obsidian_outside_its_module(self):
         passports = load_passports(ROOT)
@@ -27,8 +36,10 @@ class ObsidianIsolationTests(unittest.TestCase):
         self.assertEqual(hits, [])
 
     def test_task_skills_fire_after_task_write(self):
+        passports = load_passports(ROOT)
         for skill in EVENT_SKILLS:
-            text = (ROOT / f"hub-template/ai/skills/{skill}/SKILL.md").read_text(encoding="utf-8")
+            source = _skill_source(ROOT, passports, skill)
+            text = (ROOT / source / "SKILL.md").read_text(encoding="utf-8")
             self.assertIn("`after-task-write`", text, skill)
             self.assertIn("ai/modules.md", text, skill)
 

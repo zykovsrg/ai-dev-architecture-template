@@ -16,10 +16,10 @@ records, and turn transcript info into scoped update proposals.
 ## Installs
 
 - modules/knowledge/rules.md -> ai/rules/knowledge.md
-- hub-template/ai/skills/hub-knowledge-enable/ -> ai/skills/hub-knowledge-enable/
-- hub-template/ai/skills/hub-knowledge-capture/ -> ai/skills/hub-knowledge-capture/
-- hub-template/ai/skills/hub-knowledge-review/ -> ai/skills/hub-knowledge-review/
-- hub-template/ai/skills/hub-info-update/ -> ai/skills/hub-info-update/
+- modules/knowledge/skills/hub-knowledge-enable/ -> ai/skills/hub-knowledge-enable/
+- modules/knowledge/skills/hub-knowledge-capture/ -> ai/skills/hub-knowledge-capture/
+- modules/knowledge/skills/hub-knowledge-review/ -> ai/skills/hub-knowledge-review/
+- modules/knowledge/skills/hub-info-update/ -> ai/skills/hub-info-update/
 
 ## Repository only
 

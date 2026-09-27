@@ -99,7 +99,7 @@ else
   bad "compact task index" "module passport or workflow routing is missing"
 fi
 
-for skill in hub-knowledge-enable hub-knowledge-capture hub-knowledge-review; do [ -f "hub-template/ai/skills/$skill/SKILL.md" ] || missing "knowledge safeguards" "$skill"; done
+for skill in hub-knowledge-enable hub-knowledge-capture hub-knowledge-review; do [ -f "modules/knowledge/skills/$skill/SKILL.md" ] || missing "knowledge safeguards" "$skill"; done
 if grep -Eqi 'optional .*knowledge|optional `knowledge/`|knowledge.*on-demand' $hub_rule_files; then ok "knowledge safeguards" "knowledge skills remain optional"; else bad "knowledge safeguards" "knowledge is not documented as optional/on-demand"; fi
 
 assistant="scripts/assistant-workflows.sh"

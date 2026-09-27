@@ -2,8 +2,16 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+# Installed Hub: lib/calendar-date.sh sits next to this script (owned by tasks,
+# same scripts/ target directory). Repository source tree: tasks has not moved
+# this script's sibling yet, so fall back to the repository-relative path.
+if [ -f "$SCRIPT_DIR/lib/calendar-date.sh" ]; then
+  CALENDAR_DATE_LIB="$SCRIPT_DIR/lib/calendar-date.sh"
+else
+  CALENDAR_DATE_LIB="$SCRIPT_DIR/../../../scripts/lib/calendar-date.sh"
+fi
 # shellcheck source=lib/calendar-date.sh
-source "$SCRIPT_DIR/lib/calendar-date.sh"
+source "$CALENDAR_DATE_LIB"
 
 HUB_DIR="."
 MAX_RULES=100

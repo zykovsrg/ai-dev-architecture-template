@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-SCRIPT="$(cd "$(dirname "$0")/.." && pwd -P)/scripts/check-workflow-memory.sh"
+SCRIPT="$(cd "$(dirname "$0")/.." && pwd -P)/modules/learning/scripts/check-workflow-memory.sh"
 FAILED=0
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT

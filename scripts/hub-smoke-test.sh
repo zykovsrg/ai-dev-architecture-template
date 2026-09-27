@@ -11,9 +11,9 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 [ -f "$ROOT/hub-template/CLAUDE.md" ] || fail "missing Hub CLAUDE.md"
 [ -f "$ROOT/hub-template/ai/architecture.md" ] || fail "missing Hub architecture"
 [ -f "$ROOT/modules/planning/skills/hub-workflows/SKILL.md" ] || fail "missing hub-workflows"
-[ -f "$ROOT/hub-template/ai/skills/hub-knowledge-enable/SKILL.md" ] || fail "missing optional knowledge enable skill"
-[ -f "$ROOT/hub-template/ai/skills/hub-knowledge-capture/SKILL.md" ] || fail "missing optional knowledge capture skill"
-[ -f "$ROOT/hub-template/ai/skills/hub-knowledge-review/SKILL.md" ] || fail "missing optional knowledge review skill"
+[ -f "$ROOT/modules/knowledge/skills/hub-knowledge-enable/SKILL.md" ] || fail "missing optional knowledge enable skill"
+[ -f "$ROOT/modules/knowledge/skills/hub-knowledge-capture/SKILL.md" ] || fail "missing optional knowledge capture skill"
+[ -f "$ROOT/modules/knowledge/skills/hub-knowledge-review/SKILL.md" ] || fail "missing optional knowledge review skill"
 
 [ "$(wc -c < "$ROOT/hub-template/AGENTS.md")" -lt 6000 ] || fail "hub AGENTS.md too large"
 [ "$(wc -c < "$ROOT/hub-template/CLAUDE.md")" -lt 6000 ] || fail "hub CLAUDE.md too large"

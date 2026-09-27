@@ -2,6 +2,14 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)"
+# Installed Hub: archiprojects.py (owned by projects) sits next to this script
+# in the same scripts/ target directory. Repository source tree: projects has
+# not moved yet, so fall back to the repository-relative path.
+if [ -f "$SCRIPT_DIR/archiprojects.py" ]; then
+  ARCHIPROJECTS_PY="$SCRIPT_DIR/archiprojects.py"
+else
+  ARCHIPROJECTS_PY="$SCRIPT_DIR/../../../scripts/archiprojects.py"
+fi
 HUB_DIR="."
 GOAL_FILTER=""
 AS_OF=""
@@ -39,7 +47,7 @@ goal_field() { printf '%s\n' "$GOALS_TSV" | awk -F'\t' -v id="$1" -v n="$2" '$1=
 
 check_group() {
   local goal_id="$1" group="$2" err rc=0
-  err="$(python3 "$SCRIPT_DIR/archiprojects.py" members --hub "$HUB_DIR" --group "$group" 2>&1 >/dev/null)" || rc=$?
+  err="$(python3 "$ARCHIPROJECTS_PY" members --hub "$HUB_DIR" --group "$group" 2>&1 >/dev/null)" || rc=$?
   [ "$rc" -eq 0 ] && return 0
   if [ "$rc" -eq 2 ]; then
     die "unknown archiproject group for goal $goal_id in $GOALS_FILE: $group"

@@ -16,10 +16,10 @@ entries to the canonical goal log.
 ## Installs
 
 - modules/goals/rules.md -> ai/rules/goals.md
-- hub-template/ai/skills/hub-goal-progress/ -> ai/skills/hub-goal-progress/
-- hub-template/ai/goal-log.md -> ai/goal-log.md
-- hub-template/ai/goals.md -> ai/goals.md
-- scripts/count-goal-progress.sh -> scripts/count-goal-progress.sh
+- modules/goals/skills/hub-goal-progress/ -> ai/skills/hub-goal-progress/
+- modules/goals/data/ai/goal-log.md -> ai/goal-log.md
+- modules/goals/data/ai/goals.md -> ai/goals.md
+- modules/goals/scripts/count-goal-progress.sh -> scripts/count-goal-progress.sh
 
 ## Repository only
 
