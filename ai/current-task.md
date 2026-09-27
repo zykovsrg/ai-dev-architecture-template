@@ -1,42 +1,34 @@
 # Current Task
 
-Task ID: TASK-ai-dev-architecture-20260927-004
-
-Status: active
+Status: empty
 Stage: intake
 
 ## Goal
 
-Этап 7 модульной архитектуры (FT-20260926-004): разрезать
-`hub-template/ai/architecture.md`. В нём остаются только общие правила ядра;
-правила модулей уходят в `modules/<id>/rules.md` (ставятся как
-`ai/rules/<id>.md`). Убрать повторы правил: «сначала маршрут, потом
-подтверждение» живёт только в `hub-project-router`, в остальных местах —
-ссылка в одну строку.
+No active task.
 
 ## Relevant files
 
-- `hub-template/ai/architecture.md`
-- `modules/<id>/rules.md`
-- `docs/superpowers/specs/2026-09-26-modular-architecture-design.md`
+None yet.
 
 ## Done criteria
 
-- Каждое правило записано в одном месте.
-- Замерено, насколько уменьшился объём, который агент читает в типичной сессии.
-- Результаты тестов не хуже, чем в начале ветки.
-- CI зелёный в pull request до слияния в `main`.
-- Рабочий хаб обновляется только после «да» пользователя; после этого
-  `hub_release.py drift` даёт exit 0.
+Define during task intake.
 
 ## Agent handoff
 
 Last agent: Claude (Opus 5.5)
 
-What changed: задача взята из FT-20260926-004.
+What changed: TASK-ai-dev-architecture-20260927-004 закрыта 2026-09-27.
+`architecture.md` 2.0 — только ядро; правила модулей в `modules/<id>/rules.md`
+(ставятся как `ai/rules/<id>.md`); PR #13 слит после зелёного CI; рабочий хаб
+обновлён, drift чистый.
+Session review: `ai/session-reviews/2026-09-27-split-architecture-stage-7-closure.md`.
 
 Open risks: нет.
 
-Next agent should check: спецификация (Stage 4–6 details), записи 2026-09-27
-в `ai/changelog.md` и `ai/decisions.md`; перед удалением файла — поиск по
-`ai/decisions.md`.
+Next agent should check: следующая задача — FT-20260926-005 (этап 8: перенос
+knowledge, goals, learning, затем core, projects, tasks; строгая проверка
+границ). Отложенные мелочи этапа 7: `hub-workflows` в `CLAUDE.md`/`AGENTS.md`
+шаблона, слово «calendar» в `modules/tasks/rules.md`; `.DS_Store` нет в
+`.gitignore` шаблона хаба.

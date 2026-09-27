@@ -2,6 +2,9 @@
 
 ### 2026-09-27 — Modular architecture stage 7: architecture.md split into core + modules (TASK-ai-dev-architecture-20260927-004)
 
+- Closed 2026-09-27: PR #13 merged after green CI; working Hub updated after
+  the user's "да" (Hub commit 7b9a7e0), `hub_release.py drift` clean.
+  Session review: `ai/session-reviews/2026-09-27-split-architecture-stage-7-closure.md`.
 - `hub-template/ai/architecture.md` cut down to core only: ownership map,
   module-loading rules, context-loading budget, mode-based write permissions.
   `Version: 2.0`. Per-module procedures moved into six new
