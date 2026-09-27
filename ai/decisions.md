@@ -1,5 +1,28 @@
 # Decisions
 
+### 2026-09-27 — Правила модулей живут в `ai/rules/<id>.md`
+
+Status: active
+
+Decision: Amends 2026-08-15 — a Hub skill may now be named in
+`modules/<id>/rules.md` instead of `hub-template/CLAUDE.md`, `AGENTS.md`, or
+`hub-template/ai/architecture.md`. Route-then-confirm is defined only in
+`hub-project-router`; core no longer restates it. Each module's rules live in
+`ai/rules/<id>.md` (installed from `modules/<id>/rules.md`), referenced by a
+`Module rules: ai/rules/<id>.md` pointer at the top of every skill belonging
+to that module. `hub-template/ai/architecture.md` keeps only cross-module
+core: ownership map, module-loading rules, context-loading budget, and the
+mode-based write-permission paragraphs of Information Updates.
+
+Why: Stage 7 of `docs/superpowers/specs/2026-09-26-modular-architecture-design.md`
+— a project session that installs only some modules should not have to load
+planning/knowledge/calendar/learning/goals procedures it never uses.
+
+Impact: `check-consistency.sh` § "hub skill naming" now searches
+`modules/*/rules.md` together with the three core files. `check-module-boundaries.py`
+warnings dropped 55 → 27 once core stopped naming other modules' skills and
+files in running text. `hub-template/ai/architecture.md` is `Version: 2.0`.
+
 ### 2026-09-27 — Nested groups; goals in `ai/goals.md`; cards keep only their group
 
 Status: active

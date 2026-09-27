@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### 2026-09-27 — Architecture 2.0: core split from module rules
+
+- `hub-template/ai/architecture.md` now holds only cross-module core (ownership
+  map, module-loading rules, context-loading budget, mode-based write
+  permissions); per-module procedures moved to `modules/<id>/rules.md`
+  (projects, tasks, knowledge, goals, learning, calendar, plus a new section
+  in planning). Route-then-confirm is defined only in `hub-project-router`.
+- Hub architecture version raised `1.12` → `2.0`.
+
 ### 2026-09-11 — Hub-only consolidation
 
 - Personal AI Hub is now the only supported architecture; `hub-template/` is the only distributable architecture source, while project memory remains project-local and knowledge remains optional/on-demand.
