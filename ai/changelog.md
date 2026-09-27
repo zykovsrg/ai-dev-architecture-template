@@ -1,5 +1,21 @@
 # Changelog
 
+### 2026-09-27 — Modular architecture stage 5: planning and calendar modules (TASK-ai-dev-architecture-20260927-002)
+
+- New tasks skill `hub-task-overview` (capture, overview, personal-assistant
+  contract); router picks the planning skill from `ai/modules.md`.
+- Events `before-task-confirmation` and `after-calendar-change`; planning rules
+  `ai/rules/planning.md` own task↔calendar sync, joint change and snapshots.
+- Calendar MCP: `prepare_evening_review` and `evening_review.py` removed.
+- Planning and calendar moved to `modules/`; `--with/--without planning|calendar`
+  installs/removes the calendar server and its `.mcp.json` entry (atomic,
+  symlink-safe, every step shown in the preview).
+- PR zykovsrg/ai-dev-architecture-template#11, CI green before merge (12b9182).
+  Working Hub updated (6cdea19, pushed): drift 0, task records OK, both modules
+  on. The calendar server needs a new session to reload.
+- Boundary warnings 58 → 53. Deferred minors: calendar shell tests not in CI
+  (pre-existing), untested symlink branches, bridge rebuilt on every apply.
+
 ### 2026-09-27 — Modular architecture stage 4: passports, Obsidian switch (TASK-ai-dev-architecture-20260927-001)
 
 - Passports `modules/<id>/module.md` for all 10 modules; `scripts/module_passports.py`.

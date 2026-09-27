@@ -1,5 +1,24 @@
 # Decisions
 
+### 2026-09-27 — Planning and calendar are switchable modules
+
+Status: active
+
+Decision: planning (`modules/planning/`) and calendar (`modules/calendar/`) are
+optional modules. Task skills reach planning only through
+`before-task-confirmation` (rules in `ai/rules/planning.md`); `hub-calendar`
+fires `after-calendar-change` and knows nothing of tasks or planning. Capture
+and task overviews live in the tasks skill `hub-task-overview`. The calendar MCP
+has no evening-review tool; snapshots have one writer (planning). Switching
+calendar also installs or removes `tools/apple-calendar-policy` and the
+`hub_calendar` entry in `.mcp.json`; user data stays. Both modules are enabled
+in the working Hub.
+
+Why: Stage 5 of `docs/superpowers/specs/2026-09-26-modular-architecture-design.md`.
+
+Impact: a task and its calendar event are still confirmed together; the
+calendar change is applied first and a failure writes nothing to the task.
+
 ### 2026-09-27 — Obsidian is an optional module, disabled in the working Hub
 
 Status: active

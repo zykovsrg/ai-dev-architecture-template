@@ -2,7 +2,7 @@
 
 Task ID: TASK-ai-dev-architecture-20260927-002
 Status: active
-Stage: intake
+Stage: review
 
 ## Goal
 
@@ -35,10 +35,9 @@ Stage: intake
 
 Last agent: Claude (Opus 5.5)
 
-What changed: задача открыта 2026-09-27 после закрытия
-TASK-ai-dev-architecture-20260927-001.
+What changed: all done criteria met 2026-09-27 — see `ai/changelog.md` (stage 5).
 
-Open risks: нет.
+Open risks: the running calendar MCP still has the old tool list until a new
+session starts.
 
-Next agent should check: уточнить с пользователем только то, чего нет в
-спецификации, дописать раздел этапа 5 и написать план.
+Next agent should check: close with `hub-task-finish` after user approval.
