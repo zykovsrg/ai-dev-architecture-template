@@ -1,6 +1,6 @@
 # capture
 
-This resource defines only the `capture` scenario. The core `SKILL.md` remains authoritative for scope, security, canonical-source rules, proposal envelopes, confirmation, and learning lifecycle. Nothing here widens those permissions.
+This resource defines only the `capture` scenario. The core `SKILL.md` remains authoritative for scope, security, canonical-source rules, proposal envelopes, and confirmation; the learning lifecycle is owned by `hub-workflows`. Nothing here widens those permissions.
 
 Read the first non-empty source line as the declared kind. Accept only `Kind: meeting` or `Kind: task`.
 

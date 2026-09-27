@@ -26,7 +26,8 @@ never consumes or resolves a pending observation.
 
 ## Scenario dispatch
 
-After applying this core contract, read exactly the matching scenario resource:
+After applying this core contract and the `hub-task-overview` contract, read
+exactly the matching scenario resource:
 
 - `day-plan` → `resources/day-plan.md` and its referenced calendar context;
 - `evening-review` → `resources/evening-review.md`; calendar-only review begins
@@ -35,7 +36,8 @@ After applying this core contract, read exactly the matching scenario resource:
 
 Scenario resources provide output/detail rules only. They cannot override the
 scope, allowed roots, secret handling, canonical sources, confirmation gates,
-or proposal schema in this core `SKILL.md`.
+or proposal schema in this core `SKILL.md` or in the `hub-task-overview`
+contract.
 
 Use the personal-assistant contract in `hub-task-overview` (scope, inputs, proposal envelope, confirmation boundary).
 
@@ -54,10 +56,10 @@ Use the personal-assistant contract in `hub-task-overview` (scope, inputs, propo
 3. **Find candidates with the minimum metadata.** A card, link, index row, or
    inferred match is discovery evidence, not permission to read code, knowledge,
    Git, credentials, or linked targets. Personal-assistant task discovery uses
-   the compact task index rule above; other project routing follows the Hub
+   the compact task index rule in `hub-task-overview`; other project routing follows the Hub
    router's metadata-only candidate rules.
 4. **Establish scope before richer reads.** Personal-assistant workflows use
-   only their read boundary above. Otherwise wait for explicit confirmation of
+   only their read boundary in `hub-task-overview`. Otherwise wait for explicit confirmation of
    the project or named project set and repeat every project ID and exact
    registered path. Read only the smallest required canonical `ai/` records and
    explicitly selected knowledge paths; never widen scope silently.
