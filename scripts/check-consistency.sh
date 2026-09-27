@@ -80,10 +80,10 @@ EOF
   [ "$fail" -ne 0 ] || ok "workflow action schema" "learning actions and proposal schema agree"
 fi
 
-if grep -Fq '"scripts/read-compact-task-index.py"' scripts/hub_release.py && grep -Fq 'scripts/read-compact-task-index.py' "$workflow_core"; then
-  ok "compact task index" "shipped and used for personal-assistant discovery"
+if grep -Fq 'scripts/read-compact-task-index.py ->' modules/*/module.md && grep -Fq 'scripts/read-compact-task-index.py' "$workflow_core"; then
+  ok "compact task index" "shipped via module passport and used for personal-assistant discovery"
 else
-  bad "compact task index" "release manifest or workflow routing is missing"
+  bad "compact task index" "module passport or workflow routing is missing"
 fi
 
 for skill in hub-knowledge-enable hub-knowledge-capture hub-knowledge-review; do [ -f "hub-template/ai/skills/$skill/SKILL.md" ] || missing "knowledge safeguards" "$skill"; done
