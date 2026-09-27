@@ -41,6 +41,9 @@ exactly the shown set. If a subscriber cannot build its part, say which one and
 why, apply nothing, and ask again. With no subscribers, confirm the task write
 alone.
 
+After confirmation, each subscriber applies its items before the task write, as
+its rules say; if one fails, stop, report it, and do not write the task.
+
 This workflow cannot override hub confirmation, allowed roots, secret, or
 memory-isolation rules. It never reads, writes, or classifies another project's
 memory.

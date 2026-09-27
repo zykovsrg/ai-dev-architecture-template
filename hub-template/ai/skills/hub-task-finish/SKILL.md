@@ -30,8 +30,8 @@ project `ai/` memory only; do not require or read duplicated project
 5. If the check found no blocker, write the changelog entry, any durable
    decision, confirmed future-task entries, the review reference, and the
    `ai/current-task.md` cleanup. Stop and report instead of writing only when
-   the check found a blocker. A task with a schedule field keeps the single
-   joint confirmation below, because its closure also changes the calendar.
+   the check found a blocker. When a subscriber adds items to the screen,
+   follow `## Confirmation extensions` below.
    An improvement suggested by the review waits for user approval and is not a
    closure blocker.
 6. Then save only the selected project's result through its repository and
@@ -54,6 +54,9 @@ why, apply nothing, and ask again. With no subscribers, confirm the task write
 alone. In this workflow the user's close request approves the task write
 itself; a separate confirmation is needed only when a subscriber adds items to
 the screen.
+
+After confirmation, each subscriber applies its items before the task write, as
+its rules say; if one fails, stop, report it, and do not write the task.
 
 This workflow cannot override hub confirmation, allowed roots, secret, or
 memory-isolation rules. Its closure writes remain limited to selected project

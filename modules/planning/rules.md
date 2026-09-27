@@ -3,8 +3,9 @@
 ## before-task-confirmation
 
 A task carries a schedule when it has a `Запланировано: <YYYY-MM-DD> <HH:MM>-<HH:MM>`
-field or, failing that, a `Due: <YYYY-MM-DD>` field. Whenever an approved write
-in this workflow creates, reschedules, or closes such a task, prepare the
+field or, failing that, a `Due: <YYYY-MM-DD>` field. Whenever the pending task
+write from the workflow that fired this event creates, reschedules, or closes
+such a task, prepare the
 matching Apple Calendar change in the same step, under the `hub-calendar`
 rules: allowlisted calendar IDs only, the `категория/проект/задача` title form,
 and a complete preview showing action, calendar, title, start and end with
@@ -21,8 +22,13 @@ confirmation screen, and treat one user confirmation as approval of exactly the
 shown pair. If either part changes, or the calendar preview cannot be built —
 the MCP is unreachable, the permission is missing, or the calendar is not in
 the allowlist — say which it is, apply neither part, and ask again. A task
-without a schedule field produces no calendar item and keeps its usual single
-confirmation.
+without a schedule field produces no calendar item and keeps the calling
+workflow's usual confirmation behaviour.
+
+After the one confirmation, recheck the preview, apply the calendar change
+once, then apply the task write, including the `Событие:` line. If the calendar
+apply fails, write nothing to the task, report it, and never retry a create.
+Details are in `## Joint task and calendar change`.
 
 ## Joint task and calendar change
 

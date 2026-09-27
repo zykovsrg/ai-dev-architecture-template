@@ -40,10 +40,7 @@ class PlanningCalendarIsolationTests(unittest.TestCase):
         hits = []
         for module_id in NO_PLANNING_CALENDAR:
             for source, _ in install_pairs(ROOT, passports, [module_id]):
-                path = ROOT / source
-                if not path.is_file():
-                    continue
-                text = path.read_text(encoding="utf-8", errors="replace")
+                text = (ROOT / source).read_text(encoding="utf-8", errors="replace")
                 for match in PLANNING_CALENDAR_TERMS.finditer(text):
                     hits.append(f"{source}: {match.group(0)}")
         self.assertEqual(hits, [])
