@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from scripts.archiprojects import members, parse_groups, render_tree, validate
+from scripts.module_passports import install_pairs, load_passports
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "archiprojects.py"
@@ -356,6 +357,24 @@ class RegistryScriptTests(unittest.TestCase):
                 capture_output=True, text=True,
             )
             self.assertNotEqual(result.returncode, 0)
+
+
+class DroppedCardFieldsRemovedTests(unittest.TestCase):
+    # scripts/archiprojects.py is exempt: it must name the dropped fields to
+    # reject cards that still carry them (FORBIDDEN_FIELDS), per task 1.
+    EXEMPT = {"scripts/archiprojects.py"}
+
+    def test_no_installed_file_mentions_dropped_fields(self):
+        passports = load_passports(ROOT)
+        hits = []
+        for module_id in passports:
+            for source, _ in install_pairs(ROOT, passports, [module_id]):
+                if source in self.EXEMPT:
+                    continue
+                text = (ROOT / source).read_text(encoding="utf-8", errors="replace")
+                if "archiproject_contribution" in text or "related_archiprojects" in text:
+                    hits.append(source)
+        self.assertEqual(hits, [])
 
 
 if __name__ == "__main__":

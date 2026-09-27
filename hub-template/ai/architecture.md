@@ -1,6 +1,6 @@
 # Personal AI Hub Architecture
 
-Version: 1.14
+Version: 1.15
 
 ## Purpose
 
@@ -60,11 +60,11 @@ Project-owned files are the selected project's code, memory, instructions,
 configuration, and history. A project card must not contain copied task memory,
 source code, credentials, or an instruction that overrides the project itself.
 Project/task files remain canonical; project cards are metadata only and a link
-never grants a project read. A card may optionally use all three archiproject
-fields: `primary_archiproject:`, `archiproject_contribution:`, and
-`related_archiprojects:`. Use `none` where absent. Related archiproject links never add
-contribution. Waiting is task/subtask-only: do not place a project in Waiting
-while other work is actionable.
+never grants a project read. A card declares only one archiproject field:
+`primary_archiproject: <group-id|none>`. A project belongs to exactly one,
+most specific group; it is also a member of every ancestor group. Waiting is
+task/subtask-only: do not place a project in Waiting while other work is
+actionable.
 
 The registry is the authority for an ID, status, and exact path. The card is
 supporting metadata only. An absent, invalid, or unregistered card/path blocks

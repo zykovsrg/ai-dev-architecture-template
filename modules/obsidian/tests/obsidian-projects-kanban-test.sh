@@ -56,10 +56,21 @@ name: Дела
 status: active
 kind: group
 ```
+
+## дела-архитектура
+
+```yaml
+id: дела-архитектура
+name: Архитектура
+status: active
+kind: group
+parent: дела
+```
 EOF
 
 add_project() {
   local id="$1" name="$2" registry_status="$3" current="$4" future="$5" paused="$6"
+  local group="${7:-дела}"
   local project="$PROJECTS/$id"
   mkdir -p "$project/ai"
   printf '%s\n' "$current" > "$project/ai/current-task.md"
@@ -70,9 +81,7 @@ add_project() {
 
 Project ID: $id
 Name: $name
-primary_archiproject: дела
-archiproject_contribution: architecture
-related_archiprojects: none
+primary_archiproject: $group
 tags: дела
 Status: $registry_status
 Purpose: Synthetic fixture.
@@ -91,7 +100,8 @@ EOF
 add_project "ai-dev-architecture" "AI Dev Architecture" "active" \
   $'Status: active\nTask ID: TASK-20260826-001\nDue: 2026-08-26\n\n## Goal\n\nCurrent architecture task' \
   $'### FT-20260826-001 — Idea task\n\nStatus: idea\n\n### FT-20260826-002 — Ready task\n\nStatus: ready\ndue: 2026-08-28\n\n### FT-20260826-003 — Blocked task\n\nStatus: blocked\n\n### FT-20260826-004 — Promoted task\n\nStatus: promoted\n\n### FT-20260826-005 — Dropped task\n\nStatus: dropped\n\n### FT-20260826-006 — Completed future task\n\nStatus: done' \
-  $'### 2026-08-20 — Paused task\n\nTask ID: TASK-20260820-001\n\nStatus: paused'
+  $'### 2026-08-20 — Paused task\n\nTask ID: TASK-20260820-001\n\nStatus: paused' \
+  "дела-архитектура"
 add_project "waiting-project" "Waiting project" "active" \
   $'Status: waiting\nTask ID: TASK-20260826-002\n\n## Goal\n\nWaiting current task' $'No future tasks.' $'No paused tasks.'
 add_project "review-project" "Review project" "active" \
@@ -128,7 +138,7 @@ assert_not_contains "$TMP_DIR/preview.txt" 'Completed future task'
 assert_contains "$TMP_DIR/preview.txt" '--- projects overview ---'
 assert_exact_line "$TMP_DIR/preview.txt" '| Проект | Архипроект | Текущая задача |'
 assert_exact_line "$TMP_DIR/preview.txt" '| --- | --- | --- |'
-assert_contains "$TMP_DIR/preview.txt" '| [[Projects/ai-dev-architecture/Kanban\|AI Dev Architecture]] | Дела | Current architecture task |'
+assert_contains "$TMP_DIR/preview.txt" '| [[Projects/ai-dev-architecture/Kanban\|AI Dev Architecture]] | Архитектура | Current architecture task |'
 assert_not_contains "$TMP_DIR/preview.txt" '| Project | Status | Current task | Ready | Waiting | Due |'
 assert_not_contains "$TMP_DIR/preview.txt" '| Проект | Статус | Текущая задача | Ready | Waiting | Due |'
 assert_not_contains "$TMP_DIR/preview.txt" '| Проект | Архипроект | Текущая задача | Status'
@@ -173,7 +183,7 @@ cmp -s "$VAULT/Obsidian/Tasks-Kanban.md" "$TMP_DIR/legacy-tasks-board" || fail '
 cmp -s "$VAULT/Obsidian/Projects/manual-project/Kanban.md" "$TMP_DIR/manual-project-board" || fail 'migration changed manual project board'
 assert_exact_line "$OVERVIEW" '| Проект | Архипроект | Текущая задача |'
 assert_exact_line "$OVERVIEW" '| --- | --- | --- |'
-assert_contains "$OVERVIEW" '| [[Projects/ai-dev-architecture/Kanban\|AI Dev Architecture]] | Дела | Current architecture task |'
+assert_contains "$OVERVIEW" '| [[Projects/ai-dev-architecture/Kanban\|AI Dev Architecture]] | Архитектура | Current architecture task |'
 assert_contains "$ARCHITECTURE_BOARD" 'ai-dev-architecture--TASK-20260826-001'
 assert_contains "$WAITING_BOARD" 'waiting-project--TASK-20260826-002'
 assert_board_isolated "$ARCHITECTURE_BOARD" ai-dev-architecture
@@ -432,7 +442,7 @@ assert_contains "$TMP_DIR/shared-number.txt" '- [ ] Shared number there ^waiting
 # An explicit primary archiproject is required; tags and contribution metadata
 # must never be used as an implicit fallback.
 cp "$HUB/ai/project-cards/ai-dev-architecture.md" "$TMP_DIR/architecture-card.bak"
-sed -i '' 's/^primary_archiproject: дела$/primary_archiproject: none/' "$HUB/ai/project-cards/ai-dev-architecture.md"
+sed -i '' 's/^primary_archiproject: дела-архитектура$/primary_archiproject: none/' "$HUB/ai/project-cards/ai-dev-architecture.md"
 SOURCE_DATE_EPOCH=1700000000 "$GENERATOR" --hub "$HUB" --scope "$SCOPE" --vault "$VAULT" --preview > "$TMP_DIR/no-primary-archiproject.txt"
 assert_contains "$TMP_DIR/no-primary-archiproject.txt" '| — |'
 cp "$TMP_DIR/architecture-card.bak" "$HUB/ai/project-cards/ai-dev-architecture.md"
