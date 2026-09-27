@@ -19,7 +19,7 @@ this does not mean the conversation's work or closure review never happened.
 
 Эта папка использует архитектуру для доработки самой архитектуры. Поэтому в
 корне есть установленная рабочая копия (`AGENTS.md`, `CLAUDE.md`, `ai/*`), а
-канонический шаблон для пользователей лежит в `hub-template/`.
+канонический шаблон для пользователей собирается из `modules/<id>/{skills,scripts,data}`.
 
 `knowledge/` хранит долговечные подтверждённые сведения; содержимое записей
 здесь не дублируется.
@@ -55,8 +55,8 @@ bash scripts/check-consistency.sh
 
 ## Главные папки и файлы
 
-- `hub-template/` — файлы, которые устанавливаются в Hub.
-- `hub-template/ai/skills/*/SKILL.md` — базовые workflow skills архитектуры.
+- `modules/<id>/{skills,scripts,data}` — файлы, которые устанавливаются в Hub (по паспорту модуля).
+- `modules/*/skills/*/SKILL.md` — базовые workflow skills архитектуры.
 - `calendar-policy/` — исходники calendar MCP; устанавливаются через `scripts/sync-calendar-policy.sh`.
 - `docs/` — документация для установки, обновления и использования.
 - `docs/superpowers/plans/`, `docs/superpowers/specs/` — планы и спеки для сложных изменений архитектуры.
@@ -83,7 +83,7 @@ docs и updater/install scripts.
 
 Правила, которые нельзя ломать.
 
-- `hub-template/` остаётся источником файлов, устанавливаемых пользователям.
+- `modules/` остаётся источником файлов, устанавливаемых пользователям.
 - Корневые `ai/*` описывают работу над этим репозиторием, а не являются частью устанавливаемого шаблона.
 - Не смешивать активную задачу, paused tasks и future tasks.
 - Изменения правил архитектуры делать через `architecture-update` и проверять consistency/smoke tests.
@@ -92,7 +92,7 @@ docs и updater/install scripts.
 
 ## Хрупкие зоны
 
-- Синхронность дублирующихся правил между `hub-template/AGENTS.md`, `hub-template/CLAUDE.md`, `hub-template/ai/architecture.md`, docs и skills.
+- Синхронность дублирующихся правил между `modules/core/data/AGENTS.md`, `modules/core/data/CLAUDE.md`, `modules/core/data/ai/architecture.md`, docs и skills.
 - Updater может затрагивать пользовательские проекты; любые изменения protected/controlled file lists требуют осторожной проверки.
 - Bash-скрипты должны оставаться совместимыми с macOS `/bin/bash` 3.2.
-- Корневая установленная архитектура и `hub-template/` похожи по структуре, но имеют разные роли.
+- Корневая установленная архитектура и `modules/` похожи по структуре, но имеют разные роли.

@@ -15,17 +15,17 @@ and the project router skill that every other module builds on.
 
 ## Installs
 
-- hub-template/.gitignore -> .gitignore
-- hub-template/AGENTS.md -> AGENTS.md
-- hub-template/CLAUDE.md -> CLAUDE.md
-- hub-template/ai/architecture.md -> ai/architecture.md
-- hub-template/ai/allowed-roots.md -> ai/allowed-roots.md
-- hub-template/ai/active-project.md -> ai/active-project.md
-- hub-template/ai/archive/.gitkeep -> ai/archive/.gitkeep
-- hub-template/projects/.gitkeep -> projects/.gitkeep
-- hub-template/ai/skills/hub-project-router/ -> ai/skills/hub-project-router/
-- scripts/check-hub-registry.sh -> scripts/check-hub-registry.sh
-- scripts/read-compact-project-index.sh -> scripts/read-compact-project-index.sh
+- modules/core/data/.gitignore -> .gitignore
+- modules/core/data/AGENTS.md -> AGENTS.md
+- modules/core/data/CLAUDE.md -> CLAUDE.md
+- modules/core/data/ai/architecture.md -> ai/architecture.md
+- modules/core/data/ai/allowed-roots.md -> ai/allowed-roots.md
+- modules/core/data/ai/active-project.md -> ai/active-project.md
+- modules/core/data/ai/archive/.gitkeep -> ai/archive/.gitkeep
+- modules/core/data/projects/.gitkeep -> projects/.gitkeep
+- modules/core/skills/hub-project-router/ -> ai/skills/hub-project-router/
+- modules/core/scripts/check-hub-registry.sh -> scripts/check-hub-registry.sh
+- modules/core/scripts/read-compact-project-index.sh -> scripts/read-compact-project-index.sh
 
 ## Repository only
 

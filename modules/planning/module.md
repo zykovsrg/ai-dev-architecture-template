@@ -16,7 +16,7 @@ the calendar snapshot.
 ## Installs
 
 - modules/planning/skills/hub-workflows/ -> ai/skills/hub-workflows/
-- hub-template/ai/workflow-context.md -> ai/workflow-context.md
+- modules/planning/data/ai/workflow-context.md -> ai/workflow-context.md
 - modules/planning/scripts/snapshot-calendar.sh -> scripts/snapshot-calendar.sh
 - modules/planning/scripts/calendar-context.py -> scripts/calendar-context.py
 - modules/planning/scripts/calendar_task_sync.py -> scripts/calendar_task_sync.py

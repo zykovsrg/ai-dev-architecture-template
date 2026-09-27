@@ -48,8 +48,8 @@ class RetiredManagedFileTests(unittest.TestCase):
             source = self.source_copy(root)
             hub = root / "hub"
             self.install(source, hub)
-            retired = source / "hub-template/CLAUDE.md"
-            self.retire(source, "hub-template/CLAUDE.md")
+            retired = source / "modules/core/data/CLAUDE.md"
+            self.retire(source, "modules/core/data/CLAUDE.md")
 
             plan = preview(source, hub)
             self.assertEqual(self.operation(plan, "CLAUDE.md")["action"], "remove")
@@ -65,7 +65,7 @@ class RetiredManagedFileTests(unittest.TestCase):
             hub = root / "hub"
             self.install(source, hub)
             (hub / "CLAUDE.md").write_text("local edit\n", encoding="utf-8")
-            self.retire(source, "hub-template/CLAUDE.md")
+            self.retire(source, "modules/core/data/CLAUDE.md")
 
             plan = preview(source, hub)
             self.assertEqual(self.operation(plan, "CLAUDE.md")["action"], "conflict")
@@ -81,7 +81,7 @@ class RetiredManagedFileTests(unittest.TestCase):
             self.install(source, hub)
             memory = hub / "ai/project-registry.md"
             before = memory.read_bytes()
-            self.retire(source, "hub-template/ai/project-registry.md")
+            self.retire(source, "modules/projects/data/ai/project-registry.md")
 
             plan = preview(source, hub)
             rows = [row for row in plan["operations"] if row["target"] == "ai/project-registry.md"]
@@ -99,9 +99,9 @@ class RetiredManagedFileTests(unittest.TestCase):
             before = retired_target.read_bytes()
             os.chmod(retired_target, 0o640)
             before_mode = stat.S_IMODE(retired_target.stat().st_mode)
-            self.retire(source, "hub-template/CLAUDE.md")
+            self.retire(source, "modules/core/data/CLAUDE.md")
 
-            architecture = source / "hub-template/ai/architecture.md"
+            architecture = source / "modules/core/data/ai/architecture.md"
             architecture.write_text(architecture.read_text(encoding="utf-8") + "\n<!-- changed after removal -->\n", encoding="utf-8")
             plan = preview(source, hub)
             self.assertEqual(self.operation(plan, "CLAUDE.md")["action"], "remove")

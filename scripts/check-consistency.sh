@@ -8,7 +8,7 @@ bad() { printf 'MISMATCH [%s] — %s\n' "$1" "$2" >&2; fail=1; }
 missing() { printf 'MISSING [%s] — %s\n' "$1" "$2" >&2; fail=1; }
 normalize_hub_entry() { sed -E -e 's/Personal AI Hub — (Codex|Claude Code)/Personal AI Hub — TOOL/g' -e 's/(Codex|Claude Code)/TOOL/g' -e 's/(AGENTS|CLAUDE)\.md/ENTRY.md/g' "$1"; }
 
-[ ! -d template ] && [ -d hub-template ] && ok "hub-only distribution" "hub-template/ is the only distributable architecture tree" || bad "hub-only distribution" "retired template/ exists or hub-template/ is missing"
+[ ! -d template ] && [ ! -d hub-template ] && [ -d modules ] && ok "hub-only distribution" "modules/ is the only distributable architecture tree" || bad "hub-only distribution" "retired template/ or hub-template/ exists, or modules/ is missing"
 if [ -f ai/architecture.md ] || [ -d ai/skills ]; then
   bad "root project rules" "generic project-local architecture copies remain"
 elif [ ! -f AGENTS.md ] || [ ! -f CLAUDE.md ] || ! cmp -s AGENTS.md CLAUDE.md || ! grep -Fq 'Hub-managed entry' AGENTS.md; then
@@ -17,37 +17,37 @@ else
   ok "root project rules" "project memory is local; shared rules are Hub-owned"
 fi
 
-if [ -f hub-template/AGENTS.md ] && [ -f hub-template/CLAUDE.md ] && cmp -s <(normalize_hub_entry hub-template/AGENTS.md) <(normalize_hub_entry hub-template/CLAUDE.md); then
+if [ -f modules/core/data/AGENTS.md ] && [ -f modules/core/data/CLAUDE.md ] && cmp -s <(normalize_hub_entry modules/core/data/AGENTS.md) <(normalize_hub_entry modules/core/data/CLAUDE.md); then
   ok "hub entry parity" "equal after tool-name normalization"
 else
   bad "hub entry parity" "Hub entry semantic content differs"
 fi
-architecture="hub-template/ai/architecture.md"
+architecture="modules/core/data/ai/architecture.md"
 [ -f "$architecture" ] || missing "hub architecture" "$architecture"
 
 source_section="$(awk '/^## Source Of Truth \/ Канонические источники$/ {p=1; next} /^## / && p {exit} p {print}' README.md)"
 if [ -z "$source_section" ]; then
   bad "source of truth" "README lacks the explicit Source Of Truth section"
 else
-  for needle in 'hub-template/' 'ai/project-registry.md' 'ai/current-task.md' 'ai/paused-tasks.md' 'ai/future-tasks.md' 'ai/project-context.md' 'ai/decisions.md' 'ai/changelog.md' 'knowledge/' 'Git'; do
+  for needle in 'modules/' 'ai/project-registry.md' 'ai/current-task.md' 'ai/paused-tasks.md' 'ai/future-tasks.md' 'ai/project-context.md' 'ai/decisions.md' 'ai/changelog.md' 'knowledge/' 'Git'; do
     grep -Fq "$needle" <<<"$source_section" || bad "source of truth" "missing $needle"
   done
   [ "$fail" -ne 0 ] || ok "source of truth" "shared workflows, registry, project memory, knowledge, and Git authorities are explicit"
 fi
 
-hub_rule_files="hub-template/AGENTS.md hub-template/CLAUDE.md hub-template/ai/architecture.md $(ls modules/*/rules.md 2>/dev/null | tr '\n' ' ')"
+hub_rule_files="modules/core/data/AGENTS.md modules/core/data/CLAUDE.md modules/core/data/ai/architecture.md $(ls modules/*/rules.md 2>/dev/null | tr '\n' ' ')"
 skill_count=0
 find_skill_dirs() {
-  find hub-template/ai/skills modules/*/skills -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort
+  find modules/*/skills -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort
 }
 skill_dir_for() {
   local skill="$1"
-  for base in hub-template/ai/skills modules/*/skills; do
+  for base in modules/*/skills; do
     [ -d "$base/$skill" ] && { printf '%s\n' "$base/$skill"; return 0; }
   done
   return 1
 }
-if [ -d hub-template/ai/skills ]; then
+if compgen -G "modules/*/skills" > /dev/null; then
   while IFS= read -r skill_dir; do
     skill="$(basename "$skill_dir")"; skill_count=$((skill_count + 1))
     case "$skill" in hub-*) ;; *) bad "hub skill prefix" "$skill" ;; esac
@@ -56,7 +56,7 @@ if [ -d hub-template/ai/skills ]; then
   done < <(find_skill_dirs)
   ok "hub skill inventory" "$skill_count skill directories checked"
 else
-  missing "hub skill inventory" "hub-template/ai/skills"
+  missing "hub skill inventory" "modules/*/skills"
 fi
 referenced_skills="$(grep -hoE '\`hub-[a-z0-9-]+\`' $hub_rule_files 2>/dev/null | tr -d '\`' | sort -u || true)"
 while IFS= read -r skill; do [ -z "$skill" ] || skill_dir_for "$skill" >/dev/null || missing "hub skill references" "$skill"; done <<EOF
@@ -74,14 +74,14 @@ else
     grep -Fq "resources/$resource.md" "$workflow_core" || bad "hub workflow resources" "core does not dispatch $resource.md"
     [ ! -f "$file" ] || grep -Fq 'core `SKILL.md`' "$file" || bad "hub workflow resources" "$resource.md does not defer to core authority"
   done
-  overview_core="hub-template/ai/skills/hub-task-overview/SKILL.md"
-  [ -f "hub-template/ai/skills/hub-task-overview/resources/capture.md" ] || missing "hub workflow resources" "hub-task-overview/resources/capture.md"
+  overview_core="modules/tasks/skills/hub-task-overview/SKILL.md"
+  [ -f "modules/tasks/skills/hub-task-overview/resources/capture.md" ] || missing "hub workflow resources" "hub-task-overview/resources/capture.md"
   grep -Fq "resources/capture.md" "$overview_core" 2>/dev/null || bad "hub workflow resources" "hub-task-overview does not dispatch capture.md"
   [ "$fail" -ne 0 ] || ok "hub workflow resources" "all scenario resources exist and are core-dispatched"
 fi
 
 if [ -f "$workflow_core" ]; then
-  declared_actions="$(sed -n -E 's/^action: <(.*)>$/\1/p' "hub-template/ai/skills/hub-task-overview/SKILL.md" 2>/dev/null)"
+  declared_actions="$(sed -n -E 's/^action: <(.*)>$/\1/p' "modules/tasks/skills/hub-task-overview/SKILL.md" 2>/dev/null)"
   referenced_learning="$(grep -rhoE '\`(goal_progress|add_observation|promote_rule|retire_rule)\`' modules/planning/skills/hub-workflows 2>/dev/null | tr -d '\`' | sort -u || true)"
   while IFS= read -r action; do
     [ -z "$action" ] && continue
@@ -93,7 +93,7 @@ EOF
   [ "$fail" -ne 0 ] || ok "workflow action schema" "learning actions and proposal schema agree"
 fi
 
-if grep -Fq 'scripts/read-compact-task-index.py ->' modules/*/module.md && grep -Fq 'scripts/read-compact-task-index.py' "hub-template/ai/skills/hub-task-overview/SKILL.md"; then
+if grep -Fq 'scripts/read-compact-task-index.py ->' modules/*/module.md && grep -Fq 'scripts/read-compact-task-index.py' "modules/tasks/skills/hub-task-overview/SKILL.md"; then
   ok "compact task index" "shipped via module passport and used for personal-assistant discovery"
 else
   bad "compact task index" "module passport or workflow routing is missing"

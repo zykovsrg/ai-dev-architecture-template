@@ -56,8 +56,10 @@ class PlanningCalendarIsolationTests(unittest.TestCase):
         self.assertEqual(hits, [])
 
     def test_task_skills_fire_before_task_confirmation(self):
+        passports = load_passports(ROOT)
         for skill in CONFIRMATION_SKILLS:
-            text = (ROOT / f"hub-template/ai/skills/{skill}/SKILL.md").read_text(encoding="utf-8")
+            source = _skill_source(ROOT, passports, skill)
+            text = (ROOT / source / "SKILL.md").read_text(encoding="utf-8")
             self.assertIn("`before-task-confirmation`", text, skill)
 
 
@@ -67,7 +69,9 @@ def event_block(text, event):
 
 class LifecycleEventTests(unittest.TestCase):
     def skill(self, name):
-        return (ROOT / f"hub-template/ai/skills/{name}/SKILL.md").read_text(encoding="utf-8")
+        passports = load_passports(ROOT)
+        source = _skill_source(ROOT, passports, name)
+        return (ROOT / source / "SKILL.md").read_text(encoding="utf-8")
 
     def test_task_finish_fires_before_task_close(self):
         text = self.skill("hub-task-finish")

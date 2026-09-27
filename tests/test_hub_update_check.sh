@@ -52,15 +52,15 @@ bash "$ROOT/scripts/install.sh" --mode hub "$PIN_HUB" >/dev/null
 # install.sh appends runtime ignore entries after the release baseline is written.
 # Normalize this one managed fixture file back to exact source-A bytes so the
 # branch-move test exercises source pinning rather than installer .gitignore policy.
-cp "$WORK/hub-template/.gitignore" "$PIN_HUB/.gitignore"
+cp "$WORK/modules/core/data/.gitignore" "$PIN_HUB/.gitignore"
 PREVIEW="$(HUB_RELEASE_REPO_URL="$REMOTE" bash "$ROOT/scripts/update-installed-hub.sh" --hub "$PIN_HUB" --ref moving-source --dry-run)"
 PLAN_SHA="$(printf '%s\n' "$PREVIEW" | awk '/Plan SHA256:/ {print $3; exit}')"
 PREVIEW_SHA="$(printf '%s\n' "$PREVIEW" | awk '/Resolved revision:/ {print $3; exit}')"
 [ "$PREVIEW_SHA" = "$SHA_A" ] || { echo 'FAIL: preview did not pin SHA A' >&2; exit 1; }
 [ -n "$PLAN_SHA" ] || { echo 'FAIL: preview did not emit plan hash' >&2; exit 1; }
 
-printf '\n<!-- branch moved to B -->\n' >> "$WORK/hub-template/AGENTS.md"
-git -C "$WORK" add hub-template/AGENTS.md
+printf '\n<!-- branch moved to B -->\n' >> "$WORK/modules/core/data/AGENTS.md"
+git -C "$WORK" add modules/core/data/AGENTS.md
 git -C "$WORK" commit -q -m 'fixture: move source branch'
 SHA_B="$(git -C "$WORK" rev-parse HEAD)"
 git -C "$WORK" push -q fixture HEAD:refs/heads/moving-source

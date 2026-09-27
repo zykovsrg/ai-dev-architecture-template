@@ -2,6 +2,14 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)"
+# Installed Hub: archiprojects.py (owned by projects) sits next to this script
+# in the same scripts/ target directory. Repository source tree: projects
+# lives under modules/projects/scripts/ instead.
+if [ -f "$SCRIPT_DIR/archiprojects.py" ]; then
+  ARCHIPROJECTS_PY="$SCRIPT_DIR/archiprojects.py"
+else
+  ARCHIPROJECTS_PY="$SCRIPT_DIR/../../projects/scripts/archiprojects.py"
+fi
 HUB_DIR="${1:-.}"
 HUB_DIR="$(cd "$HUB_DIR" && pwd -P)"
 ROOTS_FILE="$HUB_DIR/ai/allowed-roots.md"
@@ -230,7 +238,7 @@ validate_skill_namespace() {
 validate_entry_files
 validate_skill_namespace
 validate_projects_root
-python3 "$SCRIPT_DIR/archiprojects.py" validate --hub "$HUB_DIR"
+python3 "$ARCHIPROJECTS_PY" validate --hub "$HUB_DIR"
 
 ids=""
 current_id=""

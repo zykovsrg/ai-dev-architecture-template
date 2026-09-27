@@ -32,7 +32,7 @@ class HubWorkflowProgressiveDisclosureTests(unittest.TestCase):
             "`hub-task-overview`",
         ):
             self.assertIn(phrase, core)
-        overview = (REPO_ROOT / "hub-template/ai/skills/hub-task-overview/SKILL.md").read_text(encoding="utf-8")
+        overview = (REPO_ROOT / "modules/tasks/skills/hub-task-overview/SKILL.md").read_text(encoding="utf-8")
         for phrase in (
             "## Personal-assistant scope",
             "## Proposal envelope",
@@ -42,7 +42,7 @@ class HubWorkflowProgressiveDisclosureTests(unittest.TestCase):
             "resources/capture.md",
         ):
             self.assertIn(phrase, overview)
-        self.assertTrue((REPO_ROOT / "hub-template/ai/skills/hub-task-overview/resources/capture.md").is_file())
+        self.assertTrue((REPO_ROOT / "modules/tasks/skills/hub-task-overview/resources/capture.md").is_file())
 
     def test_detailed_scenario_formats_leave_core(self):
         core = SKILL.read_text(encoding="utf-8")

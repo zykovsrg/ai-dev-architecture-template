@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SCRIPT = ROOT / "scripts" / "read-compact-project-index.sh"
+SCRIPT = ROOT / "modules" / "core" / "scripts" / "read-compact-project-index.sh"
 
 
 def write(path: Path, text: str) -> None:

@@ -181,8 +181,8 @@ for this approved creation.
 ## Built-in memory templates
 
 Use these contents exactly as the initial six project-memory files. They are
-embedded here because an installed hub contains `hub-template/`, not the source
-repository's standalone `template/` directory.
+embedded here because the repository distributes them from `modules/*/data/`,
+not a standalone `template/` directory.
 
 ### current-task.md
 

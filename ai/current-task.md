@@ -15,7 +15,7 @@ Stage: intake
 
 ## Relevant files
 
-- `modules/*/module.md`, `hub-template/`
+- `modules/*/module.md`, `modules/*/{skills,scripts,data}`
 - `scripts/check-module-boundaries.py`, `tests/test_module_events.py`
 - `docs/superpowers/specs/2026-09-26-modular-architecture-design.md`
 

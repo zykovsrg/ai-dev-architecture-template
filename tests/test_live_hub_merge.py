@@ -6,7 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def template(path):
-    return (ROOT / "hub-template" / path).read_text(encoding="utf-8")
+    return (ROOT / path).read_text(encoding="utf-8")
 
 
 def source(path):
@@ -32,7 +32,7 @@ class LiveHubMergeTests(unittest.TestCase):
         self.assertIn("after-calendar-change", calendar)
 
     def test_task_close_reviews_before_memory_clear(self):
-        finish = template("ai/skills/hub-task-finish/SKILL.md")
+        finish = template("modules/tasks/skills/hub-task-finish/SKILL.md")
         self.assertLess(finish.index("`before-task-close`"), finish.index("clearing task context"))
         learning = source("modules/learning/rules.md")
         self.assertIn("hub-session-review", learning[learning.index("## before-task-close"):])

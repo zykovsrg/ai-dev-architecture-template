@@ -64,7 +64,7 @@ bash scripts/update-installed-hub.sh --hub /path/to/_ai-hub --ref <COMMIT_SHA> -
 
 ## Source Of Truth / Канонические источники
 
-- shared workflows, routing и security policy — установленный Hub; distributable source — `hub-template/`;
+- shared workflows, routing и security policy — установленный Hub; distributable source — `modules/`;
 - project identity, status и exact path — `ai/project-registry.md` в Hub;
 - текущее/приостановленное/будущее task state — `ai/current-task.md`, `ai/paused-tasks.md`, `ai/future-tasks.md` внутри проекта;
 - project orientation — `ai/project-context.md`;

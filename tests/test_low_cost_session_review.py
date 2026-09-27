@@ -5,7 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 REVIEW = ROOT / "modules/learning/skills/hub-session-review/SKILL.md"
-FINISH = ROOT / "hub-template/ai/skills/hub-task-finish/SKILL.md"
+FINISH = ROOT / "modules/tasks/skills/hub-task-finish/SKILL.md"
 LEARNING = ROOT / "modules/learning/rules.md"
 
 

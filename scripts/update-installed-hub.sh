@@ -78,7 +78,7 @@ else
 fi
 
 [ -f "$SOURCE_REPO_ROOT/scripts/hub_release.py" ] || die "source is missing scripts/hub_release.py"
-[ -d "$SOURCE_REPO_ROOT/hub-template" ] || die "source is missing hub-template/"
+[ -d "$SOURCE_REPO_ROOT/modules" ] || die "source is missing modules/"
 
 if [ -n "$RESOLVED_SHA" ]; then
   PLAN_JSON="$(python3 "$SOURCE_REPO_ROOT/scripts/hub_release.py" preview --source "$SOURCE_REPO_ROOT" --hub "$HUB_DIR" --source-sha "$RESOLVED_SHA" ${MODULE_ARGS[@]+"${MODULE_ARGS[@]}"})"

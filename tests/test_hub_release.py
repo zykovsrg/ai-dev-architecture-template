@@ -70,7 +70,7 @@ class ReleaseDecisionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             source = self.source_copy(root)
-            (source / "hub-template" / "CLAUDE.md").unlink()
+            (source / "modules" / "core" / "data" / "CLAUDE.md").unlink()
             with self.assertRaisesRegex(ValueError, "missing install file"):
                 build_manifest(source)
 
@@ -110,7 +110,7 @@ class ReleaseDecisionTests(unittest.TestCase):
             hub = root / "hub"
             hub.mkdir()
             before = preview(source, hub)["plan_sha256"]
-            agents = source / "hub-template" / "AGENTS.md"
+            agents = source / "modules" / "core" / "data" / "AGENTS.md"
             agents.write_text(agents.read_text(encoding="utf-8") + "\n<!-- changed -->\n", encoding="utf-8")
             after = preview(source, hub)["plan_sha256"]
             self.assertNotEqual(before, after)
@@ -143,7 +143,7 @@ class ReleaseDecisionTests(unittest.TestCase):
             plan = preview(ROOT, hub)
             result = apply(ROOT, hub, plan["plan_sha256"])
             self.assertIn("AGENTS.md", result["changed"])
-            self.assertEqual((hub / "AGENTS.md").read_bytes(), (ROOT / "hub-template" / "AGENTS.md").read_bytes())
+            self.assertEqual((hub / "AGENTS.md").read_bytes(), (ROOT / "modules" / "core" / "data" / "AGENTS.md").read_bytes())
 
     def test_create_if_missing_memory_is_untouched_when_present(self):
         with tempfile.TemporaryDirectory() as directory:

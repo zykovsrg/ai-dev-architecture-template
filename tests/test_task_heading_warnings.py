@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "scripts"))
+sys.path.insert(0, str(ROOT / "modules" / "tasks" / "scripts"))
 
 from task_records import read_records, unrecognized_headings  # noqa: E402
 
@@ -57,7 +57,7 @@ class TaskHeadingWarningTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             hub = self.make_hub(Path(temp))
             result = subprocess.run(
-                [sys.executable, str(ROOT / "scripts/read-compact-task-index.py"), "--hub", str(hub)],
+                [sys.executable, str(ROOT / "modules/tasks/scripts/read-compact-task-index.py"), "--hub", str(hub)],
                 capture_output=True, text=True, check=False,
             )
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -68,7 +68,7 @@ class TaskHeadingWarningTests(unittest.TestCase):
     def test_full_record_check_fails_on_skipped_heading(self):
         with tempfile.TemporaryDirectory() as temp:
             hub = self.make_hub(Path(temp))
-            check = ["bash", str(ROOT / "scripts/check-all-task-records.sh"), "--hub", str(hub)]
+            check = ["bash", str(ROOT / "modules/tasks/scripts/check-all-task-records.sh"), "--hub", str(hub)]
             self.assertNotEqual(subprocess.run(check, capture_output=True, check=False).returncode, 0)
             future = hub / "projects/demo/ai/future-tasks.md"
             paused = hub / "projects/demo/ai/paused-tasks.md"
@@ -81,7 +81,7 @@ class TaskHeadingWarningTests(unittest.TestCase):
         compact = subprocess.run(
             [sys.executable, "-c",
              "import sys; sys.path.insert(0, sys.argv[1]); from task_records import read_records_lines;"
-             "print(read_records_lines('demo', 'paused', sys.stdin)[0]['due'])", str(ROOT / "scripts")],
+             "print(read_records_lines('demo', 'paused', sys.stdin)[0]['due'])", str(ROOT / "modules" / "tasks" / "scripts")],
             input=text, capture_output=True, text=True, check=True,
         )
         self.assertEqual(compact.stdout.strip(), "2026-09-15")

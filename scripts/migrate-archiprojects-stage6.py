@@ -304,9 +304,19 @@ def atomic_write(path, text):
             os.remove(tmp_name)
 
 
+def _archiprojects_py():
+    # Installed Hub: archiprojects.py (owned by projects) sits next to this
+    # script in the same scripts/ target directory. Repository source tree:
+    # projects lives under modules/projects/scripts/ instead.
+    sibling = ROOT / "archiprojects.py"
+    if sibling.exists():
+        return sibling
+    return ROOT / ".." / "modules" / "projects" / "scripts" / "archiprojects.py"
+
+
 def _validate_hub(hub):
     result = subprocess.run(
-        [sys.executable, str(ROOT / "archiprojects.py"), "validate", "--hub", str(hub)],
+        [sys.executable, str(_archiprojects_py()), "validate", "--hub", str(hub)],
         capture_output=True,
         text=True,
     )
