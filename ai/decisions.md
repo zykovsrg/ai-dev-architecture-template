@@ -1,5 +1,28 @@
 # Decisions
 
+### 2026-09-28 — knowledge, goals, learning выключаемые; скрипты хаба совместимы с Python 3.9
+
+Status: active
+
+Decision: knowledge, goals и learning помечены `Switchable: yes` и
+выключаются так же, как obsidian, planning и calendar: `--without <id>` в
+обычном обновлении хаба. Выключение убирает только управляемые файлы модуля
+(навыки, правила, скрипты); `ai/goals.md`, `ai/goal-log.md`,
+`ai/workflow-observations.md` и всё в `projects/` (knowledge, разборы сессий)
+остаются. Ни один модуль не указывает их в `Depends:`; planning использует
+goals и learning только если они стоят. Скрипты, которые ставятся в хаб,
+должны работать на системном Python 3.9 macOS: аннотации вида `X | None`
+только с `from __future__ import annotations`.
+
+Why: `read-compact-task-index.py` падал на системном Python 3.9.6 (`python3`
+в части сессий) из-за аннотации, появившейся на этапе 6 (исправлено в
+1242190). Выключаемость трёх модулей — следующий шаг модульной архитектуры
+после этапа 8.
+
+Impact: `tests/test_optional_modules_switch.py` проверяет выключение и
+включение каждого модуля и сохранность данных; `tests/test_python39_compat.py`
+проверяет все устанавливаемые `.py` на такие аннотации. Таблица модулей — в `docs/update.md`.
+
 ### 2026-09-27 — Защиту обновления хаба не обходить
 
 Status: active

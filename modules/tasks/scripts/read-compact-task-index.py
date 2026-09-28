@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Emit compact task discovery rows for active registered Hub projects."""
 
+from __future__ import annotations
+
 import argparse
 import json
 import re

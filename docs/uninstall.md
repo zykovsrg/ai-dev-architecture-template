@@ -1,18 +1,20 @@
 # How to remove the architecture
 
-Do not delete the `ai/` folder wholesale without checking it first. It may hold the history of current, paused, and future tasks, project decisions, and the changelog.
+There are two cases: switch off one module, or remove the whole Hub.
 
-Ask the agent: `Help me remove the AI development architecture`.
+## Switch off one module
 
-Before making changes, the agent must:
+Optional modules (knowledge, goals, learning, calendar, planning, obsidian) can be switched off with a normal Hub update. User data stays. See the module table in `docs/update.md`.
 
-1. show the files that belong to the architecture;
-2. flag files that may contain project content;
-3. offer a backup of the task memory;
-4. ask whether to remove only the rules or also the task history;
-5. show the final removal plan;
-6. get a separate confirmation.
+## Remove the whole Hub
 
-The safe default is to remove the architecture rules and skills but keep a copy of `ai/current-task.md`, `ai/paused-tasks.md`, `ai/future-tasks.md`, `ai/project-context.md`, `ai/decisions.md`, and `ai/changelog.md`.
+The Hub is the `_ai-hub` folder. Your projects live inside it, in `_ai-hub/projects/`, and each one is its own Git repository with its own memory (`ai/current-task.md`, `ai/paused-tasks.md`, `ai/future-tasks.md`, `ai/project-context.md`, `ai/decisions.md`, `ai/changelog.md`, and `knowledge/` when present). Deleting `_ai-hub` deletes them too.
 
-`AGENTS.md`, `CLAUDE.md`, `.claude/`, and `.codex/` may contain more than this architecture's files. The agent must edit them selectively, not delete them wholesale.
+Safe order:
+
+1. Move the projects you want to keep out of `_ai-hub/projects/`, or back them up.
+2. Keep a copy of Hub data you may need: `ai/project-registry.md`, `ai/project-cards/`, `ai/archiprojects.md`, `ai/goals.md`, `ai/goal-log.md`, `ai/workflow-observations.md`, `ai/workflow-context.md`.
+3. If the Obsidian watcher was installed, remove it from the source repository with `bash modules/obsidian/scripts/install-obsidian-task-sync.sh --hub <hub> --scope <scope-file> --vault <vault> --uninstall --confirm-launchd-uninstall`.
+4. Delete the `_ai-hub` folder. The calendar server (`tools/apple-calendar-policy`, `.mcp.json`, `.local/apple-calendar/`) lives inside it and goes with it.
+
+Ask the agent to show this plan with the exact paths and to wait for your confirmation before deleting anything.

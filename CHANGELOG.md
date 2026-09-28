@@ -2,6 +2,58 @@
 
 ## Unreleased
 
+### 2026-09-28 — knowledge, goals, learning switchable; Python 3.9 compatibility; documentation refresh
+
+- knowledge, goals and learning can now be switched off and on with
+  `update-installed-hub.sh --without <id>` / `--with <id>`. User data stays:
+  `ai/goals.md`, `ai/goal-log.md`, `ai/workflow-observations.md`, and
+  everything under `projects/` (the manifest never targets it). The switch and
+  the three files are tested by `tests/test_optional_modules_switch.py`.
+  Planning's optional use of goals/learning (`resources/weekly-review.md`,
+  `resources/evening-review.md`, `SKILL.md` "Preserved learning lifecycle")
+  now guards every goal/learning-specific step on that module being listed in
+  `ai/modules.md`, so a switched-off goals or learning module leaves no
+  dangling reference.
+- `read-compact-task-index.py` crashed on the macOS system Python 3.9.6; fixed.
+  `tests/test_python39_compat.py` checks every installed `.py` script for
+  PEP 604 annotations without `from __future__ import annotations`.
+- `sync-calendar-policy.sh` installed the calendar server but never created
+  its `.venv`, so a fresh install could not start the server; the install
+  path now creates it (picking a Python >=3.11 from `HUB_CALENDAR_PYTHON` or
+  PATH, removing a half-made `.venv` on failure) unless one already exists.
+  `HUB_CALENDAR_SKIP_VENV=1` skips the step for fixture tests; every test that
+  runs an install/update now sets it so CI needs no network.
+  `modules/calendar/tests/calendar-venv-install-test.sh` covers creation, the
+  existing-venv no-op, the cleanup-on-failure path, and `--dry-run` wording
+  (seen failing before the fix).
+- README, `getting-started/help.md`, and `docs/*.md` now describe the ten
+  modules in `modules/<id>/`, `ai/rules/<id>.md`, the generated
+  `ai/modules.md`, the five events, and the strict boundary check; no active
+  doc mentions the removed `hub-template/`.
+- `docs/update.md` has one table of switchable modules (knowledge, goals,
+  learning, calendar, planning, obsidian): what switching off removes, what
+  stays, and what stops working. `docs/file-roles.md` shows the repository
+  layout by module.
+- Repository checks in README match CI; the Python requirement is stated
+  (installed Hub scripts: system Python 3.9; calendar server: 3.11+).
+- Doc claims removed because no current module file backs them (restore them
+  in a module first if still wanted):
+  - `hub-environment-check` checking external tools (code-review-graph,
+    agent-skills-for-context-engineering, Playwright MCP, Superpowers),
+    comparing the architecture version, and printing a menu of next commands;
+  - `hub-task-finish` as two phases with a separate cleanup confirmation;
+  - work modes `architecture-update` and `hub-task-finish` as modes; skill
+    examples `ui-review`, `security-review`, `write-tests`;
+  - the "Skill precedence" list with `code-review-graph` taking priority, and
+    "Superpowers as a controlled methodology";
+  - the four-option task-switch menu and the six-point "different task" test;
+  - no-GitHub "local-only mode" and the patch/zip fallback without Git;
+  - the `Помощь` command, the old `покажи стартовый экран` request,
+    `Проверь обновления архитектуры`, and `Помоги удалить архитектуру` as a
+    defined flow;
+  - fixed `Status`/`Stage` value lists for `ai/current-task.md`, and "keep the
+    last 2–4 weeks of `ai/changelog.md`".
+
 ### 2026-09-27 — All modules in `modules/`; strict boundary check
 
 - knowledge, goals, learning, then core, projects, and tasks moved their

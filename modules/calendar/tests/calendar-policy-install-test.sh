@@ -6,6 +6,11 @@ SYNC="$ROOT/scripts/sync-calendar-policy.sh"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
+# This test covers the tool-directory install/rerun/removal safety, not the
+# server's Python venv (see calendar-venv-install-test.sh for that); skip it
+# so this test needs no network and leaves no venv caches for the checks below.
+export HUB_CALENDAR_SKIP_VENV=1
+
 fail() {
   printf 'FAIL: %s\n' "$*" >&2
   exit 1

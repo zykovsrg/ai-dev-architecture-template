@@ -37,6 +37,7 @@ class PlanningCalendarSwitchTests(unittest.TestCase):
         import os
         env = dict(os.environ)
         env["HUB_CALENDAR_SKIP_BRIDGE"] = "1"
+        env["HUB_CALENDAR_SKIP_VENV"] = "1"
         subprocess.run(["bash", str(ROOT / "scripts/install-hub.sh"), str(hub)],
                         check=True, capture_output=True, env=env)
         return hub
@@ -61,7 +62,7 @@ class PlanningCalendarSwitchTests(unittest.TestCase):
             allowlist_before = allowlist.read_text()
 
             dry = self.run_updater(hub, "--dry-run", "--without", "planning", "--without", "calendar",
-                                    env={"HUB_CALENDAR_SKIP_BRIDGE": "1"})
+                                    env={"HUB_CALENDAR_SKIP_BRIDGE": "1", "HUB_CALENDAR_SKIP_VENV": "1"})
             self.assertEqual(dry.returncode, 0, dry.stderr)
             removed = {l.split(": ", 1)[1] for l in dry.stdout.splitlines() if l.startswith("remove: ")}
             self.assertTrue(PLANNING_REMOVED.issubset(removed), removed)
@@ -72,7 +73,7 @@ class PlanningCalendarSwitchTests(unittest.TestCase):
 
             applied = self.run_updater(hub, "--apply", "--without", "planning", "--without", "calendar",
                                         "--confirm-plan", self.plan_sha(dry.stdout),
-                                        env={"HUB_CALENDAR_SKIP_BRIDGE": "1"})
+                                        env={"HUB_CALENDAR_SKIP_BRIDGE": "1", "HUB_CALENDAR_SKIP_VENV": "1"})
             self.assertEqual(applied.returncode, 0, applied.stderr)
 
             for target in PLANNING_REMOVED | CALENDAR_REMOVED:
@@ -101,7 +102,7 @@ class PlanningCalendarSwitchTests(unittest.TestCase):
 
             # Restore both modules.
             dry = self.run_updater(hub, "--dry-run", "--with", "planning", "--with", "calendar",
-                                    env={"HUB_CALENDAR_SKIP_BRIDGE": "1"})
+                                    env={"HUB_CALENDAR_SKIP_BRIDGE": "1", "HUB_CALENDAR_SKIP_VENV": "1"})
             self.assertIn("Module change: +calendar +planning", dry.stdout)
             self.assertIn(
                 "Extra step: refresh calendar server (tools/apple-calendar-policy, bridge rebuild, .mcp.json hub_calendar if missing)",
@@ -109,7 +110,7 @@ class PlanningCalendarSwitchTests(unittest.TestCase):
             )
             applied = self.run_updater(hub, "--apply", "--with", "planning", "--with", "calendar",
                                         "--confirm-plan", self.plan_sha(dry.stdout),
-                                        env={"HUB_CALENDAR_SKIP_BRIDGE": "1"})
+                                        env={"HUB_CALENDAR_SKIP_BRIDGE": "1", "HUB_CALENDAR_SKIP_VENV": "1"})
             self.assertEqual(applied.returncode, 0, applied.stderr)
 
             for target in PLANNING_REMOVED | CALENDAR_REMOVED:
@@ -125,7 +126,7 @@ class PlanningCalendarSwitchTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(dir="/private/tmp") as tmp:
             hub = self.installed_hub(Path(tmp))
             result = self.run_updater(hub, "--dry-run", "--without", "calendar",
-                                       env={"HUB_CALENDAR_SKIP_BRIDGE": "1"})
+                                       env={"HUB_CALENDAR_SKIP_BRIDGE": "1", "HUB_CALENDAR_SKIP_VENV": "1"})
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("calendar", result.stderr)
 
@@ -136,7 +137,7 @@ class PlanningCalendarSwitchTests(unittest.TestCase):
         # whether the module selection changed.
         with tempfile.TemporaryDirectory(dir="/private/tmp") as tmp:
             hub = self.installed_hub(Path(tmp))
-            dry = self.run_updater(hub, "--dry-run", env={"HUB_CALENDAR_SKIP_BRIDGE": "1"})
+            dry = self.run_updater(hub, "--dry-run", env={"HUB_CALENDAR_SKIP_BRIDGE": "1", "HUB_CALENDAR_SKIP_VENV": "1"})
             self.assertEqual(dry.returncode, 0, dry.stderr)
             self.assertNotIn("Module change:", dry.stdout)
             self.assertIn(
@@ -152,6 +153,7 @@ class CalendarSyncScriptSafetyTests(unittest.TestCase):
         import os
         full_env = dict(os.environ)
         full_env["HUB_CALENDAR_SKIP_BRIDGE"] = "1"
+        full_env["HUB_CALENDAR_SKIP_VENV"] = "1"
         if env:
             full_env.update(env)
         return subprocess.run(

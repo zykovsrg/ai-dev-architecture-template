@@ -29,6 +29,10 @@ consistency and installer checks; nothing here is installed into a Hub.
 - scripts/check-consistency.sh
 - scripts/architecture-test.sh
 - scripts/hub-smoke-test.sh
+- scripts/assistant-workflows.sh
+- scripts/assistant-workflows-test.sh
+- scripts/refresh-session-inventory.sh
+- scripts/test-refresh-session-inventory.sh
 - tests/
 
 ## Reads

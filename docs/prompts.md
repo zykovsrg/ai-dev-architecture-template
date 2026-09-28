@@ -2,6 +2,8 @@
 
 These prompts assume the supported Personal AI Hub architecture. Shared rules and workflows live in Hub; project repositories keep their own canonical memory and optional knowledge.
 
+Some prompts need an optional module; the heading says which. The Hub lists its installed modules and skills in `ai/modules.md`. If a module is not listed there, the agent should say it is not installed.
+
 ## Install Personal AI Hub
 
 ```text
@@ -54,37 +56,37 @@ Treat this as a personal-assistant request.
 For discovery across active registered projects, start with `scripts/read-compact-task-index.py`. Open a canonical current/future/paused task record only when a selected row requires a detail absent from the compact index. Final factual output must cite the canonical source path. Do not read project code, credentials, arbitrary files, or inactive projects.
 ```
 
-## Day plan
+## Day plan (planning)
 
 ```text
 Use `hub-workflows` with the `day-plan` scenario. Follow core scope/security/proposal rules, then load only `resources/day-plan.md` plus its required calendar-context resource. Read Calendar only through the guarded Hub Calendar interface. Render the complete required day-plan format and keep all proposed task/calendar writes confirmation-gated.
 ```
 
-## Evening review
+## Evening review (planning)
 
 ```text
-Use `hub-workflows` with the `evening-review` scenario. Follow core scope/security/proposal rules, then load only `resources/evening-review.md`. For a calendar-only review, read the day's events through the guarded Hub Calendar interface. Pending friction stays pending when a proposal is merely shown; resolve it only after explicit accepted/rejected disposition through the learning lifecycle.
+Use `hub-workflows` with the `evening-review` scenario. Follow core scope/security/proposal rules, then load only `resources/evening-review.md`. For a calendar-only review, read the day's events through the guarded Hub Calendar interface. If `learning` is installed, pending friction stays pending when a proposal is merely shown; resolve it only after explicit accepted/rejected disposition through the learning lifecycle.
 ```
 
-## Weekly review
+## Weekly review (planning)
 
 ```text
-Use `hub-workflows` with the `weekly-review` scenario. Start personal-assistant task discovery from the compact task index, use canonical task sources for facts, and load only `resources/weekly-review.md` for scenario formatting. Learning rule promotion/retirement remains proposal-only and confirmation-gated.
+Use `hub-workflows` with the `weekly-review` scenario. Start personal-assistant task discovery from the compact task index, use canonical task sources for facts, and load only `resources/weekly-review.md` for scenario formatting. If `learning` is installed, rule promotion/retirement remains proposal-only and confirmation-gated.
 ```
 
 ## Capture a meeting or task
 
 ```text
-Use `hub-workflows` with the `capture` scenario for the one source I explicitly provide. Do not discover other transcripts/files. Follow the source/scope gates, perform semantic analysis, then return exact independent proposal envelopes and diffs. Do not apply them automatically.
+Use `hub-task-overview` with the `capture` scenario for the one source I explicitly provide. Do not discover other transcripts/files. Follow the source/scope gates, perform semantic analysis, then return exact independent proposal envelopes and diffs. Do not apply them automatically.
 ```
 
-## Capture project knowledge
+## Capture project knowledge (knowledge)
 
 ```text
 Use `hub-knowledge-capture` only for the already confirmed project and explicitly selected material. Knowledge is optional/on-demand, not default context. Show the exact target record/path and proposed content before confirmation; do not copy raw sensitive source material unnecessarily.
 ```
 
-## Review project knowledge
+## Review project knowledge (knowledge)
 
 ```text
 Use `hub-knowledge-review` for one explicitly selected project-local knowledge record, folder, or task-linked set. Check freshness and conflicts against the permitted source evidence. Show exact proposed edits and wait for confirmation before changing anything.
@@ -93,7 +95,9 @@ Use `hub-knowledge-review` for one explicitly selected project-local knowledge r
 ## Update an installed Hub
 
 ```text
-Use the supported content-addressed Hub update flow from a local source checkout. Resolve any requested remote branch/tag to one commit SHA once, use that same revision for preview and apply, show the plan/hash first, preserve local modified managed files as conflicts, and keep existing create-if-missing memory untouched.
+Use the supported content-addressed Hub update flow from a local source checkout. Resolve any requested remote branch/tag to one commit SHA once, use that same revision for preview and apply, show the plan/hash first, preserve local modified managed files as conflicts, and keep existing create-if-missing memory untouched. Keep the current module selection unless I name a module to switch on or off.
 ```
+
+Commands and the module table: `docs/update.md`.
 
 Do not use pipe-to-shell installation/update commands. Download or clone first, inspect the local source/revision, then run the repository scripts locally.

@@ -1,5 +1,30 @@
 # Changelog
 
+### 2026-09-28 — Выключаемые knowledge, goals, learning; Python 3.9; документация (TASK-ai-dev-architecture-20260928-002)
+
+- 1242190: `read-compact-task-index.py` получил
+  `from __future__ import annotations` — на системном Python 3.9.6 он падал
+  (аннотация с этапа 6). Новый `tests/test_python39_compat.py` проверяет все
+  устанавливаемые `.py` на аннотации `X | None` без `from __future__`
+  (увиден падающим до правки).
+- 4ec6f3f: knowledge, goals, learning — `Switchable: yes`;
+  `tests/test_optional_modules_switch.py` (выключение/включение каждого
+  модуля, сохранность `ai/goals.md`, `ai/goal-log.md`,
+  `ai/workflow-observations.md`).
+- a14edfe: README, `getting-started/help.md`, `docs/*.md` переписаны под
+  модули; в `docs/update.md` одна таблица выключаемых модулей, в
+  `docs/file-roles.md` раскладка репозитория по модулям. Убраны утверждения,
+  которые больше ничем не подтверждены (список — в корневом `CHANGELOG.md`).
+- `sync-calendar-policy.sh` ставил сервер календаря, но никогда не создавал
+  его `.venv` — на свежей установке сервер не мог запуститься. Установка
+  теперь сама создаёт `.venv` (берёт Python 3.11+ из `HUB_CALENDAR_PYTHON`
+  или PATH, при сбое убирает недособранную `.venv`), если её ещё нет; готовую
+  не трогает. `HUB_CALENDAR_SKIP_VENV=1` пропускает шаг в фикстурных тестах —
+  теперь выставлен во всех тестах, запускающих install/update, чтобы CI не
+  требовал сети. `modules/calendar/tests/calendar-venv-install-test.sh`
+  проверяет создание, пропуск для уже готовой `.venv`, очистку при сбое и
+  текст `--dry-run` (увиден падающим до правки).
+
 ### 2026-09-28 — Шаблон хаба игнорирует `.DS_Store` (TASK-ai-dev-architecture-20260928-001)
 
 - `modules/core/data/.gitignore` получил `.DS_Store`; тест

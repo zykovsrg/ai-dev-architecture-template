@@ -535,3 +535,15 @@ records (changelogs, decisions, old specs and plans) are not rewritten.
   learning/knowledge yields no subscriber and the skills still read correctly.
 - After the working-Hub update: a day plan still renders and a closure still
   runs the session review.
+
+## Post-stage 8 (TASK-ai-dev-architecture-20260928-002)
+
+- knowledge, goals and learning are `Switchable: yes`. Switching one off
+  removes only its managed skills, rules and scripts; `ai/goals.md`,
+  `ai/goal-log.md`, `ai/workflow-observations.md` and anything under
+  `projects/` stay (create-if-missing or never managed). planning only uses
+  goals and learning if present, so they can be removed while planning stays.
+  Guarded by `tests/test_optional_modules_switch.py`.
+- Installed Hub `.py` scripts must run on the macOS system Python 3.9: a PEP 604
+  annotation (`X | None`) needs `from __future__ import annotations`. Guarded by
+  `tests/test_python39_compat.py`, which checks every installed `.py` source for this.

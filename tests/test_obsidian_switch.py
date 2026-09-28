@@ -1,5 +1,6 @@
 import hashlib
 import json
+import os
 import subprocess
 import tempfile
 import unittest
@@ -20,15 +21,22 @@ def tree_digest(path):
 
 class ObsidianSwitchTests(unittest.TestCase):
     def run_updater(self, hub, *args):
+        env = dict(os.environ)
+        env["HUB_CALENDAR_SKIP_BRIDGE"] = "1"
+        env["HUB_CALENDAR_SKIP_VENV"] = "1"
         return subprocess.run(["bash", str(UPDATER), "--source", str(ROOT), "--hub", str(hub), "--allow-dirty", *args],
-                              capture_output=True, text=True, check=False)
+                              capture_output=True, text=True, check=False, env=env)
 
     def plan_sha(self, output):
         return next(l.split(": ", 1)[1] for l in output.splitlines() if l.startswith("Plan SHA256: "))
 
     def installed_hub(self, root):
         hub = root / "_ai-hub"  # install-hub.sh requires this name and a symlink-free path
-        subprocess.run(["bash", str(ROOT / "scripts/install-hub.sh"), str(hub)], check=True, capture_output=True)
+        env = dict(os.environ)
+        env["HUB_CALENDAR_SKIP_BRIDGE"] = "1"
+        env["HUB_CALENDAR_SKIP_VENV"] = "1"
+        subprocess.run(["bash", str(ROOT / "scripts/install-hub.sh"), str(hub)],
+                        check=True, capture_output=True, env=env)
         vault = hub / "projects/ai-dev-architecture/obsidian-vault/Obsidian"
         vault.mkdir(parents=True)
         (vault / "Board.md").write_text("board\n", encoding="utf-8")

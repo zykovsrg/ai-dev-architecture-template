@@ -6,6 +6,11 @@ TEMP_DIR="$(mktemp -d "$ROOT/.test-hub-update.XXXXXX")"
 cleanup() { rm -rf "$TEMP_DIR"; }
 trap cleanup EXIT
 
+# install.sh and update-installed-hub.sh run sync-calendar-policy.sh on every
+# apply; skip its venv step so this test needs no network.
+export HUB_CALENDAR_SKIP_BRIDGE=1
+export HUB_CALENDAR_SKIP_VENV=1
+
 HUB="$TEMP_DIR/_ai-hub"
 mkdir -p "$HUB"
 bash "$ROOT/scripts/install.sh" --mode hub "$HUB" >/dev/null

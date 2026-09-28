@@ -2,7 +2,7 @@
 
 Id: learning
 Required: no
-Switchable: no
+Switchable: yes
 Depends: core
 Uses if present: planning
 Rules: ai/rules/learning.md

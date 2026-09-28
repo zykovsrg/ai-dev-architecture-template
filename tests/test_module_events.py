@@ -102,5 +102,17 @@ class LifecycleEventTests(unittest.TestCase):
         self.assertEqual(event_block(text, "after-project-create").strip(), "- —")
 
 
+class OptionalActionGateTests(unittest.TestCase):
+    def test_overview_gates_actions_of_switchable_modules(self):
+        text = (ROOT / "modules/tasks/skills/hub-task-overview/SKILL.md").read_text(encoding="utf-8")
+        gate = text.split("Emit an action only when the module that owns it is listed", 1)
+        self.assertEqual(len(gate), 2)
+        for action, module in (("create_knowledge", "knowledge"), ("update_knowledge", "knowledge"),
+                               ("goal_progress", "goals"), ("add_observation", "learning"),
+                               ("promote_rule", "learning"), ("retire_rule", "learning")):
+            self.assertIn(f"`{action}`", gate[1].split("After envelopes")[0], action)
+            self.assertIn(f"`{module}`", gate[1].split("After envelopes")[0], module)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -100,51 +100,45 @@ bash scripts/update-installed-hub.sh \
 
 Если есть conflict, не используйте force overwrite. Сначала определите, что это за файл: пользовательская кастомизация, намеренное локальное изменение или устаревшая managed copy. Сохраните нужное состояние и выполните новый preview.
 
+Другие флаги:
+
+- `--check` — только сравнить: код выхода 0, если Hub совпадает с выбранным release; 1 и план, если есть отличия;
+- `--commit` — после apply сделать commit в Git самого Hub;
+- `--allow-dirty` — разрешить apply при незакоммиченных изменениях Hub (см. выше).
+
 ## Модули
 
-Некоторые модули можно включать и выключать. Пример — Obsidian.
+Модули `core`, `projects`, `tasks` стоят всегда. Остальные можно выключить и включить обратно. Выключить модуль — значит убрать его файлы из Hub обычным обновлением; данные пользователя при этом не удаляются.
 
-Выключить при обновлении:
+| Модуль | Что убирается | Что остаётся | Что перестаёт работать |
+| --- | --- | --- | --- |
+| knowledge | `ai/rules/knowledge.md`; навыки `hub-knowledge-enable`, `hub-knowledge-capture`, `hub-knowledge-review`, `hub-info-update` | папки `knowledge/` в проектах | включение и ведение `knowledge/`; заготовка `knowledge/` у новых проектов; предложение проверить knowledge при закрытии задачи; предложения по заметкам встречи для одного проекта |
+| goals | `ai/rules/goals.md`; навык `hub-goal-progress`; `scripts/count-goal-progress.sh` | `ai/goals.md`, `ai/goal-log.md` | подсчёт и запись прогресса целей; цифры целей в планах и обзорах |
+| learning | `ai/rules/learning.md`; навык `hub-session-review`; `scripts/workflow_friction.py`, `scripts/check-session-review.py`, `scripts/check-workflow-memory.sh` | `ai/workflow-observations.md`; разборы в `ai/session-reviews/` проектов | разбор сессии при закрытии задачи; журнал трудностей в вечернем и недельном обзоре |
+| calendar | `ai/rules/calendar.md`; навык `hub-calendar`; после apply — `tools/apple-calendar-policy` и запись `hub_calendar` в `.mcp.json` | `.local/apple-calendar/allowlist.json`; снимки `ai/tmp/calendar-snapshots/`; другие записи `.mcp.json` | чтение и изменение календаря. Выключается только вместе с `planning` |
+| planning | `ai/rules/planning.md`; навык `hub-workflows`; `scripts/snapshot-calendar.sh`, `scripts/calendar-context.py`, `scripts/calendar_task_sync.py`, `scripts/validate-day-plan-output.py` | `ai/workflow-context.md` | план дня, вечерний и недельный обзор; общее подтверждение «задача + событие календаря» при записи задачи с датой |
+| obsidian | `ai/rules/obsidian.md`; `scripts/obsidian-task-sync.sh`, `scripts/generate-obsidian-projects-kanban.sh` | vault `projects/ai-dev-architecture/obsidian-vault` | доски перестают обновляться; правки на досках больше не превращаются в предложения |
+
+Выключение модуля ничего не удаляет в `projects/` и `.local/`. Если файл модуля изменён вручную, preview покажет `conflict`, и apply не выполнится. Файл `ai/modules.md` пересобирается: выключенный модуль и его подписки на события из него пропадают.
+
+Зависимости:
+
+- `planning` требует `calendar`. `--without calendar` без `--without planning` отклоняется с ошибкой `module planning requires calendar`.
+- `planning` использует `goals` и `learning`, только если они стоят. Их можно выключить и при включённом `planning`.
+- Включить модуль, которому нужен выключенный модуль, тоже нельзя: `--with planning` без `calendar` отклоняется.
+- `core`, `projects`, `tasks` переключить нельзя: `module cannot be switched`.
+
+Команды — обычный preview и apply с флагами `--without <id>` или `--with <id>` (флаги можно повторять):
 
 ```bash
 bash scripts/update-installed-hub.sh --hub /path/to/_ai-hub --source /path/to/pinned-repository --dry-run --without obsidian
-```
-
-Включить обратно:
-
-```bash
+bash scripts/update-installed-hub.sh --hub /path/to/_ai-hub --source /path/to/pinned-repository --dry-run --without planning --without calendar
 bash scripts/update-installed-hub.sh --hub /path/to/_ai-hub --source /path/to/pinned-repository --dry-run --with obsidian
 ```
 
-Preview покажет `Modules:` и, если выбор изменился, строку `Module change: -obsidian` или `+obsidian`, а также сами файлы модуля в `remove`/`create`. Выбор запоминается: следующий update без `--with`/`--without` сохранит текущий набор модулей. Apply нужен так же, как обычно — с тем же `--confirm-plan`.
+Preview покажет строку `Modules:`, строку `Module change:` (например `-obsidian` или `+obsidian`) и файлы модуля в `remove`/`create`. Apply — с теми же флагами и тем же `--confirm-plan`. Выбор модулей запоминается: следующее обновление без флагов сохранит текущий набор.
 
-Obsidian vault и `.local/` updater никогда не удаляет — выключение модуля убирает только его managed-скрипты и rules-файл.
-
-Ещё два переключаемых модуля — `planning` и `calendar`. `planning` зависит от `calendar`
-(day-plan и evening-review используют календарь), поэтому `--without calendar` без
-одновременного `--without planning` будет отклонён с ошибкой `module planning requires calendar`.
-
-```bash
-bash scripts/update-installed-hub.sh --hub /path/to/_ai-hub --source /path/to/pinned-repository \
-  --dry-run --without planning --without calendar
-```
-
-Когда `calendar` выходит из выбора модулей, preview дополнительно печатает:
-
-```text
-Extra step: remove calendar server (tools/apple-calendar-policy, .mcp.json hub_calendar)
-```
-
-а когда он входит в выбор — `Extra step: install calendar server`. После успешного apply
-updater сам вызывает `modules/calendar/scripts/sync-calendar-policy.sh` с `--hub` и, если
-`calendar` больше не выбран, с `--remove`: это удаляет `tools/apple-calendar-policy` и запись
-`hub_calendar` из `.mcp.json`, не трогая остальные MCP-серверы. Если `calendar` выбран, тот же
-шаг ставит/обновляет `tools/apple-calendar-policy` и добавляет запись `hub_calendar` в
-`.mcp.json`, только если её там ещё нет — существующую запись (в том числе изменённую
-пользователем) он никогда не перезаписывает.
-
-`.local/apple-calendar/allowlist.json` и снимки `ai/tmp/calendar-snapshots/` этот шаг не
-трогает ни при удалении, ни при повторной установке.
+Сервер календаря. Preview всегда печатает строку `Extra step:`: `refresh calendar server (...)`, если `calendar` выбран, и `remove calendar server (...)`, если нет. После успешного apply updater вызывает `modules/calendar/scripts/sync-calendar-policy.sh`. Если `calendar` выбран, шаг обновляет `tools/apple-calendar-policy`, пересобирает мост на macOS и добавляет запись `hub_calendar` в `.mcp.json`, только если её там нет; существующую запись он не перезаписывает. Если не выбран, шаг удаляет `tools/apple-calendar-policy` и только запись `hub_calendar` из `.mcp.json`.
 
 ## Что updater сохраняет
 
@@ -194,26 +188,7 @@ grep '^Version:' /path/to/_ai-hub/ai/architecture.md
 bash /path/to/_ai-hub/scripts/check-hub-registry.sh /path/to/_ai-hub
 ```
 
-Если source repository доступен локально, из него можно дополнительно запустить architecture-focused проверки репозитория:
-
-```bash
-bash scripts/check-consistency.sh
-bash scripts/hub-smoke-test.sh
-bash scripts/architecture-test.sh
-bash scripts/assistant-workflows-test.sh
-python3 -m unittest discover -s tests -v
-```
-
-Calendar policy имеет отдельный suite:
-
-```bash
-(
-  cd modules/calendar/policy
-  python3 -m pytest -q
-)
-```
-
-Repo-only tests запускайте из source repository, а не из установленного Hub, если соответствующих test files там нет.
+Проверки самого репозитория (как в CI) описаны в [README](../README.md#проверки-репозитория). Запускайте их из source repository, а не из установленного Hub.
 
 ## Если проект всё ещё содержит старые общие rules/skills
 

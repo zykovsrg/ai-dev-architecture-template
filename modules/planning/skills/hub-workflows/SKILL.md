@@ -76,19 +76,21 @@ Use the personal-assistant contract in `hub-task-overview` (scope, inputs, propo
 
 ## Preserved learning lifecycle
 
-For numeric goals, day planning may render the existing goal-progress result,
-evening review may offer a confirmed `goal_progress` proposal, and weekly
-review may render pace/forecast.
+Only when `goals` is listed in `ai/modules.md`: for numeric goals, day
+planning may render the existing goal-progress result, evening review may
+offer a confirmed `goal_progress` proposal, and weekly review may render
+pace/forecast.
 
 Day planning may record noncanonical friction and calendar snapshots through
-`snapshot-calendar.sh`. Evening review reads pending friction and may offer one
-`add_observation` proposal per grounded issue. Proposal display leaves it pending.
-Only explicit acceptance or rejection resolves it according to
-`resources/learning-lifecycle.md`; accepted observations are appended to the
-journal before resolution, rejection resolves without append, and failed append
-remains pending.
+`snapshot-calendar.sh`.
 
+Only when `learning` is listed in `ai/modules.md`: evening review reads
+pending friction and may offer one `add_observation` proposal per grounded
+issue. Proposal display leaves it pending. Only explicit acceptance or
+rejection resolves it according to `resources/learning-lifecycle.md`;
+accepted observations are appended to the journal before resolution,
+rejection resolves without append, and failed append remains pending.
 Weekly review may offer `promote_rule` for repeated observations and
-`retire_rule` for contradicted or excess rules after the workflow-memory check.
-All observation, promotion, retirement, and goal-progress changes require the
-same proposal/confirmation boundary.
+`retire_rule` for contradicted or excess rules after the workflow-memory
+check. All observation, promotion, and retirement changes require the same
+proposal/confirmation boundary as every other write.
