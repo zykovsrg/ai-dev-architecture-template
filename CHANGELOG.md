@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+### 2026-09-28 — Documentation refresh for the modular architecture
+
+- README, `getting-started/help.md`, and `docs/*.md` now describe the ten
+  modules in `modules/<id>/`, `ai/rules/<id>.md`, the generated
+  `ai/modules.md`, the five events, and the strict boundary check; no active
+  doc mentions the removed `hub-template/`.
+- `docs/update.md` has one table of switchable modules (knowledge, goals,
+  learning, calendar, planning, obsidian): what switching off removes, what
+  stays, and what stops working. `docs/file-roles.md` shows the repository
+  layout by module.
+- Repository checks in README match CI; the Python requirement is stated
+  (installed Hub scripts: system Python 3.9; calendar server: 3.11+).
+- Removed doc claims no longer backed by skills: the old environment-check
+  tool list and menu, the two-phase task finish, the patch/zip fallback, the
+  special "help"/start-screen commands, and the external-tool precedence
+  section.
+
 ### 2026-09-27 — All modules in `modules/`; strict boundary check
 
 - knowledge, goals, learning, then core, projects, and tasks moved their

@@ -1,24 +1,39 @@
 # AI-архитектура разработки
 
-Personal AI Hub — единая точка входа для работы AI-агентов с несколькими проектами без потери контекста и без копирования общих правил в каждый репозиторий.
+Personal AI Hub — одна точка входа для AI-агентов (Claude Code и Codex), которые работают с несколькими проектами. Общие правила живут в Hub один раз, а каждый проект хранит только свою память.
 
-Архитектура помогает хранить канонические задачи и решения, переключаться между Codex/Claude Code, читать только нужный контекст, подтверждать изменения до записи и не смешивать память разных проектов.
+Hub помогает вести задачи, читать только нужный контекст, подтверждать изменения до записи и не смешивать память разных проектов.
 
-## Поддерживаемая модель
+## Как это устроено
 
-Общие правила, маршрутизация, security gates и shared workflows принадлежат Hub. Каждый проект остаётся отдельным Git-репозиторием и хранит только свою локальную память и, при необходимости, knowledge.
+Hub — папка `_ai-hub`. Проекты лежат внутри неё: `_ai-hub/projects/<project-id>`. Каждый проект — отдельный Git-репозиторий. Реестр Hub (`ai/project-registry.md`) знает имя и точный путь каждого проекта. До подтверждения проекта Hub не читает его код и память; исключение — сводка задач по всем активным проектам (только файлы задач).
 
 Основной путь:
 
 ```text
-install Hub → register/create/migrate project → work through Hub
+установить Hub → создать / зарегистрировать / перенести проект → работать через Hub
 ```
 
-Проекты Hub находятся в `_ai-hub/projects/<project-id>`. Реестр Hub определяет identity/path проекта. До подтверждения проектного scope Hub не должен читать его код, память или knowledge, кроме специально разрешённого read-only personal-assistant scope для канонических задач.
+## Модули
+
+Hub собран из модулей. Каждый модуль лежит в `modules/<id>/` и описан паспортом `module.md`.
+
+| Модуль | Что делает | Можно выключить |
+| --- | --- | --- |
+| core | базовые правила, вход в Hub, выбор проекта | нет |
+| projects | реестр, создание, регистрация, перенос и переключение проектов | нет |
+| tasks | задачи проекта: поставить, переключить, закрыть; сводка задач | нет |
+| knowledge | папка `knowledge/` в проекте; предложения по заметкам встречи для одного проекта | да |
+| goals | числовые цели и журнал прогресса | да |
+| learning | разбор сессии при закрытии задачи, журнал трудностей | да |
+| calendar | безопасное чтение и изменение Apple Calendar | да |
+| planning | план дня, вечерний и недельный обзор (нужен calendar) | да |
+| obsidian | доски проектов в Obsidian | да |
+| release | установка, обновление, проверки; в Hub не ставится | — |
+
+Как включать и выключать модули и что при этом сохраняется — [`docs/update.md`](docs/update.md#модули). Как модули связаны между собой — [`docs/concepts.md`](docs/concepts.md#modules).
 
 ## Установка
-
-Склонируйте этот репозиторий локально и запустите:
 
 ```bash
 git clone https://github.com/zykovsrg/ai-dev-architecture-template.git
@@ -26,57 +41,48 @@ cd ai-dev-architecture-template
 bash scripts/install.sh /path/to/_ai-hub
 ```
 
-Явная форма эквивалентна:
+Подробно: [`docs/install.md`](docs/install.md). После установки проекты подключаются через Hub: `hub-project-create` (новый), `hub-project-register` (уже лежит в `_ai-hub/projects`), `hub-project-migrate` (перенести старый).
 
-```bash
-bash scripts/install.sh --mode hub /path/to/_ai-hub
-```
+## Обновление
 
-После установки используйте Hub workflows:
-
-- `hub-project-register` — зарегистрировать уже находящийся в Hub проект;
-- `hub-project-create` — создать новый проект;
-- `hub-project-migrate` — безопасно перенести существующий проект;
-- `hub-project-switch` — подтвердить переход в конкретный проект;
-- `hub-task-intake`, `hub-task-switch`, `hub-task-finish` — вести задачи;
-- `hub-knowledge-enable`, `hub-knowledge-capture`, `hub-knowledge-review` — optional knowledge по запросу.
-
-Устаревший project-local режим больше не устанавливается и не обновляется. Старые проекты переводятся через `hub-project-migrate`; их проектная память и knowledge должны сохраняться.
-
-## Обновление Hub
-
-Безопасный вариант — одна локальная source revision для preview и apply:
-
-```bash
-bash scripts/update-installed-hub.sh --hub /path/to/_ai-hub --source /path/to/pinned-repository --dry-run
-bash scripts/update-installed-hub.sh --hub /path/to/_ai-hub --source /path/to/pinned-repository --apply --confirm-plan <PLAN_SHA256>
-```
-
-Для remote branch/tag сначала сделайте preview. Он печатает `Resolved revision: <COMMIT_SHA>` и `Plan SHA256`. Remote apply должен использовать именно этот immutable SHA и оба подтверждения:
-
-```bash
-bash scripts/update-installed-hub.sh --hub /path/to/_ai-hub --ref <COMMIT_SHA> --apply --confirm-source-sha <COMMIT_SHA> --confirm-plan <PLAN_SHA256>
-```
-
-Если source bytes или план изменились, apply откажется продолжать. Updater не перезаписывает изменённые managed files без baseline, не заменяет существующую пользовательскую Hub memory и делает rollback уже заменённых файлов при ошибке apply. Инструкции вида `curl ... | bash` не являются поддерживаемым update path.
-
-Подробная пошаговая инструкция, разбор preview/conflicts, rollback и готовый блок для AI-агента: [`docs/update.md`](docs/update.md).
+Обновляется только Hub: сначала просмотр плана, потом применение ровно этого плана. Команды, модули и откат: [`docs/update.md`](docs/update.md).
 
 ## Source Of Truth / Канонические источники
 
-- shared workflows, routing и security policy — установленный Hub; distributable source — `modules/`;
-- project identity, status и exact path — `ai/project-registry.md` в Hub;
-- текущее/приостановленное/будущее task state — `ai/current-task.md`, `ai/paused-tasks.md`, `ai/future-tasks.md` внутри проекта;
-- project orientation — `ai/project-context.md`;
-- долговечные решения — `ai/decisions.md`;
-- семантическая история результатов — `ai/changelog.md`;
-- подробные повторно используемые references — optional `knowledge/`, только по запросу;
-- точная история файлов и кода — Git конкретного проекта.
+- общие правила, маршрутизация и безопасность — установленный Hub; исходник для установки — `modules/`;
+- имя, статус и точный путь проекта — `ai/project-registry.md` в Hub;
+- текущая, приостановленная и будущие задачи — `ai/current-task.md`, `ai/paused-tasks.md`, `ai/future-tasks.md` внутри проекта;
+- описание проекта — `ai/project-context.md`;
+- важные решения — `ai/decisions.md`;
+- история результатов — `ai/changelog.md`;
+- справочные материалы — необязательная папка `knowledge/`, только по запросу;
+- точная история файлов и кода — Git проекта.
 
-Project cards, compact indexes и Obsidian — производные представления для навигации и планирования. Они не заменяют реестр, task memory, knowledge или Git как канонические источники.
+Карточки проектов, compact-индексы и Obsidian — только удобные представления. Они не заменяют реестр, файлы задач, knowledge или Git.
 
 ## Проверки репозитория
 
-Архитектурные проверки запускаются скриптами из `scripts/` и Python-тестами из `tests/`; Calendar policy имеет собственный pytest-suite в `modules/calendar/policy/`.
+Те же проверки, что в CI (`.github/workflows/hub-architecture-tests.yml`), из корня репозитория:
 
-Документация: `docs/`, быстрые инструкции: `getting-started/`.
+```bash
+bash scripts/check-consistency.sh
+bash scripts/hub-smoke-test.sh
+bash scripts/architecture-test.sh
+bash scripts/assistant-workflows-test.sh
+python3 -m unittest discover -s tests -v
+python3 -m unittest discover -s modules/obsidian/tests -v
+python3 -m unittest discover -s modules/planning/tests -v
+```
+
+`architecture-test.sh` включает строгую проверку границ модулей: `python3 scripts/check-module-boundaries.py --strict`.
+
+Тесты сервера календаря — отдельно, им нужен Python 3.11+ и pytest:
+
+```bash
+python3 -m pip install -e ./modules/calendar/policy pytest pytest-asyncio
+(cd modules/calendar/policy && python3 -m pytest -q)
+```
+
+CI использует Python 3.11. Скрипты, которые ставятся в Hub, должны работать и на системном Python 3.9 в macOS; синтаксис аннотаций для этого проверяет `tests/test_python39_compat.py`.
+
+Документация: `docs/`, короткая памятка: `getting-started/help.md`, история изменений: `CHANGELOG.md`.

@@ -2,6 +2,11 @@
 
 Поддерживается один путь установки: Personal AI Hub.
 
+## Что нужно
+
+- `bash`, `git`, `python3`. Скрипты Hub рассчитаны на системный Python 3.9 в macOS.
+- Для модуля `calendar`: macOS (мост к Apple Calendar собирается только там) и Python 3.11+ для сервера календаря (`modules/calendar/policy/pyproject.toml`).
+
 ## 1. Получите локальную копию репозитория
 
 ```bash
@@ -15,28 +20,32 @@ cd ai-dev-architecture-template
 bash scripts/install.sh /path/to/_ai-hub
 ```
 
-Явно указать режим можно так:
+Правила установщика:
 
-```bash
-bash scripts/install.sh --mode hub /path/to/_ai-hub
-```
+- папка Hub должна называться `_ai-hub`, а путь к ней не должен содержать symlink;
+- в непустую папку установка не идёт; если там уже стоит Hub, установщик подскажет команду обновления ([`update.md`](update.md));
+- ставятся все модули, кроме `release` (список — в [README](../README.md#модули)); лишние потом можно выключить ([`update.md`](update.md#модули));
+- установщик создаёт `ai/modules.md` (список модулей, их навыков и подписок на события), папку `projects/` и `ai/allowed-roots.md` с ней, запускает `git init` в Hub;
+- сервер календаря ставится в `tools/apple-calendar-policy`, в `.mcp.json` добавляется запись `hub_calendar`, создаётся пустой список разрешённых календарей `.local/apple-calendar/allowlist.json`. Доступ к календарю не запрашивается.
 
-Скрипт создаёт/обновляет только Hub. Устаревший project-local дистрибутив не устанавливается.
+Установщик не смотрит, не регистрирует и не переносит проекты.
 
 ## 3. Подключите проект через Hub
 
-Используйте подходящий workflow:
-
 - `hub-project-create` — новый проект;
-- `hub-project-register` — проект уже лежит в разрешённом Hub root;
-- `hub-project-migrate` — существующий проект нужно перенести/очистить от старых общих правил.
+- `hub-project-register` — проект уже лежит в `_ai-hub/projects`;
+- `hub-project-migrate` — существующий проект нужно перенести и очистить от старых общих правил.
 
-Перемещение, регистрация и очистка требуют своих preview/confirmation gates. Не копируйте shared rules вручную в проект.
+Перенос, регистрация и очистка требуют своих подтверждений. Не копируйте общие правила в проект вручную.
 
 ## Что остаётся в проекте
 
-Проект хранит собственную каноническую память (`ai/current-task.md`, `ai/future-tasks.md`, `ai/paused-tasks.md`, `ai/project-context.md`, `ai/decisions.md`, `ai/changelog.md`) и optional `knowledge/`. Общие workflows и security rules принадлежат Hub.
+Проект хранит свою память (`ai/current-task.md`, `ai/future-tasks.md`, `ai/paused-tasks.md`, `ai/project-context.md`, `ai/decisions.md`, `ai/changelog.md`) и, если нужно, `knowledge/`. Общие правила и навыки принадлежат Hub.
 
 ## Проверка
 
-После установки запустите Hub environment/registry checks через поддерживаемые Hub workflows. Если проект переносится со старой схемы, сначала используйте `hub-project-migrate`; не восстанавливайте удалённые generic rule copies.
+```bash
+bash /path/to/_ai-hub/scripts/check-hub-registry.sh /path/to/_ai-hub
+```
+
+Если проект переносится со старой схемы, сначала используйте `hub-project-migrate`; не восстанавливайте старые копии общих правил.
