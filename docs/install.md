@@ -27,6 +27,7 @@ bash scripts/install.sh /path/to/_ai-hub
 - ставятся все модули, кроме `release` (список — в [README](../README.md#модули)); лишние потом можно выключить ([`update.md`](update.md#модули));
 - установщик создаёт `ai/modules.md` (список модулей, их навыков и подписок на события), папку `projects/` и `ai/allowed-roots.md` с ней, запускает `git init` в Hub;
 - сервер календаря ставится в `tools/apple-calendar-policy`, в `.mcp.json` добавляется запись `hub_calendar`, создаётся пустой список разрешённых календарей `.local/apple-calendar/allowlist.json`. Доступ к календарю не запрашивается.
+- окружение `.venv` для сервера календаря создаётся автоматически при первой установке; для этого нужен Python 3.11+ и интернет (ставится сам сервер и его зависимости). Если окружение уже стоит, установщик его не трогает. Если своя `.venv` нужна руками: `python3.11 -m venv tools/apple-calendar-policy/.venv && tools/apple-calendar-policy/.venv/bin/python -m pip install -e tools/apple-calendar-policy`.
 
 Установщик не смотрит, не регистрирует и не переносит проекты.
 

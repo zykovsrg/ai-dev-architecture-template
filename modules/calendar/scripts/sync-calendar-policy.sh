@@ -6,6 +6,12 @@ set -euo pipefail
 #
 # HUB_CALENDAR_SKIP_BRIDGE=1 skips the macOS bridge build (used by fixture-Hub
 # tests that only need the tool directory and .mcp.json entry, not a signed app).
+#
+# HUB_CALENDAR_SKIP_VENV=1 skips creating the server's Python virtualenv (used
+# by fixture-Hub tests that need no network and no real interpreter).
+# HUB_CALENDAR_PYTHON pins the interpreter used to create it; otherwise the
+# first of python3.14, python3.13, python3.12, python3.11, python3 on PATH
+# that reports Python >=3.11 is used.
 SOURCE_ROOT=""; HUB_DIR=""; MODE="apply"; ACTION="install"
 die() { echo "ERROR: $*" >&2; exit 1; }
 usage() { echo "Usage: sync-calendar-policy.sh --source REPO_DIR --hub HUB_DIR [--remove] [--dry-run]" >&2; }
@@ -161,6 +167,68 @@ check_tool_dir_safe_to_remove() {
   fi
 }
 
+# Creates the calendar server's virtualenv and installs the server into it
+# editable, or leaves an existing one untouched. Runs after the tool
+# directory's files are copied and before .mcp.json is written. Never leaves
+# a half-made .venv behind: any failure removes it and returns non-zero,
+# which (with `set -e`) fails the whole install.
+ensure_calendar_venv() {
+  local tool_dir="$1" mode="$2" venv_dir venv_python candidates candidate chosen manual
+  venv_dir="$tool_dir/.venv"; venv_python="$venv_dir/bin/python"
+
+  if [ "${HUB_CALENDAR_SKIP_VENV:-0}" = "1" ]; then
+    echo "Calendar server venv step skipped: HUB_CALENDAR_SKIP_VENV=1."
+    return 0
+  fi
+  if [ -x "$venv_python" ]; then
+    echo "Existing .venv is kept: $venv_dir"
+    return 0
+  fi
+  if [ "$mode" = "dry-run" ]; then
+    echo "Would create $venv_dir"
+    return 0
+  fi
+
+  if [ -n "${HUB_CALENDAR_PYTHON:-}" ]; then
+    candidates=("$HUB_CALENDAR_PYTHON")
+  else
+    candidates=(python3.14 python3.13 python3.12 python3.11 python3)
+  fi
+  manual="  <python3.11+> -m venv \"$venv_dir\"
+  \"$venv_python\" -m pip install -e \"$tool_dir\""
+
+  chosen=""
+  for candidate in "${candidates[@]}"; do
+    command -v "$candidate" >/dev/null 2>&1 || continue
+    "$candidate" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' 2>/dev/null \
+      || continue
+    chosen="$(command -v "$candidate")"
+    break
+  done
+  if [ -z "$chosen" ]; then
+    echo "ERROR: no Python 3.11+ interpreter found for the calendar server venv." >&2
+    echo "Set HUB_CALENDAR_PYTHON to one, or create it by hand:" >&2
+    echo "$manual" >&2
+    return 1
+  fi
+
+  if ! "$chosen" -m venv "$venv_dir"; then
+    rm -rf "$venv_dir"
+    echo "ERROR: could not create the calendar server venv with $chosen." >&2
+    echo "Create it by hand:" >&2
+    echo "$manual" >&2
+    return 1
+  fi
+  if ! "$venv_python" -m pip install --quiet -e "$tool_dir"; then
+    rm -rf "$venv_dir"
+    echo "ERROR: could not install the calendar server into its venv." >&2
+    echo "Finish it by hand:" >&2
+    echo "$manual" >&2
+    return 1
+  fi
+  echo "Created calendar server venv: $venv_dir"
+}
+
 if [ "$ACTION" = "remove" ]; then
   MCP_STATUS="$(mcp_json_check "$MCP_JSON")" || exit $?
   if [ "$MODE" = "dry-run" ]; then
@@ -190,6 +258,7 @@ MCP_STATUS="$(mcp_json_check "$MCP_JSON")" || exit $?
 if [ "$MODE" = "dry-run" ]; then
   echo "Would install guarded Calendar policy MCP into $TOOL_DIR"
   [ -e "$ALLOWLIST" ] && echo "Existing allowlist is preserved: $ALLOWLIST" || echo "Would create empty allowlist: $ALLOWLIST"
+  ensure_calendar_venv "$TOOL_DIR" "dry-run" || exit $?
   if [ "$MCP_STATUS" = "present" ]; then
     echo "Existing .mcp.json hub_calendar entry is preserved: $MCP_JSON"
   else
@@ -215,6 +284,8 @@ elif [ "${HUB_CALENDAR_SKIP_BRIDGE:-0}" = "1" ]; then
 else
   echo "Bridge build skipped: Apple EventKit is available only on macOS."
 fi
+
+ensure_calendar_venv "$TOOL_DIR" "$MODE" || die "calendar server venv was not created"
 
 mkdir -p "$ALLOWLIST_DIR"
 if [ ! -e "$ALLOWLIST" ]; then

@@ -17,6 +17,15 @@
 - `read-compact-task-index.py` crashed on the macOS system Python 3.9.6; fixed.
   `tests/test_python39_compat.py` checks every installed `.py` script for
   PEP 604 annotations without `from __future__ import annotations`.
+- `sync-calendar-policy.sh` installed the calendar server but never created
+  its `.venv`, so a fresh install could not start the server; the install
+  path now creates it (picking a Python >=3.11 from `HUB_CALENDAR_PYTHON` or
+  PATH, removing a half-made `.venv` on failure) unless one already exists.
+  `HUB_CALENDAR_SKIP_VENV=1` skips the step for fixture tests; every test that
+  runs an install/update now sets it so CI needs no network.
+  `modules/calendar/tests/calendar-venv-install-test.sh` covers creation, the
+  existing-venv no-op, the cleanup-on-failure path, and `--dry-run` wording
+  (seen failing before the fix).
 - README, `getting-started/help.md`, and `docs/*.md` now describe the ten
   modules in `modules/<id>/`, `ai/rules/<id>.md`, the generated
   `ai/modules.md`, the five events, and the strict boundary check; no active

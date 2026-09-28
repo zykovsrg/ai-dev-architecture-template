@@ -6,6 +6,11 @@ TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/ai-hub-smoke.XXXXXX")"
 trap 'rm -rf "$TMP_DIR"' EXIT
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
+# install.sh installs the calendar server on every run; skip its venv step
+# (and macOS bridge build) so this smoke test needs no network.
+export HUB_CALENDAR_SKIP_BRIDGE=1
+export HUB_CALENDAR_SKIP_VENV=1
+
 [ ! -d "$ROOT/template" ] || fail "retired standalone template still exists"
 [ -f "$ROOT/modules/core/data/AGENTS.md" ] || fail "missing Hub AGENTS.md"
 [ -f "$ROOT/modules/core/data/CLAUDE.md" ] || fail "missing Hub CLAUDE.md"

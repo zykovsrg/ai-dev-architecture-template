@@ -42,6 +42,7 @@ class OptionalModulesSwitchTests(unittest.TestCase):
     def run_updater(self, hub, *args, env=None):
         full_env = dict(os.environ)
         full_env["HUB_CALENDAR_SKIP_BRIDGE"] = "1"
+        full_env["HUB_CALENDAR_SKIP_VENV"] = "1"
         if env:
             full_env.update(env)
         return subprocess.run(
@@ -56,6 +57,7 @@ class OptionalModulesSwitchTests(unittest.TestCase):
         hub = root / "_ai-hub"  # install-hub.sh requires this name and a symlink-free path
         env = dict(os.environ)
         env["HUB_CALENDAR_SKIP_BRIDGE"] = "1"
+        env["HUB_CALENDAR_SKIP_VENV"] = "1"
         subprocess.run(["bash", str(ROOT / "scripts/install-hub.sh"), str(hub)],
                         check=True, capture_output=True, env=env)
         return hub
