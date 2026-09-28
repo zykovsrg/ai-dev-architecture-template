@@ -4,9 +4,9 @@ This resource defines only the `capture` scenario. The core `SKILL.md` remains a
 
 Read the first non-empty source line as the declared kind. Accept only `Kind: meeting` or `Kind: task`.
 
-For `Kind: meeting`, the first proposal is exactly one canonical meeting-record proposal. Task, project, knowledge, deadline, and waiting proposals may refer to that meeting record but remain independent proposals.
+For `Kind: meeting`, the first proposal is exactly one canonical meeting-record proposal. Task, project, knowledge (only when `knowledge` is listed in `ai/modules.md`), deadline, and waiting proposals may refer to that meeting record but remain independent proposals.
 
-For `Kind: task`, emit no meeting-record proposal. Allow only task or knowledge proposals grounded in the selected source and permitted canonical records.
+For `Kind: task`, emit no meeting-record proposal. Allow only task proposals, or knowledge proposals when `knowledge` is listed in `ai/modules.md`, grounded in the selected source and permitted canonical records.
 
 If no registered project fits, keep the unknown target as an `action: create_project` proposal. Do not create, register, inspect, or read the proposed project automatically.
 

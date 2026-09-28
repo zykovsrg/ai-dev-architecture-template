@@ -120,6 +120,12 @@ source: <workflow and selected source record>
 requires_confirmation: true
 ```
 
+Emit an action only when the module that owns it is listed under `## Modules`
+in `ai/modules.md`: `create_knowledge` and `update_knowledge` need `knowledge`;
+`goal_progress` needs `goals`; `add_observation`, `promote_rule`, and
+`retire_rule` need `learning`; `calendar-event` needs `calendar`. If the owner is
+not listed, report the candidate as information only and emit no envelope.
+
 After envelopes, state that nothing has been applied until the user confirms.
 A confirmed `day-plan` or `evening-review` task package applies only its exact
 canonical task-record diffs and paired calendar previews; it never authorizes
