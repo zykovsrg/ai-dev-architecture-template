@@ -1,5 +1,13 @@
 # Changelog
 
+### 2026-09-28 — Шаблон хаба игнорирует `.DS_Store` (TASK-ai-dev-architecture-20260928-001)
+
+- `modules/core/data/.gitignore` получил `.DS_Store`; тест
+  `test_hub_template_ignores_macos_metadata` (увиден падающим до правки).
+- PR #15 слит после зелёного CI; рабочий хаб обновлён (коммит хаба fd306fe),
+  drift чистый.
+  Session review: `ai/session-reviews/2026-09-28-hub-ignore-ds-store-closure.md`.
+
 ### 2026-09-27 — Modular architecture stage 8: all modules in `modules/`, strict boundaries (TASK-ai-dev-architecture-20260927-005)
 
 - Closed 2026-09-27: PR #14 merged after green CI (one Codex fix: pre-confirmation
