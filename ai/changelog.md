@@ -2,6 +2,9 @@
 
 ### 2026-09-28 — Выключаемые knowledge, goals, learning; Python 3.9; документация (TASK-ai-dev-architecture-20260928-002)
 
+- Closed 2026-09-28: PR #16 merged after green CI (two Codex rounds);
+  working Hub updated (Hub commit 108721d), drift clean.
+  Session review: `ai/session-reviews/2026-09-28-optional-modules-switch-docs-closure.md`.
 - 1242190: `read-compact-task-index.py` получил
   `from __future__ import annotations` — на системном Python 3.9.6 он падал
   (аннотация с этапа 6). Новый `tests/test_python39_compat.py` проверяет все
