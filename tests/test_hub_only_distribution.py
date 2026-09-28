@@ -96,6 +96,10 @@ class HubOnlyDistributionTests(unittest.TestCase):
     def test_no_standalone_distributable_template_tree(self):
         self.assertFalse((ROOT / "template").exists())
 
+    def test_hub_template_ignores_macos_metadata(self):
+        ignore = (ROOT / "modules/core/data/.gitignore").read_text(encoding="utf-8").splitlines()
+        self.assertIn(".DS_Store", ignore)
+
 
 if __name__ == "__main__":
     unittest.main()
