@@ -1,5 +1,21 @@
 # Changelog
 
+### 2026-09-28 — Выключаемые knowledge, goals, learning; Python 3.9; документация (TASK-ai-dev-architecture-20260928-002)
+
+- 1242190: `read-compact-task-index.py` получил
+  `from __future__ import annotations` — на системном Python 3.9.6 он падал
+  (аннотация с этапа 6). Новый `tests/test_python39_compat.py` проверяет все
+  устанавливаемые `.py` на аннотации `X | None` без `from __future__`
+  (увиден падающим до правки).
+- 4ec6f3f: knowledge, goals, learning — `Switchable: yes`;
+  `tests/test_optional_modules_switch.py` (выключение/включение каждого
+  модуля, сохранность `ai/goals.md`, `ai/goal-log.md`,
+  `ai/workflow-observations.md`).
+- a14edfe: README, `getting-started/help.md`, `docs/*.md` переписаны под
+  модули; в `docs/update.md` одна таблица выключаемых модулей, в
+  `docs/file-roles.md` раскладка репозитория по модулям. Убраны утверждения,
+  которые больше ничем не подтверждены (список — в корневом `CHANGELOG.md`).
+
 ### 2026-09-28 — Шаблон хаба игнорирует `.DS_Store` (TASK-ai-dev-architecture-20260928-001)
 
 - `modules/core/data/.gitignore` получил `.DS_Store`; тест

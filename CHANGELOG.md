@@ -2,6 +2,34 @@
 
 ## Unreleased
 
+### 2026-09-28 — knowledge, goals, learning switchable; Python 3.9 compatibility
+
+- knowledge, goals and learning can now be switched off and on with
+  `update-installed-hub.sh --without <id>` / `--with <id>`. User data stays:
+  `ai/goals.md`, `ai/goal-log.md`, `ai/workflow-observations.md`, and
+  everything under `projects/` (the manifest never targets it). The switch and
+  the three files are tested by `tests/test_optional_modules_switch.py`.
+- `read-compact-task-index.py` crashed on the macOS system Python 3.9.6; fixed.
+  `tests/test_python39_compat.py` checks every installed `.py` script for
+  PEP 604 annotations without `from __future__ import annotations`.
+- Doc claims removed in the documentation refresh because no current module
+  file backs them (restore them in a module first if still wanted):
+  - `hub-environment-check` checking external tools (code-review-graph,
+    agent-skills-for-context-engineering, Playwright MCP, Superpowers),
+    comparing the architecture version, and printing a menu of next commands;
+  - `hub-task-finish` as two phases with a separate cleanup confirmation;
+  - work modes `architecture-update` and `hub-task-finish` as modes; skill
+    examples `ui-review`, `security-review`, `write-tests`;
+  - the "Skill precedence" list with `code-review-graph` taking priority, and
+    "Superpowers as a controlled methodology";
+  - the four-option task-switch menu and the six-point "different task" test;
+  - no-GitHub "local-only mode" and the patch/zip fallback without Git;
+  - the `Помощь` command, the old `покажи стартовый экран` request,
+    `Проверь обновления архитектуры`, and `Помоги удалить архитектуру` as a
+    defined flow;
+  - fixed `Status`/`Stage` value lists for `ai/current-task.md`, and "keep the
+    last 2–4 weeks of `ai/changelog.md`".
+
 ### 2026-09-28 — Documentation refresh for the modular architecture
 
 - README, `getting-started/help.md`, and `docs/*.md` now describe the ten
