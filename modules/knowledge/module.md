@@ -2,7 +2,7 @@
 
 Id: knowledge
 Required: no
-Switchable: no
+Switchable: yes
 Depends: core, projects
 Uses if present: —
 Rules: ai/rules/knowledge.md

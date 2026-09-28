@@ -236,7 +236,7 @@ class RepositoryPassportTests(unittest.TestCase):
     def test_switchable_modules(self):
         passports = load_passports(ROOT)
         self.assertEqual({p.id for p in passports.values() if p.switchable},
-                         {"obsidian", "planning", "calendar"})
+                         {"obsidian", "planning", "calendar", "knowledge", "goals", "learning"})
 
     def test_after_calendar_change_is_a_known_event(self):
         with tempfile.TemporaryDirectory() as tmp:
