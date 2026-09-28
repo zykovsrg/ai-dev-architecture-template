@@ -1,33 +1,33 @@
 # Current Task
 
-Status: empty
-Stage: intake
+Task ID: TASK-ai-dev-architecture-20260928-001
+
+Status: active
+Stage: implementation
 
 ## Goal
 
-No active task.
+Добавить `.DS_Store` в `.gitignore` шаблона хаба (`modules/core/data/.gitignore`),
+чтобы служебный файл macOS не делал дерево хаба «грязным» и не останавливал
+обновление.
 
 ## Relevant files
 
-None yet.
+- `modules/core/data/.gitignore`
+- `tests/test_hub_only_distribution.py`
 
 ## Done criteria
 
-Define during task intake.
+- Шаблонный `.gitignore` игнорирует `.DS_Store`; тест это проверяет и был увиден падающим.
+- CI зелёный в pull request до слияния в `main`.
+- Рабочий хаб обновляется только после «да» пользователя; drift даёт exit 0.
 
 ## Agent handoff
 
 Last agent: Claude (Opus 5.5)
 
-What changed: TASK-ai-dev-architecture-20260927-005 закрыта 2026-09-27.
-Все модули в `modules/<id>/`, `hub-template/` удалён; строгая проверка границ
-(0 нарушений) входит в тесты; события `before-task-close` и
-`after-project-create`; PR #14 слит, рабочий хаб обновлён, drift чистый.
-Session review: `ai/session-reviews/2026-09-27-modules-strict-stage-8-closure.md`.
+What changed: задача записана по согласию пользователя 2026-09-28.
 
 Open risks: нет.
 
-Next agent should check: модульная архитектура (этапы 1–8) завершена.
-Мелочи: `.DS_Store` нет в `.gitignore` шаблона хаба; предложение P1 из
-разбора этапа 7 (не обходить защиту обновления хаба) ждёт решения
-пользователя.
+Next agent should check: —
