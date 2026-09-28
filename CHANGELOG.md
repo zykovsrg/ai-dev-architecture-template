@@ -2,18 +2,33 @@
 
 ## Unreleased
 
-### 2026-09-28 — knowledge, goals, learning switchable; Python 3.9 compatibility
+### 2026-09-28 — knowledge, goals, learning switchable; Python 3.9 compatibility; documentation refresh
 
 - knowledge, goals and learning can now be switched off and on with
   `update-installed-hub.sh --without <id>` / `--with <id>`. User data stays:
   `ai/goals.md`, `ai/goal-log.md`, `ai/workflow-observations.md`, and
   everything under `projects/` (the manifest never targets it). The switch and
   the three files are tested by `tests/test_optional_modules_switch.py`.
+  Planning's optional use of goals/learning (`resources/weekly-review.md`,
+  `resources/evening-review.md`, `SKILL.md` "Preserved learning lifecycle")
+  now guards every goal/learning-specific step on that module being listed in
+  `ai/modules.md`, so a switched-off goals or learning module leaves no
+  dangling reference.
 - `read-compact-task-index.py` crashed on the macOS system Python 3.9.6; fixed.
   `tests/test_python39_compat.py` checks every installed `.py` script for
   PEP 604 annotations without `from __future__ import annotations`.
-- Doc claims removed in the documentation refresh because no current module
-  file backs them (restore them in a module first if still wanted):
+- README, `getting-started/help.md`, and `docs/*.md` now describe the ten
+  modules in `modules/<id>/`, `ai/rules/<id>.md`, the generated
+  `ai/modules.md`, the five events, and the strict boundary check; no active
+  doc mentions the removed `hub-template/`.
+- `docs/update.md` has one table of switchable modules (knowledge, goals,
+  learning, calendar, planning, obsidian): what switching off removes, what
+  stays, and what stops working. `docs/file-roles.md` shows the repository
+  layout by module.
+- Repository checks in README match CI; the Python requirement is stated
+  (installed Hub scripts: system Python 3.9; calendar server: 3.11+).
+- Doc claims removed because no current module file backs them (restore them
+  in a module first if still wanted):
   - `hub-environment-check` checking external tools (code-review-graph,
     agent-skills-for-context-engineering, Playwright MCP, Superpowers),
     comparing the architecture version, and printing a menu of next commands;
@@ -29,23 +44,6 @@
     defined flow;
   - fixed `Status`/`Stage` value lists for `ai/current-task.md`, and "keep the
     last 2–4 weeks of `ai/changelog.md`".
-
-### 2026-09-28 — Documentation refresh for the modular architecture
-
-- README, `getting-started/help.md`, and `docs/*.md` now describe the ten
-  modules in `modules/<id>/`, `ai/rules/<id>.md`, the generated
-  `ai/modules.md`, the five events, and the strict boundary check; no active
-  doc mentions the removed `hub-template/`.
-- `docs/update.md` has one table of switchable modules (knowledge, goals,
-  learning, calendar, planning, obsidian): what switching off removes, what
-  stays, and what stops working. `docs/file-roles.md` shows the repository
-  layout by module.
-- Repository checks in README match CI; the Python requirement is stated
-  (installed Hub scripts: system Python 3.9; calendar server: 3.11+).
-- Removed doc claims no longer backed by skills: the old environment-check
-  tool list and menu, the two-phase task finish, the patch/zip fallback, the
-  special "help"/start-screen commands, and the external-tool precedence
-  section.
 
 ### 2026-09-27 — All modules in `modules/`; strict boundary check
 

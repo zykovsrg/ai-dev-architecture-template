@@ -153,6 +153,53 @@ class OptionalModulesSwitchTests(unittest.TestCase):
             for module_id in ("knowledge", "goals", "learning"):
                 self.assertNotIn(module_id, modules_text)
 
+            # Widened scan: a surviving module (e.g. planning, which only
+            # "uses if present" goals/learning) may still legitimately mention
+            # a removed module's skill or script name in its own resources —
+            # but only inside a paragraph that also guards on that module's
+            # presence in `ai/modules.md` (the existing
+            # "only when `learning` is listed in `ai/modules.md`" pattern).
+            # Rule, kept deliberately simple: split every remaining text file
+            # into blank-line-separated paragraphs; any paragraph naming a
+            # removed identifier must, in that same paragraph, contain both
+            # the backtick-quoted module id and the phrase
+            # "listed in `ai/modules.md`". This catches the exact planning
+            # bug (unconditional mentions of goal/learning machinery) while
+            # tolerating guarded mentions and generic English use of common
+            # words like "goals"/"learning" that don't sit next to a removed
+            # identifier at all.
+            removed_identifiers = {
+                "knowledge": ["hub-knowledge-enable", "hub-knowledge-capture", "hub-knowledge-review",
+                              "hub-info-update"],
+                "goals": ["hub-goal-progress", "count-goal-progress.sh"],
+                "learning": ["hub-session-review", "workflow_friction.py", "check-session-review.py",
+                             "check-workflow-memory.sh"],
+            }
+            text_suffixes = (".md", ".sh", ".py")
+            scan_roots = (hub / "ai/skills", hub / "ai/rules", hub / "scripts")
+            violations = []
+            for scan_root in scan_roots:
+                if not scan_root.is_dir():
+                    continue
+                for path in sorted(scan_root.rglob("*")):
+                    if not path.is_file() or path.suffix not in text_suffixes:
+                        continue
+                    try:
+                        text = path.read_text(encoding="utf-8")
+                    except (UnicodeDecodeError, OSError):
+                        continue
+                    for module_id, identifiers in removed_identifiers.items():
+                        for paragraph in text.split("\n\n"):
+                            for identifier in identifiers:
+                                if identifier not in paragraph:
+                                    continue
+                                guarded = (f"`{module_id}`" in paragraph
+                                           and "listed in `ai/modules.md`" in paragraph)
+                                if not guarded:
+                                    violations.append(
+                                        f"{path.relative_to(hub)}: {identifier!r} unguarded for {module_id!r}")
+            self.assertEqual(violations, [], "\n".join(violations))
+
 
 if __name__ == "__main__":
     unittest.main()

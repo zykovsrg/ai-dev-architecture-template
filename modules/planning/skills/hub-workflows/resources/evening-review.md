@@ -55,7 +55,9 @@ task schedule changes. If the task reference is ambiguous, emit no proposal and
 ask which task is meant. After the user confirms the exact displayed package,
 apply only that canonical task-record diff and its paired calendar preview.
 
-For active numeric goals, ask for the stated amount and offer a separate confirmed `goal_progress` proposal. For each grounded pending friction issue, offer one `add_observation` proposal. Proposal display must leave that observation pending; all acceptance, rejection, journal ordering, and append-failure behavior is defined only in `resources/learning-lifecycle.md`.
+Only when `goals` is listed in `ai/modules.md`, for active numeric goals ask for the stated amount and offer a separate confirmed `goal_progress` proposal.
+
+For each grounded pending friction issue, offer one `add_observation` proposal. Proposal display must leave that observation pending; all acceptance, rejection, journal ordering, and append-failure behavior is defined only in `resources/learning-lifecycle.md`.
 
 Run the same sync check as `resources/day-plan.md` "Sync section" and render
 its items under `## Подтвердить` with the same mapping and gates.
