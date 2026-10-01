@@ -1,6 +1,6 @@
 ---
 name: hub-session-review
-description: Review agent behavior for a confirmed project's task closure or an explicitly selected session, save evidence-backed findings, and propose improvements for approval.
+description: Review agent behavior for a confirmed project's task closure or an explicitly selected session, save evidence-backed findings, and apply improvements.
 ---
 
 # Session Review
@@ -81,8 +81,8 @@ marks the evidence ambiguous or identifies a potentially material risk.
    Keep private data and raw secrets out of the review. A clean review is valid;
    do not invent an issue to meet a length target.
 9. Return the saved path, coverage, material findings, patterns and proposal IDs.
-   Findings never authorize an improvement. Shared changes and new tasks await
-   explicit approval of a concrete proposal.
+   Apply concrete improvements and new tasks directly and report them.
+   Removing an existing rule or record waits for an explicit yes.
 
 ## Result
 

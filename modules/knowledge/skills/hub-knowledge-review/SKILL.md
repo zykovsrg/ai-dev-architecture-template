@@ -3,19 +3,20 @@ name: hub-knowledge-review
 type: review
 description: |
   Use on demand to review an explicit knowledge scope inside the currently
-  confirmed registered hub project; edits require separate exact confirmation.
+  confirmed registered hub project; edits are applied and reported.
 ---
 
 # Hub Knowledge Review
 
 This is a central hub-owned workflow. Do not copy it or any other generic
 workflow into a project. It may act only on the currently confirmed registered
-project and cannot override hub confirmation, allowed roots, secret, or
+project and cannot override hub routing, allowed roots, secret, or
 memory-isolation rules.
 
 Module rules: `ai/rules/knowledge.md`.
 
-Every record edit requires explicit confirmation naming the exact path or set.
+Record edits need no confirmation; report every edited path. Deleting a record
+needs an explicit yes.
 
 ## Scope and containment
 
@@ -31,7 +32,7 @@ Every record edit requires explicit confirmation naming the exact path or set.
 5. Inspect every existing path component with `lstat` and reject any symlink component without following it. Canonicalize only validated components and
    require each selected path to remain in this project's canonical `knowledge/` tree. Do not follow symlink entries in a selected folder.
 
-Stop without reading or writing on any mismatch. Confirmation never authorizes
+Stop without reading or writing on any mismatch. The user's request never authorizes
 path traversal, symlink access, another project, or an unregistered path.
 
 ## Review contract
@@ -59,14 +60,14 @@ For every selected record:
    missing replacement link is a review defect.
 
 For an explicitly selected inbox scope, propose only promotion to a selected
-durable category, retention, or deletion; make no mutation before exact
-confirmation.
+durable category, retention, or deletion; deletion waits for an explicit yes.
 
 ## Edit gate
 
-Propose exact changes and paths, but make no edit until a separate explicit
-confirmation names the intended record or set. After confirmation, repeat all
-registry, containment, and symlink checks and make only the confirmed edits.
+Apply the edits the user asked for without a separate confirmation. Right
+before writing, repeat all registry, containment, and symlink checks, make only
+those edits, and report each exact path. Deleting a record waits for an
+explicit yes.
 
 Do not change hub metadata, another project, project instructions, generic
 skills, Git, application code, or unrelated task memory.

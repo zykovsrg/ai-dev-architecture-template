@@ -60,7 +60,7 @@ class PlanningCalendarIsolationTests(unittest.TestCase):
         for skill in CONFIRMATION_SKILLS:
             source = _skill_source(ROOT, passports, skill)
             text = (ROOT / source / "SKILL.md").read_text(encoding="utf-8")
-            self.assertIn("`before-task-confirmation`", text, skill)
+            self.assertIn("`before-task-write`", text, skill)
 
 
 def event_block(text, event):

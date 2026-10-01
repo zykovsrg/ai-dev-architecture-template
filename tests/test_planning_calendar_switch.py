@@ -89,9 +89,9 @@ class PlanningCalendarSwitchTests(unittest.TestCase):
                               "09:00|10:00|demo|Personal\n")
 
             modules_events = (hub / "ai/modules.md").read_text().split("## Events", 1)[1]
-            before_confirm_section = modules_events.split("### before-task-confirmation", 1)[1]
-            before_confirm_section = before_confirm_section.split("###", 1)[0]
-            self.assertNotIn("planning", before_confirm_section)
+            before_write_section = modules_events.split("### before-task-write", 1)[1]
+            before_write_section = before_write_section.split("###", 1)[0]
+            self.assertNotIn("planning", before_write_section)
 
             self.assertTrue((hub / "ai/skills/hub-task-intake/SKILL.md").exists())
 

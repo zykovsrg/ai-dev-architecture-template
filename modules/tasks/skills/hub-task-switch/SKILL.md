@@ -1,6 +1,6 @@
 ---
 name: hub-task-switch
-description: Safely change one confirmed registered project's unfinished task after separate approval.
+description: Change one confirmed registered project's unfinished task and report the change.
 ---
 
 # Hub Task Switch
@@ -16,12 +16,10 @@ Module rules: `ai/rules/tasks.md`.
 
 1. Read only the selected project's `ai/current-task.md` and
    `ai/paused-tasks.md`.
-2. Show the current goal, the requested replacement, and the exact project
-   memory files that would change.
-3. Require a separate explicit confirmation before pausing the current task,
-   writing the replacement task, or promoting a future task.
-4. After confirmation, make only the approved memory changes in the selected
-   project. Never transfer task content to another project. Keep the paused
+2. Pause the current task, write the replacement task, or promote a future
+   task directly, then report the old goal, the new goal, and the changed
+   files.
+3. Make only the requested memory changes in the selected project. Never transfer task content to another project. Keep the paused
    task's existing immutable `Task ID:` when moving it into
    `ai/paused-tasks.md`. Give the replacement task
    a concrete immutable `Task ID:` in the
@@ -29,25 +27,22 @@ Module rules: `ai/rules/tasks.md`.
    three-digit number for that date in the selected project; never leave a
    placeholder. A promoted future task keeps exactly the same immutable ID
    when it becomes current.
-5. After a confirmed write to the selected project's task files, run the
+4. After a write to the selected project's task files, run the
    `after-task-write` event: read `<hub>/ai/modules.md`; for each subscriber
    listed under `after-task-write`, read its rules file and run its command
-   for the confirmed project ID only. With no subscribers, do nothing. If a
-   subscriber reports a pending proposal, show it and never apply it without
-   its own explicit confirmation.
+   for the selected project ID only. With no subscribers, do nothing. Apply a
+   subscriber's pending proposal directly unless it deletes something; a
+   deletion waits for the user's explicit yes.
 
-## Confirmation extensions
+## Write extensions
 
-Before asking the user to confirm a task write, run the
-`before-task-confirmation` event: read `<hub>/ai/modules.md`; each subscriber
-listed under `before-task-confirmation` may add its own items to the same
-confirmation screen by following its rules file. One confirmation approves
-exactly the shown set. If a subscriber cannot build its part, say which one and
-why, apply nothing, and ask again. With no subscribers, confirm the task write
-alone.
+Task writes need no user confirmation (see Write Confirmation Policy in
+`ai/architecture.md`); report what was written afterwards. Before a task
+write, run the `before-task-write` event: read `<hub>/ai/modules.md`; each
+subscriber listed under `before-task-write` prepares and applies its own items
+by following its rules file. If a subscriber cannot build its part, say which
+one and why and write nothing. If a subscriber's part is a deletion, show it
+and wait for an explicit yes before applying anything.
 
-After confirmation, each subscriber applies its items before the task write, as
-its rules say; if one fails, stop, report it, and do not write the task.
-
-This workflow cannot override hub confirmation, allowed roots, secret, or
+This workflow cannot override hub routing, allowed roots, secret, or
 memory-isolation rules. It never changes task state during a project switch.

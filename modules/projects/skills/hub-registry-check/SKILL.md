@@ -1,11 +1,11 @@
 ---
 name: hub-registry-check
-description: Audit hub registration metadata and propose separately approved maintenance actions.
+description: Audit hub registration metadata and apply the maintenance fixes the user asks for.
 ---
 
 # Registry Check
 
-Use this skill to inspect hub registration health. It is read-only until approval: the audit must not edit allowed roots, registry entries, cards,
+Use this skill to inspect hub registration health. The audit itself is read-only: it must not edit allowed roots, registry entries, cards,
 signals, archives, active-project data, or any registered project.
 
 Module rules: `ai/rules/projects.md`.
@@ -28,9 +28,9 @@ Module rules: `ai/rules/projects.md`.
 3. Present a report with evidence, confidence, and a separate proposed action
    for every finding. Clearly distinguish verified observations from inferred
    archive candidates.
-4. Wait for explicit confirmation for each individual fix. Re-run the
-   validator after an approved hub-metadata fix. Do not batch unrelated fixes
-   under one vague approval.
+4. Apply the fixes the user asks for without a further confirmation step and
+   report each one. Re-run the validator after every hub-metadata fix. A fix
+   that deletes data waits for an explicit yes.
 
 A weekly reminder may offer this skill, but cannot invoke it automatically.
 The reminder must not run the validator, enumerate roots, or create a report.

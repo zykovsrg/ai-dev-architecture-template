@@ -2,7 +2,7 @@
 name: hub-workflows
 type: worker
 description: |
-  Use for proposal-only day plans, evening reviews, and weekly reviews after
+  Use for day plans, evening reviews, and weekly reviews after
   the required source/scope gates. The personal-assistant contract lives in
   `hub-task-overview`; learning rules live here; scenario detail is loaded only
   from the matching resource.
@@ -11,14 +11,17 @@ description: |
 # Hub Workflows
 
 Use this skill for `day-plan`, `evening-review`, or `weekly-review`.
-It is proposal-first. Never write or apply a proposal before the user confirms
-the exact displayed package.
+Writes follow the Write Confirmation Policy in `ai/architecture.md`. A change
+the user states (task done, moved, new action, goal amount) is applied at once
+and reported; only deletions wait for an explicit yes. Blocks the agent itself
+suggests in a plan are suggestions; once the user accepts them they are applied
+without another confirmation step.
 
 Module rules: `ai/rules/planning.md`.
 
 Read schedules only through the guarded `hub_calendar` MCP and only with its
 read tools. Never call `preview_change` or `apply_change` here; Calendar writes
-belong to `hub-calendar` and its own confirmation. Do not perform a vault
+go through `hub-calendar`. Do not perform a vault
 migration, start a session audit, scan arbitrary transcripts, copy source text
 into project memory, add an apply command, or create a persistent proposal
 queue.
@@ -36,11 +39,11 @@ exactly the matching scenario resource:
 - `weekly-review` → `resources/weekly-review.md`.
 
 Scenario resources provide output/detail rules only. They cannot override the
-scope, allowed roots, secret handling, canonical sources, confirmation gates,
+scope, allowed roots, secret handling, canonical sources, write policy,
 or proposal schema in this core `SKILL.md` or in the `hub-task-overview`
 contract.
 
-Use the personal-assistant contract in `hub-task-overview` (scope, inputs, proposal envelope, confirmation boundary).
+Use the personal-assistant contract in `hub-task-overview` (scope, inputs, proposal envelope, write boundary).
 
 ## Fixed sequence
 
@@ -68,17 +71,15 @@ Use the personal-assistant contract in `hub-task-overview` (scope, inputs, propo
    ranks work, and renders the selected scenario contract. Bash may validate
    paths, flags, and structured field syntax only. Ground output in the selected
    source or permitted canonical records and label inference.
-6. **Return exact proposals only after analysis.** Emit one envelope per
-   possible write followed by an exact per-file diff or replacement block.
-   Unknown targets become questions rather than guessed actionable proposals.
-   A selectable package may reduce confirmation count but keeps every proposal
-   independent; changed diffs require fresh confirmation.
+6. **Apply or suggest after analysis.** Apply user-stated changes directly and
+   report each exact target and diff. Show agent-generated ideas as
+   suggestions. Unknown targets become questions rather than guessed writes.
 
 ## Preserved learning lifecycle
 
 Only when `goals` is listed in `ai/modules.md`: for numeric goals, day
 planning may render the existing goal-progress result, evening review may
-offer a confirmed `goal_progress` proposal, and weekly review may render
+record a user-stated `goal_progress` entry directly, and weekly review may render
 pace/forecast.
 
 Day planning may record noncanonical friction and calendar snapshots through
@@ -86,11 +87,11 @@ Day planning may record noncanonical friction and calendar snapshots through
 
 Only when `learning` is listed in `ai/modules.md`: evening review reads
 pending friction and may offer one `add_observation` proposal per grounded
-issue. Proposal display leaves it pending. Only explicit acceptance or
-rejection resolves it according to `resources/learning-lifecycle.md`;
+issue. Proposal display leaves it pending. Acceptance or rejection resolves
+it according to `resources/learning-lifecycle.md`;
 accepted observations are appended to the journal before resolution,
 rejection resolves without append, and failed append remains pending.
 Weekly review may offer `promote_rule` for repeated observations and
 `retire_rule` for contradicted or excess rules after the workflow-memory
-check. All observation, promotion, and retirement changes require the same
-proposal/confirmation boundary as every other write.
+check. Observation and promotion changes are applied once accepted; `retire_rule`
+deletes a rule and waits for an explicit yes.

@@ -21,5 +21,5 @@ Module rules: `ai/rules/tasks.md`.
    whether `hub-task-intake`, `hub-task-switch`, or `hub-task-finish` is the next hub-owned
    workflow. Do not change memory during this check.
 
-This workflow cannot override hub confirmation, allowed roots, secret, or
+This workflow cannot override hub routing, allowed roots, secret, or
 memory-isolation rules. It never reads another project's files or secret data.

@@ -1,6 +1,6 @@
 # capture
 
-This resource defines only the `capture` scenario. The core `SKILL.md` remains authoritative for scope, security, canonical-source rules, proposal envelopes, and confirmation; the learning lifecycle is owned by the planning module. Nothing here widens those permissions.
+This resource defines only the `capture` scenario. The core `SKILL.md` remains authoritative for scope, security, canonical-source rules, proposal envelopes, and the write policy; the learning lifecycle is owned by the planning module. Nothing here widens those permissions.
 
 Read the first non-empty source line as the declared kind. Accept only `Kind: meeting` or `Kind: task`.
 
@@ -12,4 +12,4 @@ If no registered project fits, keep the unknown target as an `action: create_pro
 
 Before proposals, report source type and separate sections for source facts, stated decisions, action candidates, likely project candidates, knowledge candidates, dates, waiting/follow-up, and ambiguities. Ground every item in the selected source or permitted canonical records and label inference explicitly.
 
-Then emit proposal envelopes in source order using the core `SKILL.md` schema. Each candidate write keeps its own exact target path and diff. A capture result may present independent proposals as one selectable package, but this only reduces confirmation count; it does not merge writes, widen scope, or authorize changed diffs.
+Then emit proposal envelopes in source order using the core `SKILL.md` schema. Each candidate write keeps its own exact target path and diff. The owning project workflow applies them directly and reports the result; only deletions wait for an explicit yes. `create_project` stays a suggestion until the user asks to create it.

@@ -42,6 +42,22 @@ Concise communication is the default. Add headings only when they improve naviga
 
 Hub routing and project isolation remain higher-priority safety constraints and cannot be removed in the name of simplicity.
 
+## Write Confirmation Policy
+
+User decision (2026-09-28): writes need no confirmation; only deletion does.
+This overrides every write-confirmation gate in hub rules, skills, workflows,
+and resources (task records, calendar create/update, knowledge, goals, project
+files, registry, memory). Perform the write directly, then briefly report what
+was written and where. Deletion of any data (files, records, calendar events,
+tasks, projects) still requires explicit confirmation in chat first.
+
+The calendar tool's preview/apply pair is a technical step: create the preview
+and apply it in the same turn without asking. For a calendar delete, show the
+preview and wait for the user's yes.
+
+This policy does not remove confirmation of which project to open before
+reading it (routing), allowed roots, secret rules, or memory isolation.
+
 ## Confirmation And Confidence
 
 Use these confidence labels in router summaries and cross-project signals:

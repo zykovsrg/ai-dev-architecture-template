@@ -24,28 +24,25 @@ Module rules: `ai/rules/tasks.md`.
 3. If it is unfinished, compare the request with its recorded Done criteria.
    Continue only when it fits; otherwise stop and require the hub-owned
    `hub-task-switch` workflow.
-4. Keep out-of-scope ideas out of the current task until the user separately
-   approves their project-memory update.
-5. After a confirmed write to the selected project's task files, run the
+4. Record out-of-scope ideas the user asks for in the project's
+   `ai/future-tasks.md` directly; do not mix them into the current task.
+5. After a write to the selected project's task files, run the
    `after-task-write` event: read `<hub>/ai/modules.md`; for each subscriber
    listed under `after-task-write`, read its rules file and run its command
-   for the confirmed project ID only. With no subscribers, do nothing. If a
-   subscriber reports a pending proposal, show it and never apply it without
-   its own explicit confirmation.
+   for the selected project ID only. With no subscribers, do nothing. Apply a
+   subscriber's pending proposal directly unless it deletes something; a
+   deletion waits for the user's explicit yes.
 
-## Confirmation extensions
+## Write extensions
 
-Before asking the user to confirm a task write, run the
-`before-task-confirmation` event: read `<hub>/ai/modules.md`; each subscriber
-listed under `before-task-confirmation` may add its own items to the same
-confirmation screen by following its rules file. One confirmation approves
-exactly the shown set. If a subscriber cannot build its part, say which one and
-why, apply nothing, and ask again. With no subscribers, confirm the task write
-alone.
+Task writes need no user confirmation (see Write Confirmation Policy in
+`ai/architecture.md`); report what was written afterwards. Before a task
+write, run the `before-task-write` event: read `<hub>/ai/modules.md`; each
+subscriber listed under `before-task-write` prepares and applies its own items
+by following its rules file. If a subscriber cannot build its part, say which
+one and why and write nothing. If a subscriber's part is a deletion, show it
+and wait for an explicit yes before applying anything.
 
-After confirmation, each subscriber applies its items before the task write, as
-its rules say; if one fails, stop, report it, and do not write the task.
-
-This workflow cannot override hub confirmation, allowed roots, secret, or
+This workflow cannot override hub routing, allowed roots, secret, or
 memory-isolation rules. It never reads, writes, or classifies another project's
 memory.

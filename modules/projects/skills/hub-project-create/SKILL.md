@@ -5,23 +5,23 @@ description: Use when a user asks to create and register a new project directly 
 
 # Project Create
 
-Use this workflow only to create a new project. It starts and remains in
-`Mode: routing` until one explicit confirmation authorizes the displayed ID
-and exact path. `hub-project-register` is for an already existing project; do not
+Use this workflow only to create a new project. The user's request to create the
+project authorizes creation; no separate confirmation step is needed (Write
+Confirmation Policy in `ai/architecture.md`). `hub-project-register` is for an already existing project; do not
 invoke it for this creation workflow.
 
 Module rules: `ai/rules/projects.md`.
 
-## Before confirmation: narrow read and validation boundary
+## Before creation: narrow read and validation boundary
 
 1. Read only `ai/allowed-roots.md`, `ai/project-registry.md`,
    `ai/active-project.md`, `ai/modules.md`, and the rules file of each
-   `after-project-create` subscriber it lists (needed to build the preview
+   `after-project-create` subscriber it lists (needed to build the creation plan
    below). Do not read `ai/project-cards/`,
    `ai/cross-project-signals.md`, `ai/archive/`, or any project directory in
    this phase. Canonicalize the hub directory and require that
    `ai/allowed-roots.md` has exactly one entry, exactly
-   `<canonical-hub>/projects`. This validated path is the confirmed allowed
+   `<canonical-hub>/projects`. This validated path is the allowed
    root; do not offer a root choice or accept an external root.
 2. Obtain the project name and type if they were not already supplied. Derive the ID as lowercase kebab-case from the
    project name; ask for a safe name if no unambiguous ID can be derived.
@@ -37,118 +37,53 @@ Module rules: `ai/rules/projects.md`.
      entry, or existing path. Do not replace, merge with, or inspect a
      collision.
    - Do not list or recurse into the candidate. The agent must not read
-     project memory, source code, or application code before confirmation.
+     project memory, source code, or application code before creation.
 
 Stop with no writes when any check fails. Never widen the root, follow a
-symlink, infer a different ID, or treat a remembered active project as
-confirmation.
+symlink, or infer a different ID.
 
-## Single preview and approval gate
+## Creation plan
 
-Show one complete preview after the checks succeed. It must include the name,
-ID, type, canonical path, exactly six `<path>/ai/` files, the items added by
-`after-project-create` subscribers, the draft card, the draft registry entry, and the active-project
-selection decision. Before the preview, inspect `git status --short --
-ai/active-project.md` without writing. Preserve the current selection by
-default: do not overwrite it merely because a new project is created. Offer an
-explicit choice to switch to the new project. If that file has uncommitted
-changes, warn that switching would overwrite them.
+After the checks succeed, build the plan: name, ID, type, canonical path,
+exactly six `<path>/ai/` files, the items added by `after-project-create`
+subscribers, the card, the registry entry, and the active-project decision.
+Inspect `git status --short -- ai/active-project.md` without writing. Preserve
+the current active-project selection unless the user asked to switch to the new
+project; if that file has uncommitted changes, do not switch and say why.
 
-Before the preview, read `<hub>/ai/modules.md`; each subscriber listed under
-`after-project-create` adds its own items to this same preview by following
-its rules file. One confirmation approves exactly the shown set. If a
-subscriber cannot build its part, say which one and why, create nothing, and
-ask again. With no subscribers, show the project items alone.
+Read `<hub>/ai/modules.md`; each subscriber listed under `after-project-create`
+adds its own items to the plan by following its rules file. If a subscriber
+cannot build its part, say which one and why and create nothing.
 
-Use this shape:
+Proceed to creation without asking. The final report uses this shape:
 
 ```text
-Режим: routing
 Новый проект: <project-name>
 ID: <project-id>
 Тип: <type>
 Путь: <canonical-path>
-
-Будет создано: папка <canonical-path>/ai/; шесть файлов памяти; пункты
-подключённых модулей; карточка; запись в реестре; локальный Git.
-Текущий активный проект будет сохранён. Чтобы переключиться на новый, добавьте
-к подтверждению: «и переключить активный проект».
-При доступной авторизации GitHub: приватный репозиторий <project-id>, первый
-commit и push ветки main. Иначе результат будет отмечен как pending-sync.
-Не будут созданы: код, зависимости, сервисы, AGENTS.md, CLAUDE.md или общие skills.
-
-Подтвердите: «Создать <project-id> по пути <canonical-path>».
-```
-
-Immediately below that Russian preview, show these exact draft contents before
-waiting:
-
-```text
-Memory files:
-- <canonical-path>/ai/current-task.md
-- <canonical-path>/ai/paused-tasks.md
-- <canonical-path>/ai/future-tasks.md
-- <canonical-path>/ai/project-context.md
-- <canonical-path>/ai/decisions.md
-- <canonical-path>/ai/changelog.md
-
-<items added by each after-project-create subscriber, under its own heading>
-
-Card: ai/project-cards/<project-id>.md
-Project ID: <project-id>
-Name: <project-name>
-Type: <type>
-Status: active
-Last updated: <YYYY-MM-DD>
-Purpose: <approved-purpose>
-Typical tasks: <approved-typical-tasks>
-Memory entry point: <canonical-path>/ai/current-task.md
-primary_archiproject: <group-id|none>
-
-Registry entry:
-## <project-id>
-Name: <project-name>
-Type: <type>
-Status: active
-Path: <canonical-path>
-Tags: <approved-tags>
-Card: ai/project-cards/<project-id>.md
-
-Active-project selection:
-Project ID: <project-id>
-Path: <canonical-path>
 Confirmation required on new chat: yes
 ```
 
-When `ai/active-project.md` has uncommitted changes, add this warning to the
-preview: `Warning: ai/active-project.md has uncommitted changes. Switching the
-active project would overwrite them and requires the explicit phrase «и
-переключить активный проект».`
-
-The quoted Russian confirmation is the one explicit confirmation. Wait for it
-to repeat both `<project-id>` and `<canonical-path>` exactly. Do not create any
-directory, card, registry entry, or active-project record before that reply.
-Only change `ai/active-project.md` when the user explicitly included
-«и переключить активный проект» in the creation confirmation.
-The preview also explicitly excludes `ai/architecture.md`,
+The plan explicitly excludes `ai/architecture.md`,
 `ai/external-tools.md`, project `AGENTS.md`, project `CLAUDE.md`, shared skills,
 `ai/cross-project-signals.md`, and `ai/archive/`.
 
-## Approved creation procedure
+## Creation procedure
 
-1. Revalidate the confirmed allowed root, canonical path, direct-child rule, ID, name,
-   symlink safety, collision absence, and the matching confirmation. Stop with
+1. Revalidate the allowed root, canonical path, direct-child rule, ID, name,
+   symlink safety, and collision absence. Stop with
    no writes if any value changed or is unsafe.
 2. Create `<canonical-path>/ai/`. Create only the six standard memory files
-   shown in the preview using the built-in memory templates below:
+   listed in the plan using the built-in memory templates below:
    `current-task.md`, `paused-tasks.md`, `future-tasks.md`,
    `project-context.md`, `decisions.md`, and `changelog.md`. Do not copy
    `ai/architecture.md` or `ai/external-tools.md`.
 3. Do not copy generic workflow skills, project instructions, or any other
    project files into the new project.
-4. Write the approved existing-schema card at
-   `ai/project-cards/<project-id>.md` and the approved registry entry exactly
-   as previewed. The card must retain all required fields and its
+4. Write the existing-schema card at
+   `ai/project-cards/<project-id>.md` and the registry entry exactly as
+   planned. The card must retain all required fields and its
    `Memory entry point: <canonical-path>/ai/current-task.md`. The optional
    `primary_archiproject:` field uses `none` where absent. A project belongs
    to exactly one, most specific group; it is also a member of every
@@ -156,29 +91,29 @@ The preview also explicitly excludes `ai/architecture.md`,
 5. Run `scripts/check-hub-registry.sh`. On a failure, stop and report the
    validator output. Do not update active-project selection or invoke a
    project workflow.
-6. Only after successful validation and the explicit switching phrase, update
-   `ai/active-project.md` with the confirmed ID and canonical path. It is a
+6. Only after successful validation and when the user asked to switch, update
+   `ai/active-project.md` with the new ID and canonical path. It is a
    selection record, not permission for a future chat.
 7. Run the `after-project-create` event: read `<hub>/ai/modules.md`; for each
    subscriber listed under `after-project-create`, read its rules file and
-   apply exactly its previewed items for the new project only. If one fails,
+   apply exactly its planned items for the new project only. If one fails,
    stop and report it; do not initialize Git or continue.
-8. Initialize a local Git repository and commit only the approved scaffold.
+8. Initialize a local Git repository and commit only the created scaffold.
    If authenticated GitHub CLI access is available, verify that `<project-id>`
    is unused, create a private repository with that exact name, add `origin`,
    and push `main`. If this remote provisioning is unavailable, retain local
    Git and report `pending-sync`; never attach or overwrite an existing remote.
 9. Invoke hub-owned `hub-environment-check` and then hub-owned `hub-task-intake` for
-   the confirmed selected project. Those workflows operate only on the selected
-   project's `ai/` memory and cannot override hub confirmation, allowed roots,
+   the new selected project. Those workflows operate only on the selected
+   project's `ai/` memory and cannot override hub routing, allowed roots,
    secret, or memory-isolation rules.
 
 ## Non-negotiable exclusions
 
 The workflow must not add application code, dependencies, services, AGENTS.md, CLAUDE.md, or shared
 skills. It must not write cross-project signals, archives, another project's
-memory, or any path outside the confirmed allowed root and hub metadata needed
-for this approved creation.
+memory, or any path outside the allowed root and hub metadata needed
+for this creation.
 
 ## Built-in memory templates
 

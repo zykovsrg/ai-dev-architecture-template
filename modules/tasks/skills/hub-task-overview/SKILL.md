@@ -4,15 +4,18 @@ type: worker
 description: |
   Use for capture and cross-project task overviews (overdue, blocked, what is
   urgent). Owns the personal-assistant contract: scope, canonical inputs,
-  proposal envelope, and confirmation boundary.
+  proposal envelope, and write boundary.
 ---
 
 # Hub Task Overview
 
 Use this skill for `capture` and for the cross-project overview (overdue,
-blocked, «что горит»). It is proposal-first.
-Never write or apply a proposal before the user confirms the exact displayed
-package.
+blocked, «что горит»).
+Writes follow the Write Confirmation Policy in `ai/architecture.md`: a change
+the user asked for (capture, "add", "move", "done") is applied directly and
+reported afterwards; only deletions wait for an explicit yes. Changes the
+agent itself suggests (overview or plan ideas) stay suggestions until the user
+accepts them, then are applied without another confirmation step.
 
 Module rules: `ai/rules/tasks.md`.
 
@@ -23,7 +26,7 @@ Module rules: `ai/rules/tasks.md`.
   task fact, then optional proposals using the envelope below.
 
 Scenario resources provide output/detail rules only. They cannot override the
-scope, allowed roots, secret handling, canonical sources, confirmation gates,
+scope, allowed roots, secret handling, canonical sources, write policy,
 or proposal schema in this core `SKILL.md`.
 
 ## Personal-assistant scope
@@ -58,11 +61,11 @@ weekly reviews, and capture after its selected source is received. Richer
 project reads, explicit knowledge paths, application work, and arbitrary file
 reads retain the normal exact confirmed project scope.
 
-A confirmed day-plan proposal package may write across active registered
+An accepted day-plan package or a user-requested task change may write across active registered
 projects without a project switch, but its write scope is exactly the three
 canonical task records: `ai/current-task.md`, `ai/future-tasks.md`, and
 `ai/paused-tasks.md`. Every proposal shows project ID, exact `target_path`, and
-exact diff before confirmation. No other project state is writable through this
+exact diff in the report after it is applied. No other project state is writable through this
 scope.
 
 ## Canonical inputs and ranking
@@ -117,7 +120,7 @@ target_path: <exact-project-or-knowledge-path|calendar:not-configured>
 summary: <one exact requested change>
 due: <YYYY-MM-DD|none>
 source: <workflow and selected source record>
-requires_confirmation: true
+requires_confirmation: <true only for deletions|false>
 ```
 
 Emit an action only when the module that owns it is listed under `## Modules`
@@ -126,27 +129,26 @@ in `ai/modules.md`: `create_knowledge` and `update_knowledge` need `knowledge`;
 `retire_rule` need `learning`; `calendar-event` needs `calendar`. If the owner is
 not listed, report the candidate as information only and emit no envelope.
 
-After envelopes, state that nothing has been applied until the user confirms.
-A confirmed `day-plan` or `evening-review` task package applies only its exact
-canonical task-record diffs and paired calendar previews; it never authorizes
-an unshown or changed write. Project, task, meeting, knowledge, deadline,
+User-requested envelopes are applied at once and reported; deletions and
+agent-suggested envelopes wait for the user's yes. An accepted `day-plan` or
+`evening-review` task package applies its canonical task-record diffs and
+paired calendar changes. Project, task, meeting, knowledge, deadline,
 waiting, Calendar, and learning writes otherwise remain independent proposals
 with exact targets and diffs. A create-project proposal
 names its exact direct-child target and planned scaffold/registry/card files but
 must not create or inspect that target.
 
-After applying any confirmed task-record write, run
+After applying any task-record write, run
 `scripts/check-all-task-records.sh --hub <hub>` and report its result. A failure
 means the applied record is not canonical: repair it in the same reply and
 rerun until it passes. Never report a task write as complete without that
 passing check.
 
-## Confirmation boundary
+## Write boundary
 
-Source selection, recorder export consent, project scope confirmation, and
-proposal confirmation are separate gates; none substitutes for another. One
-package confirmation authorizes only unchanged named proposals that remain
-selected. A capture package is applied by its owning confirmed project workflow.
+Source selection, recorder export consent, and project routing stay separate
+from writing. Writes need no confirmation except deletions. A capture package
+is applied by its owning project workflow.
 A day-plan or evening-review package may span active registered projects only
 within the exact three task-record write boundary above. Unknown, pending, failed, or ambiguous
 targets remain read-only proposals or questions.

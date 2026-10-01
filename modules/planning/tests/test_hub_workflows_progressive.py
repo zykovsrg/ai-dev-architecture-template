@@ -28,7 +28,7 @@ class HubWorkflowProgressiveDisclosureTests(unittest.TestCase):
         core = SKILL.read_text(encoding="utf-8")
         for phrase in (
             "## Fixed sequence",
-            "Never write or apply a proposal before the user confirms",
+            "Write Confirmation Policy",
             "`hub-task-overview`",
         ):
             self.assertIn(phrase, core)
@@ -36,8 +36,8 @@ class HubWorkflowProgressiveDisclosureTests(unittest.TestCase):
         for phrase in (
             "## Personal-assistant scope",
             "## Proposal envelope",
-            "## Confirmation boundary",
-            "Never write or apply a proposal before the user confirms",
+            "## Write boundary",
+            "Write Confirmation Policy",
             "scripts/read-compact-task-index.py",
             "resources/capture.md",
         ):
@@ -75,7 +75,7 @@ class HubWorkflowProgressiveDisclosureTests(unittest.TestCase):
             "Запланировано: YYYY-MM-DD HH:MM-HH:MM",
             "explicit interval unchanged",
             "past date does not infer completion",
-            "one confirmation may approve only that exact pair",
+            "write its calendar event together with the task",
         ):
             self.assertIn(phrase, day_plan)
 
@@ -96,8 +96,8 @@ class HubWorkflowProgressiveDisclosureTests(unittest.TestCase):
             "update_task",
             "update_due",
             "update_waiting",
-            "exact target path",
-            "exact diff",
+            "target path",
+            "diff",
             "ambiguous",
         )
         for filename in ("day-plan.md", "evening-review.md"):
@@ -108,7 +108,7 @@ class HubWorkflowProgressiveDisclosureTests(unittest.TestCase):
     def test_architecture_requires_task_diff_before_workflow_sync(self):
         rules = (REPO_ROOT / "modules/planning/rules.md").read_text(encoding="utf-8")
         self.assertIn("Calendar events never prove completion", rules)
-        self.assertIn("exact canonical task-record diff", rules)
+        self.assertIn("is applied at once to the canonical task record", rules)
 
 
 if __name__ == "__main__":

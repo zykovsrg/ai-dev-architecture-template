@@ -50,7 +50,7 @@ initial buffer during architecture installation and do not schedule a job.
 
 ## Freshness and recommendations
 
-Rolling extension cannot discover edits to retained dates. After an approved
+Rolling extension cannot discover edits to retained dates. After a
 calendar edit, refresh affected buffered dates. Before using a retained future
 event for a recommendation, re-read its date and replace that bucket so moved
 or deleted events cannot support advice. Label historical data as a snapshot:
@@ -68,5 +68,5 @@ forward when a verified publication deadline and remaining work justify it.
 Separate facts from hypotheses and estimates. If evidence is missing, state
 what is unavailable; if no useful advice is grounded, write
 `- Нет обоснованных рекомендаций.`
-Accepted advice follows the existing task/calendar confirmation flow;
+Accepted advice is applied through the normal task/calendar write flow;
 recommendations alone change neither project records nor calendar events.

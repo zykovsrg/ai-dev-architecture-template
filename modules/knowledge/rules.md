@@ -3,15 +3,16 @@
 ## Hub-Managed Project Flow
 
 - `hub-knowledge-capture` — creates or updates one explicitly selected record in
-  the confirmed project's local `knowledge/` tree after exact confirmation.
+  the confirmed project's local `knowledge/` tree directly and reports it.
 - `hub-knowledge-review` — checks one explicit project-local record, folder, or
-  task-linked set and waits for exact confirmation before any edit.
+  task-linked set and applies the edits the user asks for; deleting a record
+  waits for an explicit yes.
 
 ## Optional Project Knowledge
 
 `knowledge/` is optional local reference material, not default context and not
 an automatic conversation archive. A new project receives only the empty
-knowledge scaffold as part of its one confirmed project-creation operation
+knowledge scaffold as part of its project-creation operation
 (see `## after-project-create`).
 Hub-created projects use the central hub-owned `hub-knowledge-capture` and
 `hub-knowledge-review` workflows; generic project skills are never copied into
@@ -19,13 +20,12 @@ them. Both workflows canonicalize the confirmed project and selected paths,
 reject absolute paths, traversal, and symlink components, and keep every record
 inside that project's `knowledge/` tree and matching type category.
 
-For an existing confirmed registered hub project, use `hub-knowledge-enable` only
-after a separate explicit confirmation that repeats the project ID and exact
-registered path. It may inspect only the registry identity and the exact
+For an existing confirmed registered hub project, use `hub-knowledge-enable` when
+the user asks for it, naming the project ID and exact registered path in the
+report. It may inspect only the registry identity and the exact
 scaffold paths, must not follow symlinks, and must not read records or unrelated
 project content. Its preview names `knowledge/README.md`,
-`knowledge/record-template.md`, and all four category directories. After the
-matching confirmation, it creates only absent scaffold files and directories;
+`knowledge/record-template.md`, and all four category directories. It creates only absent scaffold files and directories;
 it never overwrites records or creates project instructions, skills, Git, code,
 dependencies, services, registry entries, cards, or active-project changes.
 Its preflight uses `lstat`: the confirmed project and category paths must be
@@ -71,7 +71,7 @@ Knowledge scaffold:
 - <canonical-path>/knowledge/inbox/
 ```
 
-After the creation confirmation, create only the absent scaffold at
+During project creation, create only the absent scaffold at
 `<canonical-path>/knowledge/`: `README.md`, `record-template.md`, and the empty
 `research/`, `decisions/`, `risks/`, `runbooks/`, and `inbox/` directories.
 Inbox holds weak observations and is not a durable category. Write the two

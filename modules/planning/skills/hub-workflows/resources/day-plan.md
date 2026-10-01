@@ -1,15 +1,15 @@
 # day-plan
 
-This resource defines only the `day-plan` scenario. The core `SKILL.md` remains authoritative for scope, security, canonical-source rules, proposal envelopes, confirmation, and learning lifecycle. Nothing here widens those permissions.
+This resource defines only the `day-plan` scenario. The core `SKILL.md` remains authoritative for scope, security, canonical-source rules, proposal envelopes, write policy, and learning lifecycle. Nothing here widens those permissions.
 
 When the request names an archiproject group, resolve it via
 `scripts/archiprojects.py tree --hub <hub>` and pass `--group <group-id>` to
 `scripts/read-compact-task-index.py`, same as the core `SKILL.md` group
 filter; report an unknown group instead of guessing. This only narrows task
 discovery to the group's member projects — it never substitutes for project
-confirmation elsewhere.
+routing elsewhere.
 
-Read `resources/calendar-context.md` on every run. Day planning may maintain that local noncanonical calendar context buffer; calendar events and project task records still require their normal confirmation boundaries.
+Read `resources/calendar-context.md` on every run. Day planning may maintain that local noncanonical calendar context buffer; calendar events and project task records follow the normal write policy.
 
 A successful `day-plan` renders these headings in this exact order:
 
@@ -47,22 +47,21 @@ After rendering, every user statement that changes or adds work becomes a propos
 | New work or a reminder is named | `create_task` |
 | A block time or duration changes | `calendar-event` |
 
-Preserve the exact user-stated task title unless the user explicitly replaces it. Each proposal keeps its own exact target and diff. When a task carries a schedule, emit its complete calendar preview beside the task diff; one confirmation may approve only that exact shown pair under `hub-calendar`. A selectable package may span active projects, but every proposal retains its own project ID, `target_path`, and diff.
+Preserve the exact user-stated task title unless the user explicitly replaces it. Each proposal keeps its own exact target and diff. When a task carries a schedule, write its calendar event together with the task under `hub-calendar`. A selectable package may span active projects, but every proposal retains its own project ID, `target_path`, and diff.
 
-For a direct, unambiguous user statement about one canonical task, emit exactly
-one `update_task`, `update_due`, or `update_waiting` proposal with the project
-ID, exact target path, and exact diff. Pair a calendar preview only when the
-task schedule changes. If the task reference is ambiguous, emit no proposal and
-ask which task is meant. After the user confirms the exact displayed package,
-apply only that canonical task-record diff and its paired calendar preview.
+For a direct, unambiguous user statement about one canonical task, apply
+exactly one `update_task`, `update_due`, or `update_waiting` change to the
+canonical record at once, plus the calendar change only when the task schedule
+changes, and report the project ID, target path, and diff. If the task
+reference is ambiguous, change nothing and ask which task is meant.
 
 For a new or changed action with relative and explicit dates, resolve the date
 in the calendar timezone. Preserve an explicit interval unchanged. A date-only
 statement uses the first 30-minute free interval on that date; never move an
 existing event. Put the result in `Запланировано: YYYY-MM-DD HH:MM-HH:MM` in
-the exact task diff and show its complete calendar preview beside it; one confirmation may approve only that exact pair. A past date does not infer completion.
+the task record and create the matching calendar event without asking. A past date does not infer completion.
 
-Do not guess project ownership. If one active registered project cannot be identified, ask which project owns the statement and emit no task/calendar proposal. If the canonical record already contains the statement, say so rather than emitting an empty diff.
+Do not guess project ownership. If one active registered project cannot be identified, ask which project owns the statement and write no task or event. If the canonical record already contains the statement, say so rather than emitting an empty diff.
 
 ## Sync section
 
@@ -71,6 +70,11 @@ Run sync only when all calendar-context window reads are complete (`availability
 Under `## Синхронизация`, pipe the guarded `read_events` response for the
 calendar-context window [D-30, D+31) to
 `python3 scripts/calendar_task_sync.py --hub <hub> --now "<YYYY-MM-DD HH:MM>"`.
+Reuse a complete window response already fetched in this run; do not read the
+same window again solely for sync. After task or calendar edits, re-read only
+the affected dates to verify changed events and refresh their calendar-context
+buckets. Do not repeat the full-window sync after those edits in the same run;
+the next day-plan run performs the normal sync.
 Render one numbered item per discrepancy in Russian, stating what moved and
 from/to times:
 
@@ -85,8 +89,10 @@ from/to times:
 - `unlinked` → task diff adding the `Событие:` line.
 
 Never change `Due:`; if the new time falls after `Due:`, ask separately.
-Each pair follows the existing joint confirmation. The user may confirm all
-items or selected numbers. If the calendar read failed, say so and render no
+Apply `calendar_moved`, `task_moved`, `stale_sync`, and `unlinked` items
+directly and list them as done. A `closed_with_future_event` item deletes an
+event and waits for an explicit yes; the user may answer for all such items or
+selected numbers. If the calendar read failed, say so and render no
 items; render `- Нет.` when the list is empty. The script is read-only.
 
 The script converts event times to the calendar timezone taken from the

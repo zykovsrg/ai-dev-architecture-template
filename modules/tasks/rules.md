@@ -19,16 +19,15 @@ validation, use these central hub-owned skills. They remove any need to copy
   selected project's `ai/` memory.
 - `hub-task-intake` — records or classifies the requested work in the selected
   project's `ai/current-task.md`.
-- `hub-task-switch` — changes an unfinished task only after a separate explicit
-  confirmation, using only the selected project's `ai/` memory.
+- `hub-task-switch` — changes an unfinished task directly and reports it, using only the selected project's `ai/` memory.
 - `hub-task-finish` — verifies the selected project's task and, when its check
   finds no blocker, first runs the `before-task-close` subscribers listed in
-  `ai/modules.md`, then cleans task memory and saves the result. Only a task with a
-  schedule keeps the joint confirmation with its scheduled entry.
+  `ai/modules.md`, then cleans task memory and saves the result. A task with a
+  schedule also updates its calendar entry in the same step.
 
 Each shared workflow operates only after a confirmed registered project and
 only against that selected project's `ai/` memory or explicitly selected
-project-local `knowledge/` paths. It cannot weaken hub confirmation,
+project-local `knowledge/` paths. It cannot weaken hub routing,
 allowed-root, secret, personal/client-data, or memory-isolation rules. It never
 reads, writes, pauses, finishes, or copies another project's memory or records.
 

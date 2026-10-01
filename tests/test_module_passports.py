@@ -174,7 +174,7 @@ class RenderTests(unittest.TestCase):
             text = render_modules_md(passports, ["core", "demo"])
             self.assertIn("- demo — rules: `ai/rules/demo.md`", text)
             self.assertIn("### after-task-write\n\n- demo: `bash scripts/demo.sh --hub <hub>` — rules: `ai/rules/demo.md`", text)
-            self.assertIn("### before-task-confirmation\n\n- —", text)
+            self.assertIn("### before-task-write\n\n- —", text)
             text = render_modules_md(passports, ["core"])
             self.assertIn("### after-task-write\n\n- —", text)
 
