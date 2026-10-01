@@ -29,6 +29,8 @@ Never call `read_events` before successful metadata. If the MCP is unreachable, 
 
 For each successful `read_events` response, inspect `availability_complete` and `unavailable_calendar_ids`. If coverage is incomplete, render returned events and name unavailable calendar IDs; never interpret missing events as free time. If a calendar-context window read is incomplete, state that synchronization is incomplete and do not use partial data.
 
+When the requested date's read is complete, pipe one `HH:MM|HH:MM|<title>|<calendar>` line per event, in start-time order, to `bash scripts/snapshot-calendar.sh --hub <hub> --at <date>-<HHMM>`. This morning snapshot is the plan that the evening review compares against; a snapshot failure is reported and does not block the day plan.
+
 ## Task sections
 
 Under `## Задачи вне календаря`, render only actionable tasks whose due date equals the requested date and which have neither an exact `Запланировано:` range for that date nor a grounded calendar match. Exclude overdue tasks, undated tasks, and tasks due later: overdue work has its own section and the rest is not today's plan. Use `<result> — <project-id>; срок: <YYYY-MM-DD>; источник: <canonical-path>`. Render `- Нет.` when nothing qualifies.

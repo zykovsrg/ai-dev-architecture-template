@@ -20,6 +20,7 @@ the calendar snapshot.
 - modules/planning/scripts/snapshot-calendar.sh -> scripts/snapshot-calendar.sh
 - modules/planning/scripts/calendar-context.py -> scripts/calendar-context.py
 - modules/planning/scripts/calendar_task_sync.py -> scripts/calendar_task_sync.py
+- modules/planning/scripts/calendar_drift.py -> scripts/calendar_drift.py
 - modules/planning/scripts/validate-day-plan-output.py -> scripts/validate-day-plan-output.py
 - modules/planning/rules.md -> ai/rules/planning.md
 
@@ -35,6 +36,7 @@ the calendar snapshot.
 
 - workflow context and day-plan proposals
 - calendar snapshots `ai/tmp/calendar-snapshots`
+- calendar drift observations in `ai/workflow-observations.md` when learning is installed
 
 ## Subscribes
 

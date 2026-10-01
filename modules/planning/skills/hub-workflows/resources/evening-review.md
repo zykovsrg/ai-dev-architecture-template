@@ -18,6 +18,13 @@ event, in start-time order, to
 snapshots for the day with
 `bash scripts/snapshot-calendar.sh --hub <hub> --list --day <date>`.
 
+Only when `learning` is listed in `ai/modules.md`, after that snapshot run
+`python3 scripts/calendar_drift.py --hub <hub> diff --day <date> --write`. It
+compares the day's first and last snapshots and appends new moved, resized,
+cancelled and added events to `ai/workflow-observations.md`. Report the number
+of recorded observations in one line under `## Сегодняшний календарь`; with
+fewer than two snapshots say that drift could not be compared.
+
 Read pending friction only when `learning` is listed in `ai/modules.md`, with
 `python3 scripts/workflow_friction.py --hub <hub> list --day <date>`.
 
