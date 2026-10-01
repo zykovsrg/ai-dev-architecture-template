@@ -45,8 +45,9 @@ def snapshots(hub: Path, day: dt.date) -> list[Path]:
     return [path for _, path in sorted(found)]
 
 
-def read_events(path: Path) -> dict[str, tuple[str, str]]:
-    events = {}
+def read_events(path: Path) -> dict[str, list[tuple[str, str]]]:
+    """Return start/end pairs per title; repeated titles stay separate."""
+    events: dict[str, list[tuple[str, str]]] = defaultdict(list)
     for line in path.read_text(encoding="utf-8").splitlines():
         parts = line.split("|")
         if len(parts) != 4:
@@ -54,27 +55,30 @@ def read_events(path: Path) -> dict[str, tuple[str, str]]:
         start, end, title, _calendar = parts
         if start == "00:00" and end in ("00:00", "23:59"):
             continue  # all-day events carry no time to drift
-        events.setdefault(title, (start, end))
+        events[title].append((start, end))
     return events
 
 
 def drift(day: dt.date, plan: dict, fact: dict) -> list[str]:
     prefix = f"- {day.isoformat()} | evening-review | calendar | "
     lines = []
-    for title, (start, end) in plan.items():
-        if title not in fact:
+    for title in list(plan) + [t for t in fact if t not in plan]:
+        before = sorted(plan.get(title, []))
+        after = sorted(fact.get(title, []))
+        for slot in list(before):
+            if slot in after:  # unchanged occurrence
+                before.remove(slot)
+                after.remove(slot)
+        for (start, end), (new_start, new_end) in zip(before, after):
+            if new_start != start:
+                lines.append(f"{prefix}сдвиг: {title} {start}-{end} → {new_start}-{new_end}")
+            old_len = minutes(end) - minutes(start)
+            new_len = minutes(new_end) - minutes(new_start)
+            if abs(new_len - old_len) >= MIN_DURATION_CHANGE:
+                lines.append(f"{prefix}длительность: {title} {old_len} → {new_len} мин")
+        for start, end in before[len(after):]:
             lines.append(f"{prefix}отмена: {title} {start}-{end}")
-            continue
-        new_start, new_end = fact[title]
-        if new_start != start:
-            lines.append(f"{prefix}сдвиг: {title} {start}-{end} → {new_start}-{new_end}")
-            continue
-        before = minutes(end) - minutes(start)
-        after = minutes(new_end) - minutes(new_start)
-        if abs(after - before) >= MIN_DURATION_CHANGE:
-            lines.append(f"{prefix}длительность: {title} {before} → {after} мин")
-    for title, (start, end) in fact.items():
-        if title not in plan:
+        for start, end in after[len(before):]:
             lines.append(f"{prefix}добавлено: {title} {start}-{end}")
     return lines
 

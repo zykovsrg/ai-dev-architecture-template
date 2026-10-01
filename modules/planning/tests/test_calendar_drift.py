@@ -107,6 +107,20 @@ class CalendarDriftTests(unittest.TestCase):
         self.assertIn("отмена | дела | 2", out)
         self.assertNotIn("длительность", out)
 
+    def test_same_title_events_are_kept_separately(self):
+        write_snapshot(self.hub, "2026-10-01-0900", 100, ["09:00|10:00|работа/a/фокус", "15:00|16:00|работа/a/фокус"])
+        write_snapshot(self.hub, "2026-10-01-2100", 200, ["09:00|10:00|работа/a/фокус"])
+        out = run(self.hub, "diff", "--day", "2026-10-01").stdout
+        self.assertIn("отмена: работа/a/фокус 15:00-16:00", out)
+        self.assertNotIn("сдвиг", out)
+
+    def test_move_and_resize_records_both(self):
+        write_snapshot(self.hub, "2026-10-01-0900", 100, ["10:00|11:00|работа/a/x"])
+        write_snapshot(self.hub, "2026-10-01-2100", 200, ["15:00|17:00|работа/a/x"])
+        out = run(self.hub, "diff", "--day", "2026-10-01").stdout
+        self.assertIn("сдвиг: работа/a/x 10:00-11:00 → 15:00-17:00", out)
+        self.assertIn("длительность: работа/a/x 60 → 120 мин", out)
+
     def test_rejects_bad_day(self):
         result = run(self.hub, "diff", "--day", "2026-13-01")
         self.assertNotEqual(result.returncode, 0)
