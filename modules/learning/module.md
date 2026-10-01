@@ -20,6 +20,7 @@ findings, and track workflow friction over time.
 - modules/learning/data/ai/workflow-observations.md -> ai/workflow-observations.md
 - modules/learning/scripts/workflow_friction.py -> scripts/workflow_friction.py
 - modules/learning/scripts/check-session-review.py -> scripts/check-session-review.py
+- modules/learning/scripts/review_proposals.py -> scripts/review_proposals.py
 - modules/learning/scripts/check-workflow-memory.sh -> scripts/check-workflow-memory.sh
 
 ## Repository only

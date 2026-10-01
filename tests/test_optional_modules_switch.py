@@ -26,6 +26,7 @@ REMOVED = {
         "ai/skills/hub-session-review/SKILL.md",
         "ai/skills/hub-session-review/resources/review-template.md",
         "scripts/workflow_friction.py",
+        "scripts/review_proposals.py",
         "scripts/check-session-review.py",
         "scripts/check-workflow-memory.sh",
     },
