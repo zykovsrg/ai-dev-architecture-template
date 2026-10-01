@@ -103,8 +103,11 @@ The plan explicitly excludes `ai/architecture.md`,
    is unused, create a private repository with that exact name, add `origin`,
    and push `main`. If this remote provisioning is unavailable, retain local
    Git and report `pending-sync`; never attach or overwrite an existing remote.
-9. Invoke hub-owned `hub-environment-check` and then hub-owned `hub-task-intake` for
-   the new selected project. Those workflows operate only on the selected
+9. Only when the user asked to switch to the new project and step 6 selected
+   it, invoke hub-owned `hub-environment-check` and then hub-owned
+   `hub-task-intake` for it. Otherwise stop after the report: a create-only
+   request does not select the project, and entering it later needs the
+   normal routing confirmation. Those workflows operate only on the selected
    project's `ai/` memory and cannot override hub routing, allowed roots,
    secret, or memory-isolation rules.
 
