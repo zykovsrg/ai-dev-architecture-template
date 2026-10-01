@@ -59,16 +59,14 @@ JSON. Suggested blocks in a plan are suggestions, not writes; when the user
 accepts them or states a change, the skill applies it without a further
 confirmation step.
 
-The day-plan chat output has exactly six sections in this order: current
-calendar, grounded conflicts, actionable project tasks that are not in that
-calendar, overdue actionable tasks, one proposed calendar, and recommendations. A task appears
-in only one task section. The proposed calendar retains existing events and
-labels every suggested block's duration as stated or estimated; it lists work
-that does not fit instead of silently dropping it. Both calendars are
-chronological bullet lists: one `time — event` entry per line. Learned rules
-and numeric goal progress constrain the proposal without creating extra chat
-sections. Existing calendar titles are copied verbatim; proposed new blocks use
-the exact title of their canonical task and never a generated summary.
+The day-plan chat output has exactly five sections in this order: current
+calendar, actionable project tasks due today that are not represented in that
+calendar, overdue actionable tasks, recommendations, and synchronization. A
+task appears in only one task section. Do not add separate conflicts or
+proposed-calendar sections. Render existing calendar titles verbatim and keep
+calendar entries chronological, one `time — event` entry per line. Learned
+rules and numeric goal progress constrain recommendations without creating
+extra chat sections.
 
 All-day events are calendar events too: day planning and evening review render
 each one separately as `весь день — <exact title>`. They never group,
@@ -98,11 +96,11 @@ translation.
 Clear day-planning requests, including «распланируем сегодняшний день»,
 «распланируем остаток дня», «план на сегодня», «план на остаток дня», and
 "plan today", invoke `hub-workflows` before any reply. Their
-reply uses the six mandatory day-plan sections; a free-form calendar summary
+reply uses the five mandatory day-plan sections; a free-form calendar summary
 is not a valid day-plan response.
 
 The general 5-line and 80-word output default does not apply to a day plan.
-Every day-plan response renders all six headings, even when a section contains
+Every day-plan response renders all five headings, even when a section contains
 only `- Нет.` or a precise data-access limitation.
 
 Day planning maintains local `ai/tmp/calendar-context.json`: 30 past days,
