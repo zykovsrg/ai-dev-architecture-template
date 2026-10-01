@@ -204,7 +204,7 @@ before confirmation, and rejects applying with any other project ID.
 - [x] **Step 4: Commit central documentation and push only on request**
 
 ```bash
-git add ai/changelog.md ai/decisions.md docs/superpowers/plans/2026-08-29-legacy-project-obsidian-bridge.md
+git add ai/changelog.md ai/decisions.md docs/superpowers/archive/plans/2026-08-29-legacy-project-obsidian-bridge.md
 git commit -m "docs: record legacy Obsidian bridge rollout"
 ```
 

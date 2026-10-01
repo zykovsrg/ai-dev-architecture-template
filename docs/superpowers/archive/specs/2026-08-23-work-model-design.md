@@ -152,7 +152,7 @@ task:
   use_superpowers: yes
   goal: Зафиксировать минимальные контракты работы.
   relevant_files:
-    - docs/superpowers/specs/2026-08-23-work-model-design.md
+    - docs/superpowers/archive/specs/2026-08-23-work-model-design.md
   done_criteria:
     - Спецификация содержит все пять контрактов.
   agent_handoff:
@@ -251,7 +251,7 @@ Task-level waiting относится к одной task или subtask и не 
 ```bash
 rg -n 'Use Superpowers|Proposed task|Acceptance criteria|use_superpowers|goal|done_criteria' template/ai/current-task.md template/ai/future-tasks.md
 rg -n 'primary_archiproject|archiproject_contribution|related_archiprojects' hub-template/ai/project-registry.md hub-template/ai/project-cards
-rg -n 'archiprojects.md|execution_state|record_status|backlog_status|waiting_for|follow_up' docs/superpowers/specs/2026-08-23-work-model-design.md
+rg -n 'archiprojects.md|execution_state|record_status|backlog_status|waiting_for|follow_up' docs/superpowers/archive/specs/2026-08-23-work-model-design.md
 ```
 
 Будущий валидатор обязан отклонить missing archiproject ID, duplicate related

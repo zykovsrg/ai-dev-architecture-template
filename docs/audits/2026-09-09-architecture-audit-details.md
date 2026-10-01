@@ -8,7 +8,7 @@
 
 Реальные сценарии работы агента и соблюдение правил в диалогах входят в ограниченную самопроверку: вымышленные регрессионные примеры, новые проблемные эпизоды и точечное чтение истории. Полное повторное чтение всех диалогов и регулярный дорогой сквозной аудит не планируются. Старый запуск самоаудита через расписание Codex будет удалён при рефакторинге; в этом проходе он не изменён. Ручной/событийный запуск — предложение для пилота, не уже работающий механизм.
 
-Подготовлены [поэтапный план для Terra и Luna](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/plans/2026-09-09-architecture-refactor.md) и [перечень связей архитектуры](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/audits/2026-09-09-service-inventory.md). План содержит 24 пакета с зависимостями и приёмкой; точный код и регрессионный тест каждого пакета готовятся перед его реализацией на актуальных файлах. Это не утверждение, что рефакторинг выполнен или живые сервисы проверены.
+Подготовлены [поэтапный план для Terra и Luna](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/archive/plans/2026-09-09-architecture-refactor.md) и [перечень связей архитектуры](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/audits/2026-09-09-service-inventory.md). План содержит 24 пакета с зависимостями и приёмкой; точный код и регрессионный тест каждого пакета готовятся перед его реализацией на актуальных файлах. Это не утверждение, что рефакторинг выполнен или живые сервисы проверены.
 
 ## Вывод
 
@@ -104,7 +104,7 @@
 
 **Рекомендация.** Использовать уже созданный журнал и методику; исторический разбор оставить выборочным инструментом расследования. Основной поток обратной связи собирать из новых затруднений в момент работы. Показателем считать проверенные и полезные исправления, а не число обновлений индекса.
 
-Доказательства: [журнал](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/knowledge/research/checked-sessions.md:15), [скрипт](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/scripts/refresh-session-inventory.sh:5), [первоначальная задача](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/ai/future-tasks.md:446), [перенос механизма](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/specs/2026-08-28-session-audit-ownership-transfer-design.md).
+Доказательства: [журнал](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/knowledge/research/checked-sessions.md:15), [скрипт](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/scripts/refresh-session-inventory.sh:5), [первоначальная задача](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/ai/future-tasks.md:446), [перенос механизма](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/archive/specs/2026-08-28-session-audit-ownership-transfer-design.md).
 
 ### A07. Средний приоритет: обучение обзоров не имеет общего бюджета и проверки пользы
 
@@ -196,7 +196,7 @@
 
 **Рекомендация.** У работы один проект-владелец и стабильный ID; в остальных — ссылка с зависимостью и ожидаемым результатом, не копия задачи. Общий механизм подключения данных допустимо переиспользовать, но нельзя автоматически смешивать исходные данные и задачи проектов. Проверить статус архивных/неиспользуемых проектов; пустая память не является достаточным основанием для архивирования.
 
-Источники: [аналитический бэклог](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/hadassah-seo-analytics/ai/future-tasks.md), [связка с генератором контента](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/seo-content-creator/ai/future-tasks.md), [дизайн архива](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/specs/2026-08-28-session-audit-ownership-transfer-design.md).
+Источники: [аналитический бэклог](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/hadassah-seo-analytics/ai/future-tasks.md), [связка с генератором контента](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/seo-content-creator/ai/future-tasks.md), [дизайн архива](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/archive/specs/2026-08-28-session-audit-ownership-transfer-design.md).
 
 ### A17. Высокий приоритет для автоматизации: не все проектные тесты безопасны для регулярного запуска
 

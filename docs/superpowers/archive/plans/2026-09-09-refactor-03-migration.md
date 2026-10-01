@@ -1,6 +1,6 @@
 # Hub-Only Project Migration Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: `superpowers:executing-plans`. Execute M01–M06 after T05 with the constraints and roots in [the complete plan](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/plans/2026-09-09-refactor-complete.md).
+> **For agentic workers:** REQUIRED SUB-SKILL: `superpowers:executing-plans`. Execute M01–M06 after T05 with the constraints and roots in [the complete plan](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/archive/plans/2026-09-09-refactor-complete.md).
 
 **Goal:** Remove independent generic rule sets while retaining project memory, custom skills and recoverability.
 **Architecture:** Per-project explicit migration manifests classify exact files before changes. Central hub workflows replace generic rules. Project-local extensions remain local and are discoverable through project context.

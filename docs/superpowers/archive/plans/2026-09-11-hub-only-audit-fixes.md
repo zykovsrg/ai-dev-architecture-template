@@ -4,7 +4,7 @@
 
 **Goal:** Retire standalone architecture completely, fix confirmed Hub correctness bugs, reduce all-project context cost, and leave one tested Hub-only release path.
 
-**Authoritative specification:** `docs/superpowers/specs/2026-09-11-hub-only-audit-fixes-design.md`
+**Authoritative specification:** `docs/superpowers/archive/specs/2026-09-11-hub-only-audit-fixes-design.md`
 
 **Architecture:** `hub-template/` is the only shared architecture source. Project memory remains local. Hub routing, confirmation, Calendar safety, Obsidian proposal integrity, and optional knowledge skills remain intact.
 
@@ -43,8 +43,8 @@ Create the progress file before implementation with:
 ```markdown
 # 2026-09-11 Hub-Only Audit Fixes — Progress
 
-Specification: docs/superpowers/specs/2026-09-11-hub-only-audit-fixes-design.md
-Plan: docs/superpowers/plans/2026-09-11-hub-only-audit-fixes.md
+Specification: docs/superpowers/archive/specs/2026-09-11-hub-only-audit-fixes-design.md
+Plan: docs/superpowers/archive/plans/2026-09-11-hub-only-audit-fixes.md
 
 ## Baseline
 

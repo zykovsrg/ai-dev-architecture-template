@@ -1,0 +1,222 @@
+# Changelog archive — до 2026-09-05 включительно
+
+Перенесено из `ai/changelog.md` 2026-10-01.
+
+### 2026-09-05 — Хабовое закрытие задачи тоже идёт без второго подтверждения
+
+- Change: `hub-task-finish` после проверки сразу пишет журнал изменений, решения, будущие задачи, чистит карточку задачи и сохраняет результат. Отдельное подтверждение убрано; исключение — задача с расписанием, где закрытие меняет и календарь: там остаётся один общий экран подтверждения. Правило синхронизировано в `hub-template/`, архитектура хаба повышена до 1.12.
+- Impact: Хабовый путь закрытия совпал с проектным. Замечание: копии `task-finish` внутри проектов в хабовом сценарии не запускаются, поэтому правка проектного скилла касается только отдельных установок шаблона.
+- Manual checks: `scripts/check-consistency.sh`, `scripts/hub-smoke-test.sh`, `scripts/check-hub-registry.sh`.
+
+### 2026-09-05 — Закрытие задачи идёт без второго подтверждения
+
+- Change: `task-finish` теперь после проверки сразу выполняет очистку памяти задачи и сохранение результата: журнал изменений, решения, будущие задачи, чистая карточка текущей задачи, затем коммит и пуш в GitHub. Отдельное подтверждение перед очисткой убрано; остановка возможна только когда проверка нашла блокирующую причину. Правило синхронизировано в `template/`, архитектура повышена до 7.6. Хабовый `hub-task-finish` не менялся: его подтверждение — граница безопасности хаба.
+- Impact: Закрытие задачи занимает один шаг вместо двух и результат гарантированно попадает в репозиторий. Риск: очистка карточки задачи происходит без второго шанса передумать, поэтому проверка обязана быть строгой и отчёт — полным.
+- Manual checks: `scripts/check-consistency.sh`, `scripts/smoke-test.sh`, `scripts/hub-smoke-test.sh`.
+
+### 2026-09-03 — Календарь следует за задачами
+
+- Change: `hub-task-intake`, `hub-task-switch` и `hub-task-finish` получили общий раздел синхронизации с календарём. Расписание задачи задаётся полем `Запланировано: <YYYY-MM-DD> <HH:MM>-<HH:MM>`, при его отсутствии `Due:` даёт событие на весь день. Создание задачи создаёт событие, смена расписания обновляет, закрытие удаляет будущее и не трогает прошедшее. В `hub-calendar` добавлено единственное исключение из правила «одно подтверждение на изменение»: правка памяти задачи и полное превью события показываются одним экраном и подтверждаются один раз, ровно для показанной пары. Правило продублировано в `AGENTS.md` и `CLAUDE.md`, архитектура повышена до 1.11, всё синхронизировано в `hub-template/`.
+- Impact: Задачи со сроком больше не расходятся с календарём, и на это уходит одно подтверждение вместо двух. Риск: слияние шлюзов сокращает число подтверждений, поэтому превью обязано оставаться полным; при недоступности календаря не применяется ни одна из двух частей.
+- Manual checks: `bash scripts/check-consistency.sh`, `bash scripts/smoke-test.sh`, `bash scripts/check-hub-registry.sh` (в хабе).
+
+### 2026-09-03 — Вечернее ревью по календарю
+
+- Change: В `hub-workflows` у `evening-review` добавлены разделы «Сегодняшний календарь» и «События и проекты»: агент читает расписание запрошенного дня и связывает каждое событие максимум с одним проектом подтверждённой области по названию, схеме `категория/проект/задача` и каноническим записям задач. Уверенное совпадение даёт отдельное предложение `update_task` с точным файлом и диффом. Файл `--review-input` стал необязательным: без него «Сделано» строится из прошедших событий с пометкой «предположение из календаря». Архитектура хаба повышена до 1.10, те же правки внесены в `hub-template/`.
+- Impact: Вечерний разбор работает без ручного файла ревью и сам предлагает обновление статусов. Риск: совпадение по календарю — предположение, поэтому оно не доказывает выполнение, не расширяет подтверждённую область и не применяет изменение без подтверждения.
+- Manual checks: `bash scripts/check-consistency.sh`, `bash scripts/smoke-test.sh`, `bash scripts/check-hub-registry.sh` (в хабе).
+
+### 2026-09-01 — Жёсткое правило коротких ответов
+
+- Change: В `AGENTS.md` и `CLAUDE.md` (рабочая копия и `template/`) мягкая строка про краткость и старый раздел `Output` с семью обязательными пунктами отчёта заменены одним разделом `Output`: лимит 5 строк по умолчанию, «сначала ответ», термины простыми словами, служебные метки (`Mode:`, имена файлов памяти, названия workflow) наружу не выносятся, один вопрос за раз. Из `ai/architecture.md` удалены разделы «Output format before changes» и «Output format after changes»; правило `## Work modes` больше не требует печатать `Mode:`. Требование сообщать об изменении памяти задачи снято по решению пользователя. Сохранено: задачу закрывает только `task-finish` после подтверждения. Те же правила внесены в хаб (`_ai-hub/AGENTS.md`, `_ai-hub/CLAUDE.md`) и в `hub-template/`, там же убран заголовок `Project:`/`Mode:`.
+- Impact: Ответы агента короче и без технического жаргона, в том числе под внешними методологиями вроде Superpowers. Входные файлы выросли примерно на 35 слов, `ai/architecture.md` уменьшился примерно на 130 — суммарно контекста меньше. Риск: агент теперь не обязан сообщать, что менял файлы памяти; защита от тихой правки защищённых файлов осталась только в разделе `File Classes`.
+- Manual checks: `bash scripts/check-consistency.sh`, `bash scripts/smoke-test.sh`, `bash scripts/check-hub-registry.sh` (в хабе).
+
+### 2026-08-29 — Настоящее расписание в дневном плане
+
+- Change: В `hub-workflows` убрана жёсткая инструкция всегда печатать «Calendar не подключён». Дневной план и вечерний разбор читают расписание через защищённый MCP по календарям из allowlist. Добавлено правило: при недоступности MCP, отсутствии разрешения или пустом allowlist агент называет причину и не показывает пустой день. Изменение события остаётся за `hub-calendar`; `preview_change` и `apply_change` в workflows запрещены явно.
+- Impact: Расписание видно сразу в плане дня. Молчание больше не выглядит как свободный день. Оба правила закреплены в контракте hub-smoke-теста, поэтому их нельзя удалить незаметно.
+- Manual checks: `bash scripts/hub-smoke-test.sh` (включая два новых отклоняющих фикстура), `bash scripts/check-consistency.sh`, `bash scripts/smoke-test.sh`, `bash scripts/assistant-workflows-test.sh`, `bash scripts/apple-calendar-policy-test.sh`, живая проверка расписания на 30 августа.
+
+### 2026-08-29 — Адресация одного повтора в серии
+
+- Change: Изменение повторяющегося события теперь несёт `occurrence_start`. Мост ищет нужное вхождение в окне ±сутки и берёт то, что начинается ровно тогда; policy-слой отказывает, если найденное вхождение не совпало с запрошенным. Модель требует дату для любого recurring update или delete, предпросмотр её показывает.
+- Impact: Можно отменить или изменить один день серии, не трогая остальные. Раньше идентификатор указывал на всю серию, потому что EventKit даёт всем повторам один номер.
+- Manual checks: `bash scripts/apple-calendar-policy-test.sh` (62 теста), `bash scripts/apple-calendar-bridge-test.sh`, `bash scripts/calendar-policy-install-test.sh`, `bash scripts/check-consistency.sh`, `bash scripts/smoke-test.sh`, `bash scripts/hub-smoke-test.sh`. Живая проверка на серии «дела/приборка»: без даты возвращается начало серии 1 августа, с датой 5 и 12 сентября — соответствующие вхождения.
+
+### 2026-08-29 — Guarded Apple Calendar MCP
+
+- Change: Локальный Apple Calendar MCP: закреплённая копия upstream v0.9.0 с проверкой checksum, fail-closed policy-слой, одноразовые preview и семь безопасных инструментов. Мост к EventKit собран как подписанный `HubCalendarBridge.app` со своим разрешением macOS, потому что клиент MCP не может его получить. Установщик и апдейтер разворачивают инструмент в хаб; allowlist по умолчанию пуст.
+- Impact: Хаб читает только явно выбранные календари. Каждое изменение события требует свежий preview и отдельное подтверждение. Прошлое событие удалить или сдвинуть нельзя. Живая установка, разрешение macOS и выбор календарей прошли как три отдельных подтверждения; выбрано шесть календарей.
+- Manual checks: `bash scripts/apple-calendar-policy-test.sh` (58 тестов), `bash scripts/apple-calendar-bridge-test.sh`, `bash scripts/apple-calendar-upstream-test.sh`, `bash scripts/calendar-policy-install-test.sh`, `bash scripts/check-consistency.sh`, `bash scripts/smoke-test.sh`, `bash scripts/hub-smoke-test.sh`, живая проверка `calendar_status` и `read_events` через MCP.
+
+### 2026-08-29 — Слой личного AI-ассистента над хабом
+
+- Change: Закрыта задача проектирования ассистента: `hub-workflows` даёт day-plan, evening-review, weekly-review и capture; Bash-адаптер проверяет только механику, семантику делает агент. Записи не применяются без подтверждения.
+- Impact: Персональные запросы идут в `Mode: assistant` без выбора проекта, а изменения в проектах остаются предложениями.
+- Manual checks: `bash scripts/assistant-workflows-test.sh`, `bash scripts/check-consistency.sh`, `bash scripts/hub-smoke-test.sh`.
+
+### 2026-08-29 — Обзор проектов и изолированная синхронизация Obsidian
+
+- Change: Созданы обзор всех 44 проектов и отдельные доски; `Tasks-Kanban.md` снят. Ссылки в обзоре исправлены. Обратная синхронизация теперь требует ID выбранного проекта и читает только его доску и память; наблюдатель создаёт предложение для одной доски за раз.
+- Impact: Агент проекта больше не просит путь к Obsidian и не видит изменения чужих проектов. Любая правка всё ещё становится предложением и применяется только после отдельного подтверждения.
+- Manual checks: `bash scripts/obsidian-task-sync-test.sh`, `bash scripts/obsidian-task-sync-watch-test.sh`, `bash scripts/obsidian-projects-kanban-test.sh`, `bash scripts/hub-smoke-test.sh`, `bash scripts/check-consistency.sh`, `bash scripts/smoke-test.sh`, `git diff --check`, live `check-hub-registry.sh`.
+
+### 2026-08-28 — Provenance и inbox knowledge-слоя
+
+- Change: Добавлены `origin`, `valid_from` и локальный `knowledge/inbox/` в standalone и hub scaffolds; capture/review требуют явного происхождения и подтверждения действий с inbox.
+- Impact: Слабые сигналы не становятся знаниями автоматически, а выводы агента отделены от прямых утверждений.
+- Manual checks: `bash scripts/check-consistency.sh`, `bash scripts/smoke-test.sh`, `bash scripts/hub-smoke-test.sh`, `git diff --check`.
+
+### 2026-08-28 — Полуавтоматический self-audit архитектуры
+
+- Change: Механизм аудита перенесён из архивного `hub-session-audit` в архитектуру: добавлены безопасный индекс metadata, методика, журнал, скрипт, тест и skill. Отдельное расписание раз в три дня использует новый скрипт.
+- Impact: Точные ID пользователя разрешают чтение только выбранных сессий и безопасную запись их результата; задачи, правила, настройки и архитектура по находкам не меняются автоматически.
+- Manual checks: `bash scripts/test-refresh-session-inventory.sh`, `bash scripts/check-consistency.sh`, `git diff --check`.
+
+### 2026-08-27 — Уникальные ключи карточек Obsidian
+
+- Change: Карточка Kanban теперь определяется парой «проект + номер задачи». Якоря имеют вид `^<project-id>--<task-id>`; одинаковые исторические `FT-` номера в разных проектах допустимы, а дубликат внутри одного проекта по-прежнему блокирует генерацию. Сканер и подтверждённое применение используют тот же ключ.
+- Impact: Общая доска собирается для всех зарегистрированных проектов без ложной ошибки о дубликате и сохраняет однозначную связь карточки с канонической задачей.
+- Manual checks: `bash scripts/obsidian-projects-kanban-test.sh`, `bash scripts/obsidian-task-sync-test.sh`, `bash scripts/obsidian-task-sync-watch-test.sh`, `bash scripts/check-consistency.sh`; пять мутационных проверок пойманы тестами. Пересобраны `Tasks-Kanban.md`, `Projects-Overview.md` и manifest v3; SHA проекций совпали с manifest.
+
+### 2026-08-26 — Proposal-only workflows и recorder capture
+
+- Change: Добавлены reusable `hub-workflows`, план дня, вечернее и недельное ревью, proposal-only capture, механические Bash guardrails и стабильный JSON-контракт `rar export/status`. Рабочий hub обновлён; изменения слиты в `main` проектов `ai-dev-architecture` и `rolling-audio-recorder`.
+- Impact: Агент может разбирать подтверждённые канонические `ai/`-данные, диктовку, саммари и расшифровки, включая период записи от 1 до 120 минут, но для любого изменения показывает отдельный точный diff и ждёт именованного подтверждения. Calendar, session audit и перенос vault не включены.
+- Manual checks: `bash scripts/check-consistency.sh`, `bash scripts/hub-smoke-test.sh`, `bash scripts/assistant-workflows-test.sh`; recorder `swift test` — 147/147 и release build. Изменения отправлены в GitHub.
+
+### 2026-08-26 — Obsidian: Kanban задач и обзор проектов
+
+- Change: Создана локальная копия vault в `obsidian-vault/`; в ней сгенерированы отдельные `Tasks-Kanban.md` и `Projects-Overview.md` с общим manifest. Карточка Kanban теперь равна задаче, а не проекту. Старая экспериментальная пара `Projects-Kanban.*` удалена.
+- Impact: Канбан показывает статусы задач, а таблица — состояние проектов, без второй канонической базы. Ручная правка любой из двух проекций останавливает пересборку с `proposal pending`.
+- Manual checks: Пользователь проверил отображение Kanban и таблицы в Obsidian. `bash scripts/obsidian-projects-kanban-test.sh` прошёл; контрольные суммы сгенерированных файлов совпали с manifest.
+
+### 2026-08-24 — Unified assistant foundation
+
+- Change: Завершены каноническая модель задач и архипроектов, безопасный компактный индекс, валидаторы и сохранение этих файлов при обновлении.
+- Impact: Архитектура стала готовой основой для будущей Obsidian-проекции без второй базы задач и без доступа к live vault или Calendar.
+- Manual checks: `bash scripts/check-consistency.sh` и `bash scripts/hub-smoke-test.sh` прошли после финальной проверки.
+
+### 2026-08-20 — Короткие ответы простыми словами
+
+- Change: Стиль общения усилен и закреплён. В `ai/architecture.md` (раздел «Talking to the user») добавлены правила: очень простые слова, по умолчанию короткий ответ, длинные разборы — только по запросу; отдельно указано, что правило действует и для работы под внешними методологиями (Superpowers, `code-review-graph`, плагинные скиллы). В список «Superpowers must not override» добавлен пункт `user communication style`. Строка Core Principles обновлена в `AGENTS.md` и `CLAUDE.md`. Те же правки продублированы в `template/` и в `hub-template/`, чтобы новые проекты и новый хаб получали правило сразу.
+- Impact: Пользователю больше не нужно повторять просьбу «объясняй коротко и просто» в каждом чате.
+- Manual checks: `bash scripts/check-consistency.sh` — все проверки OK.
+
+### 2026-08-15 — Hub audit fixes
+
+- Change: Fixed six defects found by an architecture audit, all sharing one theme — checks that reported success without verifying anything. `--source` is now resolved before either updater enters its target, and a source resolving to the target itself is refused; previously a relative `--source` resolved against the target, so the updater could compare a hub with itself and report "no updates". `check-hub-registry.sh` now warns on stderr about directories in `projects/` with no registry entry, leaving the exit code and stdout summary unchanged so the documented migration order (move → separate registration → validation) still works. `--check` now states in both updaters and in `--help` that it compared version numbers, not file contents. The hub updater guarantees the `/projects/` line in the hub `.gitignore` by appending it when missing, never overwriting. `hub-project-router`, `hub-registry-check` and `hub-local-router-install` are now named in `hub-template/ai/architecture.md`, and a new `[hub skill naming]` check fails if any hub skill is named in no rule file. `hub-registry-check` no longer says "each allowed root".
+- Impact: Closes `FT-20260815-002`. Delivered to the live hub through `update-installed-hub.sh --apply`: three files changed (`ai/architecture.md`, `ai/skills/hub-registry-check/SKILL.md`, `scripts/check-hub-registry.sh`), hub memory untouched. The final review caught that the new skill-naming check had no test of its own — deleting it left both suites green — so test hardening was added before merge. Three smaller findings from that review are recorded as `FT-20260815-003` and were deliberately not fixed here.
+- Manual checks: `check-consistency.sh`, `hub-smoke-test.sh`, `smoke-test.sh` and `check-hub-registry.sh` against the live hub all pass. Every new check was mutation-tested — deliberately broken, seen to fail, restored — including the skill-naming check against a `hub-project` probe that is a strict prefix of five real skill names.
+
+### 2026-08-15
+
+- Change: Added one decision rule to both architectures and all six entry files — present the clean and the cheap option together with the clean option's cost, let the user choose, and record anything deferred where it will be read again. Standalone architecture bumped to `7.2`, hub architecture to `1.4`, and the live hub updated through `update-installed-hub.sh`.
+- Impact: The trade-off between a structurally clean solution and a cheaper one is now an explicit user decision instead of a silent agent choice, and deferred items cannot vanish. The broader rule the user first proposed — always choose the cleanest solution, no tech debt — was rejected after review: it contradicts the existing cost-benefit test and the ban on mixing refactoring with bug work, and today's own session produced two cases where deliberately not choosing the cleanest option was correct.
+- Manual checks: `bash scripts/check-consistency.sh`, `bash scripts/hub-smoke-test.sh`, `bash scripts/smoke-test.sh` passed; root and `template/` copies verified identical; the live hub update was previewed with `--dry-run`, applied, and confirmed to touch only the three rule files while leaving hub memory intact; `check-hub-registry.sh` passed at 28 projects.
+
+### 2026-08-14
+
+- Change: Renamed all fifteen hub skills to `hub-*`, added superseded-path removal to the hub updater with symlink-component and containment guards, and added three guards covering removal safety and the prefix on both the template and the installed-hub side.
+- Impact: A hub-owned skill can no longer be confused with a standalone project skill of the same name, and an installed hub still holding a pre-1.3 skill directory now fails its registry check instead of silently offering two different skills under one name.
+- Manual checks: `bash scripts/check-consistency.sh`, `bash scripts/hub-smoke-test.sh`, `bash scripts/smoke-test.sh`, and `bash scripts/check-hub-registry.sh` against the live hub all passed. Every guard was mutation-tested: disabling it makes the covering check fail.
+
+### 2026-08-14
+
+- Change: Back-ported Repository Provisioning from an installed hub into `hub-template/` (architecture, both entry files, `project-create`), removed the Git contradiction it left in the hub architecture, bumped hub architecture to `1.2`, and added two installed-hub guards to `scripts/check-hub-registry.sh` — entry-file parity and required project memory files — with smoke coverage for both.
+- Impact: A reinstall or hub update can no longer silently revert Repository Provisioning, and drift introduced directly in an installed hub is now detected there rather than only inside `hub-template/`. Root cause was downstream authoring: the feature never came upstream, and `check-consistency.sh` validates entry parity only in the template.
+- Manual checks: `bash scripts/check-consistency.sh`, `bash scripts/hub-smoke-test.sh`, `bash scripts/smoke-test.sh`, and `bash scripts/check-hub-registry.sh` against the installed hub all passed. Both new guards were mutation-tested: disabling either one makes the smoke test fail.
+
+### 2026-08-13
+
+- Change: Added a local Markdown knowledge layer to new standalone and hub-created projects. It has `research`, `decisions`, `risks`, and `runbooks` categories; explicit capture/review workflows; confirmation-gated hub enablement for existing hub projects; and a task-finish review offer. Updater boundaries, documentation, and regression contracts were added.
+- Impact: Durable project evidence can be captured and reviewed without automatic context injection, indexing, cloud services, or cross-project access. Existing hub projects remain unchanged until separately confirmed enablement. Legacy standalone migration remains deferred.
+- Manual checks: `bash scripts/check-consistency.sh` and `bash scripts/smoke-test.sh` passed; final independent re-review found no P0–P3 issues.
+
+### 2026-08-12
+
+- Change: Added hub workflow `project-create` for confirmation-gated creation of a new project. It creates only the project's six `ai/` memory files, then its card, registry entry, and active-project selection; no Git repository, code, dependencies, project entry files, or shared skills are created.
+- Impact: From `_ai-hub`, a confirmed request to create a new project now has a predictable, safe path. Existing folders remain handled by `project-register`.
+- Manual checks: `bash scripts/check-consistency.sh`, `bash scripts/smoke-test.sh`, and `git diff --check` passed; independent review found and verified the self-contained template fix.
+
+### 2026-08-12
+
+- Change: Updated the distributable standalone and Personal AI Hub entry rules. They now require concise evidence-based communication, clear uncertainty, constructive checking of material assumptions, and the simplest sufficient solution. The entry files were shortened; detailed interpretation lives in the architecture files. Smoke tests now verify the actual `template/` installation source.
+- Impact: Future installations and updates receive the same principles in standalone and hub modes without adding new skills, services, or dependencies. Hub confirmation, allowed-root, secret-handling, and memory-isolation rules remain unchanged.
+- Manual checks: `bash scripts/check-consistency.sh`, `bash scripts/smoke-test.sh`, `git diff --check`; independent task and whole-branch reviews found no blocking issues.
+
+### 2026-08-12
+
+- Change: Released Personal AI Hub v7.0: optional `_ai-hub` installation, confirmation-gated multi-project routing, central hub workflows for project memory, project cards and signals, `info-update`, safe updates, migration preview, and Russian onboarding/English technical documentation.
+- Impact: Hub-managed work starts from `_ai-hub`; project memory stays in each project and is not read before confirmation. Standalone mode remains self-contained. No local project inventory, migration, archival, cleanup, or reminder was performed.
+- Manual checks: `bash scripts/check-consistency.sh`, `bash scripts/smoke-test.sh`, and `git diff --check` passed on merged `main`; pushed to GitHub at `4f28b65`.
+
+### 2026-07-20
+
+- Change: Architecture v6.14 added bundled `impeccable`, `theme-factory`, `animate`, and `design-motion-principles` skills; registered Microsoft Playwright MCP as an expected external browser tool; and made `environment-check` compare the local architecture version with the repository version before offering a read-only update preview.
+- Impact: New installations receive the UI/theme/motion skill set, while new sessions can detect a newer architecture without applying updates automatically. Network or MCP unavailability remains non-blocking.
+- Manual checks: check-consistency passed, smoke-test passed, git diff check passed, root/template copies matched, upstream licenses were included, and the live repository comparison correctly reported local 6.14 ahead of repository 6.13.
+
+### 2026-07-12 (3)
+
+- Change: Лицензия репозитория заменена с MIT на PolyForm Noncommercial 1.0.0 — коммерческое использование запрещено, разрешено личное, исследовательское и некоммерческое. Текст взят дословно с raw.githubusercontent.com/polyformproject/polyform-licenses. Добавлено имя правообладателя (Sergei Zykov) вместо пустого `Copyright (c) 2026`.
+- Impact: Репозиторий больше не open source в строгом (OSI) смысле; смена не ретроактивна — код, скопированный под MIT до смены, остаётся под MIT у тех, кто его скопировал.
+- Manual checks: файл LICENSE прочитан целиком, сверен с официальным источником; grep по репозиторию на другие упоминания MIT — не найдено.
+
+### 2026-07-12 (2)
+
+- Change: v6.12+v6.13 (подтверждённые architecture-update). Superpowers повышен до критичного плагина: установка настоятельно рекомендуется, при отсутствии на баге/сложной задаче агент сначала рекомендует установку (ручной fallback — только после отказа); гейтинг сохранён. Папка `start-screen/` → `getting-started/` (устранена коллизия с именем skill). Нумерация разделов `docs/update.md` исправлена. Конвенция план-ориентированной работы перенесена: планы/спеки Superpowers теперь в `ai/superpowers/plans|specs` (рабочая память рядом с changelog/decisions), а не в `docs/`; исторические планы шаблона перемещены в `archive/superpowers/`. Версия 6.13.
+- Impact: `docs/` содержит только документацию; вся память задач собрана в `ai/`; установка Superpowers — ожидаемый шаг для каждого проекта.
+- Manual checks: check-consistency OK, smoke-test passed, cmp root/template (AGENTS, CLAUDE, architecture) identical, проверка ссылок (0 битых), grep по `docs/superpowers` (0 живых ссылок вне архива и истории).
+
+### 2026-07-12
+
+- Change: README переписан пользователем в новом стиле, опечатки исправлены, универсальный стартовый промт перенесён в README (раздел «Установка в проект»); папка `prompt/` удалена (промежуточное имя `start-here/` тоже); `docs/start-here.md` → `start-screen/start-screen.md`; все 9 файлов `docs/` переведены на английский (docs — техническая часть, README и start-screen — русские, для людей); заголовок и вводные разделы `ai/architecture.md` (root+template) переведены на английский по правилу «AI-facing instructions in English» (подтверждённый architecture-update; цитаты русских фраз пользователя сохранены); все внутренние ссылки обновлены. Удалена выполненная FT-20260711-005 (репозиторий стал публичным; история проверена на секреты — чисто). Ранее в сессии удалены устаревшие ветки codex/on-demand-start-screen (локально+worktree) и origin/architecture-onboarding-task-flow.
+- Impact: Публичный репозиторий показывает актуальную структуру; стартовый промт доступен прямо в README без перехода по ссылкам; языковая политика единообразна.
+- Manual checks: check-consistency (9+9 holders OK), smoke-test passed, cmp root/template architecture.md identical, grep по старым путям (0 живых ссылок), проверка относительных ссылок (0 битых), grep истории на секреты (чисто).
+
+### 2026-07-11 (4)
+
+- Change: Реализованы FT-004, FT-006, FT-002. `task-finish` Phase 2: запись promoted-задачи удаляется из `ai/future-tasks.md` при закрытии (след в changelog); `task-switch` и правила `future-tasks.md` согласованы. `task-finish` Rules/Phase 3: при наличии `github.com` remote commit+push — обязательные шаги закрытия, не default. `README.md` переписан в инфостиле (~130 строк вместо 249), инвентарь 11 base skills сверен, добавлена ссылка на uninstall, определение «другой задачи» обновлено до границы по Done criteria. Удалены реализованные записи FT-001, FT-003 (и по новому правилу FT-002/004/006) из бэклога.
+- Impact: Бэклог не копит закрытые задачи; закрытие задачи гарантированно синхронизирует GitHub; README читается новичком.
+- Manual checks: check-consistency (17+17 holders OK), cmp root/template для task-finish и task-switch, copy-review чек-лист по README, git status по составу.
+
+### 2026-07-11 (3)
+
+- Change: Ужесточена модель разделения задач. `task-intake` и `task-switch` теперь используют один тест — «попадает ли запрос в записанные Done criteria текущей задачи» — вместо семи размытых признаков; добавлен обязательный вопрос с 3 вариантами (расширить/переключиться/future-tasks) для запросов вне границы. Core Rules в AGENTS.md/CLAUDE.md дополнены одной строкой. `ai/architecture.md` v6.11. Merged to `main` и запушено.
+- Impact: Новый запрос по умолчанию считается другой задачей; тихое расширение scope текущей задачи больше невозможно без явного обновления Goal/Done criteria.
+- Manual checks: smoke-test, check-consistency, git diff --check, cmp для 5 пар root/template, размер entry-файлов (+99 байт, лимит 110, строк не прибавилось), Codex/Claude паритет. Ручной сценарий из плана (проверка в свежей сессии) отложен по решению пользователя.
+
+### 2026-07-11 (2)
+
+- Change: Added a single self-contained universal start prompt (`prompt/README.md`) covering both install and update; linked it from README.md, docs/install.md, docs/update.md, docs/start-here.md, docs/start-prompts.md. Merged to `main` and pushed (commit `a90ff40`).
+- Impact: Users can copy one prompt (linkable directly via GitHub's folder README rendering) and their agent decides install vs update automatically.
+- Manual checks: smoke-test, check-consistency, file confirmed present on GitHub via `gh api`. Repo is private, so anonymous `raw.githubusercontent.com` links return 404 for unauthenticated users — link only works for collaborators with access.
+
+### 2026-07-11
+
+- Change: Added on-demand `start-screen` base skill (11 base skills now), routing lines in entry files, architecture.md v6.10 rule, environment-check registration, docs inventories update, and `docs/uninstall.md` safe removal guide. Merged to `main` and pushed (commit `a84559b`).
+- Impact: Users can request a short Russian orientation screen; it never shows automatically. Removal guidance now exists.
+- Manual checks: smoke-test, check-consistency, root/template `cmp` for 5 file pairs, entry-file size budget (+41 bytes/file). Deferred: fresh-session prompts "Покажи стартовый экран" and environment-check independence.
+
+### 2026-07-10
+
+- Change: Installed the architecture into this repository root so the architecture can be used to evolve itself.
+- Impact: Root `AGENTS.md`, `CLAUDE.md`, and `ai/*` now hold project-specific working memory; `template/` remains the distributable user template.
+- Manual checks: Installation completed with `scripts/install.sh .`; project context filled for self-development.
+### 2026-08-29 — Legacy project Obsidian bridge
+
+- Change: Added a guarded installer and contract test that add the central
+  Obsidian reverse-sync bridge to registered version-7.3 projects. The bridge
+  derives the enclosing hub, uses the scoped central board, and remains
+  proposal-only until the user confirms a proposal hash. All 33 installed
+  legacy projects now have the bridge; the divergent Goal Planner macOS entry
+  files received it without replacing their existing content.
+- Impact: A project opened directly from the hub no longer needs a manually
+  supplied vault path for the supported reverse-sync flow. Standalone copies
+  still do not infer a vault.
+- Manual checks: legacy bridge contract passed; all 33 version-7.3 projects
+  contain the bridge in both entry files; scoped scan command accepted the
+  `zdorove-businki` board and produced a validation-blocked proposal without
+  writing canonical records.

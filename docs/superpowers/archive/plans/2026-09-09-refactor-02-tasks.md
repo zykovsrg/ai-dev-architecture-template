@@ -1,6 +1,6 @@
 # Task Records and Calendar Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: `superpowers:executing-plans`. Execute T01–T05 after R06. Apply the global constraints and exact roots in [the complete plan](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/plans/2026-09-09-refactor-complete.md).
+> **For agentic workers:** REQUIRED SUB-SKILL: `superpowers:executing-plans`. Execute T01–T05 after R06. Apply the global constraints and exact roots in [the complete plan](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/archive/plans/2026-09-09-refactor-complete.md).
 
 **Goal:** Prevent invisible tasks, normalize dates, preserve original meaning, and route every calendar-relevant change through one approved task/event preview.
 **Architecture:** One task reader serves generated views, reverse sync and compact context. Canonical Markdown stays authoritative. The existing guarded Calendar service remains the only calendar writer; the workflow coordinates the confirmed task change.

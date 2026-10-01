@@ -56,8 +56,8 @@
 
 **Files:**
 - Modify: `ai/decisions.md`
-- Modify: `docs/superpowers/specs/2026-08-23-obsidian-projection-design.md`
-- Modify: `docs/superpowers/specs/2026-08-24-obsidian-projection-phase-2-design.md`
+- Modify: `docs/superpowers/archive/specs/2026-08-23-obsidian-projection-design.md`
+- Modify: `docs/superpowers/archive/specs/2026-08-24-obsidian-projection-phase-2-design.md`
 
 - [ ] Replace the one-project-card Kanban decision with the two-view contract.
 - [ ] Record task-column mappings, overview columns, target paths, and combined-manifest behavior.

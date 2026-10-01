@@ -6,7 +6,7 @@ This is a read-only inventory for the unified AI-assistant design. It covers:
 
 - the AI Development Architecture project context and registered project map;
 - the copied Obsidian vault at `tmp/obsidian-vault-copy/Obsidian`;
-- the approved design in `docs/superpowers/specs/2026-08-23-unified-ai-assistant-obsidian-design.md`.
+- the approved design in `docs/superpowers/archive/specs/2026-08-23-unified-ai-assistant-obsidian-design.md`.
 
 The copied vault was treated as read-only. The inventory uses file paths,
 extensions, directory counts, plugin IDs, and aggregate syntax counts. It does

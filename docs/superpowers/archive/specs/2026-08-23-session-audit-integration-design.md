@@ -1,7 +1,7 @@
 # Безопасная интеграция самоаудита сессий
 
 > Superseded on 2026-08-28 by
-> `docs/superpowers/specs/2026-08-28-session-audit-ownership-transfer-design.md`.
+> `docs/superpowers/archive/specs/2026-08-28-session-audit-ownership-transfer-design.md`.
 > This document preserves the original proposal-only pilot design.
 
 ## Решение

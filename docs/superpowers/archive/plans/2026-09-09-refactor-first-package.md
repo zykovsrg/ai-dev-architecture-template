@@ -1,6 +1,6 @@
 # Release reconciliation — Implementation Plan
 
-> Superseded by R01 in [the complete implementation plan](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/plans/2026-09-09-refactor-complete.md). The new plan covers actual implementation through final acceptance; this older reconciliation-only assignment is retained for history and must not trigger an unnecessary return to Astra.
+> Superseded by R01 in [the complete implementation plan](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/archive/plans/2026-09-09-refactor-complete.md). The new plan covers actual implementation through final acceptance; this older reconciliation-only assignment is retained for history and must not trigger an unnecessary return to Astra.
 
 > **For agentic workers:** Use superpowers:executing-plans. Execute sequentially on Terra after the user's model switch. Do not dispatch additional agents by default.
 
@@ -12,7 +12,7 @@
 
 ## Global constraints
 
-Use [the approved programme specification](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/specs/2026-09-09-hub-refactor-design.md). Preserve all user changes. Do not run updater apply, modify runtime rules or read application code in this first package. Do not assume a newly discovered difference is disposable. On completion return to Astra for the next implementation mini-plan.
+Use [the approved programme specification](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/archive/specs/2026-09-09-hub-refactor-design.md). Preserve all user changes. Do not run updater apply, modify runtime rules or read application code in this first package. Do not assume a newly discovered difference is disposable. On completion return to Astra for the next implementation mini-plan.
 
 ## Task 1: Record baseline
 

@@ -1,7 +1,7 @@
 # 2026-09-11 Hub-Only Audit Fixes — Progress
 
-Specification: `docs/superpowers/specs/2026-09-11-hub-only-audit-fixes-design.md`
-Plan: `docs/superpowers/plans/2026-09-11-hub-only-audit-fixes.md`
+Specification: `docs/superpowers/archive/specs/2026-09-11-hub-only-audit-fixes-design.md`
+Plan: `docs/superpowers/archive/plans/2026-09-11-hub-only-audit-fixes.md`
 Branch: `audit/hub-only-fixes-2026-09-11`
 Base `main`: `2a172790e6d45ab33aced3b4f14e9a310493e02f`
 Execution: GitHub branch + GitHub Actions; the requested local filesystem path was unavailable in this session.

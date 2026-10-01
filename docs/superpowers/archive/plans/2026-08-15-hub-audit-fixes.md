@@ -8,7 +8,7 @@
 
 **Tech Stack:** POSIX-ish bash with `set -euo pipefail`, GNU/BSD coreutils, `perl -pi` for fixture rewrites, git.
 
-**Spec:** `docs/superpowers/specs/2026-08-15-hub-audit-fixes-design.md`
+**Spec:** `docs/superpowers/archive/specs/2026-08-15-hub-audit-fixes-design.md`
 
 ## Global Constraints
 
