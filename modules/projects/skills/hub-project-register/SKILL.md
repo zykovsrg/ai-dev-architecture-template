@@ -1,13 +1,13 @@
 ---
 name: hub-project-register
-description: Propose a safe, approval-gated registration for one direct child of the hub's validated projects root.
+description: Safely register one direct child of the hub's validated projects root.
 ---
 
 # Project Register
 
 Use this skill only for a user-requested registration. Registration starts in
-`Mode: routing` and requires explicit confirmation for every action that reads
-project context or changes hub metadata.
+`Mode: routing` and requires explicit confirmation before reading project context. Writing the card
+and registry entry needs no separate confirmation.
 
 Module rules: `ai/rules/projects.md`.
 
@@ -43,17 +43,15 @@ metadata and the smallest project context needed to classify that confirmed
 candidate. This confirmation is not permission to read unrelated projects or
 to recurse through the confirmed project.
 
-## Approval gates
+## Read gate and writes
 
 The individual confirmation above is the explicit approval before reading project context.
-Obtain separate explicit approval before creating a project card and before
-adding registry data. For an approved registration, read only the smallest
-project entry/context information needed to draft metadata. Show the proposed
-card and registry entry before writing them. Run
-`scripts/check-hub-registry.sh` after an approved write; report its result
+Read only the smallest project entry/context information needed to draft
+metadata, then write the card and registry entry directly and show them in the
+report. Run `scripts/check-hub-registry.sh` after the write; report its result
 without reading unrelated projects.
 
-The proposed card must contain exactly these required fields: `Project ID:`,
+The card must contain exactly these required fields: `Project ID:`,
 `Name:`, `Type:`, `Status:`, `Last updated:`, `Purpose:`, `Typical tasks:`,
 and `Memory entry point:`. `Project ID`, `Name`, `Type`, and `Status` must
 match the registry entry. The memory entry point must be an absolute path

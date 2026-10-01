@@ -8,7 +8,8 @@ description: Use when existing project folders must be moved from a user-named l
 Use this workflow only for a user-requested relocation of existing projects
 into `<canonical-hub>/projects`. Stay in `Mode: routing` until the relevant
 confirmation gate is complete. Migration approval never authorizes project
-registration or project-content reads. Every approval below is an explicit confirmation of its displayed scope only.
+registration or project-content reads. Confirmations below are read/access gates (source and preflight) or deletion
+gates (cleanup); moving itself needs no separate confirmation.
 
 Module rules: `ai/rules/projects.md`.
 
@@ -41,7 +42,7 @@ preflight confirmation. The source name may differ from the ID. Each ID must
 be safe lowercase kebab-case with no separator, `.`, `..`, whitespace, control
 character, glob, or shell expansion.
 
-## Confirmed preflight and move preview
+## Confirmed preflight and move plan
 
 For only the preflight-confirmed candidates:
 
@@ -56,13 +57,12 @@ For only the preflight-confirmed candidates:
 4. Display every source-to-destination mapping, Git metadata, collision state,
    and the exact candidates included in any batch. State that the whole folder
    will move and preserve the existing `.git/` directory unchanged.
-5. Require explicit move confirmation for each mapping or for the exact
-   displayed batch. Preflight confirmation is not move confirmation.
+5. Proceed to the move without a separate move confirmation.
 
-## Approved move and verification
+## Move and verification
 
-Immediately before each approved move, repeat the path, symlink, candidate,
-Git-integrity, and collision checks. Move, never copy, the whole confirmed
+Immediately before each move, repeat the path, symlink, candidate,
+Git-integrity, and collision checks. Move, never copy, the whole preflighted
 folder to the displayed direct-child destination. Do not create backups,
 archives, staging copies, replacement Git repositories, or destination merges.
 Preserve the existing `.git/` directory and its contents unchanged.
@@ -71,27 +71,26 @@ After each move, verify that the source is absent, the destination is present,
 and the recorded Git metadata still identifies the same repository when Git
 was present. Stop on the first failure, collision, or integrity concern; do not
 continue automatically with the remaining batch and do not attempt an
-unapproved rollback.
+automatic rollback.
 
 ## Separate registration gate
 
 A successful move changes no hub metadata by itself. Show the moved project at
 its canonical destination and ask separately whether to prepare registration.
-Use `hub-project-register` for its narrow confirmed context read and draft. Write a
-card and registry entry only after separate card and registry confirmation,
-then run `scripts/check-hub-registry.sh`. On validator failure, stop and report
+Use `hub-project-register` for its narrow confirmed context read and draft. Write the
+card and registry entry directly, then run `scripts/check-hub-registry.sh`. On validator failure, stop and report
 the unchanged project location; do not register another project automatically.
 
 ## Optional legacy standalone cleanup
 
 Offer this final phase only when the current `hub-project-migrate` run moved the
 project successfully, the project is a direct child of `<canonical-hub>/projects`,
-its separate `hub-project-register` confirmation completed, and
+its `hub-project-register` registration completed, and
 `scripts/check-hub-registry.sh` passed. The project remains usable through the
 hub when this phase is skipped.
 
-Cleanup confirmation is separate from move, preflight, and registration confirmation.
-A previous move, preflight, or registration confirmation never authorizes cleanup.
+Cleanup deletes files, so it always needs its own explicit yes. A previous
+source or preflight confirmation never authorizes cleanup.
 
 Inventory only the existence and type of these exact candidate paths in the
 confirmed project. Never inspect their contents. Reject a candidate or any of

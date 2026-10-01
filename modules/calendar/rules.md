@@ -5,12 +5,14 @@
 Apple Calendar uses only `hub-calendar` and the pinned local guarded MCP.
 Raw upstream tools are forbidden. The allowlist is empty by default and may
 contain only user-selected stable calendar IDs. Reads require explicit IDs and
-IANA timezone and return their EventKit source. Every write requires a fresh,
-single-use preview confirmation. An authorized writable calendar may update or
+IANA timezone and return their EventKit source. Every write uses a fresh,
+single-use preview; create and update previews are applied immediately without
+asking the user, and only delete previews wait for the user's confirmation
+(see Write Confirmation Policy in `ai/architecture.md`). An authorized writable calendar may update or
 delete events regardless of whether they are past or future; recurring writes
 require `this` or `future`. No background checks, notifications, secrets, or
-calendar content are stored in architecture files. Updates are manual, audited,
-and separately confirmed.
+calendar content are stored in architecture files. Updates are audited; only deletions are
+separately confirmed.
 
 Before a workflow reads a day, it calls `list_calendar_metadata`; the returned
 allowed entries are the only source for the IDs sent to `read_events`. A missing

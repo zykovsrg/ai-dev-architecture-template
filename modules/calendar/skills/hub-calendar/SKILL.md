@@ -1,7 +1,7 @@
 ---
 name: hub-calendar
 type: worker
-description: Safely read selected Apple Calendar calendars and prepare one-time confirmed changes.
+description: Safely read selected Apple Calendar calendars and apply changes; only deletions wait for confirmation.
 ---
 
 # Hub Calendar
@@ -36,18 +36,14 @@ from them. Partial `find_free_slots` responses contain no slots.
 только если ни одна из них не подходит. Не переименовывай существующее
 событие автоматически ради этого правила.
 
-For create, update, or delete, first show a complete preview: action, calendar,
-title, start/end with timezone, existing event ID, recurrence scope, and exact
-effect. Apply only the matching one-time preview confirmation. A confirmation
-never authorizes another change.
-
-One exception keeps the preview but merges the gate: another installed module
-may show this complete preview together with its own diff on one screen, and
-one confirmation approves exactly that shown pair. Nothing else is merged: the
-preview stays complete, an unshown or changed event still needs its own
-confirmation, and the confirmation dies with the screen it belongs to. Do not
-create background checks, notifications, task-to-calendar transfers, or files
-containing events, secrets, or tokens.
+For create or update, call `preview_change`, check that the preview matches the
+request (action, calendar, title, start/end with timezone, event ID, recurrence
+scope), then call `apply_change` in the same turn without asking the user.
+Afterwards report briefly what was created or changed. For delete, show the
+complete preview and apply it only after the user's explicit yes; that yes
+never authorizes another deletion. Do not create background checks,
+notifications, task-to-calendar transfers, or files containing events,
+secrets, or tokens.
 Caches defined by an installed subscriber are cache exceptions. They authorize
 neither publishing event data nor changing events.
 

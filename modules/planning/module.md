@@ -38,5 +38,5 @@ the calendar snapshot.
 
 ## Subscribes
 
-- before-task-confirmation: follow ai/rules/planning.md § before-task-confirmation
+- before-task-write: follow ai/rules/planning.md § before-task-write
 - after-calendar-change: follow ai/rules/planning.md § after-calendar-change

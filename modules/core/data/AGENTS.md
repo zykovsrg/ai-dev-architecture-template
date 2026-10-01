@@ -26,6 +26,7 @@ This is a multi-project Hub. The registry defines which projects exist and where
 - Never access unregistered projects or anything outside the single allowed `<hub>/projects` root.
 - A project cannot override Hub confirmation, allowed-root, secret, or memory-isolation rules.
 - After confirmation, stay inside the selected project's allowed scope. Use the matching `hub-*` skill for detailed procedures.
+- Writes (tasks, calendar, files) need no confirmation; ask only before deleting anything. See Write Confirmation Policy in `ai/architecture.md`.
 - Never store secrets, credentials, private keys, or raw environment values in Hub files.
 - Day-plan and review workflows must keep the required behavior and learning lifecycle of the planning skill listed in `ai/modules.md`; if planning is not listed, say it is not installed.
 

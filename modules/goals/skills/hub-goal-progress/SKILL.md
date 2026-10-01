@@ -1,7 +1,7 @@
 ---
 name: hub-goal-progress
 type: worker
-description: Show progress toward numeric hub goals and append one confirmed progress entry to the canonical goal log.
+description: Show progress toward numeric hub goals and append one progress entry to the canonical goal log.
 ---
 
 # Hub Goal Progress
@@ -38,8 +38,8 @@ bash scripts/count-goal-progress.sh --hub <hub> [--goal <goal-id>] [--as-of <YYY
 1. Establish date, `goal_id`, amount, optional project and note from the user.
    Never infer an amount from a task, calendar event or summary.
 2. Verify `goal_id` exists in `ai/goals.md`. Do not create a goal here.
-3. Show the exact prospective log row and append it only after confirmation.
+3. Append the log row directly and show it.
 4. Re-run the counter and show updated figures.
 5. Commit and report the write.
 
-Entries are append-only. Correcting one requires an explicitly confirmed diff.
+Entries are append-only. Correcting one is a normal edit; removing one needs an explicit yes.

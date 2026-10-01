@@ -19,13 +19,11 @@ Define during task intake.
 
 Last agent: Claude (Opus 5.5)
 
-What changed: TASK-ai-dev-architecture-20260928-002 закрыта 2026-09-28.
-knowledge, goals, learning выключаемые; документация обновлена; сводка задач
-работает на Python 3.9; установка календаря сама создаёт `.venv`. PR #16 слит,
-рабочий хаб обновлён, drift чистый.
-Session review: `ai/session-reviews/2026-09-28-optional-modules-switch-docs-closure.md`.
+What changed: TASK-ai-dev-architecture-20261001-001 закрыта 2026-10-01 —
+устаревшие копии архитектуры убраны из всех 33 проектов хаба.
+Session review: `ai/session-reviews/2026-10-01-legacy-project-cleanup-closure.md`.
 
-Open risks: сводка задач по всем проектам останавливается на неверных записях
-задач проекта `hadassah-seo-tech-contractor` (исправляется в том проекте).
+Open risks: дизайнерские скиллы больше нет ни в проектах, ни в хабе — перенос
+отложен (FT-20261001-001).
 
 Next agent should check: открытых задач архитектуры нет.

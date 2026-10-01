@@ -7,7 +7,7 @@ from pathlib import Path
 
 EVENTS = (
     "after-task-write",
-    "before-task-confirmation",
+    "before-task-write",
     "after-calendar-change",
     "before-task-close",
     "after-project-create",

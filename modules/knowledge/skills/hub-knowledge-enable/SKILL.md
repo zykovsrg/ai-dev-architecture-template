@@ -37,12 +37,12 @@ Module rules: `ai/rules/knowledge.md`.
 5. Never follow a symlink. Stop with no writes if the hub root, projects root,
    project path, `knowledge/`, or any exact scaffold path is a symlink or
    resolves through one.
-6. Do not write before confirmation. A prior router confirmation authorizes
-   project access, not this scaffold change.
+6. The user's request to enable knowledge authorizes this scaffold change; no
+   separate confirmation is needed.
 
-## Preview and confirmation
+## Report
 
-Show one complete preview with the confirmed registered project identity and
+After creating the scaffold, report the confirmed registered project identity and
 the exact registered path. It must name every scaffold path and identify which
 ones are absent, without opening existing records:
 
@@ -67,13 +67,12 @@ Mode: knowledge-enable
 Подтвердите: «Включить knowledge для <project-id> по пути <exact-registered-path>».
 ```
 
-Wait for one explicit confirmation that repeats both the confirmed ID and exact
-registered path. Any mismatch, changed registry mapping, collision concern, or
+Any mismatch, changed registry mapping, collision concern, or
 symlink stops the workflow with no writes.
 
-## Confirmed enablement
+## Enablement
 
-1. Revalidate every precondition, the matching confirmation, and the exact
+1. Revalidate every precondition and the exact
    absent paths without reading record contents.
 2. Create only absent scaffold files and directories: `knowledge/README.md`,
    `knowledge/record-template.md`, `knowledge/research/`,
@@ -111,7 +110,7 @@ Store records in the category that matches their purpose:
 - `runbooks/` — repeatable operational procedures.
 
 Create and update records only through the hub-owned `hub-knowledge-capture` or
-`hub-knowledge-review` workflow after its exact confirmation. Do not copy generic
+`hub-knowledge-review` workflow. Do not copy generic
 workflow skills into this project.
 
 Knowledge records must contain no secrets, personal data or client data. Never

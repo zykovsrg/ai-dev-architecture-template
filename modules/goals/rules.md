@@ -18,5 +18,5 @@ weekly figures follow from it with no further edit.
 `scripts/count-goal-progress.sh` is the only computation of progress, pace, and
 forecast, and the only validator of the log. Workflows render its output
 verbatim and never recompute it. `hub-goal-progress` is the only writer of
-`ai/goal-log.md`; it appends one user-confirmed line. An amount is never
+`ai/goal-log.md`; it appends one line with the amount the user stated, without asking again. An amount is never
 inferred from a task or calendar event.

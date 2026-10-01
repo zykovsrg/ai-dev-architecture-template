@@ -640,3 +640,9 @@
   contain the bridge in both entry files; scoped scan command accepted the
   `zdorove-businki` board and produced a validation-blocked proposal without
   writing canonical records.
+
+## 2026-10-01
+
+- Закрыты как уже выполненные: FT-20260812-001 (миграция в хаб, 72 проекта зарегистрированы) и FT-20260813-001 (standalone-путь удалён из шаблона, см. CHANGELOG).
+- FT-20260815-001 взята в работу как TASK-ai-dev-architecture-20261001-001.
+- TASK-ai-dev-architecture-20261001-001 закрыта: из 33 проектов хаба удалены 17 общих скиллов-копий и `ai/external-tools.md` (кроме проектов со своими скиллами); указатели `AGENTS.md`/`CLAUDE.md`/`ai/architecture.md` сохранены и закоммичены; свои скиллы и `.claude/` не тронуты. Session review: `ai/session-reviews/2026-10-01-legacy-project-cleanup-closure.md`.

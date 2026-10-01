@@ -1,6 +1,6 @@
 ---
 name: hub-local-router-install
-description: Install a small, approval-gated local area index inside one confirmed project after stable boundaries are proven.
+description: Install a small local area index inside one confirmed project after stable boundaries are proven.
 ---
 
 # Local Router Installation
@@ -17,20 +17,19 @@ Module rules: `ai/rules/projects.md`.
 1. Confirm the active project's registered ID and exact path through the hub.
 2. Read the confirmed project's entry instructions and smallest relevant
    architecture context.
-3. Propose the areas, their boundaries, and why each is stable and independent.
-4. Obtain explicit `architecture-update` approval from that project before
-   creating files. The approval must name the project and the local-router
-   files to create.
+3. Define the areas, their boundaries, and why each is stable and independent.
+4. The user's request to install the local router authorizes creating the
+   files; no separate confirmation is needed. Report the created files.
 
-If any precondition is absent, remain in `Mode: review` and present a proposal
-only. A hub-level approval does not replace project architecture approval.
+If the stability preconditions are absent, stay in `Mode: review`, create
+nothing, and explain which condition is missing.
 
 ## Installation boundary
 
-Create only these files after approval:
+Create only these files:
 
 - `ai/local-router/index.md`
-- `ai/local-router/areas/<id>.md` for each individually confirmed area
+- `ai/local-router/areas/<id>.md` for each defined area
 
 Do not create another task store, Git repository, global project card, project
 registry, or cross-project signal store. Areas have no separate current task;

@@ -18,6 +18,6 @@ skipped by task discovery and never reaches day plans or reviews.
 - Never write a task under a free-text `###` heading without an ID.
 - Optional schedule link, directly after `Запланировано:`:
   `Событие: <calendar-id>/<event-id> · синхронизировано: YYYY-MM-DD HH:MM-HH:MM`.
-  Write it whenever a confirmed change creates or moves a timed, non-recurring
-  event for the task; refresh `синхронизировано` on every confirmed sync. A
+  Write it whenever a change creates or moves a timed, non-recurring
+  event for the task; refresh `синхронизировано` on every sync. A
   malformed line fails the canonical check.

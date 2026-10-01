@@ -1,6 +1,6 @@
 # evening-review
 
-This resource defines only the `evening-review` scenario. The core `SKILL.md` remains authoritative for scope, security, canonical-source rules, proposal envelopes, confirmation, and learning lifecycle. Nothing here widens those permissions.
+This resource defines only the `evening-review` scenario. The core `SKILL.md` remains authoritative for scope, security, canonical-source rules, proposal envelopes, write policy, and learning lifecycle. Nothing here widens those permissions.
 
 For a calendar-only evening review, call `list_calendar_metadata` first, then
 `read_events` for the requested date and calendar timezone over the allowed
@@ -42,20 +42,20 @@ Fill the user-stated portion of `## Ожидания` only from selected `--revi
 
 A selected review input may also carry `## Done` and `## Carry over`. The review renders no section for them: a stated completion or carry-over becomes an `update_task` or `update_due` proposal under `## Подтвердить` and appears nowhere else. Never list stated or calendar-derived completions as narrative output.
 
-Derive `## Follow-ups` only from structured canonical fields. A stated completion, carry-over, waiting fact, or due-date change is a report fact, not an automatic canonical mutation before confirmation.
+Derive `## Follow-ups` only from structured canonical fields. A stated completion, carry-over, waiting fact, or due-date change is applied to the canonical record at once and reported.
 
 ## Proposals and learning
 
 Every possible write appears independently under `## Подтвердить` using the core proposal envelope. Every matched event or stated completion may yield at most one `update_task` proposal for the matched project's canonical task record, with exact target path and diff. Emit no proposal for an unmatched event, a low-confidence match, or a project outside scope.
 
-For a direct, unambiguous user statement about one canonical task, emit exactly
-one `update_task`, `update_due`, or `update_waiting` proposal with the project
-ID, exact target path, and exact diff. Pair a calendar preview only when the
-task schedule changes. If the task reference is ambiguous, emit no proposal and
-ask which task is meant. After the user confirms the exact displayed package,
-apply only that canonical task-record diff and its paired calendar preview.
+For a direct, unambiguous user statement about one canonical task, apply exactly
+one `update_task`, `update_due`, or `update_waiting` change with the project
+ID, exact target path, and exact diff. Pair a calendar change only when the
+task schedule changes. If the task reference is ambiguous, change nothing and
+ask which task is meant. Otherwise apply the canonical task-record diff and
+its paired calendar change at once and report them.
 
-Only when `goals` is listed in `ai/modules.md`, for active numeric goals ask for the stated amount and offer a separate confirmed `goal_progress` proposal.
+Only when `goals` is listed in `ai/modules.md`, for active numeric goals ask for the stated amount and record the stated amount as a `goal_progress` entry directly.
 
 For each grounded pending friction issue, offer one `add_observation` proposal. Proposal display must leave that observation pending; all acceptance, rejection, journal ordering, and append-failure behavior is defined only in `resources/learning-lifecycle.md`.
 
