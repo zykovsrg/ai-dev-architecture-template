@@ -525,3 +525,59 @@ Promotion notes:
 
 Тесты по фразам ловят удаление текста, но не смену смысла; ожидать шум и
 разбирать выживших вручную.
+
+### FT-20261001-003 — Слить PR #19 и обновить хаб
+
+Status: ready
+
+Priority: high
+
+Source: TASK-ai-dev-architecture-20261001-002
+
+Created: 2026-10-01
+
+Proposed task:
+
+После зелёного CI слить PR #19 (самообучение), затем обновить рабочий хаб
+через `update-installed-hub.sh` и закоммитить хаб. Проверить `--check`.
+
+Acceptance criteria:
+
+- PR #19 слит; `--check` показывает совпадение; в хабе есть `calendar_drift.py`
+  и `review_proposals.py`.
+
+### FT-20261001-004 — Убрать мёртвый канал «трудностей дня»
+
+Status: idea
+
+Priority: low
+
+Source: аудит 2026-10-01
+
+Created: 2026-10-01
+
+Proposed task:
+
+`workflow_friction.py` читает `ai/tmp/workflow-friction/<day>.txt`, но ни одна
+инструкция этот файл не пишет. Либо добавить запись, либо убрать канал
+вместе с шагами в вечернем обзоре и `learning-lifecycle.md`.
+
+Acceptance criteria:
+
+- У канала есть писатель или его нет совсем; тесты зелёные.
+
+### FT-20261001-005 — Убрать зашитый путь из refresh-session-inventory.sh
+
+Status: idea
+
+Priority: low
+
+Source: аудит 2026-10-01
+
+Created: 2026-10-01
+
+Proposed task:
+
+В скрипте по умолчанию зашит путь к папке пользователя. Перед правкой найти
+все автоматизации, которые его вызывают (Codex и др.).
+
