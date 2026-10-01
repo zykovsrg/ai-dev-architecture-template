@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Add the exact four English rules approved in `docs/superpowers/specs/2026-09-22-truthfulness-instructions-design.md`.
+- Add the exact four English rules approved in `docs/superpowers/archive/specs/2026-09-22-truthfulness-instructions-design.md`.
 - Preserve all existing instructions outside the added section.
 - Do not modify files outside the four instruction files and this plan's normal Git metadata.
 
@@ -24,7 +24,7 @@
 - Test: read-only `rg` checks against both files
 
 **Interfaces:**
-- Consumes: the approved four-rule block in `docs/superpowers/specs/2026-09-22-truthfulness-instructions-design.md`
+- Consumes: the approved four-rule block in `docs/superpowers/archive/specs/2026-09-22-truthfulness-instructions-design.md`
 - Produces: identical `## Truthfulness and Intellectual Rigor` sections in both active project entry files
 
 - [x] **Step 1: Add the section after the introductory Hub-management paragraph in each file**

@@ -8,7 +8,7 @@
 
 **Tech Stack:** Markdown, Bash verification scripts (`scripts/check-consistency.sh`, `scripts/smoke-test.sh`).
 
-**Spec:** `docs/superpowers/specs/2026-09-01-short-simple-answers-design.md`
+**Spec:** `docs/superpowers/archive/specs/2026-09-01-short-simple-answers-design.md`
 
 ## Global Constraints
 

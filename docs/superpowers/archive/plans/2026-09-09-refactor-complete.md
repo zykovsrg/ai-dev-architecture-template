@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Authoritative specification: [2026-09-09-hub-refactor-design.md](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/specs/2026-09-09-hub-refactor-design.md).
+- Authoritative specification: [2026-09-09-hub-refactor-design.md](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/archive/specs/2026-09-09-hub-refactor-design.md).
 - User authorized the programme. Planning is on Astra; implementation begins only after the user switches to Terra/Luna. Do not execute code blocks during planning.
 - Do not test or modify application internals. Project task memory and architecture resources are in scope.
 - Preserve existing task/calendar learning, goal progress, calendar title rules and current permissions, project-selection preservation, and new-project board support.
@@ -24,10 +24,10 @@
 
 | Part | Tasks | Model | Deliverable |
 | --- | --- | --- | --- |
-| [1. Release and preservation](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/plans/2026-09-09-refactor-01-release.md) | R01–R06 | Terra; R04 may use Luna | Reconciled source, safe update, cache/date defects fixed, reproducible tests |
-| [2. Task records and calendar](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/plans/2026-09-09-refactor-02-tasks.md) | T01–T05 | Terra; approved record edits may use Luna | Compatible parsing, no silent loss, dated changes use joint confirmation |
-| [3. Hub-only migration](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/plans/2026-09-09-refactor-03-migration.md) | M01–M06 | Terra; M04 may use Luna | Custom resources preserved, all registered projects reconciled, standalone retired |
-| [4. Session review and acceptance](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/plans/2026-09-09-refactor-04-learning.md) | L01–L07 | Terra; L03 fixture authoring may use Luna | Closure/manual review, confirmed improvement cycle, old schedule retired, final verified release |
+| [1. Release and preservation](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/archive/plans/2026-09-09-refactor-01-release.md) | R01–R06 | Terra; R04 may use Luna | Reconciled source, safe update, cache/date defects fixed, reproducible tests |
+| [2. Task records and calendar](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/archive/plans/2026-09-09-refactor-02-tasks.md) | T01–T05 | Terra; approved record edits may use Luna | Compatible parsing, no silent loss, dated changes use joint confirmation |
+| [3. Hub-only migration](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/archive/plans/2026-09-09-refactor-03-migration.md) | M01–M06 | Terra; M04 may use Luna | Custom resources preserved, all registered projects reconciled, standalone retired |
+| [4. Session review and acceptance](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/archive/plans/2026-09-09-refactor-04-learning.md) | L01–L07 | Terra; L03 fixture authoring may use Luna | Closure/manual review, confirmed improvement cycle, old schedule retired, final verified release |
 
 Sequence: R01 → R02 → R03 → R04 → R05 → R06 → T01 → T02 → T03 → T04 → T05 → M01 → M02 → M03 → M04 → M05 → M06 → L01 → L02 → L03 → L04 → L05 → L06 → L07. Work runs sequentially to limit context and coordination cost. Do not request a new Astra plan between tasks: all tasks are specified here and in the four parts. A new requirement or genuinely ambiguous project meaning is a specific exception, not an excuse to defer the next task's design.
 

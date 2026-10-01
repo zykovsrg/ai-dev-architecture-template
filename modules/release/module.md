@@ -20,7 +20,6 @@ consistency and installer checks; nothing here is installed into a Hub.
 ## Repository only
 
 - scripts/hub_release.py
-- scripts/migrate-archiprojects-stage6.py
 - scripts/module_passports.py
 - scripts/check-module-boundaries.py
 - scripts/update-installed-hub.sh
@@ -31,8 +30,6 @@ consistency and installer checks; nothing here is installed into a Hub.
 - scripts/hub-smoke-test.sh
 - scripts/assistant-workflows.sh
 - scripts/assistant-workflows-test.sh
-- scripts/refresh-session-inventory.sh
-- scripts/test-refresh-session-inventory.sh
 - tests/
 
 ## Reads

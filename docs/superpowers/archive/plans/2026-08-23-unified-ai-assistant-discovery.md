@@ -26,14 +26,14 @@
 ## Planned file structure
 
 - `docs/superpowers/research/2026-08-23-current-system-inventory.md` — redacted facts about the hub and copied vault.
-- `docs/superpowers/specs/2026-08-23-work-model-design.md` — exact archiproject, project, task, waiting, and index contracts.
-- `docs/superpowers/specs/2026-08-23-routing-and-search-design.md` — routing, compact indexes, confirmation, and cross-project reads.
-- `docs/superpowers/specs/2026-08-23-obsidian-projection-design.md` — read model, Kanban projection, PARA/Zettelkasten structure, and migration map.
-- `docs/superpowers/specs/2026-08-23-assistant-workflows-design.md` — capture, daily review, weekly review, waiting, and approvals.
+- `docs/superpowers/archive/specs/2026-08-23-work-model-design.md` — exact archiproject, project, task, waiting, and index contracts.
+- `docs/superpowers/archive/specs/2026-08-23-routing-and-search-design.md` — routing, compact indexes, confirmation, and cross-project reads.
+- `docs/superpowers/archive/specs/2026-08-23-obsidian-projection-design.md` — read model, Kanban projection, PARA/Zettelkasten structure, and migration map.
+- `docs/superpowers/archive/specs/2026-08-23-assistant-workflows-design.md` — capture, daily review, weekly review, waiting, and approvals.
 - `docs/superpowers/research/2026-08-23-calendar-mcp-options.md` — verified Apple Calendar integration options and recommendation.
-- `docs/superpowers/specs/2026-08-23-session-audit-integration-design.md` — safe use of `hub-session-audit`.
-- `docs/superpowers/specs/2026-08-23-unified-assistant-architecture.md` — consolidated approved architecture and dependency order.
-- `docs/superpowers/plans/2026-08-23-unified-assistant-foundation.md` — first executable implementation plan.
+- `docs/superpowers/archive/specs/2026-08-23-session-audit-integration-design.md` — safe use of `hub-session-audit`.
+- `docs/superpowers/archive/specs/2026-08-23-unified-assistant-architecture.md` — consolidated approved architecture and dependency order.
+- `docs/superpowers/archive/plans/2026-08-23-unified-assistant-foundation.md` — first executable implementation plan.
 - Later executable plans, created only after the relevant design is approved: Obsidian projection, assistant workflows, Calendar MCP, and session audit integration.
 
 ---
@@ -48,7 +48,7 @@
 - Read: `tmp/obsidian-vault-copy/Obsidian/**`
 
 **Interfaces:**
-- Consumes: approved design `docs/superpowers/specs/2026-08-23-unified-ai-assistant-obsidian-design.md`.
+- Consumes: approved design `docs/superpowers/archive/specs/2026-08-23-unified-ai-assistant-obsidian-design.md`.
 - Produces: verified counts, current file roles, vault structure, plugin list, and explicitly labelled hypotheses used by Tasks 2–7.
 
 - [ ] **Step 1: Capture repository and vault structure without note bodies**
@@ -105,7 +105,7 @@ git commit -m "docs: inventory assistant source systems"
 ### Task 2: Specify the minimum work model
 
 **Files:**
-- Create: `docs/superpowers/specs/2026-08-23-work-model-design.md`
+- Create: `docs/superpowers/archive/specs/2026-08-23-work-model-design.md`
 - Read: `template/ai/current-task.md`
 - Read: `template/ai/future-tasks.md`
 - Read: `hub-template/ai/project-registry.md`
@@ -163,21 +163,21 @@ Reject any option that creates two writable sources of truth. Include a compatib
 Run:
 
 ```bash
-rg -n 'primary_archiproject|related_archiprojects|waiting_for|waiting_since|follow_up|source of truth|rollback' docs/superpowers/specs/2026-08-23-work-model-design.md
-rg -n 'T[B]D|T[O]DO|F[I]XME|implement[[:space:]]+later' docs/superpowers/specs/2026-08-23-work-model-design.md
+rg -n 'primary_archiproject|related_archiprojects|waiting_for|waiting_since|follow_up|source of truth|rollback' docs/superpowers/archive/specs/2026-08-23-work-model-design.md
+rg -n 'T[B]D|T[O]DO|F[I]XME|implement[[:space:]]+later' docs/superpowers/archive/specs/2026-08-23-work-model-design.md
 ```
 
 Expected: the first command finds every required contract; the second returns no matches.
 
 ```bash
-git add docs/superpowers/specs/2026-08-23-work-model-design.md
+git add docs/superpowers/archive/specs/2026-08-23-work-model-design.md
 git commit -m "docs: specify assistant work model"
 ```
 
 ### Task 3: Specify routing and flexible search
 
 **Files:**
-- Create: `docs/superpowers/specs/2026-08-23-routing-and-search-design.md`
+- Create: `docs/superpowers/archive/specs/2026-08-23-routing-and-search-design.md`
 - Read: `/Users/zykovsrg/Documents/vibecode/_ai-hub/AGENTS.md`
 - Read: `/Users/zykovsrg/Documents/vibecode/_ai-hub/ai/architecture.md`
 - Read: `/Users/zykovsrg/Documents/vibecode/_ai-hub/ai/cross-project-signals.md`
@@ -213,25 +213,25 @@ Include tests in prose for unknown IDs, archived projects, links outside allowed
 Run:
 
 ```bash
-rg -n 'metadata-search|confirmed-project|confirmed-set|discovery hint|allowed roots|symlink|declin' docs/superpowers/specs/2026-08-23-routing-and-search-design.md
-rg -n 'T[B]D|T[O]DO|F[I]XME' docs/superpowers/specs/2026-08-23-routing-and-search-design.md
+rg -n 'metadata-search|confirmed-project|confirmed-set|discovery hint|allowed roots|symlink|declin' docs/superpowers/archive/specs/2026-08-23-routing-and-search-design.md
+rg -n 'T[B]D|T[O]DO|F[I]XME' docs/superpowers/archive/specs/2026-08-23-routing-and-search-design.md
 ```
 
 Expected: all contracts are found; no placeholder is found.
 
 ```bash
-git add docs/superpowers/specs/2026-08-23-routing-and-search-design.md
+git add docs/superpowers/archive/specs/2026-08-23-routing-and-search-design.md
 git commit -m "docs: specify routed cross-project search"
 ```
 
 ### Task 4: Design the Obsidian projection and migration map
 
 **Files:**
-- Create: `docs/superpowers/specs/2026-08-23-obsidian-projection-design.md`
+- Create: `docs/superpowers/archive/specs/2026-08-23-obsidian-projection-design.md`
 - Read: `tmp/obsidian-vault-copy/Obsidian/.obsidian/**`
 - Read: `tmp/obsidian-vault-copy/Obsidian/3. Канбан/**`
-- Read: `docs/superpowers/specs/2026-08-23-work-model-design.md`
-- Read: `docs/superpowers/specs/2026-08-23-routing-and-search-design.md`
+- Read: `docs/superpowers/archive/specs/2026-08-23-work-model-design.md`
+- Read: `docs/superpowers/archive/specs/2026-08-23-routing-and-search-design.md`
 
 **Interfaces:**
 - Consumes: canonical data fields and permission scopes.
@@ -260,23 +260,23 @@ Classify existing vault content into `keep`, `add metadata`, `review manually`, 
 Run:
 
 ```bash
-rg -n 'generated Markdown|plugin|approved folders|Incoming|Waiting|three to seven|Areas|Resources/Meetings|archive candidate|rollback' docs/superpowers/specs/2026-08-23-obsidian-projection-design.md
-rg -n 'T[B]D|T[O]DO|F[I]XME' docs/superpowers/specs/2026-08-23-obsidian-projection-design.md
+rg -n 'generated Markdown|plugin|approved folders|Incoming|Waiting|three to seven|Areas|Resources/Meetings|archive candidate|rollback' docs/superpowers/archive/specs/2026-08-23-obsidian-projection-design.md
+rg -n 'T[B]D|T[O]DO|F[I]XME' docs/superpowers/archive/specs/2026-08-23-obsidian-projection-design.md
 ```
 
 Expected: all required decisions are present; no placeholder is found.
 
 ```bash
-git add docs/superpowers/specs/2026-08-23-obsidian-projection-design.md
+git add docs/superpowers/archive/specs/2026-08-23-obsidian-projection-design.md
 git commit -m "docs: design Obsidian project projection"
 ```
 
 ### Task 5: Specify assistant workflows and approval gates
 
 **Files:**
-- Create: `docs/superpowers/specs/2026-08-23-assistant-workflows-design.md`
-- Read: `docs/superpowers/specs/2026-08-23-work-model-design.md`
-- Read: `docs/superpowers/specs/2026-08-23-routing-and-search-design.md`
+- Create: `docs/superpowers/archive/specs/2026-08-23-assistant-workflows-design.md`
+- Read: `docs/superpowers/archive/specs/2026-08-23-work-model-design.md`
+- Read: `docs/superpowers/archive/specs/2026-08-23-routing-and-search-design.md`
 
 **Interfaces:**
 - Consumes: canonical fields and read scopes.
@@ -319,14 +319,14 @@ Define how `follow_up` appears in the day plan and Calendar proposal. A missed f
 Run:
 
 ```bash
-rg -n 'proposal envelope|partial approval|three main actions|archiproject|canonical meeting|follow_up|automatic message' docs/superpowers/specs/2026-08-23-assistant-workflows-design.md
-rg -n 'T[B]D|T[O]DO|F[I]XME' docs/superpowers/specs/2026-08-23-assistant-workflows-design.md
+rg -n 'proposal envelope|partial approval|three main actions|archiproject|canonical meeting|follow_up|automatic message' docs/superpowers/archive/specs/2026-08-23-assistant-workflows-design.md
+rg -n 'T[B]D|T[O]DO|F[I]XME' docs/superpowers/archive/specs/2026-08-23-assistant-workflows-design.md
 ```
 
 Expected: every workflow and failure path is present; no placeholder is found.
 
 ```bash
-git add docs/superpowers/specs/2026-08-23-assistant-workflows-design.md
+git add docs/superpowers/archive/specs/2026-08-23-assistant-workflows-design.md
 git commit -m "docs: specify assistant review workflows"
 ```
 
@@ -375,7 +375,7 @@ git commit -m "docs: research Apple Calendar MCP options"
 ### Task 7: Design safe session-audit integration
 
 **Files:**
-- Create: `docs/superpowers/specs/2026-08-23-session-audit-integration-design.md`
+- Create: `docs/superpowers/archive/specs/2026-08-23-session-audit-integration-design.md`
 - Read: `/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/hub-session-audit/knowledge/runbooks/session-audit-procedure.md`
 - Read: `/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/hub-session-audit/knowledge/research/checked-sessions.md`
 
@@ -404,22 +404,22 @@ Do not copy secrets, personal data, patient information, or client-confidential 
 Run:
 
 ```bash
-rg -n 'offer|confirmation|three small|eight|no systemic issue|candidate future task|architecture change candidate|secret|patient|duplicate' docs/superpowers/specs/2026-08-23-session-audit-integration-design.md
-rg -n 'T[B]D|T[O]DO|F[I]XME' docs/superpowers/specs/2026-08-23-session-audit-integration-design.md
+rg -n 'offer|confirmation|three small|eight|no systemic issue|candidate future task|architecture change candidate|secret|patient|duplicate' docs/superpowers/archive/specs/2026-08-23-session-audit-integration-design.md
+rg -n 'T[B]D|T[O]DO|F[I]XME' docs/superpowers/archive/specs/2026-08-23-session-audit-integration-design.md
 ```
 
 Expected: trigger, pilot, outcomes, and privacy rules are present; no placeholder is found.
 
 ```bash
-git add docs/superpowers/specs/2026-08-23-session-audit-integration-design.md
+git add docs/superpowers/archive/specs/2026-08-23-session-audit-integration-design.md
 git commit -m "docs: design session audit integration"
 ```
 
 ### Task 8: Consolidate the architecture and write the first executable plan
 
 **Files:**
-- Create: `docs/superpowers/specs/2026-08-23-unified-assistant-architecture.md`
-- Create: `docs/superpowers/plans/2026-08-23-unified-assistant-foundation.md`
+- Create: `docs/superpowers/archive/specs/2026-08-23-unified-assistant-architecture.md`
+- Create: `docs/superpowers/archive/plans/2026-08-23-unified-assistant-foundation.md`
 - Modify: `ai/current-task.md`
 
 **Interfaces:**
@@ -469,7 +469,7 @@ Set `Stage: planning` while plans are being written. Record exact approved desig
 Run:
 
 ```bash
-rg -n 'T[B]D|T[O]DO|F[I]XME|implement[[:space:]]+later|similar[[:space:]]+to[[:space:]]+Task' docs/superpowers/specs/2026-08-23-unified-assistant-architecture.md docs/superpowers/plans/2026-08-23-unified-assistant-foundation.md
+rg -n 'T[B]D|T[O]DO|F[I]XME|implement[[:space:]]+later|similar[[:space:]]+to[[:space:]]+Task' docs/superpowers/archive/specs/2026-08-23-unified-assistant-architecture.md docs/superpowers/archive/plans/2026-08-23-unified-assistant-foundation.md
 bash scripts/check-consistency.sh
 bash scripts/smoke-test.sh
 bash scripts/hub-smoke-test.sh
@@ -482,7 +482,7 @@ Expected: placeholder scan returns no matches; all three scripts exit 0; diff ch
 - [ ] **Step 7: Commit the architecture and foundation plan**
 
 ```bash
-git add docs/superpowers/specs/2026-08-23-unified-assistant-architecture.md docs/superpowers/plans/2026-08-23-unified-assistant-foundation.md
+git add docs/superpowers/archive/specs/2026-08-23-unified-assistant-architecture.md docs/superpowers/archive/plans/2026-08-23-unified-assistant-foundation.md
 git commit -m "docs: plan unified assistant foundation"
 ```
 

@@ -38,8 +38,8 @@
 ### Task 3: Keep the design documentation current
 
 **Files:**
-- Modify: `docs/superpowers/specs/2026-08-23-obsidian-projection-design.md`
-- Modify: `docs/superpowers/specs/2026-08-24-obsidian-projection-phase-2-design.md`
+- Modify: `docs/superpowers/archive/specs/2026-08-23-obsidian-projection-design.md`
+- Modify: `docs/superpowers/archive/specs/2026-08-24-obsidian-projection-phase-2-design.md`
 
 - [ ] State that all valid `idea` entries render in a separate labelled backlog block.
 - [ ] State that they do not determine the project column.

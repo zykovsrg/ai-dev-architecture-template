@@ -1,6 +1,6 @@
 # Session Review, Improvement and Acceptance Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: `superpowers:executing-plans`. Execute L01–L07 after M06 using [the complete plan](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/plans/2026-09-09-refactor-complete.md). For actual shared skill changes also use the installed skill-authoring guidance; it must not broaden this approved design.
+> **For agentic workers:** REQUIRED SUB-SKILL: `superpowers:executing-plans`. Execute L01–L07 after M06 using [the complete plan](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/archive/plans/2026-09-09-refactor-complete.md). For actual shared skill changes also use the installed skill-authoring guidance; it must not broaden this approved design.
 
 **Goal:** Review agent behavior at every task closure, save a separate document, support requested session checks and implement confirmed improvements with later effect verification.
 **Architecture:** One lazily loaded shared skill serves closure and manual review. Review documents live inside each project's existing `ai/` memory. Shared architecture changes retain explicit approval. Existing task/calendar learning continues.

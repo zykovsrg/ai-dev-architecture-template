@@ -2,7 +2,7 @@
 
 Status: prepared for implementation handoff; no runtime changes applied.
 
-Implementation: [complete plan and four ordered parts](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/plans/2026-09-09-refactor-complete.md). This supersedes the earlier reconciliation-only handoff.
+Implementation: [complete plan and four ordered parts](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/archive/plans/2026-09-09-refactor-complete.md). This supersedes the earlier reconciliation-only handoff.
 
 ## Authority and scope
 

@@ -24,7 +24,7 @@
 - Create `scripts/generate-obsidian-projects-kanban.sh`: validation, reading, classification, rendering, guarded write.
 - Create `scripts/obsidian-projects-kanban-test.sh`: disposable-fixture tests.
 - Modify `scripts/hub-smoke-test.sh`: generator safety contract without real-project reads.
-- Modify only after separate architecture-update approval: `ai/decisions.md` and `docs/superpowers/specs/2026-08-23-obsidian-projection-design.md` for Archived.
+- Modify only after separate architecture-update approval: `ai/decisions.md` and `docs/superpowers/archive/specs/2026-08-23-obsidian-projection-design.md` for Archived.
 
 ## Task 1 — approve durable Archived rule
 

@@ -46,5 +46,7 @@ sources: []
 
 ## Review notes
 
-Статус `draft`: разбор не начат. Индекс обновляет
-`scripts/refresh-session-inventory.sh` перед плановым запуском.
+Статус `draft`: разбор не начат. Скрипт обновления индекса
+`scripts/refresh-session-inventory.sh` удалён отсюда 2026-10-01 (обслуживал
+другой проект); при необходимости восстановить из истории git в проект
+`hub-session-audit`.

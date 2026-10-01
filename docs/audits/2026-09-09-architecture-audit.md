@@ -36,4 +36,4 @@
 
 Сейчас готовы отчёт и план. Исправления ещё не выполнены. Цель — убрать известные проблемы архитектуры и раньше замечать новые, а не обещать отсутствие любых ошибок.
 
-[Полный план реализации](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/plans/2026-09-09-refactor-complete.md) · [Подробности и доказательства](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/audits/2026-09-09-architecture-audit-details.md) · [Список связей](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/audits/2026-09-09-service-inventory.md)
+[Полный план реализации](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/archive/plans/2026-09-09-refactor-complete.md) · [Подробности и доказательства](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/audits/2026-09-09-architecture-audit-details.md) · [Список связей](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/audits/2026-09-09-service-inventory.md)

@@ -294,8 +294,8 @@ Expected: `Registry check passed: 44 projects`.
 - Modify: `CHANGELOG.md`
 - Modify: `docs/install.md`
 - Modify: `docs/update-installed-projects.md`
-- Modify: `docs/superpowers/specs/2026-08-23-obsidian-projection-design.md`
-- Modify: `docs/superpowers/specs/2026-08-24-obsidian-projection-phase-2-design.md`
+- Modify: `docs/superpowers/archive/specs/2026-08-23-obsidian-projection-design.md`
+- Modify: `docs/superpowers/archive/specs/2026-08-24-obsidian-projection-phase-2-design.md`
 - Modify: `scripts/update-installed-hub.sh` if the installed-file allowlist changes
 
 **Interfaces:**

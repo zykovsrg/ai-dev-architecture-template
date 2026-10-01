@@ -35,8 +35,8 @@
 ### Task 2: Update durable projection documentation
 
 **Files:**
-- Modify: `docs/superpowers/specs/2026-08-23-obsidian-projection-design.md`
-- Modify: `docs/superpowers/specs/2026-08-24-obsidian-projection-phase-2-design.md`
+- Modify: `docs/superpowers/archive/specs/2026-08-23-obsidian-projection-design.md`
+- Modify: `docs/superpowers/archive/specs/2026-08-24-obsidian-projection-phase-2-design.md`
 
 **Interfaces:**
 - Documents the Task 1 target and the local-only vault path.

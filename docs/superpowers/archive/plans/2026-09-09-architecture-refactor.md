@@ -1,16 +1,16 @@
 # Architecture Refactoring — Staged Implementation Plan
 
-> Superseded as an execution entry point by [the complete implementation plan](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/plans/2026-09-09-refactor-complete.md). Keep this document as the historical programme outline; do not follow its former requirement to return to Astra between every package.
+> Superseded as an execution entry point by [the complete implementation plan](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/archive/plans/2026-09-09-refactor-complete.md). Keep this document as the historical programme outline; do not follow its former requirement to return to Astra between every package.
 
 ## Current execution contract — revised after user confirmation
 
-The controlling specification is [hub consolidation and session learning](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/specs/2026-09-09-hub-refactor-design.md). The user now authorizes the refactoring programme, but explicitly assigns specification and planning to Astra and implementation to Terra/Luna. Do not implement until the user switches models. This section supersedes the earlier proposal-only wording and older self-audit design below.
+The controlling specification is [hub consolidation and session learning](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/archive/specs/2026-09-09-hub-refactor-design.md). The user now authorizes the refactoring programme, but explicitly assigns specification and planning to Astra and implementation to Terra/Luna. Do not implement until the user switches models. This section supersedes the earlier proposal-only wording and older self-audit design below.
 
 The reviewer runs at EVERY task closure, using AI to assess agent behavior in the task's current session; it saves a separate project-local review document even when no issue is observed. Explicit user-selected session review uses the same shared procedure. Preserve existing task/calendar learning. Remove only the identified obsolete Codex self-audit schedule. Do not implement a background detector or periodic transcript sampling as a substitute for closure review.
 
 Planning belongs to Astra. Terra may resolve routine implementation details and adapt exact line locations; a material new design decision returns to the planning stage. Luna is limited to approved mechanical changes and exact per-project migration manifests. No automatic model changes or new Codex tasks are created by this document.
 
-Implementation entry: [first implementation package](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/plans/2026-09-09-refactor-first-package.md). The 24 rows remain a programme map; they are not all ready-made code patches. Detailed subsequent packages are prepared on Astra against the previous accepted result.
+Implementation entry: [first implementation package](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/archive/plans/2026-09-09-refactor-first-package.md). The 24 rows remain a programme map; they are not all ready-made code patches. Detailed subsequent packages are prepared on Astra against the previous accepted result.
 
 > **For agentic workers:** Use superpowers:executing-plans to execute one approved work package at a time. Do not spawn agents by default. Prepare the package's exact implementation and regression test before editing production files; this document is the programme breakdown, not a prewritten patch for every subsystem.
 

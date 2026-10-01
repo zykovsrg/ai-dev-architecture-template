@@ -55,10 +55,10 @@ Non-negotiable decisions:
 Start by reading only:
 
 1. docs/superpowers/research/2026-08-23-current-system-inventory.md
-2. docs/superpowers/specs/2026-08-23-unified-assistant-architecture.md
-3. docs/superpowers/specs/2026-08-23-work-model-design.md
-4. docs/superpowers/specs/2026-08-23-obsidian-projection-design.md
-5. docs/superpowers/specs/2026-08-23-assistant-workflows-design.md
+2. docs/superpowers/archive/specs/2026-08-23-unified-assistant-architecture.md
+3. docs/superpowers/archive/specs/2026-08-23-work-model-design.md
+4. docs/superpowers/archive/specs/2026-08-23-obsidian-projection-design.md
+5. docs/superpowers/archive/specs/2026-08-23-assistant-workflows-design.md
 6. ai/decisions.md and ai/future-tasks.md
 
 Then give me a short, evidence-based recommendation for the next narrow task.

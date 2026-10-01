@@ -59,13 +59,13 @@ Do not infer correctness for multiple task due dates from its one-date test.
 
 - Audit: `docs/audits/2026-09-09-architecture-audit.md` and companion details,
   project inventory and service inventory in that directory.
-- Original design: `docs/superpowers/specs/2026-09-09-hub-refactor-design.md`.
-- Original plans: `docs/superpowers/plans/2026-09-09-refactor-complete.md`
+- Original design: `docs/superpowers/archive/specs/2026-09-09-hub-refactor-design.md`.
+- Original plans: `docs/superpowers/archive/plans/2026-09-09-refactor-complete.md`
   and the release/tasks/migration/learning package plans in that directory.
-- Low-cost review: `docs/superpowers/specs/2026-09-09-low-cost-session-review-design.md`
+- Low-cost review: `docs/superpowers/archive/specs/2026-09-09-low-cost-session-review-design.md`
   and its matching plan.
-- Live merge: `docs/superpowers/specs/2026-09-10-live-hub-merge-design.md`
-  and `docs/superpowers/plans/2026-09-10-live-hub-merge.md`.
+- Live merge: `docs/superpowers/archive/specs/2026-09-10-live-hub-merge-design.md`
+  and `docs/superpowers/archive/plans/2026-09-10-live-hub-merge.md`.
 - Closure review: `ai/session-reviews/2026-09-10-refactor-closure.md`.
 
 ## Closure

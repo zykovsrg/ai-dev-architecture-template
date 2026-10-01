@@ -1,6 +1,6 @@
 # Release Integrity and Learning Preservation Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: `superpowers:executing-plans`. Execute R01–R06 in order with the constraints in [the complete plan](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/plans/2026-09-09-refactor-complete.md).
+> **For agentic workers:** REQUIRED SUB-SKILL: `superpowers:executing-plans`. Execute R01–R06 in order with the constraints in [the complete plan](/Users/zykovsrg/Documents/vibecode/_ai-hub/projects/ai-dev-architecture/docs/superpowers/archive/plans/2026-09-09-refactor-complete.md).
 
 **Goal:** Preserve live improvements in the distribution, make installation/update reviewable and recoverable, and fix snapshot/observation defects.
 **Architecture:** Bash entry scripts retain their CLI. One standard-library release helper supplies a shared managed-file inventory, preview, apply and restore. Existing learning remains the owner of task/calendar observations.
