@@ -479,3 +479,20 @@ Corrected calendar/task identity and recurring-instance matching, preserved recu
 ## 2026-10-02 — Preserve legacy schedule compatibility
 
 Confirmed project-compatibility inspection exposed trailing comments and start-only schedules rejected by the new strict parser. Added regression coverage and preserved both existing forms while still validating real dates/times; no end time is invented. 196 main unit tests, 29 calendar-sync tests and 5 sync-field tests passed. Corrected parser installed in Hub. Individual compatibility findings remain in each confirmed project's ai/hub-compatibility-2026-10-02.md, without copying task details here.
+
+
+## 2026-10-02 — Architecture corrections closed
+
+Task: TASK-ai-dev-architecture-20261002-001.
+All remaining 66 active projects inspected within the user-confirmed manifest;
+all six memory files present and task records canonical. Updated 58 exact
+legacy pointers across 29 projects. Context gaps in 41 projects are recorded
+for factual follow-up. Two additional legacy schedule forms preserved;
+197 current main tests pass, installed Hub matches source.
+Guarded live planning initialized 61-day context, reconciled 11 linked task
+schedules across nine files, and verified affected dates. No Calendar event,
+deadline or completion-status change was made by synchronization.
+Reports: docs/audits/2026-10-02-all-project-compatibility.md; per-project
+ai/hub-compatibility-2026-10-02.md. Live calendar artifacts stay in Hub ai/tmp
+and are not committed. Session review: ai/session-reviews/2026-10-02-architecture-corrections-closure.md; issues-found with partial Luna chronology coverage.
+Work saved locally; no remote push or main-branch merge claimed.

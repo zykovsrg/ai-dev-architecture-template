@@ -561,3 +561,15 @@ Proposed task:
 В скрипте по умолчанию зашит путь к папке пользователя. Перед правкой найти
 все автоматизации, которые его вызывают (Codex и др.).
 
+
+
+### TASK-ai-dev-architecture-20261002-002 — Заполнить недостающий контекст подключённых проектов по подтверждённым фактам
+
+Status: idea
+Created: 2026-10-02
+Source: docs/audits/2026-10-02-all-project-compatibility.md
+
+The confirmed 66-project inspection found context placeholders in 41 projects.
+Task records are valid; application refactoring is not established. Gather
+project-specific facts before filling descriptions. This follow-up is deferred
+because the approved inspection does not supply missing facts.

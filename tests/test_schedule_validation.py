@@ -30,5 +30,11 @@ class ScheduleValidation(unittest.TestCase):
         with self.assertRaises(ValueError):
             records.parse_scheduled("Запланировано: 2026-09-18 25:00 (Europe/Kirov).")
 
+    def test_legacy_date_and_release_note(self):
+        self.assertIsNone(records.parse_scheduled("Запланировано: 2026-09-19."))
+        self.assertIsNone(records.parse_scheduled("Запланировано: релиз 2026-09-14. Ожидание: ответ врача."))
+        with self.assertRaises(ValueError):
+            records.parse_scheduled("Запланировано: 2026-99-99.")
+
     def test_valid_leap_day(self):
         self.assertEqual(records.parse_scheduled("Запланировано: 2028-02-29 15:00-17:00"), ("2028-02-29 15:00", "2028-02-29 17:00"))

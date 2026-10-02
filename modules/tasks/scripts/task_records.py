@@ -35,6 +35,10 @@ def parse_scheduled(line):
         if start_only:
             datetime.strptime(" ".join(start_only.groups()), "%Y-%m-%d %H:%M")
             return None
+        date_only = re.fullmatch(r"Запланировано: (?:релиз )?(\d{4}-\d{2}-\d{2})\.(?: Ожидание: .+)?\s*", line)
+        if date_only:
+            date.fromisoformat(date_only.group(1))
+            return None
         if line.startswith("Запланировано:"):
             raise ValueError("invalid_schedule")
         return None

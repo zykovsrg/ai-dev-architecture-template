@@ -1,40 +1,30 @@
 # Current Task
 
-Task ID: TASK-ai-dev-architecture-20261002-001
-Status: active
-Stage: review
+Status: empty
+Stage: intake
 
 ## Goal
 
-Implement the approved architecture corrections and project-readiness workflow; validate and update the installed Hub.
-
-## Scope
-
-Review architecture source, tests, and project integration contracts. Do not read other projects without separate routing confirmation. User approved the recommended corrections and Hub update on 2026-10-02. Other projects remain outside confirmed scope.
-
-## Done criteria
-
-Calendar matching and schedule regressions pass; architecture checks pass; installed managed files match corrected source. Preserve other projects and report any verification limitations.
+No active task.
 
 ## Relevant files
 
-- modules/
-- scripts/
-- tests/
-- docs/audits/2026-10-02-refactoring-assessment.md
+None yet.
+
+## Done criteria
+
+Define during task intake.
 
 ## Agent handoff
 
-Audit requested on 2026-10-02. Prior current task was empty. No schedule was requested.
-
-## Audit result
-
-Assessment saved in docs/audits/2026-10-02-refactoring-assessment.md. Source review and selected checks completed; 189/190 main tests pass, with one stale version assertion. Calendar matching and schedule validation defects reproduced on synthetic data. No implementation changes made. Connected-project inspection remains outside confirmed scope; recommendations are conditional. Proposed fixes and workflow refactoring are deferred pending a user implementation request, not silently discarded.
-
-## Implementation result
-
-User-approved corrections implemented and installed on 2026-10-02. Full architecture --all checks passed: 194 main unit tests, 15 Obsidian and 16 planning unit tests, additional script and integration checks. Calendar policy: 94 tests passed. Bridge rebuilt successfully. Installed managed files match source. No other project or live calendar data was inspected or changed. Live dialogue verification and per-project compatibility review remain outside this completed implementation scope. Task context retained for user-requested closure.
-
-## Compatibility follow-up
-
-User separately confirmed rolling-audio-recorder, promo-pages and rutina-i-byt exact registered paths. Minimal integration inspection completed. Legacy parser compatibility corrected and deployed; canonical task records parse for all three. Individual reports remain inside the respective projects. Some legacy records still require user status clarification before adaptation; no calendar or task state was changed. Main tests: 196 passed.
+Last agent: Codex
+Last completed task: TASK-ai-dev-architecture-20261002-001.
+Architecture corrections installed and verified. All remaining 66 active
+projects inspected with exact-path batch confirmation. Task records pass;
+41 project-context gaps are recorded as a future idea. Guarded live planning
+reconciled 11 task schedules without changing Calendar, deadlines or statuses.
+Reports: docs/audits/2026-10-02-all-project-compatibility.md and
+docs/audits/2026-10-02-refactoring-assessment.md.
+Session review: ai/session-reviews/2026-10-02-architecture-corrections-closure.md
+Local changes are on codex/architecture-corrections-2026-10-02; no push or merge
+is recorded. Follow-up needs project-specific facts, not assumed code refactors.
