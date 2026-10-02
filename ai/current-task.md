@@ -24,6 +24,6 @@ What changed: TASK-ai-dev-architecture-20261001-002 закрыта 2026-10-01 �
 самообучение (PR #19, ещё не слит).
 Session review: `ai/session-reviews/2026-10-01-architecture-audit-closure.md`.
 
-Open risks: PR #19 открыт, рабочий хаб ещё не обновлён — FT-20261001-003.
+Open risks: нет. PR #19 слит, хаб обновлён 2026-10-02.
 
-Next agent should check: FT-20261001-003.
+Next agent should check: открытых задач архитектуры нет.
