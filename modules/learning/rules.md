@@ -20,6 +20,23 @@ These workflows remain independent of `hub-session-review`: a session review
 supplies improvement proposals but never automatically changes a rule or
 consumes a pending observation.
 
+## Open review proposals
+
+The weekly review may read, across active registered projects, only the
+`## Improvement proposals` sections of `ai/session-reviews/*.md`, through
+`python3 scripts/review_proposals.py --hub <hub> list --until <date>`. This
+is the only cross-project read of session reviews; findings, evidence and
+other review text stay project-scoped.
+
+Show each open proposal (project, review, ID, change, age) and ask the user to
+accept, reject or skip it. Record the answer with
+`python3 scripts/review_proposals.py --hub <hub> set --project <id> --review <path> --proposal <ID> --decision <accepted|rejected>`;
+the script rewrites only that proposal's `Disposition:` line. An accepted
+proposal also gets a future-task entry in that project's `ai/future-tasks.md`
+(the personal-assistant task-record write scope), unless an entry for the same
+review and proposal already exists. Skipping changes nothing. When the work for
+an accepted proposal is done in its project, set `--decision implemented`.
+
 ## before-task-close
 
 When `hub-task-finish` fires `before-task-close` after the Done criteria pass,
