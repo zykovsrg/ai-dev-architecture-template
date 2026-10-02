@@ -17,13 +17,18 @@ Define during task intake.
 
 ## Agent handoff
 
-Last agent: Claude (Opus 5.5)
+Last agent: Codex
 
-What changed: TASK-ai-dev-architecture-20261001-002 закрыта 2026-10-01 —
-аудит, синхронизация исходников с хабом (PR #17), чистка (PR #18),
-самообучение (PR #19, ещё не слит).
-Session review: `ai/session-reviews/2026-10-01-architecture-audit-closure.md`.
+What changed: calendar-first day-planning update completed 2026-10-02. Three
+sections: current calendar, synchronization, overdue tasks (last). Task times
+sync before composition; deadlines and completion stay user-controlled.
+Installed Hub matches the source, its registry and format checks passed, and
+the Calendar bridge was rebuilt successfully. No scheduled planning automation.
+No task ID was recorded for this work; do not invent one retrospectively.
+Session review: ai/session-reviews/2026-10-02-calendar-first-day-plan-closure.md
 
-Open risks: нет. PR #19 слит, хаб обновлён 2026-10-02.
+Open risks: none identified within the requested change. A full subsequent live
+day-planning dialogue was not exercised as a test.
 
-Next agent should check: открытых задач архитектуры нет.
+Next agent should check: no active architecture task; use the new installed
+three-section planning workflow on the next day-plan request.

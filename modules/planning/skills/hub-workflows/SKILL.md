@@ -67,7 +67,9 @@ Use the personal-assistant contract in `hub-task-overview` (scope, inputs, propo
    the project or named project set and repeat every project ID and exact
    registered path. Read only the smallest required canonical `ai/` records and
    explicitly selected knowledge paths; never widen scope silently.
-5. **Perform semantic analysis.** The AI agent extracts meaning, classifies and
+5. **Perform semantic analysis.** For `day-plan`, first synchronize from the
+   complete fresh calendar response and reload changed canonical task records,
+   as required by `resources/day-plan.md`. Then The AI agent extracts meaning, classifies and
    ranks work, and renders the selected scenario contract. Bash may validate
    paths, flags, and structured field syntax only. Ground output in the selected
    source or permitted canonical records and label inference.

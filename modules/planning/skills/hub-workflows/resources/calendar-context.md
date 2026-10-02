@@ -61,12 +61,11 @@ reported completion. An ordinary event date is not necessarily a deadline.
 Unknown effort or capacity stays unknown; do not infer publication output from
 SEO calendar blocks alone.
 
-Under `## Рекомендации`, give up to three grounded suggestions:
-action for today — reason — exact task/event title and supporting date.
-Use the past 30 days and next 14 days. For example, bring SEO preparation
-forward when a verified publication deadline and remaining work justify it.
-Separate facts from hypotheses and estimates. If evidence is missing, state
-what is unavailable; if no useful advice is grounded, write
-`- Нет обоснованных рекомендаций.`
-Accepted advice is applied through the normal task/calendar write flow;
-recommendations alone change neither project records nor calendar events.
+For joint planning, use the past 30 days and next 14 days to assess today's
+work against verified deadlines and remaining canonical actions. Keep this
+analysis internal until a user planning decision needs it; there is no separate
+recommendation section. State uncertainty and cite supporting task/event dates
+when discussing a decision. Missing context is a limitation under
+`## Синхронизация`, never evidence of free time or completed work.
+Accepted user decisions follow the normal task/calendar write flow; analysis
+alone changes neither project records nor calendar events.

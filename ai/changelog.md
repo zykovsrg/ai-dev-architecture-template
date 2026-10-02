@@ -14,6 +14,25 @@
 
 ## Текущий changelog
 
+### 2026-10-02 — Calendar-first day plan, three sections
+
+- Closure: completed by user request; session review found no issue within the
+  selected implementation span. No historical task ID is fabricated.
+- Session review: ai/session-reviews/2026-10-02-calendar-first-day-plan-closure.md.
+
+- Change: synchronize linked task times before composing, reload canonical state,
+  and verify affected records after joint edits. Calendar is authoritative for
+  time; deadlines and completion remain user decisions.
+- Output: current calendar, synchronization, overdue tasks (last). Removed
+  task-outside-calendar and recommendation sections; analysis still uses learned
+  rules, numeric goals and guarded calendar context.
+- Validation: output acceptance/rejection tests, 8 scenario tests, 20 Calendar
+  task-sync tests, consistency and strict module-boundary checks pass.
+- Deployment: applied the reviewed 8-file Hub update; installed format and
+  registry checks pass (73 projects). Calendar bridge rebuilt with a writable
+  temporary compiler cache after its default cache was denied by the sandbox.
+
+
 ### 2026-10-02 — PR #19 слит, хаб обновлён (FT-20261001-003)
 
 - PR #19 слит после зелёного CI и двух исправлений по ревью Codex.
