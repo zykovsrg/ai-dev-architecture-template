@@ -43,7 +43,8 @@ only the items that `after-project-create` subscribers add
 Provisioning below. It must not create code, dependencies, services, duplicate
 registry entries, or any other project files. Use
 `hub-project-register` for an existing folder; it does not replace the new-project
-creation flow.
+creation flow. Registration also checks memory readiness and creates only
+missing minimal memory files; existing data and instructions remain intact.
 
 ## Existing Project Migration
 

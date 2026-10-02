@@ -23,7 +23,7 @@ class RulesSplitTests(unittest.TestCase):
         self.assertEqual(sorted(headings & MODULE_HEADINGS), [])
 
     def test_core_version_is_2(self):
-        self.assertIn("Version: 2.0", ARCH.read_text(encoding="utf-8"))
+        self.assertRegex(ARCH.read_text(encoding="utf-8"), r"(?m)^Version: 2\.\d+$")
 
     def test_each_module_rules_file_exists_and_installs(self):
         passports = load_passports(ROOT)

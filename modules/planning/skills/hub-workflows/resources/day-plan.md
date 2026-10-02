@@ -108,6 +108,7 @@ delay synchronization until after composing the plan:
 - `both_moved` → use Calendar only when the linked event and its occurrence
   are unambiguous; otherwise ask one question and make no mutation.
 - `event_missing` → a question; no proposal.
+- `event_ambiguous` → ask which occurrence belongs to the task; no proposal.
 - `closed_with_future_event` → delete preview plus a task diff removing the
   `Событие:` line.
 - `unlinked` → task diff adding the `Событие:` line.
@@ -151,3 +152,8 @@ Before sending the result, pass the complete draft on stdin to
 `scripts/validate-day-plan-output.py`. Send only after it exits successfully;
 otherwise rewrite and validate again. Cache failures do not change the required
 three-section format.
+
+Linked events are matched by calendar ID and event ID. A recurring series
+requires one exact synchronized occurrence; ambiguity never authorizes a
+schedule change. Unlinked matches require the exact project and task title,
+a unique task and non-recurring event, and no existing owner of that event.

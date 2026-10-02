@@ -57,6 +57,7 @@ class EventRef(BaseModel):
     end: datetime
     timezone: str
     all_day: bool = False
+    recurring: bool = False
 
     @model_validator(mode="after")
     def validate_times(self) -> "EventRef":

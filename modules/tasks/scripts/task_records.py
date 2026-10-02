@@ -5,7 +5,7 @@ import argparse
 import json
 import re
 import sys
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 DUE_RE = re.compile(r"\s*(?:Due|due):\s*(.*?)\s*")
@@ -13,12 +13,28 @@ SCHEDULED_RE = re.compile(r"Запланировано: (\d{4}-\d{2}-\d{2}) (\d{
 LINK_RE = re.compile(r"Событие: ([^/\s]+)/(\S+) · синхронизировано: (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})-(\d{2}:\d{2})\s*")
 
 
+def _validated_span(day, start, end):
+    try:
+        first = datetime.strptime(f"{day} {start}", "%Y-%m-%d %H:%M")
+        last = datetime.strptime(f"{day} {end}", "%Y-%m-%d %H:%M")
+    except ValueError as error:
+        raise ValueError("invalid_schedule") from error
+    if last <= first:
+        raise ValueError("invalid_schedule_range")
+    return (f"{day} {start}", f"{day} {end}")
+
+
 def parse_scheduled(line):
     match = SCHEDULED_RE.fullmatch(line)
     if not match:
+        all_day = re.fullmatch(r"Запланировано: (\d{4}-\d{2}-\d{2}) \(весь день\)\.?\s*", line)
+        if all_day:
+            date.fromisoformat(all_day.group(1))
+            return None
+        if line.startswith("Запланировано:"):
+            raise ValueError("invalid_schedule")
         return None
-    day, start, end = match.groups()
-    return (f"{day} {start}", f"{day} {end}")
+    return _validated_span(*match.groups())
 
 
 def parse_event_link(line):
@@ -28,6 +44,7 @@ def parse_event_link(line):
     if not match:
         raise ValueError("invalid_event_link")
     calendar_id, event_id, day, start, end = match.groups()
+    _validated_span(day, start, end)
     return {"calendar_id": calendar_id, "event_id": event_id,
             "synced_start": f"{day} {start}", "synced_end": f"{day} {end}"}
 

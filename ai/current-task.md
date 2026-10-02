@@ -1,34 +1,36 @@
 # Current Task
 
-Status: empty
-Stage: intake
+Task ID: TASK-ai-dev-architecture-20261002-001
+Status: active
+Stage: review
 
 ## Goal
 
-No active task.
+Implement the approved architecture corrections and project-readiness workflow; validate and update the installed Hub.
 
-## Relevant files
+## Scope
 
-None yet.
+Review architecture source, tests, and project integration contracts. Do not read other projects without separate routing confirmation. User approved the recommended corrections and Hub update on 2026-10-02. Other projects remain outside confirmed scope.
 
 ## Done criteria
 
-Define during task intake.
+Calendar matching and schedule regressions pass; architecture checks pass; installed managed files match corrected source. Preserve other projects and report any verification limitations.
+
+## Relevant files
+
+- modules/
+- scripts/
+- tests/
+- docs/audits/2026-10-02-refactoring-assessment.md
 
 ## Agent handoff
 
-Last agent: Codex
+Audit requested on 2026-10-02. Prior current task was empty. No schedule was requested.
 
-What changed: calendar-first day-planning update completed 2026-10-02. Three
-sections: current calendar, synchronization, overdue tasks (last). Task times
-sync before composition; deadlines and completion stay user-controlled.
-Installed Hub matches the source, its registry and format checks passed, and
-the Calendar bridge was rebuilt successfully. No scheduled planning automation.
-No task ID was recorded for this work; do not invent one retrospectively.
-Session review: ai/session-reviews/2026-10-02-calendar-first-day-plan-closure.md
+## Audit result
 
-Open risks: none identified within the requested change. A full subsequent live
-day-planning dialogue was not exercised as a test.
+Assessment saved in docs/audits/2026-10-02-refactoring-assessment.md. Source review and selected checks completed; 189/190 main tests pass, with one stale version assertion. Calendar matching and schedule validation defects reproduced on synthetic data. No implementation changes made. Connected-project inspection remains outside confirmed scope; recommendations are conditional. Proposed fixes and workflow refactoring are deferred pending a user implementation request, not silently discarded.
 
-Next agent should check: no active architecture task; use the new installed
-three-section planning workflow on the next day-plan request.
+## Implementation result
+
+User-approved corrections implemented and installed on 2026-10-02. Full architecture --all checks passed: 194 main unit tests, 15 Obsidian and 16 planning unit tests, additional script and integration checks. Calendar policy: 94 tests passed. Bridge rebuilt successfully. Installed managed files match source. No other project or live calendar data was inspected or changed. Live dialogue verification and per-project compatibility review remain outside this completed implementation scope. Task context retained for user-requested closure.

@@ -468,3 +468,9 @@
   Session review: `ai/session-reviews/2026-09-10-refactor-closure.md`.
 - Corrected omitted memory capture after an erroneous refusal to close because
   the current-task template was empty. No task ID was invented.
+
+
+## 2026-10-02 — Approved architecture corrections
+
+Task: TASK-ai-dev-architecture-20261002-001.
+Corrected calendar/task identity and recurring-instance matching, preserved recurrence in the calendar bridge, validated schedule dates and ranges, and preserved legacy all-day records. Consolidated write policy, added project-memory readiness instructions, and enabled separately confirmed cleanup for registered projects. Full architecture checks and 94 calendar-policy tests passed. Installed Hub matches source; bridge rebuilt. Other projects and live calendar data remain unverified. Detailed result: docs/audits/2026-10-02-refactoring-assessment.md.

@@ -220,3 +220,12 @@ def test_the_exclusive_end_is_what_reaches_the_bridge(tmp_path: Path) -> None:
     # The policy layer never pre-converts; the bridge owns the EventKit rule.
     assert payload is not None
     assert datetime.fromisoformat(str(payload["end"])) == NEXT_DAY
+
+
+def test_event_ref_preserves_recurrence_from_bridge() -> None:
+    event = EventRef.model_validate({
+        "id": "series", "calendar_id": "calendar", "title": TITLE,
+        "start": START.isoformat(), "end": END.isoformat(),
+        "timezone": "Europe/Moscow", "recurring": True,
+    })
+    assert event.model_dump(mode="json")["recurring"] is True

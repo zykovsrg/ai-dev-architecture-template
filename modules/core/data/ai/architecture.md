@@ -90,11 +90,11 @@ The agent may update only what the current mode permits:
 - During routing, it may not modify project files or project memory.
 - `ai/active-project.md` may be updated only after explicit confirmation and
   only as a non-secret selection record.
-- Registry entries, cards, and allowed roots require explicit user approval;
-  architecture/entry-rule changes also require the documented architecture
-  update procedure.
+- Registry entries and cards follow the confirmed registration workflow.
+  Allowed roots cannot be broadened by a write. Architecture/entry-rule changes
+  follow the documented preview, validation, and update procedure.
 - Selected project memory follows the selected project's own update workflow.
-- Cross-project signals require explicit user approval, a source project
+- Cross-project signals require an explicitly scoped user request, a source project
   reference, a confidence label, and sanitized content.
 
 Never turn an inference into durable memory without identifying it as an
@@ -109,7 +109,8 @@ must not scan, rewrite, install dependencies in, or otherwise modify projects
 there without their separate confirmation.
 
 An architecture update must be reviewed before applying: show the changed hub
-rules, affected files, and token impact; then obtain explicit approval. Preserve
+rules, affected files, and token impact; apply within the authorized request
+under Write Confirmation Policy. Deletions still require explicit approval. Preserve
 local registry data and cards during template updates. Do not silently replace
 local routing records, project instructions, or project memory. The allowed
 root remains exactly `<hub>/projects`; reject a missing, duplicate, external,

@@ -134,6 +134,7 @@ func describe(_ event: EKEvent) -> [String: Any] {
         "end": isoText(event.isAllDay ? (exclusiveEnd(event.endDate) ?? event.endDate) : event.endDate, timezone: eventZone),
         "timezone": eventZone.identifier,
         "all_day": event.isAllDay,
+        "recurring": event.hasRecurrenceRules,
     ]
 }
 

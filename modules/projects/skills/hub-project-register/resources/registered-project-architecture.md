@@ -8,5 +8,6 @@ Hub at `../../..`:
 
 Keep project-specific facts in `project-context.md` and project-specific
 invariants in `decisions.md`. This file must not duplicate shared hub rules.
-If the project is moved outside that hub, replace this file with an explicit
-standalone architecture; never guess a different hub location.
+If the project is moved outside this hub, this pointer is no longer valid.
+Return through Hub routing and confirm a registered location; never guess
+another hub or restore the retired standalone architecture.

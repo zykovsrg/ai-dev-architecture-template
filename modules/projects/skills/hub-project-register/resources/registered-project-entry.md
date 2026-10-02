@@ -12,5 +12,6 @@ constraints in `ai/project-context.md` and durable project decisions in
 `ai/paused-tasks.md`, and `ai/future-tasks.md` remain canonical for this
 project.
 
-If the project is moved outside that hub, replace this compatibility entry with
-an explicit standalone setup; never guess a different hub location.
+If the project is moved outside this hub, this pointer is no longer valid.
+Return through Hub routing and confirm a registered location; never guess
+another hub or restore the retired standalone architecture.
