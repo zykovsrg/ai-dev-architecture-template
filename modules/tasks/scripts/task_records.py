@@ -9,7 +9,7 @@ from datetime import date, datetime
 from pathlib import Path
 
 DUE_RE = re.compile(r"\s*(?:Due|due):\s*(.*?)\s*")
-SCHEDULED_RE = re.compile(r"Запланировано: (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})[-–](\d{2}:\d{2})(?: \([^)]*\))?\.?\s*")
+SCHEDULED_RE = re.compile(r"Запланировано: (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})[-–](\d{2}:\d{2})(?: \([^)]*\))?(?:\.|, .+)?\s*")
 LINK_RE = re.compile(r"Событие: ([^/\s]+)/(\S+) · синхронизировано: (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})-(\d{2}:\d{2})\s*")
 
 
@@ -30,6 +30,10 @@ def parse_scheduled(line):
         all_day = re.fullmatch(r"Запланировано: (\d{4}-\d{2}-\d{2}) \(весь день\)\.?\s*", line)
         if all_day:
             date.fromisoformat(all_day.group(1))
+            return None
+        start_only = re.fullmatch(r"Запланировано: (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})(?: \([^)]*\))?(?:\.|, .+)?\s*", line)
+        if start_only:
+            datetime.strptime(" ".join(start_only.groups()), "%Y-%m-%d %H:%M")
             return None
         if line.startswith("Запланировано:"):
             raise ValueError("invalid_schedule")

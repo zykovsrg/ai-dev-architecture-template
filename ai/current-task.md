@@ -34,3 +34,7 @@ Assessment saved in docs/audits/2026-10-02-refactoring-assessment.md. Source rev
 ## Implementation result
 
 User-approved corrections implemented and installed on 2026-10-02. Full architecture --all checks passed: 194 main unit tests, 15 Obsidian and 16 planning unit tests, additional script and integration checks. Calendar policy: 94 tests passed. Bridge rebuilt successfully. Installed managed files match source. No other project or live calendar data was inspected or changed. Live dialogue verification and per-project compatibility review remain outside this completed implementation scope. Task context retained for user-requested closure.
+
+## Compatibility follow-up
+
+User separately confirmed rolling-audio-recorder, promo-pages and rutina-i-byt exact registered paths. Minimal integration inspection completed. Legacy parser compatibility corrected and deployed; canonical task records parse for all three. Individual reports remain inside the respective projects. Some legacy records still require user status clarification before adaptation; no calendar or task state was changed. Main tests: 196 passed.

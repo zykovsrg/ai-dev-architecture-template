@@ -474,3 +474,8 @@
 
 Task: TASK-ai-dev-architecture-20261002-001.
 Corrected calendar/task identity and recurring-instance matching, preserved recurrence in the calendar bridge, validated schedule dates and ranges, and preserved legacy all-day records. Consolidated write policy, added project-memory readiness instructions, and enabled separately confirmed cleanup for registered projects. Full architecture checks and 94 calendar-policy tests passed. Installed Hub matches source; bridge rebuilt. Other projects and live calendar data remain unverified. Detailed result: docs/audits/2026-10-02-refactoring-assessment.md.
+
+
+## 2026-10-02 — Preserve legacy schedule compatibility
+
+Confirmed project-compatibility inspection exposed trailing comments and start-only schedules rejected by the new strict parser. Added regression coverage and preserved both existing forms while still validating real dates/times; no end time is invented. 196 main unit tests, 29 calendar-sync tests and 5 sync-field tests passed. Corrected parser installed in Hub. Individual compatibility findings remain in each confirmed project's ai/hub-compatibility-2026-10-02.md, without copying task details here.
