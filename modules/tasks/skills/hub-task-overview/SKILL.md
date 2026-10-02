@@ -90,7 +90,14 @@ enters the main actionable ranking. A waiting follow-up is due when its
 structured `follow_up` equals the requested date and overdue when earlier.
 Missing waiting fields are risks, not inferred values.
 
-Every successful non-personal workflow output starts with:
+The default guided `evening-review` is an exception to the report prefixes
+below: its first reply starts with tomorrow's urgent Calendar list, followed
+by one project-task question; later replies report actual writes and ask the
+next project-task question. Do not prepend a read-only/no-changes claim to
+those replies. The exact conversational contract lives in the planning skill's
+`resources/evening-review.md`; scope and write boundaries here still apply.
+
+Every other successful non-personal workflow output starts with:
 
 ```text
 Read-only workflow: no changes were made.

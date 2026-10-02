@@ -21,6 +21,7 @@ the calendar snapshot.
 - modules/planning/scripts/calendar-context.py -> scripts/calendar-context.py
 - modules/planning/scripts/calendar_task_sync.py -> scripts/calendar_task_sync.py
 - modules/planning/scripts/calendar_drift.py -> scripts/calendar_drift.py
+- modules/planning/scripts/evening_review.py -> scripts/evening_review.py
 - modules/planning/scripts/validate-day-plan-output.py -> scripts/validate-day-plan-output.py
 - modules/planning/rules.md -> ai/rules/planning.md
 

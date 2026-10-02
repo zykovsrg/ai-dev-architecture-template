@@ -1,5 +1,18 @@
 # Decisions
 
+### 2026-10-03 — Guided evening review
+
+Status: active
+
+Decision: Show tomorrow's exact `Важно и срочно` Calendar events first.
+Then review today's events with active registered projects one at a time,
+one question per reply. Skip unmatched routines without questions and consume
+repeated blocks of answered tasks. Apply user-stated outcomes immediately;
+explicit corrections of projectless Calendar events remain permitted.
+Use a read-only selection helper; do not create a persistent review queue.
+
+Source: explicit user request and design approval in this conversation.
+
 ### 2026-10-02 — Calendar-first day planning
 
 Status: active

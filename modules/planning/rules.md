@@ -52,6 +52,15 @@ failure must be reported without undoing the already applied calendar change.
 
 ## Plans and reviews
 
+Evening review defaults to a guided conversation: first display tomorrow's
+events from the exact allowed calendar `Важно и срочно`, then ask one question
+per turn about today's events with an unambiguous active registered project.
+Skip events without projects silently. Repeated blocks of an answered task
+are consumed together; distinct tasks in one project remain separate.
+`scripts/evening_review.py` prepares the read-only urgent list and event queue.
+The scenario's old full-report headings apply only when explicitly requested.
+Explicit user corrections to projectless Calendar events remain authorized.
+
 Use the hub-owned `hub-workflows` skill for `day-plan`, `evening-review`, and
 `weekly-review`, and `hub-task-overview` for `capture`. The skill performs semantic AI analysis, while
 the optional Bash adapter only validates mechanical scope, paths, and recorder

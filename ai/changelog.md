@@ -14,6 +14,16 @@
 
 ## Текущий changelog
 
+### 2026-10-03 — Guided evening review installed
+
+- Change: urgent-first review conversation and installed read-only selector.
+- Impact: projectless events skip without questions; outcomes are asked one
+  event at a time; repeated blocks of a covered task are not asked again.
+- Validation: 26 planning tests, 197 main tests, module boundary checks,
+  optional module removal and installation smoke pass. Guarded live input
+  verifies the installed helper. Four managed Hub files installed; no test
+  changed Calendar events.
+
 ### 2026-10-02 — Calendar-first day plan, three sections
 
 - Closure: completed by user request; session review found no issue within the

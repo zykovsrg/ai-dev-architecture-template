@@ -1,19 +1,35 @@
 # Current Task
 
-Status: empty
-Stage: intake
+Status: review
+Stage: review
+Task ID: TASK-ai-dev-architecture-20261003-001
 
 ## Goal
 
-No active task.
+Make evening review urgent-first and conversational, asking only about events
+with active registered projects, one at a time.
 
 ## Relevant files
 
-None yet.
+modules/planning/scripts/evening_review.py and its tests;
+modules/planning/skills/hub-workflows/resources/evening-review.md;
+modules/planning/rules.md and module.md.
 
 ## Done criteria
 
-Define during task intake.
+Selection and dialogue contracts verified; applicable architecture checks pass;
+updated helper and skill deployed to the installed Hub with a read-only smoke test.
+
+## Verification
+
+Implementation installed in the Hub on 2026-10-03. Planning: 26 tests pass
+(10 new selection/CLI tests). Architecture main suite: 197 pass; module
+boundaries pass. Installation smoke passed with TMPDIR=/private/tmp after the
+default macOS temporary path was rejected as a symlink. Optional module
+removal checks rerun after final skill changes: 3 pass.
+Guarded live input for review day 2026-10-02: full coverage, 9 eligible events,
+10 skipped; first is the Tuychieva meeting. No Calendar changes during tests.
+Installed managed-file preview has no pending changes.
 
 ## Agent handoff
 
