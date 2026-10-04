@@ -23,6 +23,10 @@
   optional module removal and installation smoke pass. Guarded live input
   verifies the installed helper. Four managed Hub files installed; no test
   changed Calendar events.
+- Closure 2026-10-04: TASK-ai-dev-architecture-20261003-001 closed by user
+  request; task records pass. Session review:
+  ai/session-reviews/2026-10-04-guided-evening-review-closure.md
+  (insufficient-evidence, implementation session not visible).
 
 ### 2026-10-02 — Calendar-first day plan, three sections
 
