@@ -33,6 +33,10 @@ This is a multi-project Hub. The registry defines which projects exist and where
 ## Output
 
 - Default to short, direct answers in very simple Russian.
+- One sentence carries one idea; keep sentences to about 20 words.
+- Use the active voice: say who did what.
+- Write steps for the user in the imperative mood.
+- Use one word for one concept; do not swap a term for synonyms.
 - Explain things as if the user is not a developer. Avoid jargon, long technical explanations, and unnecessary implementation details.
 - Give the answer first. Add explanation only when it is needed to act correctly.
 - A normal answer should usually fit in 3–5 short lines.
