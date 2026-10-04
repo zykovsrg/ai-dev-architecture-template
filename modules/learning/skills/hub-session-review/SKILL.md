@@ -1,6 +1,6 @@
 ---
 name: hub-session-review
-description: Review agent behavior for a confirmed project's task closure or an explicitly selected session, save evidence-backed findings, and apply improvements.
+description: On the user's request, review agent behavior in an explicitly selected session of a confirmed project, save evidence-backed findings, and apply improvements.
 ---
 
 # Session Review
@@ -9,9 +9,9 @@ Module rules: `ai/rules/learning.md`.
 
 ## Inputs and authority
 
-Use a confirmed registered project. Trigger is task-close or user-request. At
-closure, use the current task's visible session and recorded outcome. For an
-explicit request, read only the selected session or range; never fetch all
+Use a confirmed registered project. Trigger is user-request only; task
+closure does not run this skill (`hub-session-scan` learns from all sessions). For the
+request, read only the selected session or range; never fetch all
 history. Store reviews only in the selected project's `ai/session-reviews/`.
 This never authorizes writes to another project or to shared rules.
 
@@ -72,8 +72,7 @@ marks the evidence ambiguous or identifies a potentially material risk.
 6. Recommend the smallest useful response. Link an existing task/calendar
    learning observation for the same incident instead of counting it twice.
    Do not propose a rule merely to fill the document.
-7. Reuse a valid review already linked from the task on a closure retry. A new
-   user-requested review or genuinely new evidence may be a labelled supplement.
+7. A new user-requested review or genuinely new evidence may be a labelled supplement.
    Do not repeat a rejected proposal without new evidence.
 8. Fill `resources/review-template.md`, save it atomically in
    `ai/session-reviews/`, and validate it with

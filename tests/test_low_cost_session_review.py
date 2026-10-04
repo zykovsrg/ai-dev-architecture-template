@@ -50,9 +50,8 @@ class LowCostSessionReviewTests(unittest.TestCase):
         self.assertLess(review, cleanup)
         self.assertIn("A subscriber failure leaves the task open and its context intact", finish)
         learning = compact(LEARNING.read_text(encoding="utf-8"))
-        close = learning[learning.index("## before-task-close"):]
-        self.assertIn("run `hub-session-review`", close)
-        self.assertIn("A review-write failure leaves the task open and its context intact", close)
+        self.assertNotIn("## before-task-close", learning)
+        self.assertIn("Task closure does not run a session review", learning)
 
 
 if __name__ == "__main__":
