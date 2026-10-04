@@ -17,6 +17,11 @@ A successful `day-plan` renders these headings in this exact order:
 2. `## Синхронизация`
 3. `## Просроченные задачи`
 
+Only when `learning` is listed in `ai/modules.md`: after the final section,
+run `python3 scripts/session_collect.py --hub <hub> status` and add one plain
+line without a heading: `Разбор сессий: последний — <date or «не было»>; новых: «Клод» <n>, «Кодекс» <m>. Запустить разбор?`
+Starting the scan uses `hub-session-scan`.
+
 Do not add task-outside-calendar or recommendation sections. Overdue tasks are
 always the final section; calendar synchronization does not replace their check.
 Report actual writes truthfully: a cache-only write is not a task write, and a

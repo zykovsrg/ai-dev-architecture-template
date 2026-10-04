@@ -115,6 +115,24 @@ class CollectorTests(unittest.TestCase):
         ids = sorted(s.id for s in self.pending(self.ledger()))
         self.assertNotIn("c-3", ids)
 
+    def test_observations_and_reviews_become_sessions(self):
+        (self.hub / "ai/workflow-observations.md").write_text(
+            "# Журнал\n\n## Записи\n- 2026-10-03 | day-plan | friction | старое\n"
+            "- 2026-10-04 | day-plan | friction | а\n- 2026-10-04 | day-plan | friction | б\n",
+            encoding="utf-8")
+        reviews = self.hub / "projects/demo/ai/session-reviews"
+        reviews.mkdir(parents=True)
+        (reviews / "2026-10-04-x.md").write_text("# Session review\n\n## Findings\n\nF1: агент забыл тест\n\n## Follow-up\n\nnone\n",
+                                                 encoding="utf-8")
+        (reviews / "2026-10-03-old.md").write_text("# Session review\n\n## Findings\n\nF1: старое\n\n## Follow-up\n\nnone\n",
+                                                   encoding="utf-8")
+        ledger = self.ledger()
+        ids = sorted(s.id for s in self.mod.extra_sources(self.hub, ledger))
+        self.assertEqual(ids, ["obs-2", "obs-3", "review-demo-2026-10-04-x"])
+        self.mod.mark_processed(ledger, "claude", ids, "2026-10-04T12:00:00Z")
+        self.assertEqual(self.mod.extra_sources(self.hub, ledger), [])
+        self.assertEqual(self.mod.extra_sources(self.hub, self.ledger(cutover=None)), [])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -13,8 +13,9 @@
 ## Self-Learning Workflows
 
 `ai/workflow-observations.md` is the canonical append-only journal of workflow
-friction and calendar drift. A rule matures at three repeats, or two within one
-week; `retire_rule` is the only way to remove it and needs an explicit yes, because it deletes a rule.
+friction and calendar drift. Rule maturity is computed only by `scripts/session_rules.py` (see
+`## Session learning`). Accepted observations are fed to the next session scan
+as input; removing a catalog rule needs an explicit yes.
 
 `ai/tmp/calendar-snapshots/` and `ai/tmp/workflow-friction/` are non-canonical
 caches, written directly and pruned after 14 days.
@@ -27,9 +28,10 @@ consumes a pending observation.
 
 The weekly review may read, across active registered projects, only the
 `## Improvement proposals` sections of `ai/session-reviews/*.md`, through
-`python3 scripts/review_proposals.py --hub <hub> list --until <date>`. This
-is the only cross-project read of session reviews; findings, evidence and
-other review text stay project-scoped.
+`python3 scripts/review_proposals.py --hub <hub> list --until <date>`. Apart from the
+`## Findings` read by the session scan (see `## Session learning`), this is the
+only cross-project read of session reviews; evidence and other review text stay
+project-scoped.
 
 Show each open proposal (project, review, ID, change, age) and ask the user to
 accept, reject or skip it. Record the answer with
@@ -51,3 +53,15 @@ one. A review-write failure leaves the task open and its context intact.
 Partial history is recorded honestly and does not alone block closure. Do not
 review the review or closure output again here. An improvement suggested by
 the review is applied directly, reported, and is not a closure blocker.
+
+## Session learning
+
+`hub-session-scan` scans new Claude Code and Codex Hub sessions with a cheap
+model (Haiku 4.5 or GPT-6-Luna) and writes cases to `ai/learning/rules.json`.
+`scripts/session_rules.py` alone computes confidence and scope and renders
+`ai/learned-rules.md` and `ai/learned-rules/<project-id>.md`. Each scan also
+passes new entries of `ai/workflow-observations.md` and the `## Findings`
+section of new session reviews in active registered projects to the scanner
+as extra sessions (`obs-<n>`, `review-<project>-<file>`), tracked in the same
+ledger. The weekly review runs the weekly pass. The scan may also read the
+`## Findings` section of session reviews in active registered projects.

@@ -58,6 +58,14 @@ preview and wait for the user's yes.
 This policy does not remove confirmation of which project to open before
 reading it (routing), allowed roots, secret rules, or memory isolation.
 
+### Transcript read exception (learning module)
+
+When `learning` is installed, `hub-session-scan` may read, read-only,
+`~/.claude/projects/*/*.jsonl` and `~/.codex/sessions/**/*.jsonl`, and only
+sessions whose working directory is inside the Hub. It never reads other
+transcripts, never writes there, and stores no transcript text in the Hub.
+This is the only exception to the allowed-root rule.
+
 ## Confirmation And Confidence
 
 Use these confidence labels in router summaries and cross-project signals:

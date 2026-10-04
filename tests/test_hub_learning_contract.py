@@ -54,7 +54,8 @@ class HubLearningContractTests(unittest.TestCase):
         self.assertIsNotNone(match)
         declared = set(match.group(1).split("|"))
         referenced = set(re.findall(r"`(goal_progress|add_observation|promote_rule|retire_rule)`", text))
-        self.assertEqual(referenced, LEARNING_ACTIONS)
+        # promote_rule is no longer referenced: weekly review shows the session-learning report.
+        self.assertEqual(referenced, LEARNING_ACTIONS - {"promote_rule"})
         self.assertTrue(referenced <= declared, referenced - declared)
 
 

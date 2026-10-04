@@ -197,6 +197,35 @@ def pending(hub, ledger, now, claude_root, codex_root, active_minutes=15):
     return out
 
 
+def extra_sources(hub, ledger):
+    """New workflow observations and session-review findings as pseudo-sessions."""
+    cutover = ledger.get("cutover")
+    if not cutover:
+        return []
+    out, done = [], set(ledger["processed"].get("claude", []))
+    journal = hub / "ai/workflow-observations.md"
+    if journal.exists():
+        entries = [l for l in journal.read_text(encoding="utf-8").splitlines() if re.match(r"^- \d{4}-\d{2}-\d{2} \|", l)]
+        for number, line in enumerate(entries, 1):
+            sid = f"obs-{number}"
+            if sid not in done and line[2:12] >= cutover:
+                out.append(Session("claude", sid, str(hub), line[2:12], journal, [("user", line[2:])]))
+    for pid, entry in registry(hub).items():
+        if entry.get("status") != "active":
+            continue
+        for review in sorted(Path(entry["path"], "ai/session-reviews").glob("*.md")):
+            sid = f"review-{pid}-{review.stem}"
+            if sid in done or review.stem[:10] < cutover:
+                continue
+            text = review.read_text(encoding="utf-8")
+            if "## Findings" not in text:
+                continue
+            findings = text.split("## Findings", 1)[1].split("\n## ", 1)[0].strip()
+            if findings and findings != "none":
+                out.append(Session("claude", sid, entry["path"], review.stem[:10], review, [("user", findings)]))
+    return out
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--hub", required=True, type=Path)
@@ -220,7 +249,7 @@ def main(argv=None):
         save_json(hub / LEDGER, ledger)
         print(json.dumps({"cutover": args.cutover}))
         return
-    sessions = pending(hub, ledger, now, args.claude_root, args.codex_root)
+    sessions = pending(hub, ledger, now, args.claude_root, args.codex_root) + extra_sources(hub, ledger)
     if args.cmd == "status":
         counts = {"claude": 0, "codex": 0}
         for s in sessions:

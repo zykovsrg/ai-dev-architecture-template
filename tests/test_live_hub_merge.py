@@ -26,7 +26,7 @@ class LiveHubMergeTests(unittest.TestCase):
     def test_template_workflows_keep_calendar_and_rule_lifecycle(self):
         workflows = source("modules/planning/skills/hub-workflows/SKILL.md")
         calendar = source("modules/calendar/skills/hub-calendar/SKILL.md")
-        self.assertIn("promote_rule", workflows)
+        self.assertIn("session-learning report", workflows)
         self.assertIn("retire_rule", workflows)
         self.assertIn("snapshot-calendar.sh", workflows)
         self.assertIn("after-calendar-change", calendar)

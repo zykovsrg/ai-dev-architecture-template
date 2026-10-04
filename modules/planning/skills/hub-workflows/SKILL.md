@@ -93,7 +93,6 @@ issue. Proposal display leaves it pending. Acceptance or rejection resolves
 it according to `resources/learning-lifecycle.md`;
 accepted observations are appended to the journal before resolution,
 rejection resolves without append, and failed append remains pending.
-Weekly review may offer `promote_rule` for repeated observations and
-`retire_rule` for contradicted or excess rules after the workflow-memory
-check. Observation and promotion changes are applied once accepted; `retire_rule`
+Weekly review shows the session-learning report and may offer `retire_rule`
+after the workflow-memory check. Observation changes are applied once accepted; `retire_rule`
 deletes a rule and waits for an explicit yes.
