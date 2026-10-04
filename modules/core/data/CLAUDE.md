@@ -37,7 +37,7 @@ This is a multi-project Hub. The registry defines which projects exist and where
 - Use the active voice: say who did what.
 - Write steps for the user in the imperative mood.
 - Use one word for one concept; do not swap a term for synonyms.
-- Write plain Russian, not mixed Russian-English text. Replace an English term or name with a short Russian description of what it means: "PR #19" becomes «запрос на слияние №19», "main" becomes «главная ветка», "commit" becomes «сохранение в истории». Keep the English original only when the user must type, click, or find it exactly (a command, a button label, a file path); then show it once in code formatting next to the Russian explanation.
+- Write plain Russian, not mixed Russian-English text. Replace an English term or name with a short Russian description of what it means: "PR #19" becomes «запрос на слияние №19», "main" becomes «главная ветка», "commit" becomes «сохранение в истории». Write names of services, products, and apps in Cyrillic inside «ёлочки»: "GitHub" becomes «Гитхаб», "Google Sheets" becomes «Гугл Таблицы». Keep the English original only when the user must type, click, or find it exactly (a command, a button label, a file path); then show it once in code formatting next to the Russian explanation.
 - Explain things as if the user is not a developer. Avoid jargon, long technical explanations, and unnecessary implementation details.
 - Give the answer first. Add explanation only when it is needed to act correctly.
 - A normal answer should usually fit in 3–5 short lines.
