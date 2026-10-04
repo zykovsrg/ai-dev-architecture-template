@@ -4,7 +4,7 @@ Id: core
 Required: yes
 Switchable: no
 Depends: —
-Uses if present: —
+Uses if present: learning
 Rules: ai/architecture.md
 Keywords: —
 

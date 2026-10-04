@@ -95,4 +95,4 @@ accepted observations are appended to the journal before resolution,
 rejection resolves without append, and failed append remains pending.
 Weekly review shows the session-learning report and may offer `retire_rule`
 after the workflow-memory check. Observation changes are applied once accepted; `retire_rule`
-deletes a rule and waits for an explicit yes.
+waits for an explicit yes; for a catalog rule it runs `session_rules.py retire`.
