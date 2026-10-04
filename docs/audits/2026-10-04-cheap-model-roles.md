@@ -25,8 +25,21 @@ Scratch dirs (git-ignored): `.superpowers/sdd/2026-10-04-session-learning/scratc
 ### Recommended install targets (Codex)
 
 1. Role file `agents/<name>.toml` with `model = "gpt-6-luna"`, `model_reasoning_effort = "low"`, `developer_instructions`.
-2. Registration `[agents.<name>]` with `description` and `config_file` in a Codex config that is actually loaded. Proven path: user-level `~/.codex/config.toml` (supports the same `agents.*` keys, shown via `-c`). Project-level `.codex/config.toml` is unproven here; relative `config_file` resolution was not tested (absolute path was used).
+2. Registration `[agents.<name>]` with `description` and `config_file` in a Codex config that is actually loaded. Expected but UNVERIFIED: registering in a config file (user-level `~/.codex/config.toml` or project-level `.codex/config.toml`). Only per-run `-c agents.probe.*` overrides were tested; no config file was ever shown to work, project-level discovery failed, and relative `config_file` resolution was not tested (absolute path used).
 3. Fallback (per brief): if the role cannot be registered, run the scan in the current Codex model with `model_reasoning_effort = "low"`. Direct `-m gpt-6-luna` works for non-interactive `codex exec` runs.
+
+## Decision for Task 5 (controller ruling)
+
+The Codex scan does NOT rely on agent-role registration. The skill runs the scanner as a subprocess:
+
+`<codex binary> exec -m gpt-6-luna -c model_reasoning_effort=low -s read-only --skip-git-repo-check -o <out-file> "<prompt incl. role instructions read from a file>" </dev/null`
+
+- Consolidator: same, with `-m gpt-6.1-sol`.
+- Flags (from `codex exec --help`): `-m, --model <MODEL>`; `-c, --config <key=value>`; `-s, --sandbox <SANDBOX_MODE>` [possible values: read-only, workspace-write, danger-full-access]; `-o, --output-last-message <FILE>` ("Specifies file where the last message from the agent should be written"); `-C, --cd <DIR>`; `--skip-git-repo-check`; `--ephemeral` (no session files; do not use if rollout confirmation is wanted).
+- Verified once: this exact shape wrote `ok` to the `-o` file and the rollout turn_context showed `gpt-6-luna`, effort `low`.
+- Binary discovery: `codex` on PATH, then `/Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex`.
+- Model confirmation: rollout `turn_context`, not self-report. No edits to `~/.codex`.
+- Claude stays `.claude/agents/<name>.md` with `model: haiku` / `model: opus`.
 
 ## Open risks
 
