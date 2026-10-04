@@ -28,10 +28,14 @@ because the urgent list was shown. A user request to discuss it takes priority.
 Use the compact task index for discovery and only canonical task files for
 richer task facts, under the `hub-task-overview` personal-assistant boundary.
 Prepare inputs with `scripts/evening_review.py --hub <hub> --day <D>`; pipe a
-JSON object with `metadata`, `today`, and `tomorrow` guarded responses on stdin.
-The helper validates active registered roots and reads only the three canonical
-task files. It returns urgent events, a chronological project-event queue,
-coverage flags and review keys. It performs no writes. Its output is selection
+JSON object with `metadata`, `today`, `tomorrow` guarded responses and
+`sync_window` on stdin. `sync_window` is `{start, end, response}`: the guarded
+`read_events` response for a window covering [D-30, D+31). On the first run
+(no `consumed` keys) the helper refuses to start without it, so the sync check
+cannot be skipped. The helper validates active registered roots and reads only
+the three canonical task files. It returns urgent events, a chronological
+project-event queue, coverage flags, review keys and `sync` (`complete` with
+discrepancy items, or `incomplete` with no items). It performs no writes. Its output is selection
 evidence, not proof of completion. Report discovery warnings from the compact
 index. On a helper failure, state the failure and use only independently
 verified input; never invent an empty queue.
@@ -91,9 +95,11 @@ Each grounded issue may yield one `add_observation` proposal; display leaves it
 pending. Acceptance, rejection, journal ordering and append failure follow
 `resources/learning-lifecycle.md`. Ask at most one learning question per turn.
 
-Run the same sync check as `resources/day-plan.md` Sync section with a complete
-fresh [D-30,D+31) Calendar window. Apply unambiguous task-time changes directly
-and report actual writes briefly. Ambiguous/missing occurrences remain questions;
+The sync check is the helper's `sync` result; handle its items as in the
+`resources/day-plan.md` Sync section, before the first project question. Apply
+unambiguous task-time changes directly and report actual writes briefly; with
+`sync.status: incomplete`, say sync was skipped because coverage was partial.
+The final report always states the sync result in one line. Ambiguous/missing occurrences remain questions;
 do not replace a project-outcome question with a batch of sync questions.
 Never change Due or status merely because Calendar changed.
 

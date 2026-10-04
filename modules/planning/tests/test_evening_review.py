@@ -97,7 +97,12 @@ class EveningReviewTests(unittest.TestCase):
 
     def test_cli_reads_discovered_canonical_record_and_reports_heading_warning(self):
         with tempfile.TemporaryDirectory() as directory:
-            hub = Path(directory)
+            hub = Path(directory) / 'hub'
+            hub.mkdir()
+            # The sync step loads sibling task scripts, so run the staged (installed-layout) copy.
+            stage = Path(directory) / 'stage'
+            subprocess.run(['bash', str(SCRIPT.parents[1] / 'tests/stage-scripts.sh'), str(stage)], check=True)
+            script = stage / 'evening_review.py'
             (hub / 'ai').mkdir()
             project = hub / 'projects/p'
             (project / 'ai').mkdir(parents=True)
@@ -105,15 +110,16 @@ class EveningReviewTests(unittest.TestCase):
             (project / 'ai/current-task.md').write_text('Status: empty\n')
             (project / 'ai/future-tasks.md').write_text('### TASK-p-20261002-001 — текст\nStatus: ready\n\n### Legacy task\n')
             (project / 'ai/paused-tasks.md').write_text('# Paused Tasks\n')
-            payload = dict(metadata=self.meta,today=response([event('дела/p/текст')]),tomorrow=response([]))
-            result = subprocess.run([sys.executable,str(SCRIPT),'--hub',str(hub),'--day','2026-10-02'],
+            payload = dict(metadata=self.meta,today=response([event('дела/p/текст')]),tomorrow=response([]),
+                           sync_window=dict(start='2026-09-02T00:00:00+03:00',end='2026-11-02T00:00:00+03:00',response=response([])))
+            result = subprocess.run([sys.executable,str(script),'--hub',str(hub),'--day','2026-10-02'],
                                     input=json.dumps(payload),text=True,capture_output=True)
             self.assertEqual(result.returncode,0,result.stderr)
             self.assertEqual(json.loads(result.stdout)['queue'][0]['task_id'],'TASK-p-20261002-001')
             self.assertIn('WARNING: unrecognized task heading skipped', result.stderr)
             # Registered paths outside the one allowed projects root fail closed.
             (hub / 'ai/project-registry.md').write_text(f'## p\nStatus: active\nPath: {hub}\n')
-            result = subprocess.run([sys.executable,str(SCRIPT),'--hub',str(hub),'--day','2026-10-02'],
+            result = subprocess.run([sys.executable,str(script),'--hub',str(hub),'--day','2026-10-02'],
                                     input=json.dumps(payload),text=True,capture_output=True)
             self.assertEqual(result.returncode,2)
             self.assertEqual(result.stdout,'')

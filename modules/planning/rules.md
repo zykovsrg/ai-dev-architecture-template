@@ -57,7 +57,8 @@ events from the exact allowed calendar `Важно и срочно`, then ask on
 per turn about today's events with an unambiguous active registered project.
 Skip events without projects silently. Repeated blocks of an answered task
 are consumed together; distinct tasks in one project remain separate.
-`scripts/evening_review.py` prepares the read-only urgent list and event queue.
+`scripts/evening_review.py` prepares the read-only urgent list, event queue and
+the mandatory [D-30, D+31) sync check; its first run fails without that window.
 The scenario's old full-report headings apply only when explicitly requested.
 Explicit user corrections to projectless Calendar events remain authorized.
 

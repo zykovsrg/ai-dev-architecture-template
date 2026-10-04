@@ -205,12 +205,18 @@ async def test_recurring_scope_is_explicit_and_preserved(server: GuardedCalendar
         action="delete", calendar_id="calendar-1", event_id="event-1",
         recurring=True, recurrence_scope=scope, occurrence_start=event.start,
     )
+    if scope == "future":
+        # A delete removes one event only: deleting a whole series is forbidden.
+        with pytest.raises(PolicyError, match="SERIES_DELETE_FORBIDDEN"):
+            await server.preview_change(request)
+        return
     preview = await server.preview_change(request)
     assert preview["recurrence_scope"] == scope
     assert preview["occurrence_start"] == event.start.isoformat()
     await server.apply_change(preview["preview_id"], request)
     assert backend.writes == [("delete", "event-1", scope)]
-    assert backend.lookups == [("event-1", event.start), ("event-1", event.start)]
+    # preview lookup, apply lookup, and the post-delete confirmation lookup
+    assert backend.lookups == [("event-1", event.start)] * 3
 
 
 @pytest.mark.asyncio

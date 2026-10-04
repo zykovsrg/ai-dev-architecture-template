@@ -52,6 +52,14 @@ past or future. For a recurring event require exactly `this` or `future` scope a
 start of the occurrence being changed. Every occurrence of a series shares
 one identifier, so without that date the change would hit the series.
 
+A delete always removes one single event, never a series: for an occurrence
+send `recurring: true`, `recurrence_scope: this` and its `occurrence_start`;
+`future` is refused for delete (`SERIES_DELETE_FORBIDDEN`). The tool checks
+that the event is gone. If EventKit left the last occurrence as a standalone
+event, the tool removes that same event once more. If the event still remains,
+it reports `DELETE_NOT_APPLIED`: tell the user and do not report a deletion.
+For an update, omit `title` unless the user asks to rename the event.
+
 A `preview_change` response for a recurring event echoes the start of the
 series, not the occurrence being changed. A preview whose `start` precedes the
 requested date therefore identifies a series; this is expected and is not a

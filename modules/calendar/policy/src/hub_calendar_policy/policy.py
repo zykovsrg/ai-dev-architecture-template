@@ -39,6 +39,12 @@ class CalendarPolicy(BaseModel):
         self.authorize_read(event.calendar_id, event.timezone)
         if scope not in {None, "this", "future"}:
             raise PolicyError("INVALID_RECURRENCE_SCOPE")
+        # A delete removes one event only: a series is never deleted, and an
+        # occurrence of a series must be named with the `this` scope.
+        if scope == "future":
+            raise PolicyError("SERIES_DELETE_FORBIDDEN")
+        if event.recurring and scope != "this":
+            raise PolicyError("OCCURRENCE_REQUIRED")
 
     def authorize_update(self, original: EventRef, request: ChangeRequest) -> None:
         self.authorize_read(original.calendar_id, original.timezone)
