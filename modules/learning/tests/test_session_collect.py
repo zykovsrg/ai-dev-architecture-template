@@ -1,0 +1,120 @@
+import importlib.util
+import json
+import os
+import sys
+import tempfile
+import time
+import unittest
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+SCRIPT = HERE.parents[0] / "scripts/session_collect.py"
+
+
+def load():
+    spec = importlib.util.spec_from_file_location("session_collect", SCRIPT)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["session_collect"] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+class CollectorTests(unittest.TestCase):
+    def setUp(self):
+        self.mod = load()
+        self.tmp = tempfile.TemporaryDirectory()
+        root = Path(self.tmp.name)
+        self.hub = root / "hub"
+        (self.hub / "ai").mkdir(parents=True)
+        (self.hub / "projects/demo").mkdir(parents=True)
+        (self.hub / "ai/project-registry.md").write_text(
+            f"## demo\n\nStatus: active\nPath: {self.hub / 'projects/demo'}\n", encoding="utf-8")
+        self.claude = root / "claude"
+        self.codex = root / "codex/2026/10/04"
+        (self.claude / "slug").mkdir(parents=True)
+        self.codex.mkdir(parents=True)
+        # Set file mtime to 2 hours before test's fixed 'now' time to ensure they're not considered active
+        old_dt = datetime(2026, 10, 4, 10, 0, 0, tzinfo=timezone.utc)
+        old_ts = old_dt.timestamp()
+        for name, dest in (("claude-hub.jsonl", self.claude / "slug/c-1.jsonl"),
+                           ("claude-other.jsonl", self.claude / "slug/c-2.jsonl"),
+                           ("codex-hub.jsonl", self.codex / "rollout-x-1.jsonl")):
+            text = (HERE / "fixtures" / name).read_text(encoding="utf-8").replace("HUB", str(self.hub))
+            dest.write_text(text, encoding="utf-8")
+            os.utime(dest, (old_ts, old_ts))
+        # Fourth fixture for scanner session test
+        scanner_fixture = self.claude / "slug/c-3.jsonl"
+        scanner_text = f'{{"type":"user","sessionId":"c-3","cwd":"{self.hub}","timestamp":"2026-10-04T08:00:00Z","isSidechain":false,"message":{{"role":"user","content":"[hub-session-scan] batch"}}}}\n'
+        scanner_fixture.write_text(scanner_text, encoding="utf-8")
+        os.utime(scanner_fixture, (old_ts, old_ts))
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def pending(self, ledger):
+        now = datetime(2026, 10, 4, 12, tzinfo=timezone.utc)
+        return self.mod.pending(self.hub, ledger, now, self.claude, self.codex.parents[2])
+
+    def ledger(self, cutover="2026-10-04"):
+        return {"format": 1, "cutover": cutover, "last_scan": None, "last_weekly_review": None,
+                "processed": {"claude": [], "codex": []},
+                "sources": {"observations_lines": 0, "session_reviews": []}}
+
+    def test_claude_parse_strips_reminders_sidechain_and_keeps_errors(self):
+        s = self.mod.parse_claude(self.claude / "slug/c-1.jsonl")
+        self.assertEqual(s.id, "c-1")
+        self.assertIn(("user", "Пиши по-русски"), s.turns)
+        self.assertIn(("error", "Bash: permission denied"), s.turns)
+        self.assertNotIn("sidechain", self.mod.normalize(s))
+        self.assertNotIn("ignore me", self.mod.normalize(s))
+
+    def test_codex_parse_skips_injected_context(self):
+        s = self.mod.parse_codex(self.codex / "rollout-x-1.jsonl")
+        self.assertEqual((s.id, s.tool), ("x-1", "codex"))
+        self.assertEqual([t for t in s.turns if t[0] == "user"], [("user", "Не пиши GitHub латиницей")])
+        self.assertIn(("error", "exec: error: rejected"), s.turns)
+
+    def test_pending_filters_to_hub_and_cutover(self):
+        ids = sorted(s.id for s in self.pending(self.ledger()))
+        self.assertEqual(ids, ["c-1", "x-1"])
+        self.assertEqual(self.pending(self.ledger(cutover="2026-10-05")), [])
+
+    def test_processed_and_active_sessions_are_skipped(self):
+        ledger = self.ledger()
+        self.mod.mark_processed(ledger, "claude", ["c-1"], "2026-10-04T12:00:00Z")
+        self.assertEqual([s.id for s in self.pending(ledger)], ["x-1"])
+        os.utime(self.codex / "rollout-x-1.jsonl", None)
+        now = datetime.now(timezone.utc)
+        self.assertEqual(self.mod.pending(self.hub, ledger, now, self.claude, self.codex.parents[2]), [])
+
+    def test_project_for_uses_registry(self):
+        self.assertEqual(self.mod.project_for(str(self.hub / "projects/demo/sub"), self.hub), "demo")
+        self.assertEqual(self.mod.project_for(str(self.hub), self.hub), "hub")
+
+    def test_normalize_caps_length(self):
+        s = self.mod.parse_claude(self.claude / "slug/c-1.jsonl")
+        s.turns = [("user", "x" * 900)] * 200
+        text = self.mod.normalize(s, limit=5000)
+        self.assertLessEqual(len(text), 5100)
+        self.assertIn("[cut]", text)
+
+    def test_cli_status_and_batch(self):
+        import subprocess, sys
+        base = [sys.executable, str(SCRIPT), "--hub", str(self.hub),
+                "--claude-root", str(self.claude), "--codex-root", str(self.codex.parents[2])]
+        subprocess.run(base + ["init", "--cutover", "2026-10-04"], check=True)
+        status = json.loads(subprocess.run(base + ["status"], check=True, capture_output=True, text=True).stdout)
+        self.assertEqual(status["pending"], {"claude": 1, "codex": 1})
+        out = Path(self.tmp.name) / "batch.json"
+        subprocess.run(base + ["batch", "--limit", "10", "--out", str(out)], check=True)
+        batch = json.loads(out.read_text(encoding="utf-8"))
+        self.assertEqual({b["project"] for b in batch["sessions"]}, {"hub", "demo"})
+
+    def test_scanner_sessions_are_skipped(self):
+        ids = sorted(s.id for s in self.pending(self.ledger()))
+        self.assertNotIn("c-3", ids)
+
+
+if __name__ == "__main__":
+    unittest.main()
