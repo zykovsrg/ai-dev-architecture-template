@@ -1,23 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
-
-printf '%s\n' \
-  '## Текущий календарь' '- Нет.' \
-  '## Задачи вне календаря' '- Нет.' \
-  '## Просроченные задачи' '- Нет.' \
-  '## Рекомендации' '- Нет обоснованных рекомендаций.' \
-  '## Синхронизация' '- Нет.' \
-  | "$ROOT/scripts/validate-day-plan-output.py"
-
-if printf '%s\n' 'Сейчас сделайте задачу, затем идите на поезд.' | "$ROOT/scripts/validate-day-plan-output.py" >/dev/null 2>&1; then
-  echo 'free-form day plan was accepted' >&2
-  exit 1
-fi
-
-if printf '%s\n' '## Рекомендации' '## Текущий календарь' '## Задачи вне календаря' '## Просроченные задачи' '## Синхронизация' | "$ROOT/scripts/validate-day-plan-output.py" >/dev/null 2>&1; then
-  echo 'wrong heading order was accepted' >&2
-  exit 1
-fi
-
+VALIDATOR="$ROOT/scripts/validate-day-plan-output.py"
+printf '%s\n' '## Текущий календарь' '- Нет.' '## Синхронизация' '- Нет.' '## Просроченные задачи' '- Нет.' | python3 "$VALIDATOR"
+for draft in freeform legacy reordered extra; do
+  case "$draft" in
+    freeform) text='Сейчас сделайте задачу.' ;;
+    legacy) text=$'## Текущий календарь\n- Нет.\n## Задачи вне календаря\n- Нет.\n## Просроченные задачи\n- Нет.\n## Рекомендации\n- Нет.\n## Синхронизация\n- Нет.' ;;
+    reordered) text=$'## Текущий календарь\n- Нет.\n## Просроченные задачи\n- Нет.\n## Синхронизация\n- Нет.' ;;
+    extra) text=$'## Текущий календарь\n- Нет.\n## Синхронизация\n- Нет.\n## Просроченные задачи\n- Нет.\n## Рекомендации\n- Нет.' ;;
+  esac
+  if printf '%s\n' "$text" | python3 "$VALIDATOR" >/dev/null 2>&1; then
+    echo "invalid day-plan accepted: $draft" >&2; exit 1
+  fi
+done
 echo 'day-plan output tests passed'

@@ -72,3 +72,27 @@ ancestor group.
 
 Это только предварительная проверка по имени папки; содержимое проекта не читалось. Подтвердите следующий шаг: проверить <child-name> по пути <canonical-path>.
 ```
+
+## Readiness after registration
+
+Registration proves identity and location, not readiness of project memory.
+After individual project/path confirmation and registry validation, check only
+this project's six canonical memory paths: `ai/current-task.md`,
+`ai/future-tasks.md`, `ai/paused-tasks.md`, `ai/project-context.md`,
+`ai/decisions.md`, and `ai/changelog.md`. Reject symlinks or paths escaping the
+confirmed project. Preserve every existing file and project-specific instruction.
+
+Create missing memory files only, using the corresponding minimal templates
+from `hub-project-create` (its `current-task.md` through `changelog.md`
+sections). Use create-if-missing semantics; never overwrite an existing record.
+Validate each task file with `python3 scripts/task_records.py --file <exact-path>
+--project-id <id> --kind current|future|paused --strict-headings`. Report
+`ready` only when all three checks pass and all six memory files are available;
+otherwise report `registered; adaptation needed` with exact affected paths.
+Do not rewrite invalid existing tasks automatically or scan application code.
+
+`resources/registered-project-entry.md` and
+`resources/registered-project-architecture.md` explain optional compatibility
+pointers; registration does not overwrite entry files. If a confirmed project
+has conflicting legacy shared rules, use the optional cleanup phase in
+`hub-project-migrate`, including its separate deletion confirmation.

@@ -5,15 +5,16 @@ import sys
 
 HEADINGS = [
     "## Текущий календарь",
-    "## Задачи вне календаря",
-    "## Просроченные задачи",
-    "## Рекомендации",
     "## Синхронизация",
+    "## Просроченные задачи",
 ]
 
 
 def main() -> None:
     lines = [line.rstrip("\r\n") for line in sys.stdin]
+    actual = [line for line in lines if line.startswith("## ")]
+    if actual != HEADINGS:
+        raise SystemExit("ERROR: expected exactly the three day-plan headings in order")
     positions: list[int] = []
     for heading in HEADINGS:
         matches = [index for index, line in enumerate(lines) if line == heading]

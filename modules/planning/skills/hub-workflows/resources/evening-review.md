@@ -1,70 +1,132 @@
 # evening-review
 
-This resource defines only the `evening-review` scenario. The core `SKILL.md` remains authoritative for scope, security, canonical-source rules, proposal envelopes, write policy, and learning lifecycle. Nothing here widens those permissions.
+This resource defines only the `evening-review` scenario. The core `SKILL.md`
+remains authoritative for scope, security, canonical-source rules, proposal
+envelopes, write policy and learning lifecycle. Nothing here widens permissions.
 
-For a calendar-only evening review, call `list_calendar_metadata` first, then
-`read_events` for the requested date and calendar timezone over the allowed
-calendar IDs. Its events are the calendar learning input. Proposal display
-never creates durable learning by itself.
+## Default: guided conversation
 
-Inspect `availability_complete` and `unavailable_calendar_ids` in every
-calendar response. If coverage is incomplete, name the unavailable calendar
-IDs and do not infer absence or completion from them. Skip calendar-task sync
-for a partial window.
+Start with tomorrow's events from the exact calendar name `Важно и срочно`.
+Resolve its ID through a successful fresh `list_calendar_metadata`; never hardcode
+an ID, infer it from a similar name, or substitute another calendar. Read the
+requested review date D and tomorrow D+1 through guarded `read_events`, with
+exactly the allowed IDs and the calendar timezone. Tomorrow is relative to D,
+including when the conversation crosses midnight; do not silently change D.
+Inspect `availability_complete` and `unavailable_calendar_ids` for every read.
+Name unavailable calendars, do not infer a free day from incomplete coverage,
+and skip full-window task sync when coverage is partial.
 
-If coverage is complete, pipe one `HH:MM|HH:MM|<title>|<calendar>` line per
-event, in start-time order, to
-`bash scripts/snapshot-calendar.sh --hub <hub> --at <date>-<HHMM>`. List prior
-snapshots for the day with
-`bash scripts/snapshot-calendar.sh --hub <hub> --list --day <date>`.
+The first reply renders `## Важно и срочно на завтра` and every event of that
+calendar for D+1, including events without projects. Render each timed event
+separately as `- HH:MM–HH:MM — <exact title>` and each all-day event separately
+as `- весь день — <exact title>`. Keep event titles verbatim: do not shorten, translate, group, or paraphrase them. If access is complete and there are no
+such events, say `- Нет.`. Missing or ambiguous calendar identity means
+unavailable, not empty. Then ask about the first eligible event of D.
+Do not ask about tomorrow's outcomes. Do not require an acknowledgement just
+because the urgent list was shown. A user request to discuss it takes priority.
 
-Only when `learning` is listed in `ai/modules.md`, after that snapshot run
-`python3 scripts/calendar_drift.py --hub <hub> diff --day <date> --write`. It
-compares the day's first and last snapshots and appends new moved, resized,
-cancelled and added events to `ai/workflow-observations.md`. Report the number
-of recorded observations in one line under `## Сегодняшний календарь`; with
-fewer than two snapshots say that drift could not be compared.
+Use the compact task index for discovery and only canonical task files for
+richer task facts, under the `hub-task-overview` personal-assistant boundary.
+Prepare inputs with `scripts/evening_review.py --hub <hub> --day <D>`; pipe a
+JSON object with `metadata`, `today`, and `tomorrow` guarded responses on stdin.
+The helper validates active registered roots and reads only the three canonical
+task files. It returns urgent events, a chronological project-event queue,
+coverage flags and review keys. It performs no writes. Its output is selection
+evidence, not proof of completion. Report discovery warnings from the compact
+index. On a helper failure, state the failure and use only independently
+verified input; never invent an empty queue.
 
-Read pending friction only when `learning` is listed in `ai/modules.md`, with
-`python3 scripts/workflow_friction.py --hub <hub> list --day <date>`.
+### One project task at a time
 
-Render these headings in this exact order:
+Ask only about today's events that have one unambiguous active registered
+project: the exact middle segment of `category/project/task`, or one unique
+canonical event link for a legacy title. Skip projectless, inactive,
+unregistered and conflicting matches silently; never ask “skip this?” about
+sleep, travel, meals, broadcasts or other unmatched events. Do not infer a
+project from the category alone. A project event without a unique canonical
+task may still be reviewed, but resolve ambiguity before writing a task.
 
-1. `## Сегодняшний календарь`
-2. `## События и проекты`
-3. `## Ожидания`
-4. `## Follow-ups`
-5. `## Завтрашний Calendar`
-6. `## Подтвердить`
+Present one exact event title and its time, followed by exactly one short
+question about its outcome. Wait for the user's answer. No full calendar,
+six-section report, confidence list or batch questionnaire in interactive chat.
+The one-question limit applies to the entire reply, including ownership,
+waiting, synchronization, learning and goal-progress clarification.
 
-## Calendar and project mapping
+Apply the user's stated completion, progress, carry-over, waiting or new task
+immediately through existing write rules; report the exact target path and diff
+briefly, then ask the next eligible question in the same reply. `дальше`,
+`ничего не фиксируем`, and equivalent replies advance without writes or another
+question about that event. Matching Calendar never proves completion.
 
-Render today's and tomorrow's calendar by the same guarded calendar-read rules as `resources/day-plan.md`: successful metadata first, then exactly the allowed IDs, verbatim event titles, no invented free day. Render each all-day event separately as `- весь день — <title>`. Keep event titles verbatim: do not shorten, translate, group, or paraphrase them.
+Keep consumed review keys in conversation state. A user answer about one task
+consumes repeated blocks of the same task for D; do not re-ask the second block.
+Do not merge distinct tasks merely because they share a project. If the answer
+explicitly covers only part of a repeated task, keep its remaining work open.
+The helper accepts optional `consumed` keys on stdin to exclude covered tasks;
+no durable queue is created. Each subsequent turn advances from the current
+cursor; reread affected task files/dates after writes, not the full window.
 
-Under `## События и проекты`, map each rendered event to at most one registered project in the allowed scope using only the event title, the `категория/проект/задача` naming convention, and canonical task records as evidence. Render `<HH:MM> <title> → <project-id|нет совпадения>; основание: <evidence>; уверенность: <высокая|низкая>`. A calendar match is inference only: it never proves completion, widens scope, or authorizes another read. Leave ambiguous events unmatched.
+Explicit user requests can still correct Calendar events without projects,
+such as actual sleep or travel times. Those events receive no proactive outcome
+questions. Keep approximate times labelled approximate, do not invent end times,
+wait owners, follow-up dates or task completion. Changing a recurring event
+uses the exact occurrence and `this` scope unless the user requests otherwise.
+An explicit deletion request authorizes that exact deletion without asking
+again; other deletions still require an explicit yes.
 
-## Review sections
+## Internal preparation and learning
 
-Fill the user-stated portion of `## Ожидания` only from selected `--review-input` section `## Waiting`. Append canonical waiting records separately with canonical citations.
+Retain snapshots, calendar learning, sync and module gates behind the dialogue.
+After a complete D read, pipe one `HH:MM|HH:MM|<title>|<calendar>` per event in
+start order to `bash scripts/snapshot-calendar.sh --hub <hub> --at <D>-<HHMM>`.
+List prior snapshots with `--list --day <D>`.
 
-A selected review input may also carry `## Done` and `## Carry over`. The review renders no section for them: a stated completion or carry-over becomes an `update_task` or `update_due` proposal under `## Подтвердить` and appears nowhere else. Never list stated or calendar-derived completions as narrative output.
+Only when learning is listed in `ai/modules.md`, run
+`python3 scripts/calendar_drift.py --hub <hub> diff --day <D> --write`
+after the snapshot. Report the recorded observation count briefly at the end;
+fewer than two snapshots means drift cannot be compared.
+Only when `learning` is listed in `ai/modules.md`, read pending friction
+with `python3 scripts/workflow_friction.py --hub <hub> list --day <D>`.
+Each grounded issue may yield one `add_observation` proposal; display leaves it
+pending. Acceptance, rejection, journal ordering and append failure follow
+`resources/learning-lifecycle.md`. Ask at most one learning question per turn.
 
-Derive `## Follow-ups` only from structured canonical fields. A stated completion, carry-over, waiting fact, or due-date change is applied to the canonical record at once and reported.
+Run the same sync check as `resources/day-plan.md` Sync section with a complete
+fresh [D-30,D+31) Calendar window. Apply unambiguous task-time changes directly
+and report actual writes briefly. Ambiguous/missing occurrences remain questions;
+do not replace a project-outcome question with a batch of sync questions.
+Never change Due or status merely because Calendar changed.
 
-## Proposals and learning
+Only when goals is listed in `ai/modules.md`, record user-stated amounts as
+`goal_progress`. Ask for an amount only while reviewing a relevant project task;
+do not add unrelated questions after the project queue. Do not infer publications
+from work blocks. Learning and sync questions also require a grounded project
+task in guided mode. After the queue, close with a short factual report.
 
-Every possible write appears independently under `## Подтвердить` using the core proposal envelope. Every matched event or stated completion may yield at most one `update_task` proposal for the matched project's canonical task record, with exact target path and diff. Emit no proposal for an unmatched event, a low-confidence match, or a project outside scope.
+## Optional explicit full report
 
-For a direct, unambiguous user statement about one canonical task, apply exactly
-one `update_task`, `update_due`, or `update_waiting` change with the project
-ID, exact target path, and exact diff. Pair a calendar change only when the
-task schedule changes. If the task reference is ambiguous, change nothing and
-ask which task is meant. Otherwise apply the canonical task-record diff and
-its paired calendar change at once and report them.
+Only if the user explicitly requests a full report, render these headings:
+`## Сегодняшний календарь`, `## События и проекты`, `## Ожидания`,
+`## Follow-ups`, `## Завтрашний Calendar`, `## Подтвердить`, in that order,
+preceded by `## Важно и срочно на завтра`. Render today's and tomorrow's exact
+events, including each all-day event separately. Project mappings are inference,
+not completion: show project, evidence, and high/low confidence; unmatched
+entries create no proactive questions or task proposals.
 
-Only when `goals` is listed in `ai/modules.md`, for active numeric goals ask for the stated amount and record the stated amount as a `goal_progress` entry directly.
+Waiting facts come only from user statements/selected review-input `## Waiting`
+or structured canonical waiting fields with citations. Follow-ups come only
+from structured canonical fields. Selected `## Done` and `## Carry over` yield
+exact task changes, not calendar-inferred outcomes. Each change uses its own
+core proposal envelope, exact target path and diff. Full-report headings do not
+apply to the default guided conversation or its subsequent turns.
 
-For each grounded pending friction issue, offer one `add_observation` proposal. Proposal display must leave that observation pending; all acceptance, rejection, journal ordering, and append-failure behavior is defined only in `resources/learning-lifecycle.md`.
+## Canonical writes
 
-Run the same sync check as `resources/day-plan.md` "Sync section" and render
-its items under `## Подтвердить` with the same mapping and gates.
+For a direct, unambiguous user statement, apply exactly one `update_task`,
+`update_due`, or `update_waiting` change with the project ID, exact target path
+and diff. Calendar pairing is required only for schedule changes, new dated
+tasks and closing tasks with future events. If the task reference is ambiguous,
+change nothing and ask which task is meant. Validate each task write through
+`scripts/check-all-task-records.sh` and repair failures before claiming success.
+All Calendar changes go through `hub-calendar`, preview then apply, with fresh
+verification and subscriber snapshots. Unknown ownership creates no task.

@@ -17,13 +17,12 @@ Define during task intake.
 
 ## Agent handoff
 
-Last agent: Claude (Opus 5.5)
-
-What changed: TASK-ai-dev-architecture-20261001-002 закрыта 2026-10-01 —
-аудит, синхронизация исходников с хабом (PR #17), чистка (PR #18),
-самообучение (PR #19, ещё не слит).
-Session review: `ai/session-reviews/2026-10-01-architecture-audit-closure.md`.
-
-Open risks: нет. PR #19 слит, хаб обновлён 2026-10-02.
-
-Next agent should check: открытых задач архитектуры нет.
+Last agent: Claude Code
+Last completed task: TASK-ai-dev-architecture-20261003-001.
+Guided evening review (urgent-first, one event at a time, only events with
+active registered projects) installed in the Hub on 2026-10-03 and closed by
+user request on 2026-10-04. Task records pass.
+Session review: ai/session-reviews/2026-10-04-guided-evening-review-closure.md
+(insufficient-evidence: implementation session not visible at closure).
+Local changes are on codex/architecture-corrections-2026-10-02; no push or merge
+is recorded.

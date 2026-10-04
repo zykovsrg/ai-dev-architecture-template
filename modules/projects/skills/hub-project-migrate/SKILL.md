@@ -83,9 +83,10 @@ the unchanged project location; do not register another project automatically.
 
 ## Optional legacy standalone cleanup
 
-Offer this final phase only when the current `hub-project-migrate` run moved the
-project successfully, the project is a direct child of `<canonical-hub>/projects`,
-its `hub-project-register` registration completed, and
+Offer this phase after a successful migration, or when the user requests
+adaptation of one already registered project and has explicitly confirmed its
+ID and exact path. In both cases the project must be a direct child of
+`<canonical-hub>/projects`, its registration must be complete, and
 `scripts/check-hub-registry.sh` passed. The project remains usable through the
 hub when this phase is skipped.
 

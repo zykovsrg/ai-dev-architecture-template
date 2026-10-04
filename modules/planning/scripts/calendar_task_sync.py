@@ -5,7 +5,7 @@ import argparse
 import importlib.util
 import json
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -52,12 +52,13 @@ def _span(ev, tz=None):
 
 def find_discrepancies(tasks, events, now, tz=None):
     timed = [e for e in events if not e.get("all_day")]
-    dates_per_id = Counter()
-    for eid in {(e["id"], _local(e["start"], tz)[:10]) for e in timed}:
-        dates_per_id[eid[0]] += 1
-    by_id = {}
+    by_id = defaultdict(list)
     for e in timed:
-        by_id.setdefault(e["id"], e)
+        by_id[(e["calendar_id"], e["id"])].append(e)
+    competing = Counter((t["project_id"], t["title"], tuple(t["scheduled"]))
+                        for t in tasks if t["scheduled"] and t["status"] not in CLOSED)
+    occupied = {(t["event_link"]["calendar_id"], t["event_link"]["event_id"])
+                for t in tasks if t["event_link"]}
     out = []
     for t in tasks:
         link = t["event_link"]
@@ -67,8 +68,14 @@ def find_discrepancies(tasks, events, now, tz=None):
         if link is None:
             if t["status"] in CLOSED or t["scheduled"] is None:
                 continue
-            hits = [e for e in timed if _span(e, tz) == tuple(t["scheduled"]) and dates_per_id[e["id"]] == 1
-                    and e["title"].split("/")[1:2] == [t["project_id"]]]
+            key = (t["project_id"], t["title"], tuple(t["scheduled"]))
+            if competing[key] != 1:
+                continue
+            hits = [e for e in timed if _span(e, tz) == tuple(t["scheduled"])
+                    and len(by_id[(e["calendar_id"], e["id"])]) == 1
+                    and not e.get("recurring", False)
+                    and (e["calendar_id"], e["id"]) not in occupied
+                    and e["title"].split("/", 2)[1:] == [t["project_id"], t["title"]]]
             if len(hits) == 1:
                 e = hits[0]
                 out.append({**item, "kind": "unlinked", "event": list(_span(e, tz)), "event_id": e["id"],
@@ -76,11 +83,19 @@ def find_discrepancies(tasks, events, now, tz=None):
             continue
         synced = (link["synced_start"], link["synced_end"])
         item.update(synced=list(synced), event_id=link["event_id"], calendar_id=link["calendar_id"])
-        e = by_id.get(link["event_id"])
-        if e is None:
+        candidates = by_id.get((link["calendar_id"], link["event_id"]), [])
+        if not candidates:
             if t["status"] not in CLOSED:
                 out.append({**item, "kind": "event_missing"})
             continue
+        if len(candidates) > 1 or any(e.get("recurring", False) for e in candidates):
+            exact = [e for e in candidates if _span(e, tz) == synced]
+            if len(exact) != 1:
+                out.append({**item, "kind": "event_ambiguous"})
+                continue
+            e = exact[0]
+        else:
+            e = candidates[0]
         span = _span(e, tz)
         item.update(event=list(span), event_title=e["title"])
         if t["status"] in CLOSED:

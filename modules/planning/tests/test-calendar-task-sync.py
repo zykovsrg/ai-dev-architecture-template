@@ -55,7 +55,7 @@ def task(sched=("2026-09-22 15:00", "2026-09-22 17:00"), synced=("2026-09-22 15:
                            "synced_start": synced[0], "synced_end": synced[1]} if link else None}
 
 
-def event(start="2026-09-22T15:00:00+03:00", end="2026-09-22T17:00:00+03:00", eid="EV-1", title="хадасса/demo/задача"):
+def event(start="2026-09-22T15:00:00+03:00", end="2026-09-22T17:00:00+03:00", eid="EV-1", title="хадасса/demo/T"):
     return {"id": eid, "calendar_id": "CAL", "title": title, "start": start, "end": end, "all_day": False}
 
 
@@ -115,6 +115,41 @@ class Discrepancies(unittest.TestCase):
         t = task(link=False)
         [d] = sync.find_discrepancies([t], [event()], NOW)
         self.assertEqual((d["kind"], d["event_id"]), ("unlinked", "EV-1"))
+
+    def test_unlinked_rejects_other_title(self):
+        self.assertEqual(self.kinds([task(link=False)], [event(title="work/demo/Other")]), [])
+
+    def test_unlinked_rejects_competing_tasks(self):
+        other = {**task(link=False), "task_id": "FT-2"}
+        self.assertEqual(self.kinds([task(link=False), other], [event()]), [])
+
+    def test_linked_checks_calendar(self):
+        other = {**event(), "calendar_id": "OTHER"}
+        self.assertEqual(self.kinds([task()], [other]), ["event_missing"])
+
+    def test_linked_recurring_uses_exact_span(self):
+        previous = event("2026-09-21T15:00:00+03:00", "2026-09-21T17:00:00+03:00")
+        self.assertEqual(self.kinds([task()], [previous, event()]), [])
+
+    def test_linked_recurring_missing_occurrence_is_ambiguous(self):
+        events = [event("2026-09-20T15:00:00+03:00", "2026-09-20T17:00:00+03:00"),
+                  event("2026-09-21T15:00:00+03:00", "2026-09-21T17:00:00+03:00")]
+        self.assertEqual(self.kinds([task()], events), ["event_ambiguous"])
+
+    def test_unlinked_does_not_steal_linked_event(self):
+        linked = {**task(), "title": "Renamed", "task_id": "FT-2"}
+        self.assertEqual(self.kinds([task(link=False), linked], [event()]), [])
+
+    def test_single_recurring_event_is_not_unlinked(self):
+        self.assertEqual(self.kinds([task(link=False)], [{**event(), "recurring": True}]), [])
+
+    def test_single_moved_recurring_event_is_ambiguous(self):
+        moved = {**event("2026-09-23T15:00:00+03:00", "2026-09-23T17:00:00+03:00"), "recurring": True}
+        self.assertEqual(self.kinds([task()], [moved]), ["event_ambiguous"])
+
+    def test_unlinked_task_title_can_contain_slash(self):
+        t = {**task(link=False), "title": "A/B"}
+        self.assertEqual(self.kinds([t], [event(title="work/demo/A/B")]), ["unlinked"])
 
     def test_unlinked_needs_project_in_title(self):
         self.assertEqual(self.kinds([task(link=False)], [event(title="дела/другое/задача")]), [])

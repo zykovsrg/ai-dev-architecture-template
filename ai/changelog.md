@@ -14,6 +14,39 @@
 
 ## Текущий changelog
 
+### 2026-10-03 — Guided evening review installed
+
+- Change: urgent-first review conversation and installed read-only selector.
+- Impact: projectless events skip without questions; outcomes are asked one
+  event at a time; repeated blocks of a covered task are not asked again.
+- Validation: 26 planning tests, 197 main tests, module boundary checks,
+  optional module removal and installation smoke pass. Guarded live input
+  verifies the installed helper. Four managed Hub files installed; no test
+  changed Calendar events.
+- Closure 2026-10-04: TASK-ai-dev-architecture-20261003-001 closed by user
+  request; task records pass. Session review:
+  ai/session-reviews/2026-10-04-guided-evening-review-closure.md
+  (insufficient-evidence, implementation session not visible).
+
+### 2026-10-02 — Calendar-first day plan, three sections
+
+- Closure: completed by user request; session review found no issue within the
+  selected implementation span. No historical task ID is fabricated.
+- Session review: ai/session-reviews/2026-10-02-calendar-first-day-plan-closure.md.
+
+- Change: synchronize linked task times before composing, reload canonical state,
+  and verify affected records after joint edits. Calendar is authoritative for
+  time; deadlines and completion remain user decisions.
+- Output: current calendar, synchronization, overdue tasks (last). Removed
+  task-outside-calendar and recommendation sections; analysis still uses learned
+  rules, numeric goals and guarded calendar context.
+- Validation: output acceptance/rejection tests, 8 scenario tests, 20 Calendar
+  task-sync tests, consistency and strict module-boundary checks pass.
+- Deployment: applied the reviewed 8-file Hub update; installed format and
+  registry checks pass (73 projects). Calendar bridge rebuilt with a writable
+  temporary compiler cache after its default cache was denied by the sandbox.
+
+
 ### 2026-10-02 — PR #19 слит, хаб обновлён (FT-20261001-003)
 
 - PR #19 слит после зелёного CI и двух исправлений по ревью Codex.
@@ -449,3 +482,31 @@
   Session review: `ai/session-reviews/2026-09-10-refactor-closure.md`.
 - Corrected omitted memory capture after an erroneous refusal to close because
   the current-task template was empty. No task ID was invented.
+
+
+## 2026-10-02 — Approved architecture corrections
+
+Task: TASK-ai-dev-architecture-20261002-001.
+Corrected calendar/task identity and recurring-instance matching, preserved recurrence in the calendar bridge, validated schedule dates and ranges, and preserved legacy all-day records. Consolidated write policy, added project-memory readiness instructions, and enabled separately confirmed cleanup for registered projects. Full architecture checks and 94 calendar-policy tests passed. Installed Hub matches source; bridge rebuilt. Other projects and live calendar data remain unverified. Detailed result: docs/audits/2026-10-02-refactoring-assessment.md.
+
+
+## 2026-10-02 — Preserve legacy schedule compatibility
+
+Confirmed project-compatibility inspection exposed trailing comments and start-only schedules rejected by the new strict parser. Added regression coverage and preserved both existing forms while still validating real dates/times; no end time is invented. 196 main unit tests, 29 calendar-sync tests and 5 sync-field tests passed. Corrected parser installed in Hub. Individual compatibility findings remain in each confirmed project's ai/hub-compatibility-2026-10-02.md, without copying task details here.
+
+
+## 2026-10-02 — Architecture corrections closed
+
+Task: TASK-ai-dev-architecture-20261002-001.
+All remaining 66 active projects inspected within the user-confirmed manifest;
+all six memory files present and task records canonical. Updated 58 exact
+legacy pointers across 29 projects. Context gaps in 41 projects are recorded
+for factual follow-up. Two additional legacy schedule forms preserved;
+197 current main tests pass, installed Hub matches source.
+Guarded live planning initialized 61-day context, reconciled 11 linked task
+schedules across nine files, and verified affected dates. No Calendar event,
+deadline or completion-status change was made by synchronization.
+Reports: docs/audits/2026-10-02-all-project-compatibility.md; per-project
+ai/hub-compatibility-2026-10-02.md. Live calendar artifacts stay in Hub ai/tmp
+and are not committed. Session review: ai/session-reviews/2026-10-02-architecture-corrections-closure.md; issues-found with partial Luna chronology coverage.
+Work saved locally; no remote push or main-branch merge claimed.

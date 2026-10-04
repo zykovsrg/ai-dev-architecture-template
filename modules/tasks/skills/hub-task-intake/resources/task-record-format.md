@@ -21,3 +21,18 @@ skipped by task discovery and never reaches day plans or reviews.
   Write it whenever a change creates or moves a timed, non-recurring
   event for the task; refresh `синхронизировано` on every sync. A
   malformed line fails the canonical check.
+
+Schedule and synchronized-link fields require real dates and valid 24-hour
+times, with the end strictly after the start on the same day. Malformed
+schedule fields fail validation instead of being treated as absent.
+
+Legacy `Запланировано: YYYY-MM-DD (весь день).` remains readable with a
+validated real date; it does not participate in timed-event synchronization.
+
+Trailing schedule comments after a comma remain readable. Legacy start-only
+schedules are validated and preserved but have no inferred end time; they do
+not participate in interval synchronization. New schedules use explicit ranges.
+
+Legacy date-only `Запланировано: YYYY-MM-DD.` and release-note
+`Запланировано: релиз YYYY-MM-DD. Ожидание: <text>` fields remain readable
+with validated dates. They do not infer intervals, completion, or new deadlines.

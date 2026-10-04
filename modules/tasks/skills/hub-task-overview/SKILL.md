@@ -40,7 +40,7 @@ For personal-assistant day-plan, weekly-review, overdue, and blocked-work
 discovery, start with `scripts/read-compact-task-index.py`. Capture its stderr:
 every `WARNING: unrecognized task heading skipped` line is a record invisible to
 discovery and must be reported to the user in the workflow output (in a day
-plan, under `## Рекомендации`) with its project and line. That derived index
+plan, under `## Синхронизация`) with its project and line. That derived index
 may contain only normalized discovery fields from active registered projects.
 Use it to select relevant task records; open the corresponding canonical
 `ai/current-task.md`, `ai/future-tasks.md`, or `ai/paused-tasks.md` only when a
@@ -90,7 +90,14 @@ enters the main actionable ranking. A waiting follow-up is due when its
 structured `follow_up` equals the requested date and overdue when earlier.
 Missing waiting fields are risks, not inferred values.
 
-Every successful non-personal workflow output starts with:
+The default guided `evening-review` is an exception to the report prefixes
+below: its first reply starts with tomorrow's urgent Calendar list, followed
+by one project-task question; later replies report actual writes and ask the
+next project-task question. Do not prepend a read-only/no-changes claim to
+those replies. The exact conversational contract lives in the planning skill's
+`resources/evening-review.md`; scope and write boundaries here still apply.
+
+Every other successful non-personal workflow output starts with:
 
 ```text
 Read-only workflow: no changes were made.

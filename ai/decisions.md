@@ -1,5 +1,32 @@
 # Decisions
 
+### 2026-10-03 — Guided evening review
+
+Status: active
+
+Decision: Show tomorrow's exact `Важно и срочно` Calendar events first.
+Then review today's events with active registered projects one at a time,
+one question per reply. Skip unmatched routines without questions and consume
+repeated blocks of answered tasks. Apply user-stated outcomes immediately;
+explicit corrections of projectless Calendar events remain permitted.
+Use a read-only selection helper; do not create a persistent review queue.
+
+Source: explicit user request and design approval in this conversation.
+
+### 2026-10-02 — Calendar-first day planning
+
+Status: active
+
+Decision: On a requested day plan, synchronize unambiguous task times from
+Calendar before composing, validate and reload changed records, then refine
+work with the user and verify affected dates after accepted edits. Calendar
+controls scheduled time; Due and completion remain user decisions. Output has
+exactly current calendar, synchronization and overdue tasks, with overdue last.
+Remove task-outside-calendar and recommendation sections. No scheduled reminder.
+
+Source: explicit user decisions in the day-planning conversation, 2026-10-02.
+
+
 ### 2026-09-28 — knowledge, goals, learning выключаемые; скрипты хаба совместимы с Python 3.9
 
 Status: active

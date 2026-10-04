@@ -52,6 +52,15 @@ failure must be reported without undoing the already applied calendar change.
 
 ## Plans and reviews
 
+Evening review defaults to a guided conversation: first display tomorrow's
+events from the exact allowed calendar `Важно и срочно`, then ask one question
+per turn about today's events with an unambiguous active registered project.
+Skip events without projects silently. Repeated blocks of an answered task
+are consumed together; distinct tasks in one project remain separate.
+`scripts/evening_review.py` prepares the read-only urgent list and event queue.
+The scenario's old full-report headings apply only when explicitly requested.
+Explicit user corrections to projectless Calendar events remain authorized.
+
 Use the hub-owned `hub-workflows` skill for `day-plan`, `evening-review`, and
 `weekly-review`, and `hub-task-overview` for `capture`. The skill performs semantic AI analysis, while
 the optional Bash adapter only validates mechanical scope, paths, and recorder
@@ -59,13 +68,16 @@ JSON. Suggested blocks in a plan are suggestions, not writes; when the user
 accepts them or states a change, the skill applies it without a further
 confirmation step.
 
-The day-plan chat output has exactly five sections in this order: current
-calendar, actionable project tasks due today that are not represented in that
-calendar, overdue actionable tasks, recommendations, and synchronization. A
-task appears in only one task section. Do not add separate conflicts or
-proposed-calendar sections. Render existing calendar titles verbatim and keep
-calendar entries chronological, one `time — event` entry per line. Learned
-rules and numeric goal progress constrain recommendations without creating
+The day-plan chat output has exactly three sections in this order: current
+calendar, synchronization, and overdue actionable tasks. Overdue tasks are
+always last. Do not add task-outside-calendar or recommendation sections.
+Synchronize unambiguous task times from Calendar before composing the plan,
+validate writes and reload changed canonical task records before ranking or
+rendering them. Calendar is the source of truth for time, not deadlines or
+completion. After joint edits, verify affected dates and task records only.
+This runs on a requested day plan, without a scheduled automation or reminder.
+Render existing calendar titles verbatim, chronologically, one entry per line.
+Learned rules and numeric goal progress support joint planning without adding
 extra chat sections.
 
 All-day events are calendar events too: day planning and evening review render
@@ -96,16 +108,16 @@ translation.
 Clear day-planning requests, including «распланируем сегодняшний день»,
 «распланируем остаток дня», «план на сегодня», «план на остаток дня», and
 "plan today", invoke `hub-workflows` before any reply. Their
-reply uses the five mandatory day-plan sections; a free-form calendar summary
+reply uses the three mandatory day-plan sections; a free-form calendar summary
 is not a valid day-plan response.
 
 The general 5-line and 80-word output default does not apply to a day plan.
-Every day-plan response renders all five headings, even when a section contains
+Every day-plan response renders all three headings, even when a section contains
 only `- Нет.` or a precise data-access limitation.
 
 Day planning maintains local `ai/tmp/calendar-context.json`: 30 past days,
 today and 30 future days. Initial guarded reads populate it; subsequent runs
-prune expired days and fetch missing far-future days. Recommendations use the
+prune expired days and fetch missing far-future days. Joint planning uses the
 past month and next 14 days with canonical tasks and verified deadlines.
 The detailed lifecycle is in `hub-workflows/resources/calendar-context.md`.
 This noncanonical cache exception allows local context writes only; event
