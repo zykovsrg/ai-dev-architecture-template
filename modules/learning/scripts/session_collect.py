@@ -214,9 +214,10 @@ def pending(hub, ledger, now, claude_root, codex_root, active_minutes=15):
         return []
     cutover = ledger["cutover"]
     fresh = now - timedelta(minutes=active_minutes)
-    out = []
+    latest = {}
     for tool, path in _files(claude_root, codex_root):
-        if datetime.fromtimestamp(path.stat().st_mtime, timezone.utc) > fresh:
+        mtime = path.stat().st_mtime
+        if datetime.fromtimestamp(mtime, timezone.utc) > fresh:
             continue
         session = parse_claude(path) if tool == "claude" else parse_codex(path)
         if (session is None or session.id in ledger["processed"].get(tool, [])
@@ -226,8 +227,18 @@ def pending(hub, ledger, now, claude_root, codex_root, active_minutes=15):
         if session.turns and session.turns[0][0] == "user" and session.turns[0][1].startswith("[hub-session-scan]"):
             continue
         session.turns = drop_scan_turns(session.turns)
-        out.append(session)
-    return out
+        key = (session.tool, session.id)
+        if key not in latest or mtime >= latest[key][0]:
+            latest[key] = (mtime, session)
+    return [session for _, session in latest.values()]
+
+
+def _find_date(text):
+    match = re.search(r"(?<!\d)(\d{4})-(\d{2})-(\d{2})(?!\d)|(?<!\d)(\d{4})(\d{2})(\d{2})(?!\d)", text)
+    if not match:
+        return None
+    parts = match.groups()[:3] if match.group(1) else match.groups()[3:]
+    return "-".join(parts)
 
 
 def extra_sources(hub, ledger):
@@ -248,14 +259,17 @@ def extra_sources(hub, ledger):
             continue
         for review in sorted(Path(entry["path"], "ai/session-reviews").glob("*.md")):
             sid = f"review-{pid}-{review.stem}"
-            if sid in done or review.stem[:10] < cutover:
+            if sid in done:
                 continue
             text = review.read_text(encoding="utf-8")
+            date = _find_date(review.stem) or _find_date(text)
+            if not date or date < cutover:
+                continue
             if "## Findings" not in text:
                 continue
             findings = text.split("## Findings", 1)[1].split("\n## ", 1)[0].strip()
             if findings and findings != "none":
-                out.append(Session("claude", sid, entry["path"], review.stem[:10], review, [("user", findings)]))
+                out.append(Session("claude", sid, entry["path"], date, review, [("user", findings)]))
     return out
 
 

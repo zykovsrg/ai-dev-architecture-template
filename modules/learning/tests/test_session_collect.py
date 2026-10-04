@@ -234,6 +234,35 @@ class CollectorTests(unittest.TestCase):
         self.assertEqual(self.mod.extra_sources(self.hub, ledger), [])
         self.assertEqual(self.mod.extra_sources(self.hub, self.ledger(cutover=None)), [])
 
+    def test_review_date_from_compact_filename(self):
+        reviews = self.hub / "projects/demo/ai/session-reviews"
+        reviews.mkdir(parents=True)
+        body = "# Session review\n\n## Findings\n\nF1: x\n\n## Follow-up\n\nnone\n"
+        (reviews / "SESSION-REVIEW-demo-20260911-001.md").write_text(body, encoding="utf-8")
+        (reviews / "SESSION-REVIEW-demo-20261004-001.md").write_text(body, encoding="utf-8")
+        (reviews / "nodate.md").write_text(body, encoding="utf-8")
+        out = self.mod.extra_sources(self.hub, self.ledger())
+        self.assertEqual([(s.id, s.started) for s in out],
+                         [("review-demo-SESSION-REVIEW-demo-20261004-001", "2026-10-04")])
+
+    def test_review_date_falls_back_to_content(self):
+        reviews = self.hub / "projects/demo/ai/session-reviews"
+        reviews.mkdir(parents=True)
+        (reviews / "notes.md").write_text(
+            "# Review 2026-10-05\n\n## Findings\n\nF1: x\n", encoding="utf-8")
+        out = self.mod.extra_sources(self.hub, self.ledger())
+        self.assertEqual([s.started for s in out], ["2026-10-05"])
+
+    def test_duplicate_codex_session_id_keeps_latest_file(self):
+        old = self.codex / "rollout-x-1.jsonl"
+        dup = self.codex / "rollout-x-1-resumed.jsonl"
+        dup.write_text(old.read_text(encoding="utf-8"), encoding="utf-8")
+        ts = datetime(2026, 10, 4, 11, 0, 0, tzinfo=timezone.utc).timestamp()
+        os.utime(dup, (ts, ts))
+        out = [s for s in self.pending(self.ledger()) if s.id == "x-1"]
+        self.assertEqual(len(out), 1)
+        self.assertEqual(out[0].path, dup)
+
 
 if __name__ == "__main__":
     unittest.main()
