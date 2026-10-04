@@ -14,6 +14,16 @@
 
 ## Текущий changelog
 
+### 2026-10-04 — Session learning installed
+
+- Change: hub-session-scan skill, transcript collector and rule catalog with
+  deterministic confidence/scope; learned-rules files read by new chats; day
+  plan offers a scan; weekly review shows the learning report and merge pass.
+- Impact: Claude Code (Haiku 4.5) and Codex (GPT-6-Luna) scan the same
+  sessions once; weekly pass on Opus 5.5 / GPT-6.1-Sol.
+- Validation: 48 learning tests, architecture suite, consistency and strict
+  boundary checks pass; live scan in both tools; second run 0 pending.
+
 ### 2026-10-03 — Guided evening review installed
 
 - Change: urgent-first review conversation and installed read-only selector.
