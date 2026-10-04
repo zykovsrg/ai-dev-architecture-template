@@ -103,7 +103,7 @@ def build_manifest(source, modules=None, passports=None):
     if len({entry["target"] for entry in files}) != len(files):
         raise ValueError("duplicate manifest target")
     return {"format": 1, "modules": selected, "files": files, "remove": [],
-            "ignore_lines": ["/.local/", "/projects/"]}
+            "ignore_lines": ["/.local/", "/projects/", "/ai/tmp/"]}
 
 
 def release_sources(root):

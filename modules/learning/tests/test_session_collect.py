@@ -106,10 +106,111 @@ class CollectorTests(unittest.TestCase):
         subprocess.run(base + ["init", "--cutover", "2026-10-04"], check=True)
         status = json.loads(subprocess.run(base + ["status"], check=True, capture_output=True, text=True).stdout)
         self.assertEqual(status["pending"], {"claude": 1, "codex": 1})
-        out = Path(self.tmp.name) / "batch.json"
-        subprocess.run(base + ["batch", "--limit", "10", "--out", str(out)], check=True)
-        batch = json.loads(out.read_text(encoding="utf-8"))
+        out_dir = (Path(self.tmp.name) / "scan").resolve()
+        result = json.loads(subprocess.run(base + ["batch", "--limit", "10", "--out-dir", str(out_dir)],
+                                           check=True, capture_output=True, text=True).stdout)
+        self.assertEqual(result["index"], str(out_dir / "index.json"))
+        batch = json.loads((out_dir / "index.json").read_text(encoding="utf-8"))
         self.assertEqual({b["project"] for b in batch["sessions"]}, {"hub", "demo"})
+        for entry in batch["sessions"]:
+            self.assertNotIn("text", entry)
+            self.assertTrue(Path(entry["file"]).is_file())
+        # Nothing with transcript text is written inside the Hub
+        self.assertFalse((self.hub / "ai/tmp").exists())
+        # --session builds a single-session batch, --skip leaves a session out
+        one = json.loads(subprocess.run(base + ["batch", "--out-dir", str(out_dir), "--session", "codex:x-1"],
+                                        check=True, capture_output=True, text=True).stdout)
+        self.assertEqual(one["written"], 1)
+        index = json.loads((out_dir / "index.json").read_text(encoding="utf-8"))
+        self.assertEqual([s["id"] for s in index["sessions"]], ["x-1"])
+        skip = json.loads(subprocess.run(base + ["batch", "--out-dir", str(out_dir), "--skip", "codex:x-1"],
+                                         check=True, capture_output=True, text=True).stdout)
+        index = json.loads((out_dir / "index.json").read_text(encoding="utf-8"))
+        self.assertEqual([s["id"] for s in index["sessions"]], ["c-1"])
+        self.assertEqual(skip["remaining"], 0)
+
+    def test_batch_default_dir_is_outside_hub(self):
+        default = self.mod.default_batch_dir()
+        self.assertEqual(default.name, "hub-session-scan")
+        self.assertFalse(self.mod._inside(default, self.hub))
+
+    def session(self, sid, size):
+        return self.mod.Session("claude", sid, str(self.hub), "2026-10-04T08:00:00Z", Path("x"),
+                                [("user", "я" * 400 + "\n" + "б" * 90)] * (size // 500))
+
+    def test_write_batch_limits_total_size_and_writes_plain_text_files(self):
+        out_dir = Path(self.tmp.name) / "scan"
+        sessions = [self.session(f"s-{i}", 25000) for i in range(3)]
+        index, remaining = self.mod.write_batch(self.hub, sessions, out_dir, limit=10, max_chars=60000)
+        self.assertEqual([s["id"] for s in index["sessions"]], ["s-0", "s-1"])
+        self.assertEqual(remaining, 1)
+        total = 0
+        for entry in index["sessions"]:
+            text = Path(entry["file"]).read_text(encoding="utf-8")
+            self.assertEqual(Path(entry["file"]).parent, out_dir)
+            self.assertIn("\nUSER: ", text)
+            self.assertGreater(text.count("\n"), 40)
+            total += entry["chars"]
+        self.assertLessEqual(total, 60000)
+        self.assertEqual(json.loads((out_dir / "index.json").read_text(encoding="utf-8")), index)
+
+    def test_write_batch_count_limit_and_oversize_first_session(self):
+        out_dir = Path(self.tmp.name) / "scan"
+        small = [self.session(f"s-{i}", 1000) for i in range(12)]
+        index, remaining = self.mod.write_batch(self.hub, small, out_dir, limit=10, max_chars=60000)
+        self.assertEqual((len(index["sessions"]), remaining), (10, 2))
+        big = [self.session("big", 90000)]
+        index, remaining = self.mod.write_batch(self.hub, big, out_dir, limit=10, max_chars=60000)
+        self.assertEqual((len(index["sessions"]), remaining), (1, 0))
+        self.assertLessEqual(index["sessions"][0]["chars"], 60000)
+
+    def test_write_batch_blanks_stale_session_files(self):
+        out_dir = Path(self.tmp.name) / "scan"
+        out_dir.mkdir()
+        stale = out_dir / "claude-old.txt"
+        stale.write_text("old transcript", encoding="utf-8")
+        self.mod.write_batch(self.hub, [self.session("s-1", 1000)], out_dir)
+        self.assertTrue(stale.exists())
+        self.assertEqual(stale.read_text(encoding="utf-8"), "")
+
+    def test_archived_project_maps_to_hub(self):
+        (self.hub / "projects/old").mkdir(parents=True)
+        (self.hub / "ai/project-registry.md").write_text(
+            f"## demo\n\nStatus: active\nPath: {self.hub / 'projects/demo'}\n\n"
+            f"## old\n\nStatus: archived\nPath: {self.hub / 'projects/old'}\n", encoding="utf-8")
+        self.assertEqual(self.mod.project_for(str(self.hub / "projects/old/x"), self.hub), "hub")
+        self.assertEqual(self.mod.project_for(str(self.hub / "projects/demo"), self.hub), "demo")
+
+    def test_scan_turns_are_dropped(self):
+        long_cd = "cd " + "/very/long/path" * 20 + " && "
+        lines = [
+            {"type": "user", "message": {"role": "user", "content": "привет"}},
+            {"type": "assistant", "message": {"role": "assistant", "content": [
+                {"type": "tool_use", "id": "t1", "name": "Bash",
+                 "input": {"command": long_cd + "python3 scripts/session_collect.py --hub . batch"}}]}},
+            {"type": "assistant", "message": {"role": "assistant", "content": [
+                {"type": "tool_use", "id": "t2", "name": "Bash",
+                 "input": {"command": "python3 scripts/session_rules.py --hub . apply --batch b --cases c"}}]}},
+            {"type": "assistant", "message": {"role": "assistant", "content": [
+                {"type": "text", "text": "Скан готов: новое правило R-1"}]}},
+            {"type": "user", "message": {"role": "user", "content": "ещё вопрос"}},
+            {"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "ответ"}]}},
+        ]
+        path = self.claude / "slug/c-9.jsonl"
+        with open(path, "w", encoding="utf-8") as handle:
+            for rec in lines:
+                rec.update({"sessionId": "c-9", "cwd": str(self.hub), "timestamp": "2026-10-04T08:00:00Z"})
+                handle.write(json.dumps(rec, ensure_ascii=False) + "\n")
+        old_ts = datetime(2026, 10, 4, 10, tzinfo=timezone.utc).timestamp()
+        os.utime(path, (old_ts, old_ts))
+        session = next(s for s in self.pending(self.ledger()) if s.id == "c-9")
+        text = self.mod.normalize(session)
+        self.assertIn("привет", text)
+        self.assertIn("ещё вопрос", text)
+        self.assertIn("ответ", text)
+        self.assertNotIn("Скан готов", text)
+        self.assertNotIn("session_collect.py", text)
+        self.assertNotIn("session_rules.py", text)
 
     def test_scanner_sessions_are_skipped(self):
         ids = sorted(s.id for s in self.pending(self.ledger()))

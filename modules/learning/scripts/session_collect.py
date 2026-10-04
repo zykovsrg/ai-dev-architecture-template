@@ -2,7 +2,9 @@
 """Find new Hub sessions in Claude Code and Codex transcripts and normalize them.
 
 Read-only over transcript folders. Writes only ai/learning/scan-ledger.json and
-the batch file named on the command line.
+the batch folder outside the Hub (default ${TMPDIR:-/tmp}/hub-session-scan/):
+one plain-text file per session plus index.json. No transcript text is written
+inside the Hub.
 """
 from __future__ import annotations
 
@@ -19,6 +21,10 @@ from pathlib import Path
 LEDGER = "ai/learning/scan-ledger.json"
 REMINDER = re.compile(r"<system-reminder>.*?</system-reminder>", re.S)
 LINE_LIMIT = 500
+BATCH_CHARS = 60000
+SESSION_CHARS = 40000
+# Turns that run the learning scripts belong to the scan itself, not to user work
+SCAN_SCRIPTS = re.compile(r"session_collect\.py|session_rules\.py")
 
 
 @dataclass
@@ -45,6 +51,29 @@ def _short(value, limit=200):
     return text if len(text) <= limit else text[:limit] + "…"
 
 
+def _tool_turn(name, value):
+    full = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
+    return ("scan" if SCAN_SCRIPTS.search(full or "") else "tool", f"{name}: {_short(value)}")
+
+
+def drop_scan_turns(turns):
+    """Remove turns that run the learning scripts and the assistant report after them."""
+    out, dropping = [], False
+    for role, text in turns:
+        if role == "scan":
+            dropping = True
+            continue
+        if dropping:
+            if role == "user":
+                dropping = False
+            else:
+                if role == "assistant":
+                    dropping = False
+                continue
+        out.append((role, text))
+    return out
+
+
 def parse_claude(path):
     sid = cwd = started = None
     turns, names = [], {}
@@ -67,7 +96,7 @@ def parse_claude(path):
                 turns.append((role, REMINDER.sub("", item["text"]).strip()))
             elif kind == "tool_use":
                 names[item.get("id")] = item.get("name", "tool")
-                turns.append(("tool", f"{item.get('name')}: {_short(item.get('input'))}"))
+                turns.append(_tool_turn(item.get("name"), item.get("input")))
             elif kind == "tool_result" and item.get("is_error"):
                 body = item.get("content")
                 if isinstance(body, list):
@@ -94,7 +123,7 @@ def parse_codex(path):
                 turns.append((payload["role"], text))
         elif kind in ("custom_tool_call", "function_call"):
             last_tool = payload.get("name", "tool")
-            turns.append(("tool", f"{last_tool}: {_short(payload.get('input') or payload.get('arguments'))}"))
+            turns.append(_tool_turn(last_tool, payload.get("input") or payload.get("arguments")))
         elif kind in ("custom_tool_call_output", "function_call_output"):
             output = payload.get("output")
             output = output if isinstance(output, str) else json.dumps(output, ensure_ascii=False)
@@ -105,7 +134,7 @@ def parse_codex(path):
     return Session("codex", meta["id"], meta.get("cwd", ""), meta.get("timestamp", ""), Path(path), turns)
 
 
-def normalize(session, limit=40000):
+def normalize(session, limit=SESSION_CHARS):
     lines = [f"{role.upper()}: {text[:LINE_LIMIT]}" for role, text in session.turns]
     text = "\n".join(lines)
     if len(text) <= limit:
@@ -137,8 +166,11 @@ def _inside(child, parent):
 
 
 def project_for(cwd, hub):
+    """Active registered project containing cwd; archived or unknown -> hub."""
     best = None
     for pid, entry in registry(hub).items():
+        if entry.get("status") != "active":
+            continue
         if _inside(cwd, entry["path"]) and (best is None or len(entry["path"]) > len(best[1])):
             best = (pid, entry["path"])
     return best[0] if best else "hub"
@@ -193,6 +225,7 @@ def pending(hub, ledger, now, claude_root, codex_root, active_minutes=15):
         # Skip sessions started by the learning scanner itself
         if session.turns and session.turns[0][0] == "user" and session.turns[0][1].startswith("[hub-session-scan]"):
             continue
+        session.turns = drop_scan_turns(session.turns)
         out.append(session)
     return out
 
@@ -226,6 +259,56 @@ def extra_sources(hub, ledger):
     return out
 
 
+def default_batch_dir():
+    return Path(os.environ.get("TMPDIR") or "/tmp") / "hub-session-scan"
+
+
+def _session_file(tool, sid):
+    return f"{tool}-{re.sub(r'[^A-Za-z0-9._-]', '_', sid)}.txt"
+
+
+def write_batch(hub, sessions, out_dir, limit=10, max_chars=BATCH_CHARS):
+    """Write up to `limit` sessions, at most `max_chars` in total, as plain-text files.
+
+    Returns (index, remaining). The first session is always taken; it is cut to
+    fit. Session files of earlier batches are blanked (overwritten), never removed.
+    """
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    chosen, total = [], 0
+    for s in sessions[:limit]:
+        project = project_for(s.cwd, hub)
+        head = f"Session: {s.tool} {s.id}\nDate: {s.started[:10]}\nProject: {project}\n\n"
+        body = head + normalize(s, limit=min(SESSION_CHARS, max_chars - len(head) - 20)) + "\n"
+        if chosen and total + len(body) > max_chars:
+            break
+        chosen.append((s, project, body))
+        total += len(body)
+    entries, names = [], set()
+    for s, project, body in chosen:
+        path = out_dir / _session_file(s.tool, s.id)
+        path.write_text(body, encoding="utf-8")
+        names.add(path.name)
+        entries.append({"tool": s.tool, "id": s.id, "date": s.started[:10], "project": project,
+                        "file": str(path), "chars": len(body)})
+    for stale in out_dir.glob("*.txt"):
+        if stale.name not in names and stale.stat().st_size:
+            stale.write_text("", encoding="utf-8")
+    index = {"sessions": entries}
+    save_json(out_dir / "index.json", index)
+    return index, len(sessions) - len(chosen)
+
+
+def _keys(values):
+    keys = set()
+    for value in values or []:
+        tool, _, sid = value.partition(":")
+        if tool not in ("claude", "codex") or not sid:
+            raise SystemExit(f"ERROR: expected <claude|codex>:<session id>, got {value}")
+        keys.add((tool, sid))
+    return keys
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--hub", required=True, type=Path)
@@ -237,7 +320,10 @@ def main(argv=None):
     sub.add_parser("status")
     batch = sub.add_parser("batch")
     batch.add_argument("--limit", type=int, default=10)
-    batch.add_argument("--out", required=True, type=Path)
+    batch.add_argument("--max-chars", type=int, default=BATCH_CHARS)
+    batch.add_argument("--out-dir", type=Path, default=None)
+    batch.add_argument("--session", action="append", help="only this <tool>:<id> (repeatable)")
+    batch.add_argument("--skip", action="append", help="leave out this <tool>:<id> (repeatable)")
     args = parser.parse_args(argv)
     hub = args.hub.resolve()
     ledger = load_ledger(hub)
@@ -257,11 +343,15 @@ def main(argv=None):
         print(json.dumps({"cutover": ledger.get("cutover"), "last_scan": ledger.get("last_scan"),
                           "pending": counts}, ensure_ascii=False))
         return
-    chosen = sessions[: args.limit]
-    payload = {"sessions": [{"tool": s.tool, "id": s.id, "date": s.started[:10],
-                             "project": project_for(s.cwd, hub), "text": normalize(s)} for s in chosen]}
-    save_json(args.out, payload)
-    print(json.dumps({"written": len(chosen), "remaining": len(sessions) - len(chosen)}))
+    only, skip = _keys(args.session), _keys(args.skip)
+    sessions = [s for s in sessions if (s.tool, s.id) not in skip and (not only or (s.tool, s.id) in only)]
+    out_dir = (args.out_dir or default_batch_dir()).resolve()
+    if _inside(out_dir, hub):
+        raise SystemExit("ERROR: the batch folder must be outside the Hub")
+    index, remaining = write_batch(hub, sessions, out_dir, args.limit, args.max_chars)
+    print(json.dumps({"written": len(index["sessions"]), "remaining": remaining,
+                      "index": str(out_dir / "index.json"),
+                      "files": [e["file"] for e in index["sessions"]]}, ensure_ascii=False))
 
 
 if __name__ == "__main__":

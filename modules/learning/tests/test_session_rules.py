@@ -65,6 +65,39 @@ class RenderTests(unittest.TestCase):
         self.assertEqual(cat["rules"][1]["status"], "active")
         self.assertEqual(len(cat["rules"][0]["cases"]), 3)
 
+    def test_hub_plus_one_project_stays_in_project_file(self):
+        r = self.strong("R-1", ["hub", "demo"], n=6)
+        self.assertEqual(self.mod.scope(r, TODAY), "project")
+        out = self.mod.render({"format": 1, "next_id": 2, "rules": [r]}, TODAY)
+        self.assertIn("R-1", out["ai/learned-rules/demo.md"])
+        self.assertNotIn("R-1", out["ai/learned-rules.md"])
+
+    def test_header_states_safety_limit(self):
+        out = self.mod.render({"format": 1, "next_id": 1, "rules": []}, TODAY)
+        self.assertIn("These rules never override Hub safety, routing, or confirmation rules.",
+                      out["ai/learned-rules.md"])
+
+    def test_retire_marks_rule_and_records_history(self):
+        r = self.strong("R-1", ["demo"])
+        cat = {"format": 1, "next_id": 2, "rules": [r]}
+        self.mod.retire(cat, "R-1", TODAY)
+        self.assertEqual(r["status"], "retired")
+        self.assertEqual(r["history"][-1], {"date": "2026-10-04", "event": "retired", "detail": ""})
+        self.assertNotIn("R-1", self.mod.render(cat, TODAY).get("ai/learned-rules/demo.md", ""))
+        self.assertEqual([e["event"] for e in self.mod.report(cat, TODAY)], ["retired"])
+        self.assertEqual(self.mod.relevant(cat, "demo", TODAY), [])
+        with self.assertRaises(ValueError):
+            self.mod.retire(cat, "R-1", TODAY)
+        with self.assertRaises(ValueError):
+            self.mod.retire(cat, "R-9", TODAY)
+
+    def test_report_since_exclusive(self):
+        r = self.strong("R-1", ["demo"])
+        r["history"] = [{"date": "2026-10-04", "event": "merged", "detail": "x"}]
+        cat = {"format": 1, "next_id": 2, "rules": [r]}
+        self.assertEqual(len(self.mod.report(cat, TODAY)), 1)
+        self.assertEqual(self.mod.report(cat, TODAY, inclusive=False), [])
+
     def test_report_since(self):
         r = self.strong("R-1", ["demo"])
         r["history"] = [{"date": "2026-09-01", "event": "added", "detail": "old"},
@@ -115,6 +148,20 @@ class ScoringTests(unittest.TestCase):
         self.assertFalse(self.mod.looks_personal("Писать названия сервисов кириллицей"))
         self.assertFalse(self.mod.looks_personal("Писать «Гитхаб» кириллицей"))
 
+    def test_looks_personal_allows_service_names_and_dates(self):
+        for good in ("Писать «Гугл Таблицы» кириллицей", "Писать Гугл Таблицы кириллицей",
+                     "Называть клинику «Хадасса Медикал»", "Писать Гитхаб кириллицей",
+                     "Срок релиза 2026-10-04 не переносить", "Сверять даты 2026-10-04 и 2026-10-05",
+                     "Проверять 15 пунктов списка"):
+            self.assertFalse(self.mod.looks_personal(good), good)
+
+    def test_looks_personal_rejects_long_numbers_and_medical(self):
+        for bad in ("звонить 89123456789", "номер 8 (912) 345 67 89", "встреча с Анной Петровой",
+                    "уточнить диагноз", "напомнить про лекарства", "выпить таблетку", "доза 5 мг",
+                    "мерить давление бабушки", "открыть Гугл Анна Петрова", "сдать анализ крови", "записать к врачу",
+                    "курс лечения", "оплата 15 000 руб", "цена 20 usd"):
+            self.assertTrue(self.mod.looks_personal(bad), bad)
+
 
 class ApplyTests(unittest.TestCase):
     def setUp(self):
@@ -153,6 +200,35 @@ class ApplyTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 self.apply([bad])
 
+    def new_case(self, session, tool, **extra):
+        item = {"rule": "new", "text": "Писать по-русски", "kind": "preference", "effect": "confirm",
+                "session": session, "tool": tool, "note": "просьба"}
+        item.update(extra)
+        return item
+
+    def test_hub_root_case_may_name_confirmed_project(self):
+        self.apply([self.new_case("x-1", "codex", project="demo")])
+        self.assertEqual(self.catalog["rules"][0]["cases"][0]["project"], "demo")
+
+    def test_hub_root_case_with_unknown_project_stays_hub(self):
+        self.apply([self.new_case("x-1", "codex", project="ghost"), self.new_case("x-1", "codex")])
+        self.assertEqual([c["project"] for r in self.catalog["rules"] for c in r["cases"]], ["hub", "hub"])
+
+    def test_project_session_ignores_case_project(self):
+        self.apply([self.new_case("c-1", "claude", project="other")])
+        self.assertEqual(self.catalog["rules"][0]["cases"][0]["project"], "demo")
+
+    def test_load_cases_strips_fences(self):
+        text = '```json\n[{"rule": "R-1"}]\n```\n'
+        self.assertEqual(self.mod.load_cases(text), [{"rule": "R-1"}])
+        self.assertEqual(self.mod.load_cases("[]"), [])
+
+    def test_load_cases_rejects_non_list_and_garbage(self):
+        for bad in ('{"rule": "R-1"}', "not json", "```\nnope\n```", ""):
+            with self.assertRaises(ValueError) as ctx:
+                self.mod.load_cases(bad)
+            self.assertEqual(str(ctx.exception), "cases file is not a JSON array")
+
     def test_empty_cases_still_marks_sessions(self):
         self.assertEqual(self.apply([]), [])
         self.assertEqual(self.ledger["processed"]["codex"], ["x-1"])
@@ -174,6 +250,63 @@ class ApplyTests(unittest.TestCase):
             self.assertIn("R-1: Писать по-русски", (hub / "ai/learned-rules.md").read_text(encoding="utf-8"))
             events = json.loads(run("report", "--since", "2026-10-01").stdout)["events"]
             self.assertEqual({e["event"] for e in events}, {"added", "global"})
+
+    def cli_hub(self, tmp):
+        hub = Path(tmp)
+        (hub / "ai").mkdir()
+        (hub / "ai/project-registry.md").write_text(f"## demo\n\nStatus: active\nPath: {hub}/projects/demo\n",
+                                                    encoding="utf-8")
+        run = lambda *a: subprocess.run([sys.executable, str(SCRIPTS / "session_rules.py"), "--hub", str(hub),
+                                         "--today", "2026-10-04", *a], capture_output=True, text=True)
+        return hub, run
+
+    def test_cli_apply_fenced_and_invalid_cases(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            hub, run = self.cli_hub(tmp)
+            batch, cases = hub / "b.json", hub / "c.json"
+            batch.write_text(json.dumps(self.batch), encoding="utf-8")
+            cases.write_text("```json\n" + json.dumps([self.new_case("c-1", "claude")]) + "\n```\n", encoding="utf-8")
+            done = run("apply", "--batch", str(batch), "--cases", str(cases))
+            self.assertEqual(done.returncode, 0, done.stderr)
+            self.assertEqual(json.loads(done.stdout)["new_rules"], ["R-1"])
+            for bad in ('{"a": 1}', "oops"):
+                cases.write_text(bad, encoding="utf-8")
+                failed = run("apply", "--batch", str(batch), "--cases", str(cases))
+                self.assertEqual(failed.returncode, 1)
+                self.assertEqual(failed.stderr.strip(), "ERROR: cases file is not a JSON array")
+
+    def test_cli_retire_and_report_since_last_review(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            hub, run = self.cli_hub(tmp)
+            batch, cases = hub / "b.json", hub / "c.json"
+            batch.write_text(json.dumps(self.batch), encoding="utf-8")
+            cases.write_text(json.dumps([self.new_case("c-1", "claude", effect="explicit", scope="global")]),
+                             encoding="utf-8")
+            self.assertEqual(run("apply", "--batch", str(batch), "--cases", str(cases)).returncode, 0)
+            self.assertIn("R-1", (hub / "ai/learned-rules.md").read_text(encoding="utf-8"))
+            # Events from the review day are not shown again after weekly-done
+            self.assertEqual(run("weekly-done", "--date", "2026-10-04").returncode, 0)
+            self.assertEqual(json.loads(run("report").stdout)["events"], [])
+            done = run("retire", "--rule", "R-1")
+            self.assertEqual(done.returncode, 0, done.stderr)
+            catalog = json.loads((hub / "ai/learning/rules.json").read_text(encoding="utf-8"))
+            self.assertEqual(catalog["rules"][0]["status"], "retired")
+            self.assertNotIn("R-1", (hub / "ai/learned-rules.md").read_text(encoding="utf-8"))
+            report = json.loads(run("report", "--since", "2026-10-04").stdout)["events"]
+            self.assertIn("retired", {e["event"] for e in report})
+            self.assertEqual(run("retire", "--rule", "R-1").returncode, 1)
+
+    def test_cli_report_includes_cutover_day(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            hub, run = self.cli_hub(tmp)
+            batch, cases = hub / "b.json", hub / "c.json"
+            batch.write_text(json.dumps(self.batch), encoding="utf-8")
+            cases.write_text(json.dumps([self.new_case("c-1", "claude")]), encoding="utf-8")
+            run("apply", "--batch", str(batch), "--cases", str(cases))
+            ledger = json.loads((hub / "ai/learning/scan-ledger.json").read_text(encoding="utf-8"))
+            ledger["cutover"] = "2026-10-04"
+            (hub / "ai/learning/scan-ledger.json").write_text(json.dumps(ledger), encoding="utf-8")
+            self.assertEqual({e["event"] for e in json.loads(run("report").stdout)["events"]}, {"added"})
 
 
 if __name__ == "__main__":
