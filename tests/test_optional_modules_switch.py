@@ -29,6 +29,13 @@ REMOVED = {
         "scripts/review_proposals.py",
         "scripts/check-session-review.py",
         "scripts/check-workflow-memory.sh",
+        "ai/skills/hub-session-scan/SKILL.md",
+        "ai/skills/hub-session-scan/resources/scanner.md",
+        "ai/skills/hub-session-scan/resources/consolidator.md",
+        "scripts/session_collect.py",
+        "scripts/session_rules.py",
+        ".claude/agents/hub-session-scanner.md",
+        ".claude/agents/hub-learning-consolidator.md",
     },
 }
 

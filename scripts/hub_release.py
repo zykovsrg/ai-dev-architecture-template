@@ -18,6 +18,7 @@ MEMORY_FILES = {
     "ai/goals.md",
     "ai/project-registry.md", "ai/cross-project-signals.md", "ai/goal-log.md",
     "ai/workflow-observations.md", "ai/workflow-context.md",
+    "ai/learning/rules.json", "ai/learning/scan-ledger.json", "ai/learned-rules.md",
 }
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))

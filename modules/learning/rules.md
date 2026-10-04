@@ -6,6 +6,9 @@
   explicitly selected session. Reviews live only in the selected project's
   `ai/session-reviews/`; improvements the review finds are applied directly
   and reported; removing an existing rule waits for an explicit yes.
+- `hub-session-scan` — scans new Claude Code and Codex sessions into the
+  learning catalog with a cheap model and runs the weekly merge pass; removing
+  a catalog rule waits for an explicit yes.
 
 ## Self-Learning Workflows
 
