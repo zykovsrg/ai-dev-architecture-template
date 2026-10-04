@@ -91,7 +91,7 @@ class LifecycleEventTests(unittest.TestCase):
         passports = load_passports(ROOT)
         full = render_modules_md(passports, list(passports), ROOT)
         close = event_block(full, "before-task-close")
-        self.assertIn("- learning:", close)
+        self.assertNotIn("- learning:", close)
         self.assertIn("- knowledge:", close)
         create = event_block(full, "after-project-create")
         self.assertIn("- knowledge:", create)

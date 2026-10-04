@@ -35,7 +35,7 @@ class LiveHubMergeTests(unittest.TestCase):
         finish = template("modules/tasks/skills/hub-task-finish/SKILL.md")
         self.assertLess(finish.index("`before-task-close`"), finish.index("clearing task context"))
         learning = source("modules/learning/rules.md")
-        self.assertIn("hub-session-review", learning[learning.index("## before-task-close"):])
+        self.assertIn("Task closure does not run a session review", learning)
         self.assertIn("deterministic", finish)
 
 
