@@ -573,3 +573,27 @@ The confirmed 66-project inspection found context placeholders in 41 projects.
 Task records are valid; application refactoring is not established. Gather
 project-specific facts before filling descriptions. This follow-up is deferred
 because the approved inspection does not supply missing facts.
+
+### FT-20261004-001 — Доделать проверку самообучения по сессиям
+
+Status: ready
+
+Priority: medium
+
+Source: закрытие TASK-ai-dev-architecture-20261004-001
+
+Created: 2026-10-04
+
+Proposed task:
+
+Проверить вживую строку «Разбор сессий» в плане дня и помощника
+`hub-session-scanner` в новом чате «Клода». Разобрать отложенные мелкие
+замечания из финальной проверки: точность фильтра личных данных («анализ»,
+восьмизначные числа как даты), `relevant` для проектов, названных в
+разговорах у корня хаба, удаление `promote_rule` из схемы действий,
+сообщения об ошибках команд merge/unmerge/report.
+
+Acceptance criteria:
+
+- План дня показывает строку о разборе; новый чат запускает помощника на «Хайку».
+- По каждому отложенному замечанию — исправлено или осознанно оставлено.

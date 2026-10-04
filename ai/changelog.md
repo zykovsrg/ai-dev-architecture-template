@@ -23,6 +23,9 @@
   sessions once; weekly pass on Opus 5.5 / GPT-6.1-Sol.
 - Validation: 48 learning tests, architecture suite, consistency and strict
   boundary checks pass; live scan in both tools; second run 0 pending.
+- Closure 2026-10-04: TASK-ai-dev-architecture-20261004-001 closed by user
+  request (PR #22 and #23 merged; Hub matches source). Closure no longer runs
+  a session review. Follow-up: FT-20261004-001.
 
 ### 2026-10-03 — Guided evening review installed
 
