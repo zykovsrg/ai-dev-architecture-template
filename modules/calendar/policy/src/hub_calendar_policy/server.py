@@ -108,8 +108,20 @@ class GuardedCalendarServer:
         else:
             assert event is not None
             await self._backend.delete(event, request.recurrence_scope)
+            await self._confirm_deleted(event)
             result = event
         return {"source": SOURCE, "result": "applied", "event": result.model_dump(mode="json")}
+
+    async def _confirm_deleted(self, event: EventRef) -> None:
+        remaining = await self._backend.get_event(event.id, event.start)
+        # EventKit can turn the last occurrence of a series into a standalone
+        # event instead of removing it. That standalone event is the same single
+        # occurrence, so it is removed once more as a single event.
+        if remaining is not None and remaining.start == event.start and not remaining.recurring:
+            await self._backend.delete(remaining, None)
+            remaining = await self._backend.get_event(event.id, event.start)
+        if remaining is not None and remaining.start == event.start:
+            raise PolicyError("DELETE_NOT_APPLIED")
 
     async def _require_permission(self) -> None:
         if await self._backend.permission_status() != "granted":

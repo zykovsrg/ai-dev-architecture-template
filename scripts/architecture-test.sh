@@ -8,6 +8,7 @@ unit() {
   python3 -m unittest discover -s "$ROOT/tests" -p 'test_*.py' -v
   python3 -m unittest discover -s "$ROOT/modules/obsidian/tests" -p 'test_*.py' -v
   python3 -m unittest discover -s "$ROOT/modules/planning/tests" -p 'test_*.py' -v
+  python3 -m unittest discover -s "$ROOT/modules/learning/tests" -p 'test_*.py' -v
   bash "$ROOT/tests/test_hub_update_check.sh"
   bash "$ROOT/modules/obsidian/tests/obsidian-task-sync-watch-test.sh"
   for test in "$ROOT"/tests/test-*.sh; do bash "$test"; done

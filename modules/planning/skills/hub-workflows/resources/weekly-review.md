@@ -22,6 +22,9 @@ When the request names an archiproject group, resolve it via `scripts/archiproje
 
 Render active numeric goal pace/forecast only when `goals` is listed in `ai/modules.md`.
 
-Only when `learning` is listed in `ai/modules.md`, read the observation journal and run `python3 scripts/calendar_drift.py --hub <hub> summary --until <date>` for calendar repeat candidates (kind, project, count), group repeated friction/calendar drift, and offer `promote_rule` after three repeats or two in one week; offer `retire_rule` for contradicted or excess rules. Before either rule-change proposal run `check-workflow-memory.sh`; failure blocks rule changes only. All learning changes use the core proposal/confirmation contract.
+Only when `learning` is listed in `ai/modules.md`, read the observation journal and run `python3 scripts/calendar_drift.py --hub <hub> summary --until <date>` for calendar repeat candidates (kind, project, count), group repeated friction/calendar drift, then run the `hub-session-scan` weekly pass and show `session_rules.py report`
+(since the last weekly review; several weeks if reviews were skipped): rules
+added, changed, made global, merged or unmerged, in plain Russian; offer to undo
+any merge; offer `retire_rule` only for a catalog rule the user wants removed, and only after the user's explicit yes run `python3 scripts/session_rules.py --hub <hub> retire --rule R-n` (status `retired`, shown in the report). Before either rule-change proposal run `check-workflow-memory.sh`; failure blocks rule changes only. All learning changes use the core proposal/confirmation contract.
 
 Only when `learning` is listed in `ai/modules.md`, also handle open session-review proposals as `ai/rules/learning.md` § Open review proposals defines: oldest first, at most ten per review, and report how many remain.

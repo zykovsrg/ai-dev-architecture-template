@@ -18,6 +18,7 @@ MEMORY_FILES = {
     "ai/goals.md",
     "ai/project-registry.md", "ai/cross-project-signals.md", "ai/goal-log.md",
     "ai/workflow-observations.md", "ai/workflow-context.md",
+    "ai/learning/rules.json", "ai/learning/scan-ledger.json", "ai/learned-rules.md",
 }
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -102,7 +103,7 @@ def build_manifest(source, modules=None, passports=None):
     if len({entry["target"] for entry in files}) != len(files):
         raise ValueError("duplicate manifest target")
     return {"format": 1, "modules": selected, "files": files, "remove": [],
-            "ignore_lines": ["/.local/", "/projects/"]}
+            "ignore_lines": ["/.local/", "/projects/", "/ai/tmp/"]}
 
 
 def release_sources(root):

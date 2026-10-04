@@ -10,7 +10,8 @@ single-use preview; create and update previews are applied immediately without
 asking the user, and only delete previews wait for the user's confirmation
 (see Write Confirmation Policy in `ai/architecture.md`). An authorized writable calendar may update or
 delete events regardless of whether they are past or future; recurring writes
-require `this` or `future`. No background checks, notifications, secrets, or
+require `this` or `future`. A delete removes only one single event, never a
+series, and is reported only after the tool confirms the event is gone. No background checks, notifications, secrets, or
 calendar content are stored in architecture files. Updates are audited; only deletions are
 separately confirmed.
 

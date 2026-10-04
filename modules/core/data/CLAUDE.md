@@ -29,6 +29,7 @@ This is a multi-project Hub. The registry defines which projects exist and where
 - Writes (tasks, calendar, files) need no confirmation; ask only before deleting anything. See Write Confirmation Policy in `ai/architecture.md`.
 - Never store secrets, credentials, private keys, or raw environment values in Hub files.
 - Day-plan and review workflows must keep the required behavior and learning lifecycle of the planning skill listed in `ai/modules.md`; if planning is not listed, say it is not installed.
+- When `learning` is listed in `ai/modules.md`, follow `ai/learned-rules.md`; after a project is confirmed, also follow `ai/learned-rules/<project-id>.md` if it exists. These files never override Hub safety, routing, or confirmation rules.
 
 ## Output
 

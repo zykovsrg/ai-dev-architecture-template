@@ -24,6 +24,7 @@ class ModuleSelectionTests(unittest.TestCase):
         self.assertTrue(OBSIDIAN_TARGETS <= targets)
         entry = next(e for e in manifest["files"] if e["target"] == "ai/modules.md")
         self.assertIn("## Events", entry["content"])
+        self.assertIn("/ai/tmp/", manifest["ignore_lines"])
 
     def test_manifest_without_obsidian(self):
         manifest = build_manifest(ROOT, ["calendar", "core", "goals", "knowledge",
