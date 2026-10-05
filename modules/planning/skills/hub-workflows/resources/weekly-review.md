@@ -36,8 +36,9 @@ remember: a script check, a validator, a skill step, or a hook. Signs: the rule
 is deterministic and checkable (format, IDs, scope, paths, counts, model
 names); it was broken although it was written down; or breaking it is costly.
 Show each candidate under `## Нужны решения` as
-`- <rule id or source> — <proposed mechanism>; почему: <evidence>`, at most
-five per review, strongest evidence first; write `- Механизмы: кандидатов нет.`
+`- <rule id or source> — <proposed mechanism>; почему: <evidence>`, every
+candidate with no count limit (user's choice, 2026-10-05), strongest evidence
+first; write `- Механизмы: кандидатов нет.`
 when there are none. Implement each candidate the user accepts in the same
 session through the Superpowers workflow (user's choice, 2026-10-05):
 `superpowers:brainstorming`, then `superpowers:writing-plans`, then
