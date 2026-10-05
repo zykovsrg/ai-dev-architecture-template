@@ -11,6 +11,9 @@
   `modules/learning/tests/test_session_scan_model.py`.
 - The scan report has a fixed five-bullet format: Разобрано, Новые правила,
   Подключены к работе, Стали общими, Модель.
+- Weekly review adds a mechanism review: learned rules and repeated friction
+  that a script, validator, skill step or hook would enforce better are
+  proposed under `## Нужны решения` and implemented once accepted.
 
 ### 2026-09-28 — knowledge, goals, learning switchable; Python 3.9 compatibility; documentation refresh
 

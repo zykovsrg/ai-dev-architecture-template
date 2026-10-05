@@ -27,4 +27,20 @@ Only when `learning` is listed in `ai/modules.md`, read the observation journal 
 added, changed, made global, merged or unmerged, in plain Russian; offer to undo
 any merge; offer `retire_rule` only for a catalog rule the user wants removed, and only after the user's explicit yes run `python3 scripts/session_rules.py --hub <hub> retire --rule R-n` (status `retired`, shown in the report). Before either rule-change proposal run `check-workflow-memory.sh`; failure blocks rule changes only. All learning changes use the core proposal/confirmation contract.
 
+Only when `learning` is listed in `ai/modules.md`, run a mechanism review
+(asked for by the user 2026-10-05). Go through every active learned rule in
+`ai/learned-rules.md` and `ai/learned-rules/*.md`, every rule in
+`ai/workflow-context.md`, and the friction repeated this week. For each, decide
+whether a mechanism would enforce it better than an instruction the agent must
+remember: a script check, a validator, a skill step, or a hook. Signs: the rule
+is deterministic and checkable (format, IDs, scope, paths, counts, model
+names); it was broken although it was written down; or breaking it is costly.
+Show each candidate under `## Нужны решения` as
+`- <rule id or source> — <proposed mechanism>; почему: <evidence>`, at most
+five per review, strongest evidence first; write `- Механизмы: кандидатов нет.`
+when there are none. Implement each candidate the user accepts in the same
+session: change the Hub copy, add a test, and port the change to the
+`ai-dev-architecture` source after that project is confirmed through routing.
+Retire the rule the mechanism replaces only after the user's explicit yes.
+
 Only when `learning` is listed in `ai/modules.md`, also handle open session-review proposals as `ai/rules/learning.md` § Open review proposals defines: oldest first, at most ten per review, and report how many remain.
