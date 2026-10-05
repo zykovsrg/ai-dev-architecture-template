@@ -34,6 +34,7 @@ REMOVED = {
         "ai/skills/hub-session-scan/resources/consolidator.md",
         "scripts/session_collect.py",
         "scripts/session_rules.py",
+        "scripts/session_scan_model.py",
         ".claude/agents/hub-session-scanner.md",
         ".claude/agents/hub-learning-consolidator.md",
     },

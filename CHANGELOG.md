@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### 2026-10-05 — session scan: confirmed scanner model and fixed report format
+
+- `hub-session-scan` now confirms the model each Claude Code scanner run
+  actually used with `scripts/session_scan_model.py` (reads only the
+  `message.model` field of that subagent's transcript) and stops before
+  applying a batch when it is not Haiku. Tested by
+  `modules/learning/tests/test_session_scan_model.py`.
+- The scan report has a fixed five-bullet format: Разобрано, Новые правила,
+  Подключены к работе, Стали общими, Модель.
+- Weekly review adds a mechanism review: learned rules and repeated friction
+  that a script, validator, skill step or hook would enforce better are
+  proposed under `## Нужны решения` (no count limit) and implemented once
+  accepted through the Superpowers workflow.
+
 ### 2026-09-28 — knowledge, goals, learning switchable; Python 3.9 compatibility; documentation refresh
 
 - knowledge, goals and learning can now be switched off and on with
