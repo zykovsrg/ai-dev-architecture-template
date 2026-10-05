@@ -67,7 +67,9 @@ transcripts, never writes there, and stores no transcript text in the Hub
 (normalized session text goes only to a temporary folder outside the Hub,
 `${TMPDIR:-/tmp}/hub-session-scan/`). The scan also reads, without routing
 confirmation, only the `## Findings` section of `ai/session-reviews/*.md` in
-active registered projects. This is the only exception to the allowed-root rule.
+active registered projects. To confirm the scanner's model,
+`scripts/session_scan_model.py` reads only the `message.model` field of
+`~/.claude/projects/*/*/subagents/agent-<id>.jsonl` for the scanner runs. This is the only exception to the allowed-root rule.
 
 ## Confirmation And Confidence
 

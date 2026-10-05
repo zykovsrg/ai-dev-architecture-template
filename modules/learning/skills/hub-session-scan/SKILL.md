@@ -38,8 +38,12 @@ the cases and the merges (no transcript text).
       `<hub>/ai/tmp/learning/rules.json` and the output
       `<hub>/ai/tmp/learning/cases.json`.
       - Claude Code: start the `hub-session-scanner` subagent (Haiku) with that
-        prompt. Confirm the model actually used from the subagent result; do
-        not ask the model for its name.
+        prompt. Then confirm the model actually used:
+        `python3 scripts/session_scan_model.py --agent-id <agentId>` with the
+        agentId from the subagent result. It reads only the model field of
+        that subagent's transcript. On exit 1 (other model, no transcript or
+        no model recorded) stop the scan before applying this batch and tell
+        the user. Never ask the model for its name.
       - Codex: run as a subprocess, with `<codex>` = `codex` on PATH, else
         `/Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex`:
         `<codex> exec -m gpt-6-luna -c model_reasoning_effort=low -s read-only --skip-git-repo-check --ephemeral -C <hub> -o <hub>/ai/tmp/learning/cases.json "<prompt>" </dev/null`
@@ -54,9 +58,20 @@ the cases and the merges (no transcript text).
       A session that still fails stays pending: note its `<tool>:<id>`, skip
       it for the rest of this run, and report it.
 3. Commit `ai/learning/`, `ai/learned-rules.md` and `ai/learned-rules/` in the
-   Hub repository. Report in plain Russian: sessions scanned per tool, new
-   rules, rules now injected, rules that became global, and the IDs of
-   sessions that failed and stay pending.
+   Hub repository. Report in plain Russian as one short opening line
+   (result saved) and then exactly these five bold-labelled bullets, each
+   one or two short sentences (format approved by the user 2026-10-05):
+   - **Разобрано:** sessions per tool («Клод», «Кодекс»); failed session
+     IDs that stay pending, or that none failed and the queue is empty.
+   - **Новые правила: N.** What the new rules are about, grouped in plain
+     words, not as raw rule text or IDs.
+   - **Подключены к работе:** which new rules are now injected; name any
+     that stay only in the catalog.
+   - **Стали общими:** rules that became global, or «нет».
+   - **Модель:** the model confirmed by `session_scan_model.py` for every
+     scanner run (Claude Code), or the `-m` model passed to Codex.
+   Optionally add one plain line after the bullets for a notable
+   observation (for example, duplicates worth merging at the weekly pass).
 
 ## Weekly pass
 
