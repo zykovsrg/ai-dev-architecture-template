@@ -39,8 +39,13 @@ Show each candidate under `## Нужны решения` as
 `- <rule id or source> — <proposed mechanism>; почему: <evidence>`, at most
 five per review, strongest evidence first; write `- Механизмы: кандидатов нет.`
 when there are none. Implement each candidate the user accepts in the same
-session: change the Hub copy, add a test, and port the change to the
-`ai-dev-architecture` source after that project is confirmed through routing.
+session through the Superpowers workflow (user's choice, 2026-10-05):
+`superpowers:brainstorming`, then `superpowers:writing-plans`, then
+`superpowers:test-driven-development` and
+`superpowers:verification-before-completion`. If Superpowers is not
+available, say so and ask before using another method. The change goes to the
+Hub copy and is ported to the `ai-dev-architecture` source after that project
+is confirmed through routing.
 Retire the rule the mechanism replaces only after the user's explicit yes.
 
 Only when `learning` is listed in `ai/modules.md`, also handle open session-review proposals as `ai/rules/learning.md` § Open review proposals defines: oldest first, at most ten per review, and report how many remain.
