@@ -19,6 +19,8 @@ _index = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_index)
 
 CLOSED = {"done", "completed", "dropped"}
+# Waiting or paused work has no schedule to keep, so passed or late blocks are not drift.
+NO_SCHEDULE_CHECK = CLOSED | {"waiting", "paused"}
 
 
 def collect_tasks(hub):
@@ -48,6 +50,18 @@ def _local(value, tz=None):
 
 def _span(ev, tz=None):
     return (_local(ev["start"], tz), _local(ev["end"], tz))
+
+
+def schedule_items(item, status, span, due, now):
+    """Report an open task whose block already passed or lands after its deadline."""
+    if status in NO_SCHEDULE_CHECK or span is None:
+        return []
+    # A block earlier today belongs to the evening review, not to sync.
+    if span[1][:10] < now[:10]:
+        return [{**item, "kind": "schedule_passed", "event": list(span)}]
+    if due and span[0][:10] > due:
+        return [{**item, "kind": "scheduled_after_due", "event": list(span)}]
+    return []
 
 
 def find_discrepancies(tasks, events, now, tz=None):
@@ -80,6 +94,8 @@ def find_discrepancies(tasks, events, now, tz=None):
                 e = hits[0]
                 out.append({**item, "kind": "unlinked", "event": list(_span(e, tz)), "event_id": e["id"],
                             "calendar_id": e["calendar_id"], "event_title": e["title"]})
+                item = {**item, "event_id": e["id"], "calendar_id": e["calendar_id"], "event_title": e["title"]}
+            out += schedule_items(item, t["status"], tuple(t["scheduled"]), t.get("due"), now)
             continue
         synced = (link["synced_start"], link["synced_end"])
         item.update(synced=list(synced), event_id=link["event_id"], calendar_id=link["calendar_id"])
@@ -111,8 +127,11 @@ def find_discrepancies(tasks, events, now, tz=None):
         elif task_moved:
             kind = "task_moved"
         else:
-            continue
-        out.append({**item, "kind": kind})
+            kind = None
+        if kind:
+            out.append({**item, "kind": kind})
+        # Calendar is the source of truth for time, so check the event's span.
+        out += schedule_items(item, t["status"], span, t.get("due"), now)
     return out
 
 

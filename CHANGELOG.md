@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### 2026-10-06 — calendar sync: late and passed blocks
+
+- `calendar_task_sync.py` adds `scheduled_after_due` (an open task's Calendar
+  block lands after its `Due:`) and `schedule_passed` (an open task's block
+  ended before today). Waiting, paused and closed tasks are skipped; blocks
+  that ended earlier today are left to the evening review.
+- `day-plan` proposes moving `Due:` to the block date for the first and asks
+  for a new date for the second; neither changes anything without the user.
+- Found on 2026-10-06: five tasks moved to today kept their old deadline and
+  one task's only block was on 2026-10-02, yet sync reported no discrepancy.
+  Tested by `modules/planning/tests/test-calendar-task-sync.py`.
 ### 2026-10-05 — stage templates for archiproject groups
 
 - A group in `ai/archiprojects.md` may set `stage_template:`. New

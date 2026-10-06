@@ -117,10 +117,16 @@ delay synchronization until after composing the plan:
 - `closed_with_future_event` → delete preview plus a task diff removing the
   `Событие:` line.
 - `unlinked` → task diff adding the `Событие:` line.
+- `scheduled_after_due` → the block (`event`, Calendar time) lands after
+  `Due:`. Propose moving `Due:` to the block date as an `update_due`; apply it
+  only after the user's yes. No other mutation.
+- `schedule_passed` → an open task's block ended before today and no later
+  block is linked. Ask when to reschedule it; no proposal until the user names
+  a date. Blocks that ended earlier today are left to the evening review.
 
 Never change `Due:` through synchronization. An unambiguous schedule change
-may be applied even after `Due:`; report the missed deadline and ask separately
-about changing it. Keep the task in the overdue section until the user changes
+may be applied even after `Due:`; the script then also returns
+`scheduled_after_due`, which asks separately about changing the deadline. Keep the task in the overdue section until the user changes
 its deadline or confirms completion.
 Apply unambiguous `calendar_moved`, `task_moved`, `both_moved`, `stale_sync`, and `unlinked` items
 directly and list them as done. A `closed_with_future_event` item deletes an
