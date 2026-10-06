@@ -98,6 +98,11 @@ The plan explicitly excludes `ai/architecture.md`,
    subscriber listed under `after-project-create`, read its rules file and
    apply exactly its planned items for the new project only. If one fails,
    stop and report it; do not initialize Git or continue.
+   Then, when the card has a `primary_archiproject:`, run
+   `python3 scripts/seed_stage_template.py --hub <hub> --project <project-id>`.
+   It adds the stage template of that group or its nearest ancestor to
+   `ai/future-tasks.md`, or reports `"template": null` and writes nothing.
+   Report the created task IDs. On an error, stop and report it.
 8. Initialize a local Git repository and commit only the created scaffold.
    If authenticated GitHub CLI access is available, verify that `<project-id>`
    is unused, create a private repository with that exact name, add `origin`,

@@ -23,6 +23,7 @@ environment checks, backed by the compact task index.
 - modules/tasks/skills/hub-task-overview/ -> ai/skills/hub-task-overview/
 - modules/tasks/scripts/read-compact-task-index.py -> scripts/read-compact-task-index.py
 - modules/tasks/scripts/task_records.py -> scripts/task_records.py
+- modules/tasks/scripts/seed_stage_template.py -> scripts/seed_stage_template.py
 - modules/tasks/scripts/check-all-task-records.sh -> scripts/check-all-task-records.sh
 - modules/tasks/scripts/lib/calendar-date.sh -> scripts/lib/calendar-date.sh
 
