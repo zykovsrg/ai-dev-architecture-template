@@ -65,7 +65,9 @@ send `recurring: true`, `recurrence_scope: this` and its `occurrence_start`;
 that the event is gone. If EventKit left the last occurrence as a standalone
 event, the tool removes that same event once more. If the event still remains,
 it reports `DELETE_NOT_APPLIED`: tell the user and do not report a deletion.
-For an update, omit `title` unless the user asks to rename the event.
+For an update, omit `title` unless the user asks to rename the event, and omit
+`all_day` unless the change turns the event into or out of an all-day event:
+an omitted `all_day` keeps the event's own flag.
 
 A `preview_change` response for a recurring event echoes the start of the
 series, not the occurrence being changed. A preview whose `start` precedes the

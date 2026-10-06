@@ -80,10 +80,19 @@ class ChangeRequest(BaseModel):
     event_id: str | None = Field(default=None, min_length=1)
     start: datetime | None = None
     end: datetime | None = None
-    all_day: bool = False
+    # None on an update leaves the event's all-day flag as it is; a create
+    # without it is a timed event.
+    all_day: bool | None = None
     recurring: bool = False
     recurrence_scope: Literal["this", "future"] | None = None
     occurrence_start: datetime | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def default_create_to_timed(cls, data: object) -> object:
+        if isinstance(data, dict) and data.get("action") == "create" and data.get("all_day") is None:
+            return {**data, "all_day": False}
+        return data
 
     @model_validator(mode="after")
     def validate_request(self) -> "ChangeRequest":
