@@ -264,7 +264,10 @@ def calendar_chain(groups, card):
         seen.add(current)
         chain.insert(0, _group_calendar_name(groups[current]))
         current = groups[current]["parent"]
-    chain.append((card["calendar_name"] or card["project_id"]).strip().lower())
+    name = (card["calendar_name"] or card["project_id"]).strip().lower()
+    # A project named like its own group is the group's general project: no repeat.
+    if not chain or chain[-1] != name:
+        chain.append(name)
     return chain
 
 

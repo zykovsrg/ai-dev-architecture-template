@@ -39,7 +39,7 @@ def make_hub(tmp):
           + group("dela", "Дела"))
     cards = {
         "release-page-varicocele": card("release-page-varicocele", "hadassah-promo", "варикоцеле"),
-        "promo-pages": card("promo-pages", "hadassah-promo", "общее"),
+        "promo-pages": card("promo-pages", "hadassah-promo", "промостраницы"),
         "rutina-i-byt": card("rutina-i-byt", "dela", "дела"),
         "zdorove": card("zdorove", "none", "здоровье"),
         "legacy": card("legacy", "dela"),
@@ -90,7 +90,12 @@ class CalendarTitles(unittest.TestCase):
                          ("release-page-varicocele", "доработать текст"))
 
     def test_resolve_is_case_insensitive_and_keeps_slashes_in_task(self):
-        self.assertEqual(self.resolve("Хадасса/Промостраницы/общее/a/b"), ("promo-pages", "a/b"))
+        self.assertEqual(self.resolve("Хадасса/Промостраницы/Варикоцеле/a/b"), ("release-page-varicocele", "a/b"))
+
+    def test_project_named_like_its_group_is_not_repeated(self):
+        self.assertEqual(self.title("promo-pages", "Встреча с Шелунцовым"), "хадасса/промостраницы/встреча с шелунцовым")
+        self.assertEqual(self.resolve("хадасса/промостраницы/встреча с шелунцовым"),
+                         ("promo-pages", "встреча с шелунцовым"))
 
     def test_resolve_without_archiproject(self):
         self.assertEqual(self.resolve("здоровье/измерять давление"), ("zdorove", "измерять давление"))
