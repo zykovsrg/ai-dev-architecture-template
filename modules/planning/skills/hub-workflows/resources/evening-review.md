@@ -102,7 +102,8 @@ unambiguous task-time changes directly and report actual writes briefly; with
 `sync.status: incomplete`, say sync was skipped because coverage was partial.
 The final report always states the sync result in one line. Ambiguous/missing occurrences remain questions;
 do not replace a project-outcome question with a batch of sync questions.
-Never change Due or status merely because Calendar changed.
+Never change status merely because Calendar changed; `Due:` moves only through
+`scheduled_after_due`, to a later block date, as in `resources/day-plan.md`.
 
 Only when goals is listed in `ai/modules.md`, record user-stated amounts as
 `goal_progress`. Ask for an amount only while reviewing a relevant project task;

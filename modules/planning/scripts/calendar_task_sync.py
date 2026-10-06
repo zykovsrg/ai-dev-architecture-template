@@ -60,7 +60,7 @@ def schedule_items(item, status, span, due, now):
     if span[1][:10] < now[:10]:
         return [{**item, "kind": "schedule_passed", "event": list(span)}]
     if due and span[0][:10] > due:
-        return [{**item, "kind": "scheduled_after_due", "event": list(span)}]
+        return [{**item, "kind": "scheduled_after_due", "event": list(span), "proposed_due": span[0][:10]}]
     return []
 
 

@@ -175,8 +175,8 @@ class DueAndPassed(unittest.TestCase):
 
     def test_block_after_due_is_reported(self):
         [d] = sync.find_discrepancies([task(due="2026-09-21")], [event()], NOW)
-        self.assertEqual((d["kind"], d["due"], d["event"]),
-                         ("scheduled_after_due", "2026-09-21", ["2026-09-22 15:00", "2026-09-22 17:00"]))
+        self.assertEqual((d["kind"], d["due"], d["event"], d["proposed_due"]),
+                         ("scheduled_after_due", "2026-09-21", ["2026-09-22 15:00", "2026-09-22 17:00"], "2026-09-22"))
 
     def test_block_on_due_date_is_quiet(self):
         self.assertEqual(self.kinds([task(due="2026-09-22")], [event()]), [])
