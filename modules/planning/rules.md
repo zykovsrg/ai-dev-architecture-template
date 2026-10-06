@@ -7,7 +7,7 @@ field or, failing that, a `Due: <YYYY-MM-DD>` field. Whenever the pending task
 write from the workflow that fired this event creates, reschedules, or closes
 such a task, prepare the
 matching Apple Calendar change in the same step, under the `hub-calendar`
-rules: allowlisted calendar IDs only, the `категория/проект/задача` title form,
+rules: allowlisted calendar IDs only, the nested Cyrillic title from `scripts/archiprojects.py calendar-title`,
 and a complete preview showing action, calendar, title, start and end with
 timezone, existing event ID, and recurrence scope. A `Запланировано:` field
 becomes a timed event; a `Due:` date alone becomes an all-day event on that

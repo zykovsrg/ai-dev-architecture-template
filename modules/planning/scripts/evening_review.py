@@ -46,7 +46,13 @@ def select_events(response, day, timezone, allowed):
     return sorted(selected.values(), key=lambda e: (local_datetime(e['start'], timezone), e['id'])), complete
 
 
-def prepare_review(metadata, today, tomorrow, projects, tasks, day, consumed=()):
+def legacy_resolve(title):
+    """`<category>/<project-id>/<task>`: the second part is the project ID."""
+    parts = title.split('/')
+    return (parts[1], '/'.join(parts[2:])) if len(parts) >= 3 and parts[0] and '/'.join(parts[2:]).strip() else None
+
+
+def prepare_review(metadata, today, tomorrow, projects, tasks, day, consumed=(), resolve=legacy_resolve):
     """Return exact events and stable review keys, never outcomes or writes."""
     day = date.fromisoformat(day)
     if metadata.get('source') != SOURCE:
@@ -70,8 +76,8 @@ def prepare_review(metadata, today, tomorrow, projects, tasks, day, consumed=())
     consumed = set(consumed)
     tasks = [t for t in tasks if t['project_id'] in projects]
     for event in events:
-        parts = event['title'].split('/')
-        project = parts[1] if len(parts) >= 3 and parts[0] and parts[1] in projects and '/'.join(parts[2:]).strip() else None
+        found = resolve(event['title'])
+        project, task_text = found if found and found[0] in projects else (None, '')
         linked = [t for t in tasks if t.get('event_link') and
                   (t['event_link']['calendar_id'], t['event_link']['event_id']) == (event['calendar_id'], event['id'])]
         if len(linked) > 1 or (linked and project and linked[0]['project_id'] != project):
@@ -84,7 +90,7 @@ def prepare_review(metadata, today, tomorrow, projects, tasks, day, consumed=())
             skipped += 1
             continue
         if matched is None:
-            exact = [t for t in tasks if t['project_id'] == project and t['title'].casefold().rstrip('.') == '/'.join(parts[2:]).casefold().rstrip('.')]
+            exact = [t for t in tasks if t['project_id'] == project and t['title'].casefold().rstrip('.') == task_text.casefold().rstrip('.')]
             matched = exact[0] if len(exact) == 1 else None
         # Matching task identity (or exact title fallback) groups repeated blocks,
         # while the cursor still presents one event at a time until answered.
@@ -120,8 +126,25 @@ def prepare_sync(window, day, timezone, allowed, hub, now):
     spec = importlib.util.spec_from_file_location('review_calendar_sync', Path(__file__).resolve().parent / 'calendar_task_sync.py')
     sync = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(sync)
-    items = sync.find_discrepancies(sync.collect_tasks(hub), response['events'], now, tz=timezone.key)
+    items = sync.find_discrepancies(sync.collect_tasks(hub), response['events'], now, tz=timezone.key,
+                                    resolve=sync.title_resolver(hub))
     return dict(status='complete', items=items)
+
+
+def title_resolver(hub):
+    """Resolve nested Cyrillic calendar titles through archiprojects; legacy titles still work."""
+    if not (hub / 'ai/archiprojects.md').is_file():
+        return legacy_resolve
+    scripts = Path(__file__).resolve().parent
+    module = scripts / 'archiprojects.py'
+    if not module.is_file():
+        module = scripts.parents[1] / 'projects/scripts/archiprojects.py'
+    spec = importlib.util.spec_from_file_location('review_archiprojects', module)
+    arch = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(arch)
+    groups = arch.parse_groups(hub / 'ai/archiprojects.md')
+    cards = arch.read_cards(hub)
+    return lambda title: arch.resolve_title(groups, cards, title)
 
 
 def canonical_inputs(hub):
@@ -168,7 +191,7 @@ def main():
         if not consumed and 'sync_window' not in data:
             raise ValueError('sync_window is required on the first run: pass the guarded [D-30, D+31) read_events response')
         output = prepare_review(data['metadata'], data['today'], data['tomorrow'], projects, tasks,
-                                args.day, consumed)
+                                args.day, consumed, resolve=title_resolver(args.hub.resolve()))
         if 'sync_window' in data:
             timezone = ZoneInfo(output['timezone'])
             now = args.now or datetime.now(timezone).strftime('%Y-%m-%d %H:%M')

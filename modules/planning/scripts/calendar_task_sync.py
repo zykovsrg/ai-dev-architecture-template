@@ -64,7 +64,33 @@ def schedule_items(item, status, span, due, now):
     return []
 
 
-def find_discrepancies(tasks, events, now, tz=None):
+def legacy_resolve(title):
+    """`<category>/<project-id>/<task>`: the second part is the project ID."""
+    parts = title.split("/", 2)
+    return (parts[1], parts[2]) if len(parts) == 3 else None
+
+
+def title_resolver(hub):
+    """Resolve nested Cyrillic calendar titles through archiprojects; legacy titles still work."""
+    if not (Path(hub) / "ai/archiprojects.md").is_file():
+        return legacy_resolve
+    module = SCRIPTS / "archiprojects.py"
+    if not module.is_file():
+        module = SCRIPTS.parents[1] / "projects/scripts/archiprojects.py"
+    spec = importlib.util.spec_from_file_location("sync_archiprojects", module)
+    arch = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(arch)
+    groups = arch.parse_groups(Path(hub) / "ai/archiprojects.md")
+    cards = arch.read_cards(hub)
+    return lambda title: arch.resolve_title(groups, cards, title)
+
+
+def _same_task(found, task):
+    return (found is not None and found[0] == task["project_id"]
+            and found[1].casefold().rstrip(".") == task["title"].casefold().rstrip("."))
+
+
+def find_discrepancies(tasks, events, now, tz=None, resolve=legacy_resolve):
     timed = [e for e in events if not e.get("all_day")]
     by_id = defaultdict(list)
     for e in timed:
@@ -89,7 +115,7 @@ def find_discrepancies(tasks, events, now, tz=None):
                     and len(by_id[(e["calendar_id"], e["id"])]) == 1
                     and not e.get("recurring", False)
                     and (e["calendar_id"], e["id"]) not in occupied
-                    and e["title"].split("/", 2)[1:] == [t["project_id"], t["title"]]]
+                    and _same_task(resolve(e["title"]), t)]
             if len(hits) == 1:
                 e = hits[0]
                 out.append({**item, "kind": "unlinked", "event": list(_span(e, tz)), "event_id": e["id"],
@@ -149,7 +175,8 @@ def main():
         payload = json.loads(sys.stdin.read())
         events = payload["events"]
         tz = payload.get("timezone")
-        result = find_discrepancies(collect_tasks(args.hub), events, args.now, tz=tz)
+        result = find_discrepancies(collect_tasks(args.hub), events, args.now, tz=tz,
+                                    resolve=title_resolver(args.hub))
     except (OSError, ValueError, KeyError, TypeError) as error:
         print(str(error), file=sys.stderr)
         return 2

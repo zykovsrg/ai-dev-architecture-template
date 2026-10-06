@@ -2,8 +2,11 @@
 """Archiproject groups: parsing, validation, and group membership.
 
 Groups live in ai/archiprojects.md as a heading followed by a fenced YAML
-block (id, name, status, kind: group, optional parent). Cards reference at
-most one group via `primary_archiproject:`. Standard library only.
+block (id, name, status, kind: group, optional parent, optional
+calendar_name). Cards reference at most one group via `primary_archiproject:`
+and may set a Cyrillic `Calendar name:`. Calendar event titles show the whole
+available chain: group calendar names from the root, then the project's
+calendar name, then the task. Standard library only.
 """
 
 import argparse
@@ -119,6 +122,7 @@ def _parse_groups_with_errors(path):
             "name": fields["name"],
             "status": fields["status"],
             "parent": fields.get("parent") or None,
+            "calendar_name": fields.get("calendar_name") or None,
         }
     return groups, errors
 
@@ -139,6 +143,7 @@ def parse_groups(path):
 
 CARD_ID_RE = re.compile(r"^Project ID:\s*(.+)$")
 CARD_PRIMARY_RE = re.compile(r"^primary_archiproject:\s*(.+)$")
+CARD_CALENDAR_RE = re.compile(r"^Calendar name:\s*(.+)$")
 FORBIDDEN_FIELDS = ("archiproject_contribution:", "related_archiprojects:")
 
 
@@ -152,6 +157,7 @@ def read_cards(hub):
         text = card_path.read_text(encoding="utf-8")
         project_id = None
         primary = None
+        calendar = None
         forbidden = False
         for line in text.splitlines():
             id_match = CARD_ID_RE.match(line)
@@ -162,12 +168,17 @@ def read_cards(hub):
             if primary_match:
                 primary = primary_match.group(1).strip()
                 continue
+            calendar_match = CARD_CALENDAR_RE.match(line)
+            if calendar_match:
+                calendar = calendar_match.group(1).strip()
+                continue
             if any(line.startswith(field) for field in FORBIDDEN_FIELDS):
                 forbidden = True
         cards.append({
             "path": card_path,
             "project_id": project_id,
             "primary_archiproject": primary,
+            "calendar_name": calendar,
             "forbidden_fields": forbidden,
         })
     return cards
@@ -236,6 +247,76 @@ def validate(hub):
                 f"related_archiprojects: {project_id}"
             )
 
+    errors.extend(_calendar_errors(groups, read_cards(hub)))
+    return errors
+
+
+def _group_calendar_name(group):
+    return (group["calendar_name"] or group["name"]).strip().lower()
+
+
+def calendar_chain(groups, card):
+    """Calendar title prefix of a project: group names from the root, then the project."""
+    chain = []
+    current = card["primary_archiproject"]
+    seen = set()
+    while current and current != "none" and current in groups and current not in seen:
+        seen.add(current)
+        chain.insert(0, _group_calendar_name(groups[current]))
+        current = groups[current]["parent"]
+    chain.append((card["calendar_name"] or card["project_id"]).strip().lower())
+    return chain
+
+
+def calendar_title(groups, cards, project_id, task):
+    """Build `<chain>/<task>` for a project; raises KeyError for an unknown project."""
+    for card in cards:
+        if card["project_id"] == project_id:
+            return "/".join(calendar_chain(groups, card) + [task.strip().lower()])
+    raise KeyError(project_id)
+
+
+def resolve_title(groups, cards, title):
+    """Return (project_id, task) for a calendar title, or None when unknown or ambiguous.
+
+    The longest matching chain wins; legacy `<category>/<project-id>/<task>`
+    titles still resolve through the project ID in the second part.
+    """
+    parts = title.split("/")
+    folded = [part.strip().casefold() for part in parts]
+    best, best_len = [], 0
+    for card in cards:
+        if not card["project_id"]:
+            continue
+        chain = [part.casefold() for part in calendar_chain(groups, card)]
+        if len(chain) < len(parts) and folded[:len(chain)] == chain:
+            if len(chain) > best_len:
+                best, best_len = [card], len(chain)
+            elif len(chain) == best_len:
+                best.append(card)
+    if not best and len(parts) >= 3:
+        best = [c for c in cards if c["project_id"] and c["project_id"].casefold() == folded[1]]
+        best_len = 2
+    if len(best) != 1:
+        return None
+    task = "/".join(parts[best_len:]).strip()
+    return (best[0]["project_id"], task) if task else None
+
+
+def _calendar_errors(groups, cards):
+    errors = []
+    names = [(f"group {gid}", g["calendar_name"]) for gid, g in groups.items()]
+    names += [(f"project {c['project_id']}", c["calendar_name"]) for c in cards]
+    for owner, name in names:
+        if name is not None and (not name.strip() or "/" in name):
+            errors.append(f"invalid calendar name for {owner}: {name}")
+    chains = {}
+    for card in cards:
+        if card["project_id"]:
+            chains.setdefault(tuple(calendar_chain(groups, card)), []).append(card["project_id"])
+    for chain, owners in chains.items():
+        if len(owners) > 1:
+            errors.append(f"duplicate calendar title prefix {'/'.join(chain)}: {', '.join(sorted(owners))}")
     return errors
 
 
@@ -310,7 +391,35 @@ def main():
     members_p.add_argument("--hub", required=True, type=Path)
     members_p.add_argument("--group", required=True)
 
+    title_p = sub.add_parser("calendar-title")
+    title_p.add_argument("--hub", required=True, type=Path)
+    title_p.add_argument("--project", required=True)
+    title_p.add_argument("--task", required=True)
+
+    resolve_p = sub.add_parser("resolve-title")
+    resolve_p.add_argument("--hub", required=True, type=Path)
+    resolve_p.add_argument("--title", required=True)
+
     args = parser.parse_args()
+
+    if args.command in ("calendar-title", "resolve-title"):
+        try:
+            groups = parse_groups(args.hub / "ai" / "archiprojects.md")
+        except ValueError as error:
+            print(f"ERROR: {error}", file=sys.stderr)
+            return 1
+        cards = read_cards(args.hub)
+        if args.command == "calendar-title":
+            try:
+                print(calendar_title(groups, cards, args.project, args.task))
+            except KeyError:
+                print(f"ERROR: unknown project: {args.project}", file=sys.stderr)
+                return 1
+            return 0
+        import json
+        found = resolve_title(groups, cards, args.title)
+        print(json.dumps(None if found is None else {"project_id": found[0], "task": found[1]}, ensure_ascii=False))
+        return 0 if found else 1
 
     if args.command == "validate":
         errors = validate(args.hub)

@@ -158,6 +158,12 @@ class Discrepancies(unittest.TestCase):
         evs = [event(), event(eid="EV-2")]
         self.assertEqual(self.kinds([task(link=False)], evs), [])
 
+    def test_unlinked_match_through_nested_title_resolver(self):
+        resolve = lambda title: ("demo", "t") if title == "хадасса/промостраницы/демо/t" else None
+        [d] = sync.find_discrepancies([task(link=False)], [event(title="хадасса/промостраницы/демо/t")], NOW,
+                                      resolve=resolve)
+        self.assertEqual(d["kind"], "unlinked")
+
     def test_recurring_never_unlinked_match(self):
         evs = [event(), event("2026-09-23T15:00:00+03:00", "2026-09-23T17:00:00+03:00")]
         self.assertEqual(self.kinds([task(link=False)], evs), [])

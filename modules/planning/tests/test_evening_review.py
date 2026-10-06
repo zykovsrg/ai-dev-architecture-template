@@ -65,6 +65,16 @@ class EveningReviewTests(unittest.TestCase):
         consumed = [result['queue'][0]['review_key']]
         self.assertEqual([r['event']['id'] for r in self.prepare([a,b,c], consumed=consumed)['queue']], ['c'])
 
+    def test_resolver_maps_nested_cyrillic_titles(self):
+        names = {'хадасса/промостраницы/страница': 'p'}
+        def resolve(title):
+            head, _, task = title.rpartition('/')
+            return (names[head], task) if head in names else None
+        ev = event('хадасса/промостраницы/страница/текст', ident='e')
+        task = dict(project_id='p', task_id='T', title='Текст')
+        result = self.prepare([ev], tasks=[task], resolve=resolve)
+        self.assertEqual((result['queue'][0]['project_id'], result['queue'][0]['task_id']), ('p', 'T'))
+
     def test_unique_legacy_link_maps_project_without_title_convention(self):
         ev = event('Старая встреча', ident='e')
         task = dict(project_id='p', task_id='T', title='Встреча', event_link=dict(calendar_id='normal',event_id='e'))
