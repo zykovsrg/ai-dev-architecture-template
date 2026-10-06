@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### 2026-10-06 — sync: a late block moves the deadline without asking
+
+- `scheduled_after_due` items now carry `proposed_due` (the block date). Day
+  plan and evening review apply it directly: `Due:` moves to the block date
+  with a `Перенесено с …` line, and the change is reported as done. No other
+  sync item touches `Due:`. User decision 2026-10-06.
+
 ### 2026-10-06 — calendar: an update keeps the all-day flag
 
 - `ChangeRequest.all_day` is now optional. An update without it no longer

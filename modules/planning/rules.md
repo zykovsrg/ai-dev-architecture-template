@@ -74,8 +74,9 @@ calendar, synchronization, and overdue actionable tasks. Overdue tasks are
 always last. Do not add task-outside-calendar or recommendation sections.
 Synchronize unambiguous task times from Calendar before composing the plan,
 validate writes and reload changed canonical task records before ranking or
-rendering them. Calendar is the source of truth for time, not deadlines or
-completion. After joint edits, verify affected dates and task records only.
+rendering them. Calendar is the source of truth for time, not completion; a
+deadline follows Calendar only when a block lands after it
+(`scheduled_after_due` moves `Due:` to the block date without asking). After joint edits, verify affected dates and task records only.
 This runs on a requested day plan, without a scheduled automation or reminder.
 Render existing calendar titles verbatim, chronologically, one entry per line.
 Learned rules and numeric goal progress support joint planning without adding
