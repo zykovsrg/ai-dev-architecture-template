@@ -496,6 +496,24 @@ or duplicate bridge blocks, and rolls back a failed paired replacement. A
 divergent legacy entry pair may receive an additive bridge only with explicit
 approval and without replacing its existing rules.
 
+### 2026-10-06 — Calendar titles show the available nesting
+
+Status: active
+
+Decision: Название события — вложенная цепочка кириллицей: группы архипроекта
+от корня, имя проекта, задача (`хадасса/промостраницы/варикоцеле/…`); без
+архипроекта — `проект/задача`. Сервер календаря принимает от 2 до 6 непустых
+строчных частей; первая часть может содержать пробел. Правило 2026-09-01 о
+ровно трёх частях заменено; требование менять правило вместе с тестами
+`modules/calendar/policy/tests/` остаётся.
+
+Why: Пользователь попросил кириллицу и всю доступную вложенность вместо
+служебного `project-id`.
+
+Impact: Построение и разбор названий — `modules/projects/scripts/archiprojects.py`
+(`calendar-title`, `resolve-title`); проверка формата —
+`modules/calendar/policy/src/hub_calendar_policy/models.py`.
+
 ### 2026-09-01 — Calendar title rule and its tests move together
 
 Status: active
