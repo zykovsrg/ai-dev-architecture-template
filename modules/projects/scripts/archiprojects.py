@@ -144,6 +144,7 @@ def parse_groups(path):
 CARD_ID_RE = re.compile(r"^Project ID:\s*(.+)$")
 CARD_PRIMARY_RE = re.compile(r"^primary_archiproject:\s*(.+)$")
 CARD_CALENDAR_RE = re.compile(r"^Calendar name:\s*(.+)$")
+GROUP_PROJECT = "—"
 FORBIDDEN_FIELDS = ("archiproject_contribution:", "related_archiprojects:")
 
 
@@ -265,8 +266,8 @@ def calendar_chain(groups, card):
         chain.insert(0, _group_calendar_name(groups[current]))
         current = groups[current]["parent"]
     name = (card["calendar_name"] or card["project_id"]).strip().lower()
-    # A project named like its own group is the group's general project: no repeat.
-    if not chain or chain[-1] != name:
+    # `Calendar name: —` marks the group's general project: the group chain only.
+    if name != GROUP_PROJECT or not chain:
         chain.append(name)
     return chain
 
@@ -313,6 +314,10 @@ def _calendar_errors(groups, cards):
     for owner, name in names:
         if name is not None and (not name.strip() or "/" in name):
             errors.append(f"invalid calendar name for {owner}: {name}")
+    for card in cards:
+        if (card["calendar_name"] or "").strip() == GROUP_PROJECT and (
+                card["primary_archiproject"] in (None, "none") or card["primary_archiproject"] not in groups):
+            errors.append(f"invalid calendar name for project {card['project_id']}: {GROUP_PROJECT} needs an archiproject")
     chains = {}
     for card in cards:
         if card["project_id"]:

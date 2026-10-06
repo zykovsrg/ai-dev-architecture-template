@@ -6,8 +6,8 @@
 
 - Event titles show the whole available nesting in Cyrillic:
   `хадасса/промостраницы/варикоцеле/доработать текст по комментариям врача`;
-  a project without an archiproject gives `<проект>/<задача>`; a project named
-  like its group is not repeated (`хадасса/промостраницы/<задача>`).
+  a project without an archiproject gives `<проект>/<задача>`; a group's general
+  project (`Calendar name: —`) adds no level (`хадасса/промостраницы/<задача>`).
 - Groups take an optional `calendar_name:` in `ai/archiprojects.md`; cards an
   optional `Calendar name:`. `archiprojects.py calendar-title` builds a title,
   `resolve-title` maps one back to its project (longest chain wins; legacy

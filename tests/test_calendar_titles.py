@@ -39,7 +39,7 @@ def make_hub(tmp):
           + group("dela", "Дела"))
     cards = {
         "release-page-varicocele": card("release-page-varicocele", "hadassah-promo", "варикоцеле"),
-        "promo-pages": card("promo-pages", "hadassah-promo", "промостраницы"),
+        "promo-pages": card("promo-pages", "hadassah-promo", "—"),
         "rutina-i-byt": card("rutina-i-byt", "dela", "дела"),
         "zdorove": card("zdorove", "none", "здоровье"),
         "legacy": card("legacy", "dela"),
@@ -104,8 +104,12 @@ class CalendarTitles(unittest.TestCase):
         self.assertEqual(self.resolve("хадасса/release-page-varicocele/написать текст"),
                          ("release-page-varicocele", "написать текст"))
 
+    def test_group_general_project_needs_a_group(self):
+        write(self.hub / "ai/project-cards/orphan.md", card("orphan", "none", "—"))
+        self.assertTrue(any("needs an archiproject" in e for e in validate(self.hub)))
+
     def test_resolve_unknown_or_empty_task(self):
-        self.assertIsNone(self.resolve("хадасса/промостраницы/неизвестно/x"))
+        self.assertIsNone(self.resolve("хадасса/неизвестно/x"))
         self.assertIsNone(self.resolve("хадасса/промостраницы/варикоцеле/"))
         self.assertIsNone(self.resolve("просто событие"))
 
