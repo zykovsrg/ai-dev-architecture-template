@@ -163,6 +163,55 @@ class Discrepancies(unittest.TestCase):
         self.assertEqual(self.kinds([task(link=False)], evs), [])
 
 
+class DueAndPassed(unittest.TestCase):
+    def kinds(self, tasks, events, now=NOW):
+        return [d["kind"] for d in sync.find_discrepancies(tasks, events, now)]
+
+    def test_block_after_due_is_reported(self):
+        [d] = sync.find_discrepancies([task(due="2026-09-21")], [event()], NOW)
+        self.assertEqual((d["kind"], d["due"], d["event"]),
+                         ("scheduled_after_due", "2026-09-21", ["2026-09-22 15:00", "2026-09-22 17:00"]))
+
+    def test_block_on_due_date_is_quiet(self):
+        self.assertEqual(self.kinds([task(due="2026-09-22")], [event()]), [])
+
+    def test_after_due_uses_moved_calendar_time(self):
+        moved = event("2026-09-24T10:00:00+03:00", "2026-09-24T12:00:00+03:00")
+        self.assertEqual(self.kinds([task(due="2026-09-23")], [moved]), ["calendar_moved", "scheduled_after_due"])
+
+    def test_after_due_without_link_uses_task_schedule(self):
+        self.assertEqual(self.kinds([task(link=False, due="2026-09-21")], []), ["scheduled_after_due"])
+
+    def test_after_due_skips_closed_and_waiting(self):
+        self.assertEqual(self.kinds([task(status="done", due="2026-09-21")], [event()], now="2026-09-23 09:00"), [])
+        self.assertEqual(self.kinds([task(status="waiting", due="2026-09-21")], [event()]), [])
+
+    def test_passed_block_of_open_task_is_reported(self):
+        [d] = sync.find_discrepancies([task()], [event()], "2026-09-23 09:00")
+        self.assertEqual((d["kind"], d["event"]), ("schedule_passed", ["2026-09-22 15:00", "2026-09-22 17:00"]))
+
+    def test_block_earlier_today_is_left_to_evening_review(self):
+        self.assertEqual(self.kinds([task()], [event()], now="2026-09-22 20:00"), [])
+
+    def test_passed_wins_over_after_due(self):
+        self.assertEqual(self.kinds([task(due="2026-09-21")], [event()], now="2026-09-23 09:00"), ["schedule_passed"])
+
+    def test_passed_without_link(self):
+        self.assertEqual(self.kinds([task(link=False)], [], now="2026-09-23 09:00"), ["schedule_passed"])
+
+    def test_passed_skips_closed_and_waiting(self):
+        self.assertEqual(self.kinds([task(status="waiting")], [event()], now="2026-09-23 09:00"), [])
+        self.assertEqual(self.kinds([task(status="paused")], [event()], now="2026-09-23 09:00"), [])
+
+    def test_missing_event_does_not_add_schedule_items(self):
+        self.assertEqual(self.kinds([task(due="2026-09-21")], [], now="2026-09-23 09:00"), ["event_missing"])
+
+    def test_ambiguous_event_does_not_add_schedule_items(self):
+        events = [event("2026-09-20T15:00:00+03:00", "2026-09-20T17:00:00+03:00"),
+                  event("2026-09-21T15:00:00+03:00", "2026-09-21T17:00:00+03:00")]
+        self.assertEqual(self.kinds([task(due="2026-09-19")], events), ["event_ambiguous"])
+
+
 class Cli(unittest.TestCase):
     def test_cli_prints_json(self):
         body = ("### FT-20260915-001 — Связанная\n\nStatus: ready\nCreated: 2026-09-15\n"
