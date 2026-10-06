@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### 2026-10-06 — calendar: an update keeps the all-day flag
+
+- `ChangeRequest.all_day` is now optional. An update without it no longer
+  sends `all_day: false` to the bridge, so renaming an all-day event keeps it
+  all-day; the preview shows the event's own flag. A create without it stays a
+  timed event. Found while renaming events: title-only updates previewed four
+  all-day events as 00:00–24:00 timed blocks. Tested in
+  `modules/calendar/policy/tests/test_all_day.py`.
+
 ### 2026-10-06 — calendar: nested Cyrillic event titles
 
 - Event titles show the whole available nesting in Cyrillic:

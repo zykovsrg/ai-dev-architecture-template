@@ -148,6 +148,49 @@ def test_preview_shows_that_the_change_is_all_day() -> None:
     assert response["all_day"] is True
 
 
+def _all_day_event():
+    return EventRef(
+        id="event", calendar_id="calendar", title=TITLE,
+        start=DAY, end=NEXT_DAY, timezone="Europe/Moscow", all_day=True,
+    )
+
+
+def test_title_only_update_leaves_all_day_unset() -> None:
+    request = ChangeRequest(action="update", calendar_id="calendar", event_id="event", title=TITLE)
+
+    assert request.all_day is None
+
+
+def test_title_only_update_does_not_send_all_day_to_the_bridge() -> None:
+    backend = _RecordingBackend()
+    request = ChangeRequest(action="update", calendar_id="calendar", event_id="event", title=TITLE)
+
+    asyncio.run(backend.update(_all_day_event(), request, None))
+
+    _, payload = backend.sent[0]
+    assert payload is not None and "all_day" not in payload
+
+
+def test_preview_of_title_only_update_keeps_the_event_all_day() -> None:
+    from hub_calendar_policy.models import CalendarRef
+    from hub_calendar_policy.server import GuardedCalendarServer
+
+    calendar = CalendarRef(id="calendar", name="Личный", timezone="Europe/Moscow", writable=True)
+    request = ChangeRequest(action="update", calendar_id="calendar", event_id="event", title=TITLE)
+
+    response = GuardedCalendarServer._preview_response("preview", NEXT_DAY, request, calendar, _all_day_event())
+
+    assert response["all_day"] is True
+    assert response["start"] == DAY.isoformat() and response["end"] == NEXT_DAY.isoformat()
+
+
+def test_update_can_still_turn_an_all_day_event_into_a_timed_one() -> None:
+    request = ChangeRequest(action="update", calendar_id="calendar", event_id="event",
+                            start=START, end=END, all_day=False)
+
+    assert request.all_day is False
+
+
 # --- boundary semantics -----------------------------------------------------
 #
 # EventKit keeps the end of an all-day event inclusively (the last instant of
