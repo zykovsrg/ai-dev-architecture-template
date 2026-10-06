@@ -13,6 +13,15 @@
 - Found on 2026-10-06: five tasks moved to today kept their old deadline and
   one task's only block was on 2026-10-02, yet sync reported no discrepancy.
   Tested by `modules/planning/tests/test-calendar-task-sync.py`.
+### 2026-10-05 — stage templates for archiproject groups
+
+- A group in `ai/archiprojects.md` may set `stage_template:`. New
+  `scripts/seed_stage_template.py` (tasks module) adds the template's stages
+  as future tasks of a project in that group or a descendant group; titles
+  already present are skipped, `--done N` marks the first N stages done,
+  `--dry-run` writes nothing. `hub-project-create` runs it after the
+  `after-project-create` event. Tested by
+  `modules/tasks/tests/test_seed_stage_template.py`.
 
 ### 2026-10-05 — session scan: confirmed scanner model and fixed report format
 

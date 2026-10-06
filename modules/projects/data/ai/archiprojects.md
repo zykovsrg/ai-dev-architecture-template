@@ -9,6 +9,10 @@ Use one human heading and one fenced YAML block for each group. A group
 organizes projects and has no fake metrics. `parent:` is optional; when
 present it must name another group in this file.
 
+A group may set `stage_template: <hub-relative path>`. When a project of that
+group (or of a descendant group) is created, `scripts/seed_stage_template.py`
+adds the template's stages to the project's `ai/future-tasks.md`.
+
 ## <archiproject-id>
 
 ```yaml
