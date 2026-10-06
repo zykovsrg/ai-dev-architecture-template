@@ -25,6 +25,10 @@ def create(title: str) -> ChangeRequest:
     [
         "дела/поездка в киров/забрать бритву",
         "новая-категория/проект 2/сделать задачу",
+        "хадасса/промостраницы/варикоцеле/доработать текст по комментариям врача",
+        "здоровье/измерять давление",
+        "здоровье бабушки/записаться к кардиологу",
+        "хадасса/промостраницы/встреча с шелунцовым",
     ],
 )
 def test_create_accepts_standard_title(title: str) -> None:
@@ -34,8 +38,9 @@ def test_create_accepts_standard_title(title: str) -> None:
 @pytest.mark.parametrize(
     "title",
     [
-        "дела/забрать бритву",
-        "дела/проект/задача/ещё",
+        "забрать бритву",
+        "a/b/c/d/e/f/g",
+        "дела//задача",
         "дела/Поездка/забрать бритву",
         "дела /проект/задача",
         "дела/проект /задача",
@@ -43,7 +48,7 @@ def test_create_accepts_standard_title(title: str) -> None:
 )
 def test_create_rejects_non_standard_title(title: str) -> None:
     with pytest.raises(
-        ValidationError, match="title must use lowercase category/project/task"
+        ValidationError, match="title must use lowercase nested parts"
     ):
         create(title)
 
@@ -56,7 +61,7 @@ def test_update_without_title_remains_valid() -> None:
 
 def test_update_rejects_non_standard_replacement_title() -> None:
     with pytest.raises(
-        ValidationError, match="title must use lowercase category/project/task"
+        ValidationError, match="title must use lowercase nested parts"
     ):
         ChangeRequest(
             action="update",

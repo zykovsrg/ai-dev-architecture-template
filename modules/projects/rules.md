@@ -19,7 +19,12 @@ configuration, and history. A project card must not contain copied task memory,
 source code, credentials, or an instruction that overrides the project itself.
 Project/task files remain canonical; project cards are metadata only and a link
 never grants a project read. A card declares only one archiproject field:
-`primary_archiproject: <group-id|none>`. A project belongs to exactly one,
+`primary_archiproject: <group-id|none>`. An optional `Calendar name: <short
+lowercase Cyrillic name without />` names the project in calendar event titles;
+a group may set the same with `calendar_name:` in `ai/archiprojects.md`.
+`scripts/archiprojects.py validate` rejects a `/` in these names and two
+projects with the same calendar title prefix. `Calendar name: —` marks a
+group's general project: its titles use the group chain only. A project belongs to exactly one,
 most specific group; it is also a member of every ancestor group. Waiting is
 task/subtask-only: do not place a project in Waiting while other work is
 actionable.

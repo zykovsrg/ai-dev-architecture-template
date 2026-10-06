@@ -85,7 +85,9 @@ The plan explicitly excludes `ai/architecture.md`,
    `ai/project-cards/<project-id>.md` and the registry entry exactly as
    planned. The card must retain all required fields and its
    `Memory entry point: <canonical-path>/ai/current-task.md`. The optional
-   `primary_archiproject:` field uses `none` where absent. A project belongs
+   `primary_archiproject:` field uses `none` where absent. Add `Calendar name:` —
+   a short lowercase Cyrillic name for calendar titles (no `/`), unique within
+   its group. A project belongs
    to exactly one, most specific group; it is also a member of every
    ancestor group. Do not read that memory entry point while validating.
 5. Run `scripts/check-hub-registry.sh`. On a failure, stop and report the

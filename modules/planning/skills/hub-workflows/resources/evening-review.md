@@ -43,8 +43,9 @@ verified input; never invent an empty queue.
 ### One project task at a time
 
 Ask only about today's events that have one unambiguous active registered
-project: the exact middle segment of `category/project/task`, or one unique
-canonical event link for a legacy title. Skip projectless, inactive,
+project: the project resolved from the nested title by
+`scripts/archiprojects.py resolve-title` (legacy `category/<project-id>/task`
+titles included), or one unique canonical event link. Skip projectless, inactive,
 unregistered and conflicting matches silently; never ask “skip this?” about
 sleep, travel, meals, broadcasts or other unmatched events. Do not infer a
 project from the category alone. A project event without a unique canonical

@@ -8,7 +8,9 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
-_CATEGORY_PATTERN = re.compile(r"^[a-zа-яё0-9-]+$")
+_CATEGORY_PATTERN = re.compile(r"^[a-zа-яё0-9 -]+$")
+# Titles show the available nesting: [archiproject groups/]project/task, or category/task.
+_MIN_TITLE_PARTS, _MAX_TITLE_PARTS = 2, 6
 
 
 def _require_timezone(value: str) -> str:
@@ -88,12 +90,12 @@ class ChangeRequest(BaseModel):
         if self.title is not None:
             parts = self.title.split("/")
             if (
-                len(parts) != 3
+                not _MIN_TITLE_PARTS <= len(parts) <= _MAX_TITLE_PARTS
                 or any(not part or part != part.strip() for part in parts)
                 or self.title != self.title.lower()
                 or not _CATEGORY_PATTERN.fullmatch(parts[0])
             ):
-                raise ValueError("title must use lowercase category/project/task")
+                raise ValueError("title must use lowercase nested parts: [group/]project/task")
         if self.action in {"update", "delete"} and self.event_id is None:
             raise ValueError("event_id is required for update and delete")
         if self.action == "create" and (self.title is None or self.start is None):

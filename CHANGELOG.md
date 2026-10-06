@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### 2026-10-06 — calendar: nested Cyrillic event titles
+
+- Event titles show the whole available nesting in Cyrillic:
+  `хадасса/промостраницы/варикоцеле/доработать текст по комментариям врача`;
+  a project without an archiproject gives `<проект>/<задача>`; a group's general
+  project (`Calendar name: —`) adds no level (`хадасса/промостраницы/<задача>`).
+- Groups take an optional `calendar_name:` in `ai/archiprojects.md`; cards an
+  optional `Calendar name:`. `archiprojects.py calendar-title` builds a title,
+  `resolve-title` maps one back to its project (longest chain wins; legacy
+  `<category>/<project-id>/<task>` titles still resolve). `validate` rejects
+  `/` in names and duplicate title prefixes.
+- Evening review and calendar/task sync identify projects through the
+  resolver; `hub-calendar` and the planning rules use the new title form.
+  Tested by `tests/test_calendar_titles.py` and the planning tests.
+
 ### 2026-10-06 — calendar sync: late and passed blocks
 
 - `calendar_task_sync.py` adds `scheduled_after_due` (an open task's Calendar
