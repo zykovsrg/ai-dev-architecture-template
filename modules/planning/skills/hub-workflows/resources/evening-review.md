@@ -63,6 +63,32 @@ briefly, then ask the next eligible question in the same reply. `дальше`,
 `ничего не фиксируем`, and equivalent replies advance without writes or another
 question about that event. Matching Calendar never proves completion.
 
+### Project memory capture
+
+User decision (2026-10-07): after each answered project question, the agent
+decides on its own whether the answer holds something worth keeping in that
+project's memory, and writes it without asking. Sources are only the user's
+answer and what this same conversation already established about that project
+(for example a meeting handled earlier in the chat); never read other sessions'
+transcripts for this. Targets are the reviewed project's own files:
+
+- `ai/decisions.md` — a decision or agreement that changes how the work is
+  done (what is needed, not needed, or deferred, and why), as
+  `### YYYY-MM-DD — <short title>` under `## Current decisions`;
+- `ai/changelog.md` — a notable outcome (meeting held, material received or
+  saved, scope changed), as a paragraph under `### YYYY-MM-DD` in
+  `## Current changelog` (reuse today's date heading when present);
+- `ai/project-context.md` — a stable fact about the project (people, page
+  structure, constraints) that later work must know.
+
+Do not record what the task records already hold (status, dates, stage moves),
+routine logistics, unverified claims stated as facts, third-party medical or
+personal data, or secrets. Replace a `No ... yet.` placeholder on the first
+entry; otherwise append, never rewrite or delete an existing entry (a
+correction is a new dated entry that names what it corrects). Most answers
+produce nothing; never pad. Report each write in one line with the exact path
+inside the same reply as the next question; capture never adds a question.
+
 Keep consumed review keys in conversation state. A user answer about one task
 consumes repeated blocks of the same task for D; do not re-ask the second block.
 Do not merge distinct tasks merely because they share a project. If the answer

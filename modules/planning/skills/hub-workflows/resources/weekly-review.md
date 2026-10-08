@@ -49,4 +49,13 @@ Hub copy and is ported to the `ai-dev-architecture` source after that project
 is confirmed through routing.
 Retire the rule the mechanism replaces only after the user's explicit yes.
 
+In the same review run the rule-home check exactly as `ai/rules/learning.md`
+§ Rule home describes (logic, thresholds, commands and yes-gates live only
+there). Show under `## Нужны решения`:
+- `- <rule id> — <«уже есть в» | «перенести в»> <file>; правило: <what it asks, in plain Russian>; цитата: «<line>»`
+- `- Новый навык «<name>» — собрать правила <rule ids>; процесс: <what it covers>; почему: <how often it recurs>`
+- `- Утечка <rule id> — правило из <file> снова понадобилось в сессиях <n>; предложение: <fix the skill>`
+- `- Предел: <file> — <lines> строк из 300; предложение: <сжать | разделить>`
+or `- Перенос в навыки: кандидатов нет.`
+
 Only when `learning` is listed in `ai/modules.md`, also handle open session-review proposals as `ai/rules/learning.md` § Open review proposals defines: oldest first, at most ten per review, and report how many remain.

@@ -19,3 +19,6 @@ Before a workflow reads a day, it calls `list_calendar_metadata`; the returned
 allowed entries are the only source for the IDs sent to `read_events`. A missing
 or failed metadata response must be reported as bridge unavailability or denied
 permission, never as an empty allowlist.
+
+The user's work meetings go into the calendar «Важно и срочно» (moved from
+learned rule R-3, user decision 2026-10-08).

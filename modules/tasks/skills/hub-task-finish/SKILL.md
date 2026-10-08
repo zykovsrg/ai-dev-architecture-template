@@ -6,7 +6,10 @@ description: Verify one confirmed registered project's task and, when nothing bl
 # Hub Task Finish
 
 Use this skill only after explicit confirmation of a confirmed registered
-project and when the user asks to close its task. Its scope is the selected
+project and when the user asks to close its task, when the agent has finished
+and verified the task in this session (see `## Closing Finished Work` in
+`ai/rules/tasks.md`), or for a `close` decision of the morning task check in
+`hub-session-scan`; there the cited session evidence is the verification. Its scope is the selected
 project `ai/` memory only; do not require or read duplicated project
 `AGENTS.md` or `CLAUDE.md` files.
 

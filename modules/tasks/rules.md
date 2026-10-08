@@ -31,6 +31,22 @@ project-local `knowledge/` paths. It cannot weaken hub routing,
 allowed-root, secret, personal/client-data, or memory-isolation rules. It never
 reads, writes, pauses, finishes, or copies another project's memory or records.
 
+## Closing Finished Work
+
+When a session finishes and verifies a confirmed project's task (every Done
+criterion is met and checked), the agent closes it itself through
+`hub-task-finish` before ending its work, without waiting for the user to say
+the task is done (user decision 2026-10-07). If any criterion remains, the
+task stays open and the agent says in one line what remains.
+
+## Morning Task Check
+
+The session scan (`hub-session-scan`) also checks open current tasks of active
+registered projects against their Done criteria. A task closes only when
+every criterion has cited session evidence; otherwise it is paused. Paused
+tasks stay in work: they keep `Due:` and schedule lines, appear in day plans
+and overdue lists, and take part in calendar synchronization.
+
 ## Information Updates
 
 For a cross-project meeting or other supplied capture, use `hub-task-overview`
