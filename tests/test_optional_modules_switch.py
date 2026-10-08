@@ -35,6 +35,7 @@ REMOVED = {
         "scripts/session_collect.py",
         "scripts/session_rules.py",
         "scripts/session_scan_model.py",
+        "scripts/open_task_check.py",
         ".claude/agents/hub-session-scanner.md",
         ".claude/agents/hub-learning-consolidator.md",
     },

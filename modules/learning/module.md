@@ -26,6 +26,7 @@ findings, and track workflow friction over time.
 - modules/learning/scripts/session_collect.py -> scripts/session_collect.py
 - modules/learning/scripts/session_rules.py -> scripts/session_rules.py
 - modules/learning/scripts/session_scan_model.py -> scripts/session_scan_model.py
+- modules/learning/scripts/open_task_check.py -> scripts/open_task_check.py
 - modules/learning/data/ai/learning/rules.json -> ai/learning/rules.json
 - modules/learning/data/ai/learning/scan-ledger.json -> ai/learning/scan-ledger.json
 - modules/learning/data/ai/learned-rules.md -> ai/learned-rules.md

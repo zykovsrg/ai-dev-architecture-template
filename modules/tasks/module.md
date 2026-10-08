@@ -4,7 +4,7 @@ Id: tasks
 Required: yes
 Switchable: no
 Depends: core, projects
-Uses if present: —
+Uses if present: learning
 Rules: ai/rules/tasks.md
 Keywords: —
 

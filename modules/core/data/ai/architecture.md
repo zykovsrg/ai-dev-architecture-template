@@ -71,6 +71,16 @@ active registered projects. To confirm the scanner's model,
 `scripts/session_scan_model.py` reads only the `message.model` field of
 `~/.claude/projects/*/*/subagents/agent-<id>.jsonl` for the scanner runs. This is the only exception to the allowed-root rule.
 
+### Morning task check exception (learning module)
+
+During `hub-session-scan`, `scripts/open_task_check.py` reads, without routing
+confirmation, `ai/current-task.md` of active registered projects (the
+personal-assistant read budget). For each open task the scan then closes it
+through `hub-task-finish` or pauses it, and may append one short entry to that
+project's `ai/changelog.md`. These writes touch only `ai/current-task.md`,
+`ai/paused-tasks.md`, `ai/changelog.md` and the closure writes of
+`hub-task-finish` in that project, and never copy transcript text.
+
 ## Confirmation And Confidence
 
 Use these confidence labels in router summaries and cross-project signals:

@@ -59,6 +59,10 @@ Skip events without projects silently. Repeated blocks of an answered task
 are consumed together; distinct tasks in one project remain separate.
 `scripts/evening_review.py` prepares the read-only urgent list, event queue and
 the mandatory [D-30, D+31) sync check; its first run fails without that window.
+After each answered project question, the agent decides on its own whether
+to append a decision, notable outcome or stable fact to that project's
+`ai/decisions.md`, `ai/changelog.md` or `ai/project-context.md`, and writes it
+without asking (user decision 2026-10-07; details in the scenario resource).
 The scenario's old full-report headings apply only when explicitly requested.
 Explicit user corrections to projectless Calendar events remain authorized.
 

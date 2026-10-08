@@ -60,3 +60,44 @@ section of new session reviews in active registered projects to the scanner
 as extra sessions (`obs-<n>`, `review-<project>-<file>`), tracked in the same
 ledger. The weekly review runs the weekly pass. The scan may also read the
 `## Findings` section of session reviews in active registered projects.
+
+## Rule home
+
+This section is the only description of the mechanism (user decisions
+2026-10-08); the weekly review and the scan skill point here.
+
+Limits. `ai/learned-rules.md` holds at most 30 global rules; per-project
+rule files have no count limit. Every `ai/skills/**/*.md`, `ai/rules/*.md`
+and learned-rules file stays within 300 lines:
+`python3 scripts/session_rules.py --hub <hub> check-limits` lists files over
+the limit, and the weekly review offers to compress or split them. The
+catalog `ai/learning/rules.json` has no archive: the assistant never reads
+it, and the scanner gets at most 60 rules.
+
+Waiting room. A learned rule is not a permanent home. A rule that belongs to
+one workflow lives in that workflow's skill or module rules file. The weekly
+review analyses every injected rule on its own, without being asked:
+- the owning file already states it → offer to retire it, citing the exact
+  line; prove the line with
+  `session_rules.py --hub <hub> check-home --file <hub-relative path> --quote "<line>"`;
+- it belongs to one workflow but the file does not state it → offer to add
+  it there, then retire it;
+- at least 3 rules describe one process that has no fitting skill, and their
+  cases come from at least 3 distinct sessions → offer a new skill; first
+  compare its description with existing skill descriptions and prefer
+  extending an existing skill;
+- it is about work in general → it stays in `ai/learned-rules.md`.
+A rule that applies across projects never moves into one project's skill.
+Project skill files are outside the weekly review's read scope: a move into
+a project skill is checked when that project is confirmed.
+Every edit of a skill or rules file, every new skill (built through
+`superpowers:writing-skills`) and every retirement waits for the user's
+explicit yes. Retire with `--note "moved to <file>"` so the catalog keeps
+where the rule went.
+
+Duplicates and leaks (`session_rules.py apply`). A new rule that repeats
+`CLAUDE.md` or `AGENTS.md` is dropped (`skipped_standing`). A new rule that
+repeats a rule retired with `moved to` is not added again: it is recorded as
+a `leak` case on the moved rule (`leaks` in the apply output). A leak never
+changes confidence or re-activates the rule; it means the skill did not do
+its job, and the weekly review offers to fix that skill.
