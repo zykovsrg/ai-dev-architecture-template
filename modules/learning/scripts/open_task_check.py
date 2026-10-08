@@ -101,7 +101,8 @@ def _load(path, default):
 def record(folder, batch, reply):
     """Keep valid evidence for open tasks from one scanner reply; return (kept, dropped)."""
     tasks = {(t["project"], t["task_id"]): t for t in _load(folder / TASKS_FILE, {"tasks": []})["tasks"]}
-    sessions = {s["id"] for s in batch.get("sessions", [])}
+    # A Hub-root session may work on any confirmed project; any other session counts only for its own project
+    sessions = {s["id"]: s.get("project") for s in batch.get("sessions", [])}
     checks = _load(folder / CHECKS_FILE, [])
     items = reply.get("tasks", []) if isinstance(reply, dict) else []
     kept = dropped = 0
@@ -113,7 +114,8 @@ def record(folder, batch, reply):
         for crit in item.get("criteria", []):
             n, ev, sid = crit.get("n"), crit.get("evidence"), crit.get("session")
             if (crit.get("met") is True and isinstance(n, int) and 1 <= n <= len(task["criteria"])
-                    and sid in sessions and isinstance(ev, str) and ev.strip()):
+                    and sid in sessions and sessions[sid] in (task["project"], "hub")
+                    and isinstance(ev, str) and ev.strip()):
                 checks.append({"project": task["project"], "task_id": task["task_id"], "n": n,
                                "session": sid, "evidence": ev.strip()})
                 kept += 1
@@ -162,7 +164,8 @@ def pause(hub, project_id, task_id, today):
     lines = text.splitlines()
     first_section = next((i for i, line in enumerate(lines) if line.startswith("## ")), len(lines))
     meta = [line for line in lines[:first_section] if KEEP_META.match(line)]
-    body = [("##" + line) if line.startswith("## ") else line for line in lines[first_section:]]
+    # Demote every heading two levels: `###` would start a new paused record
+    body = [re.sub(r"^(#{2,})(?=\s)", r"##\1", line) for line in lines[first_section:]]
     entry = [f"### {today} — {rec['title']}", "", f"Task ID: {task_id}", "", "Status: paused", ""]
     entry += meta + ([""] if meta else [])
     entry += ["Why paused:", "", f"Утренняя проверка {today}: критерии готовности не подтверждены, задача поставлена на паузу.",

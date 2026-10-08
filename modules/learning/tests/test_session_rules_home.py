@@ -7,7 +7,7 @@ import unittest
 from datetime import date
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]  # modules/learning
+ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 from session_rules import (GLOBAL_LIMIT, apply_batch, check_home, check_limits, duplicates_standing,  # noqa: E402
                            retire, standing_instructions)
@@ -29,6 +29,9 @@ class StandingDuplicateTests(unittest.TestCase):
             standing = standing_instructions(hub)
             self.assertTrue(duplicates_standing("One sentence carries one idea; keep sentences to about twenty words.", standing))
             self.assertFalse(duplicates_standing("Treat paused tasks as active work in plans.", standing))
+            self.assertFalse(duplicates_standing("Do not use the active voice.", standing))
+            self.assertFalse(duplicates_standing("Treat paused tasks as active work.", ["Never treat paused tasks as active work."]))
+            self.assertTrue(duplicates_standing("Never delete a whole series.", ["Never delete the whole series of events."]))
 
     def test_apply_skips_duplicate(self):
         catalog = {"next_id": 1, "rules": []}

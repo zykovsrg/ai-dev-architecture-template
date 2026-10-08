@@ -154,6 +154,9 @@ class Discrepancies(unittest.TestCase):
     def test_unlinked_needs_project_in_title(self):
         self.assertEqual(self.kinds([task(link=False)], [event(title="дела/другое/задача")]), [])
 
+    def test_unlinked_needs_exact_task_title(self):
+        self.assertEqual(self.kinds([task(link=False)], [event(title="хадасса/demo/другая задача")]), [])
+
     def test_unlinked_ambiguous_is_quiet(self):
         evs = [event(), event(eid="EV-2")]
         self.assertEqual(self.kinds([task(link=False)], evs), [])
@@ -167,6 +170,26 @@ class Discrepancies(unittest.TestCase):
     def test_recurring_never_unlinked_match(self):
         evs = [event(), event("2026-09-23T15:00:00+03:00", "2026-09-23T17:00:00+03:00")]
         self.assertEqual(self.kinds([task(link=False)], evs), [])
+
+    def test_paused_passed_block_is_reported(self):
+        self.assertEqual(self.kinds([task(status="paused")], [event()], now="2026-09-23 09:00"), ["schedule_passed"])
+
+    def test_paused_block_after_due_is_reported(self):
+        self.assertEqual(self.kinds([task(status="paused", due="2026-09-21")], [event()]), ["scheduled_after_due"])
+
+    def test_waiting_passed_block_is_quiet(self):
+        self.assertEqual(self.kinds([task(status="waiting")], [event()], now="2026-09-23 09:00"), [])
+
+    def test_collects_paused_task(self):
+        body = ("## Paused tasks\n\n### 2026-09-20 — Пауза\n\nTask ID: TASK-demo-20260915-001\n\nStatus: paused\n\n"
+                "Due: 2026-09-21\nЗапланировано: 2026-09-22 15:00-17:00 (Europe/Kirov).\n" + LINK + "\n")
+        with tempfile.TemporaryDirectory() as tmp:
+            hub = make_hub(Path(tmp), "")
+            (hub / "projects/demo/ai/paused-tasks.md").write_text("# Paused Tasks\n\n" + body, encoding="utf-8")
+            rows = sync.collect_tasks(hub)
+            found = sync.find_discrepancies(rows, [event()], NOW)
+        self.assertEqual([(r["status"], r["due"]) for r in rows], [("paused", "2026-09-21")])
+        self.assertEqual([d["kind"] for d in found], ["scheduled_after_due"])
 
 
 class DueAndPassed(unittest.TestCase):
@@ -205,9 +228,9 @@ class DueAndPassed(unittest.TestCase):
     def test_passed_without_link(self):
         self.assertEqual(self.kinds([task(link=False)], [], now="2026-09-23 09:00"), ["schedule_passed"])
 
-    def test_passed_skips_closed_and_waiting(self):
+    def test_passed_skips_waiting(self):
         self.assertEqual(self.kinds([task(status="waiting")], [event()], now="2026-09-23 09:00"), [])
-        self.assertEqual(self.kinds([task(status="paused")], [event()], now="2026-09-23 09:00"), [])
+        # Paused tasks are in work (user decision 2026-10-07): see test_paused_passed_block_is_reported
 
     def test_missing_event_does_not_add_schedule_items(self):
         self.assertEqual(self.kinds([task(due="2026-09-21")], [], now="2026-09-23 09:00"), ["event_missing"])

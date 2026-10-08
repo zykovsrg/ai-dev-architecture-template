@@ -90,7 +90,9 @@ def reply(*criteria, note=None):
     return {"cases": [], "tasks": [item]}
 
 
-BATCH = {"sessions": [{"id": "s1", "tool": "claude"}]}
+BATCH = {"sessions": [{"id": "s1", "tool": "claude", "project": "demo"},
+                      {"id": "s2", "tool": "claude", "project": "other"},
+                      {"id": "s3", "tool": "codex", "project": "hub"}]}
 
 
 class Reply(unittest.TestCase):
@@ -149,6 +151,14 @@ class Flow(unittest.TestCase):
         self.assertEqual((kept, dropped), (0, 3))
         self.assertEqual(check.decide(self.folder)[0]["action"], "pause")
 
+    def test_evidence_must_come_from_the_tasks_project_or_hub_root(self):
+        self.listed(make_hub(self.base))
+        kept, dropped = check.record(self.folder, BATCH, reply(
+            {"n": 1, "met": True, "session": "s2", "evidence": "Блок удалён."},
+            {"n": 2, "met": True, "session": "s3", "evidence": "Ссылка отправлена."}))
+        self.assertEqual((kept, dropped), (1, 1))
+        self.assertEqual(check.decide(self.folder)[0]["action"], "pause")
+
     def test_note_is_kept_and_plain_array_reply_adds_nothing(self):
         self.listed(make_hub(self.base))
         check.record(self.folder, BATCH, [])
@@ -171,6 +181,15 @@ class Flow(unittest.TestCase):
         self.assertEqual(paused[0]["event_link"]["event_id"], "EV-1")
         self.assertIn("#### Done criteria", (ai / "paused-tasks.md").read_text(encoding="utf-8"))
         self.assertEqual(read_records("demo", "current", (ai / "current-task.md").read_text(encoding="utf-8")), [])
+        result = subprocess.run(["python3", str(STAGE / "task_records.py"), "read", "--file", str(ai / "paused-tasks.md"),
+                                 "--project-id", "demo", "--kind", "paused", "--strict-headings"], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_pause_demotes_nested_subsections(self):
+        hub = make_hub(self.base, current=CURRENT.replace("## Done criteria", "### Backend\n\nДетали.\n\n## Done criteria"))
+        check.pause(hub, "demo", "TASK-demo-20261001-001", TODAY)
+        ai = hub / "projects/demo/ai"
+        self.assertIn("##### Backend", (ai / "paused-tasks.md").read_text(encoding="utf-8"))
         result = subprocess.run(["python3", str(STAGE / "task_records.py"), "read", "--file", str(ai / "paused-tasks.md"),
                                  "--project-id", "demo", "--kind", "paused", "--strict-headings"], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)

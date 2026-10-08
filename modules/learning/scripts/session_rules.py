@@ -118,10 +118,18 @@ def _tokens(text):
     return {w[:6] for w in re.findall(r"[a-zа-яё]+", text.lower()) if w not in STOP_WORDS and len(w) > 2}
 
 
+NEGATIONS = {"not", "never", "no", "don't", "dont", "doesn't", "without", "avoid", "не", "нельзя", "никогда"}
+
+
+def _negated(text):
+    return bool(set(re.findall(r"[a-zа-яё']+", text.lower())) & NEGATIONS)
+
+
 def duplicates_standing(text, standing):
-    """True when most words of a rule already appear in one standing instruction line."""
+    """True when most words of a rule already appear in one line that has the same polarity."""
     words = _tokens(text)
-    return bool(words) and any(len(words & _tokens(line)) / len(words) >= DUPLICATE_SHARE for line in standing)
+    return bool(words) and any(_negated(text) == _negated(line)
+                               and len(words & _tokens(line)) / len(words) >= DUPLICATE_SHARE for line in standing)
 
 
 def moved_rules(catalog):
