@@ -585,3 +585,11 @@ CNCF and DORA attribution. Full CNCF report fetch exceeded web tool size limit;
 no unsupported conclusion that the statistic is false was recorded.
 Metadata, containment, dates, sections, related links and task format checked.
 Record remains draft; original PDF was not copied and architecture not changed.
+
+### 2026-10-10 — Topical knowledge lookup, published generic references, and context repair
+
+Task: TASK-ai-dev-architecture-20261010-006.
+
+25 architecture unit tests, strict module boundary check, consistency, fresh optional-module installation and repeat-preview checks pass. Five generic draft summaries published for bounded topic lookup. 48 project contexts repaired; new-project instructions require evidence-backed context without placeholders. Unrelated installed learning overrides preserved; no full release update or service restart.
+
+Changes saved locally; no remote push or production-service restart.
