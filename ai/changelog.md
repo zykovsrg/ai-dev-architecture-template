@@ -593,3 +593,11 @@ Task: TASK-ai-dev-architecture-20261010-006.
 25 architecture unit tests, strict module boundary check, consistency, fresh optional-module installation and repeat-preview checks pass. Five generic draft summaries published for bounded topic lookup. 48 project contexts repaired; new-project instructions require evidence-backed context without placeholders. Unrelated installed learning overrides preserved; no full release update or service restart.
 
 Changes saved locally; no remote push or production-service restart.
+
+### 2026-10-10 — Working Hub architecture release reconciled and applied
+
+Task: TASK-ai-dev-architecture-20261010-007.
+
+Preserved three installed project-scope learning clarifications in source commit 79c5922. Official release apply changed metadata only; calendar bridge rebuilt through the official sync after a sandbox-cache retry. Drift: no conflicts or unmanaged files; strict module boundaries: zero warnings. 37 focused tests, consistency and 9 install smoke tests passed. The full learning suite has five baseline date-fixture failures, reproduced on clean pre-change HEAD. User settings, calendar allowlist, registry and preexisting edits preserved; calendar events unchanged.
+
+Saved locally; no remote push.

@@ -18,7 +18,7 @@ Define during task intake.
 ## Agent handoff
 
 Last agent: Codex
-Last completed task: TASK-ai-dev-architecture-20261010-006.
-Topical knowledge lookup, published generic references, and context repair.
+Last completed task: TASK-ai-dev-architecture-20261010-007.
+Working Hub architecture release reconciled and applied.
 Verification and limitations: ai/changelog.md.
 Previous architecture follow-up: FT-20261004-001.
