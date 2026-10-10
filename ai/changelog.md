@@ -571,3 +571,17 @@ Separated source assumptions from focused caveats on keys, decomposition and
 index redundancy, with primary documentation and university references.
 Metadata, containment, related links and task format checked. Status remains
 draft; no SQL was executed and no original PDF or personal examples copied.
+
+
+## 2026-10-10 — Monolith and microservices article captured
+
+Task: TASK-ai-dev-architecture-20261010-005.
+Saved knowledge/research/monolith-microservices.md from the user-provided
+article by Denis Kuderin, displaying update date 2026-09-30.
+Captured architecture options, ownership, gradual migration and operating costs.
+Corrected the distributed transaction impossibility claim using PostgreSQL
+primary documentation. Flagged unverified statistics and cost claims, including
+CNCF and DORA attribution. Full CNCF report fetch exceeded web tool size limit;
+no unsupported conclusion that the statistic is false was recorded.
+Metadata, containment, dates, sections, related links and task format checked.
+Record remains draft; original PDF was not copied and architecture not changed.
