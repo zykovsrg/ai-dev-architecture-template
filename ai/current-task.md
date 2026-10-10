@@ -18,7 +18,7 @@ Define during task intake.
 ## Agent handoff
 
 Last agent: Codex
-Last completed task: TASK-ai-dev-architecture-20261010-002.
-Saved knowledge/research/python-api-caching.md from the user-provided article.
-Research status: draft; source claims remain attributed and independently unverified.
+Last completed task: TASK-ai-dev-architecture-20261010-003.
+Saved knowledge/research/sql-indexes.md with source attribution and four documented corrections.
+Research status: draft; full technical verification remains open.
 Previous architecture follow-up: FT-20261004-001.

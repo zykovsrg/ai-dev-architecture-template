@@ -546,3 +546,16 @@ failure handling. Source examples are distinguished from measured performance.
 Record metadata, containment, sections, related link and task format checked.
 Research remains draft; library documentation was not independently checked.
 Original PDF remains an attachment and was not copied into the project.
+
+
+## 2026-10-10 — SQL indexing article captured
+
+Task: TASK-ai-dev-architecture-20261010-003.
+Saved knowledge/research/sql-indexes.md from the user-provided article by
+Kristina Tultseva, displaying update date 2026-09-30 (publication date unknown).
+Separated article summary from four corrections checked against official
+PostgreSQL 18 documentation: multicolumn skip scan, expression indexes,
+pg_trgm pattern matching, and actual execution by EXPLAIN ANALYZE.
+Validated record metadata, containment, dates, sections, related link and task
+format. Status remains draft; no database commands were executed.
+Original PDF remains an attachment and was not copied into the project.
