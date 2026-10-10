@@ -17,9 +17,8 @@ Define during task intake.
 
 ## Agent handoff
 
-Last agent: Claude Code
-Last completed task: TASK-ai-dev-architecture-20261004-001.
-Session learning installed (hub-session-scan, collector, rule catalog,
-learned-rules files); closure review removed. PR #22 and #23 merged into main;
-the Hub matches the source. Follow-up live checks and deferred minors:
-FT-20261004-001.
+Last agent: Codex
+Last completed task: TASK-ai-dev-architecture-20261010-001.
+Saved knowledge/research/firecracker-warm-pools.md from the user-provided article.
+Research status: draft; source claims remain attributed and independently unverified.
+Previous architecture follow-up: FT-20261004-001.

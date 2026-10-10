@@ -523,3 +523,14 @@ Reports: docs/audits/2026-10-02-all-project-compatibility.md; per-project
 ai/hub-compatibility-2026-10-02.md. Live calendar artifacts stay in Hub ai/tmp
 and are not committed. Session review: ai/session-reviews/2026-10-02-architecture-corrections-closure.md; issues-found with partial Luna chronology coverage.
 Work saved locally; no remote push or main-branch merge claimed.
+
+
+## 2026-10-10 — Untrusted code isolation article captured
+
+Task: TASK-ai-dev-architecture-20261010-001.
+Saved an original, attributed research summary from the user-provided PDF in
+knowledge/research/firecracker-warm-pools.md. Recorded source author and date,
+warm-pool lifecycle, reported timings, and verification limits. Status remains
+draft; external technical claims and the linked implementation were not
+independently checked. The original PDF was not copied. Record containment,
+required metadata, section structure, and current-task format checked.
