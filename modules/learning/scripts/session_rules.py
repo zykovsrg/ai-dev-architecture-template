@@ -231,6 +231,7 @@ def render(catalog, today):
     glob, per_project = [], {}
     for rule in _injected(catalog, today):
         projects = {c["project"] for c in rule["cases"] if c["effect"] != "contradict"}
+        # All-`hub` cases mean work in general; the scanner names the project for one project's workflow
         if scope(rule, today) == "global" or projects == {"hub"}:
             glob.append(rule)
         else:

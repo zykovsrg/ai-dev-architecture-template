@@ -66,6 +66,14 @@ ledger. The weekly review runs the weekly pass. The scan may also read the
 This section is the only description of the mechanism (user decisions
 2026-10-08); the weekly review and the scan skill point here.
 
+Where a rule is shown. Every case carries a project: the session's project,
+or for a Hub-root session the project the case is about (the scanner names it,
+even when the session confirmed several projects), or `hub` when the case is
+about work in general. A rule goes to `ai/learned-rules.md` when its scope is
+global or all its cases are `hub`; otherwise it goes to the file of each
+project in its cases. So a project's workflow rule never reaches the global
+file just because it was learned in a Hub-root session.
+
 Limits. `ai/learned-rules.md` holds at most 30 global rules; per-project
 rule files have no count limit. Every `ai/skills/**/*.md`, `ai/rules/*.md`
 and learned-rules file stays within 300 lines:
