@@ -18,7 +18,7 @@ Define during task intake.
 ## Agent handoff
 
 Last agent: Codex
-Last completed task: TASK-ai-dev-architecture-20261010-003.
-Saved knowledge/research/sql-indexes.md with source attribution and four documented corrections.
+Last completed task: TASK-ai-dev-architecture-20261010-004.
+Saved knowledge/research/database-normalization.md with attributed summary and focused caveats.
 Research status: draft; full technical verification remains open.
 Previous architecture follow-up: FT-20261004-001.

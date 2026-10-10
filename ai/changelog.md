@@ -559,3 +559,15 @@ pg_trgm pattern matching, and actual execution by EXPLAIN ANALYZE.
 Validated record metadata, containment, dates, sections, related link and task
 format. Status remains draft; no database commands were executed.
 Original PDF remains an attachment and was not copied into the project.
+
+
+## 2026-10-10 — Database normalization article captured
+
+Task: TASK-ai-dev-architecture-20261010-004.
+Saved knowledge/research/database-normalization.md from the user-provided
+article by Vadim Egortsev, displaying update date 2026-09-30.
+Captured normalization goals, 1NF/2NF/3NF, historical facts and migration steps.
+Separated source assumptions from focused caveats on keys, decomposition and
+index redundancy, with primary documentation and university references.
+Metadata, containment, related links and task format checked. Status remains
+draft; no SQL was executed and no original PDF or personal examples copied.
