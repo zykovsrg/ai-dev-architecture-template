@@ -534,3 +534,15 @@ warm-pool lifecycle, reported timings, and verification limits. Status remains
 draft; external technical claims and the linked implementation were not
 independently checked. The original PDF was not copied. Record containment,
 required metadata, section structure, and current-task format checked.
+
+
+## 2026-10-10 — Python API caching article captured
+
+Task: TASK-ai-dev-architecture-20261010-002.
+Saved knowledge/research/python-api-caching.md: an original attributed summary
+of the user-provided article by Denis Kuderin, published 2026-07-28.
+Captured local/shared cache selection, invalidation, concurrent misses and
+failure handling. Source examples are distinguished from measured performance.
+Record metadata, containment, sections, related link and task format checked.
+Research remains draft; library documentation was not independently checked.
+Original PDF remains an attachment and was not copied into the project.
