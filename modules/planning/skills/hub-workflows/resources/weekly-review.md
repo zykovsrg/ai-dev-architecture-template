@@ -55,7 +55,9 @@ Only when `learning` is listed in `ai/modules.md`, run
 cached tokens and the loss share; the top 5 labels of each loss category
 (`error_retry` «шаги после ошибки», `repeat_command` «повтор команды»,
 `repeat_read` «повторное чтение файла») with steps and fresh tokens; the
-startup median and the top 3 sessions. Then exactly three ranked conclusions
+startup median and the top 3 sessions. Read the label `exec` as "all Codex
+commands" and treat `repeat_command` rows for tests or `git status` as normal
+reruns, not waste. Then exactly three ranked conclusions
 `- <что чинить> — почему: <цифры> — экономия: <оценка>`, largest saving first;
 estimate the saving only from these numbers and say when it is a guess. With
 no sessions or no usage data write one line saying so. A fix the user accepts

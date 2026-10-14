@@ -35,6 +35,10 @@ PROGRAMS = {"bash", "sh", "zsh", "python", "python3", "pip", "pip3", "uv", "node
 CATEGORIES = ("error_retry", "repeat_command", "repeat_read")
 COST_DIR = "ai/learning/cost"
 SCAN_MARK = "[hub-session-scan]"
+STARTUP_SCRIPT = "scripts/read-compact-project-index.sh"
+LOADING_TOOLS = {"Skill", "ToolSearch"}
+LOADING_READS = ("Read ai/", "Read .claude/")
+LOADING_FILES = {"Read CLAUDE.md", "Read AGENTS.md"}
 
 
 @dataclass
@@ -43,6 +47,7 @@ class Call:
     label: str
     command: str | None = None  # compared only for equality, never stored
     path: str | None = None
+    read_key: tuple | None = None  # (file_path, offset, limit) of a Read
     error: bool = False
 
 
@@ -85,7 +90,7 @@ def label(tool, value, hub):
         command = value if isinstance(value, str) else ""
         command = command.replace(f"{hub}/", "")
         script = HUB_SCRIPT.search(command)
-        tail = f" {script.group(1)}" if script else ""
+        tail = f" {script.group(1)}" if script and (hub / script.group(1)).is_file() else ""
         if tool == "Bash":
             words = command.split()
             program = words[0] if words and words[0] in PROGRAMS else "?"
@@ -103,14 +108,17 @@ def _call(tool, value, hub):
             command = json.dumps(command, sort_keys=True, ensure_ascii=False)
         return Call(tool, label(tool, command, hub), command=command)
     if tool in READ or tool in EDIT:
-        path = None
+        path, key = None, None
         if isinstance(value, dict):
             path = value.get("file_path") or value.get("notebook_path")
-        return Call(tool, label(tool, path, hub), path=path)
+            key = (path, value.get("offset"), value.get("limit"))
+        return Call(tool, label(tool, path, hub), path=path,
+                    read_key=key if tool in READ else None)
     return Call(tool, label(tool, value, hub))
 
 
-def parse_claude(path, hub):
+def parse_claude(path, hub, seen=None):
+    seen = set() if seen is None else seen
     session, steps_by_id, calls, user_waiting = None, {}, {}, False
     for rec in _lines(path):
         if rec.get("type") not in ("user", "assistant") or rec.get("isSidechain") or rec.get("isMeta"):
@@ -120,6 +128,8 @@ def parse_claude(path, hub):
                 continue
             session = CostSession("claude", rec["sessionId"], rec.get("cwd") or "",
                                   rec.get("timestamp") or "")
+        elif not session.cwd and rec.get("cwd"):
+            session.cwd = rec["cwd"]
         message = rec.get("message") or {}
         content = message.get("content")
         if rec["type"] == "user":
@@ -140,6 +150,9 @@ def parse_claude(path, hub):
         key = message.get("id") or rec.get("uuid") or f"line-{len(steps_by_id)}"
         step = steps_by_id.get(key)
         if step is None:
+            if message.get("id") and message["id"] in seen:
+                continue  # already counted from another file
+            seen.add(key)
             step = Step(after_user=user_waiting)
             user_waiting = False
             steps_by_id[key] = step
@@ -147,10 +160,10 @@ def parse_claude(path, hub):
         usage = message.get("usage")
         if isinstance(usage, dict):
             session.usage_seen = True
-            fresh = usage.get("input_tokens", 0) + usage.get("cache_creation_input_tokens", 0)
+            fresh = (usage.get("input_tokens") or 0) + (usage.get("cache_creation_input_tokens") or 0)
             step.fresh = max(step.fresh, fresh)
-            step.cached = max(step.cached, usage.get("cache_read_input_tokens", 0))
-            step.output = max(step.output, usage.get("output_tokens", 0))
+            step.cached = max(step.cached, usage.get("cache_read_input_tokens") or 0)
+            step.output = max(step.output, usage.get("output_tokens") or 0)
         for item in content if isinstance(content, list) else []:
             if not isinstance(item, dict):
                 continue
@@ -176,7 +189,7 @@ def parse_codex(path, hub):
         kind = payload.get("type")
         if rec.get("type") == "response_item":
             if kind == "message" and payload.get("role") in ("user", "assistant"):
-                body = " ".join(part.get("text", "") for part in payload.get("content") or []
+                body = " ".join(part.get("text") or "" for part in payload.get("content") or []
                                 if isinstance(part, dict)).strip()
                 if not body:
                     continue
@@ -206,10 +219,10 @@ def parse_codex(path, hub):
                 continue
             last_total = total
             session.usage_seen = True
-            inp, cached = last.get("input_tokens", 0), last.get("cached_input_tokens", 0)
+            inp, cached = last.get("input_tokens") or 0, last.get("cached_input_tokens") or 0
             session.steps.append(Step(
                 fresh=max(inp - cached, 0), cached=cached,
-                output=last.get("output_tokens", 0),
+                output=last.get("output_tokens") or 0,
                 calls=pending, text=said, after_user=user_waiting))
             pending, said, user_waiting = [], False, False
     return session if session and session.id else None
@@ -232,11 +245,12 @@ def classify(steps):
                     category, label_ = "repeat_command", call.label
                 commands.add(call.command)
             if call.tool in READ and call.path:
-                if call.path in reads and category is None:
+                key = call.read_key or (call.path, None, None)
+                if key in reads and category is None:
                     category, label_ = "repeat_read", call.label
-                reads.add(call.path)
+                reads.add(key)
             elif call.tool in EDIT and call.path:
-                reads.discard(call.path)
+                reads = {key for key in reads if key[0] != call.path}
         for call in step.calls:
             if call.error:
                 waiting[call.tool] = call.label
@@ -244,12 +258,26 @@ def classify(steps):
     return result
 
 
+def _loading(call):
+    if call.tool in LOADING_TOOLS:
+        return True
+    if call.tool in READ:
+        return call.label.startswith(LOADING_READS) or call.label in LOADING_FILES
+    return call.tool in SHELL and call.label.endswith(f" {STARTUP_SCRIPT}")
+
+
 def startup(steps):
-    """Steps from the session start up to the first assistant text, inclusive."""
+    """Leading loading steps, plus the first reply; stops before any other work."""
     out = []
     for step in steps:
-        out.append(step)
-        if step.text:
+        if step.calls:
+            if not all(_loading(call) for call in step.calls):
+                break
+            out.append(step)
+        elif step.text:
+            out.append(step)
+            break
+        else:
             break
     return out
 
@@ -258,13 +286,13 @@ def collect(hub, until, claude_root, codex_root):
     since = until - timedelta(days=6)
     # A file last written before the window cannot hold a session started in it
     oldest = datetime.combine(since - timedelta(days=1), dtime.min, timezone.utc).timestamp()
-    sessions, skipped = [], []
+    sessions, skipped, seen = [], [], set()
     if not Path(claude_root).exists() and not Path(codex_root).exists():
         return sessions, skipped
     for tool, path in _files(claude_root, codex_root):
         if path.stat().st_mtime < oldest:
             continue
-        session = parse_claude(path, hub) if tool == "claude" else parse_codex(path, hub)
+        session = parse_claude(path, hub, seen) if tool == "claude" else parse_codex(path, hub)
         if session is None or not session.cwd or not _inside(session.cwd, hub):
             continue
         if not since.isoformat() <= session.started[:10] <= until.isoformat():

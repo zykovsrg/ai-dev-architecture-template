@@ -99,6 +99,9 @@ class Base(unittest.TestCase):
         self.hub = self.root / "hub"
         (self.hub / "ai").mkdir(parents=True)
         (self.hub / "projects/demo").mkdir(parents=True)
+        (self.hub / "scripts").mkdir()
+        for name in ("run.sh", "x.py", "z.py"):
+            (self.hub / "scripts" / name).write_text("", encoding="utf-8")
         (self.hub / "ai/project-registry.md").write_text(
             f"## demo\n\nStatus: active\nPath: {self.hub / 'projects/demo'}\n", encoding="utf-8")
 
@@ -191,6 +194,50 @@ class ParseTests(Base):
         self.assertEqual(self.mod.label("Read", None, hub), "Read outside-hub")
         self.assertEqual(self.mod.label("Skill", {"skill": "SECRET"}, hub), "Skill")
 
+    def test_script_tail_only_when_script_exists_in_hub(self):
+        self.assertEqual(self.mod.label("Bash", "python3 scripts/missing.py SECRET", self.hub),
+                         "Bash python3")
+        self.assertEqual(self.mod.label("exec", "await exec('scripts/missing.py')", self.hub),
+                         "exec")
+
+    def test_claude_null_tokens_do_not_crash(self):
+        path = self.root / "c.jsonl"
+        write(path, [c_user("go"),
+                     c_assistant("m1", [text("ok")], usage=dict(U, output_tokens=None,
+                                                                 input_tokens=None))], self.hub)
+        s = self.mod.parse_claude(path, self.hub)
+        self.assertEqual((s.steps[0].fresh, s.steps[0].output), (5, 0))
+
+    def test_codex_null_fields_do_not_crash(self):
+        path = self.root / "x.jsonl"
+        record = x_tokens(None, None, None, 5)
+        record["payload"]["info"]["last_token_usage"]["input_tokens"] = None
+        part = {"type": "response_item", "payload": {"type": "message", "role": "user",
+                "content": [{"type": "input_text", "text": None}, {"type": "input_text", "text": "go"}]}}
+        write(path, [x_meta(), part, record], self.hub)
+        s = self.mod.parse_codex(path, self.hub)
+        self.assertEqual((s.steps[0].fresh, s.steps[0].output), (0, 0))
+        self.assertEqual(s.first_user, "go")
+
+    def test_claude_cwd_taken_from_later_record(self):
+        path = self.root / "c.jsonl"
+        write(path, [c_user("go", cwd=""), c_assistant("m1", [text("ok")], cwd=""),
+                     c_assistant("m2", [text("ok")], cwd="HUB/projects/demo")], self.hub)
+        s = self.mod.parse_claude(path, self.hub)
+        self.assertEqual(s.cwd, f"{self.hub}/projects/demo")
+
+    def test_claude_message_id_shared_between_files_counted_once(self):
+        seen = set()
+        a, b = self.root / "a.jsonl", self.root / "b.jsonl"
+        write(a, [c_user("go", sid="s-a"), c_assistant("d1", [text("ok")], sid="s-a")], self.hub)
+        write(b, [c_user("go", sid="s-b"), c_assistant("d1", [text("ok")], sid="s-b"),
+                  c_assistant("d1", [text("more")], sid="s-b"),
+                  c_assistant("d2", [text("ok")], sid="s-b")], self.hub)
+        first = self.mod.parse_claude(a, self.hub, seen)
+        second = self.mod.parse_claude(b, self.hub, seen)
+        self.assertEqual(len(first.steps), 1)
+        self.assertEqual(len(second.steps), 1)
+
 
 class ClassifyTests(unittest.TestCase):
     def setUp(self):
@@ -202,8 +249,11 @@ class ClassifyTests(unittest.TestCase):
     def bash(self, command, error=False):
         return self.mod.Call("Bash", f"Bash {command}", command=command, error=error)
 
-    def read(self, path):
-        return self.mod.Call("Read", f"Read {path}", path=path)
+    def read(self, path, offset=None, limit=None):
+        return self.mod.Call("Read", f"Read {path}", path=path, read_key=(path, offset, limit))
+
+    def call(self, tool, label_):
+        return self.mod.Call(tool, label_)
 
     def cats(self, steps):
         return [c for c, _ in self.mod.classify(steps)]
@@ -239,10 +289,40 @@ class ClassifyTests(unittest.TestCase):
         steps = [self.step(self.bash("x", error=True)), self.step(self.bash("x"))]
         self.assertEqual(self.cats(steps), [None, "error_retry"])
 
-    def test_startup_ends_at_first_text(self):
-        steps = [self.step(), self.step(), self.step(text=True), self.step(text=True)]
+    def test_repeat_read_depends_on_paging(self):
+        paged = [self.step(self.read("/f", 0, 100)), self.step(self.read("/f", 100, 100))]
+        self.assertEqual(self.cats(paged), [None, None])
+        same = [self.step(self.read("/f", 0, 100)), self.step(self.read("/f", 0, 100))]
+        self.assertEqual(self.cats(same), [None, "repeat_read"])
+
+    def test_startup_stops_after_first_reply(self):
+        skill = self.call("Skill", "Skill")
+        read = self.call("Read", "Read ai/x")
+        steps = [self.step(skill), self.step(read), self.step(text=True), self.step(text=True)]
         self.assertEqual(len(self.mod.startup(steps)), 3)
-        self.assertEqual(len(self.mod.startup([self.step(), self.step()])), 2)
+
+    def test_startup_stops_before_non_loading_call(self):
+        steps = [self.step(self.call("Skill", "Skill")), self.step(self.bash("ls")),
+                 self.step(text=True)]
+        self.assertEqual(len(self.mod.startup(steps)), 1)
+
+    def test_startup_first_reply_only(self):
+        self.assertEqual(len(self.mod.startup([self.step(text=True), self.step(text=True)])), 1)
+
+    def test_startup_text_with_loading_call_continues(self):
+        steps = [self.step(self.call("Skill", "Skill"), text=True), self.step(text=True),
+                 self.step(text=True)]
+        self.assertEqual(len(self.mod.startup(steps)), 2)
+
+    def test_startup_loading_kinds(self):
+        script = self.mod.Call("Bash", f"Bash bash {self.mod.STARTUP_SCRIPT}", command="x")
+        steps = [self.step(self.call("ToolSearch", "ToolSearch")),
+                 self.step(self.call("Read", "Read CLAUDE.md")),
+                 self.step(self.call("Read", "Read .claude/x.md")), self.step(script),
+                 self.step(self.call("Read", "Read projects/demo/ai/x.md"))]
+        self.assertEqual(len(self.mod.startup(steps)), 4)
+
+    def test_startup_empty(self):
         self.assertEqual(self.mod.startup([]), [])
 
 
@@ -265,18 +345,18 @@ class WeekTests(Base):
             c_assistant("m5", [text("Готово")]),
         ], self.hub)
         write(slug / "c-out.jsonl", [c_user("x", sid="c-out", cwd="/elsewhere"),
-                                     c_assistant("m1", [text("y")], sid="c-out", cwd="/elsewhere")], self.hub)
+                                     c_assistant("o1", [text("y")], sid="c-out", cwd="/elsewhere")], self.hub)
         write(slug / "c-old.jsonl", [c_user("x", sid="c-old", ts="2026-10-07T23:00:00Z"),
-                                     c_assistant("m1", [text("y")], sid="c-old")], self.hub)
+                                     c_assistant("old1", [text("y")], sid="c-old")], self.hub)
         write(slug / "c-edge.jsonl", [c_user("x", sid="c-edge", ts="2026-10-08T00:10:00Z"),
-                                      c_assistant("m1", [text("y")], sid="c-edge")], self.hub)
+                                      c_assistant("e1", [text("y")], sid="c-edge")], self.hub)
         write(slug / "c-scan.jsonl", [c_user("[hub-session-scan] batch", sid="c-scan"),
-                                      c_assistant("m1", [text("y")], sid="c-scan")], self.hub)
+                                      c_assistant("s1", [text("y")], sid="c-scan")], self.hub)
         write(slug / "c-nousage.jsonl", [c_user("x", sid="c-nousage"),
-                                         c_assistant("m1", [text("y")], usage=None, sid="c-nousage")],
+                                         c_assistant("n1", [text("y")], usage=None, sid="c-nousage")],
               self.hub)
         write(slug / "c-nocwd.jsonl", [c_user("x", sid="c-nocwd", cwd=""),
-                                       c_assistant("m1", [text("y")], sid="c-nocwd", cwd="")], self.hub)
+                                       c_assistant("w1", [text("y")], sid="c-nocwd", cwd="")], self.hub)
         write(self.codex / "2026/10/12/rollout-x-1.jsonl", [
             x_meta(cwd=f"{hub_cwd}/projects/demo"), x_user("Сделай"), x_say("Ок"),
             x_tokens(100, 60, 5, 105)], self.hub)
@@ -304,7 +384,9 @@ class WeekTests(Base):
         self.assertEqual(data["losses"]["repeat_read"][0]["label"], "Read outside-hub")
         self.assertEqual(data["losses"]["repeat_command"], [])
         top = {s["session"]: s for s in data["startup"]["top"]}
-        self.assertEqual(top["c-1"]["steps"], 1)
+        self.assertEqual((top["c-1"]["steps"], top["c-1"]["fresh"]), (0, 0))
+        self.assertEqual((top["x-1"]["steps"], top["x-1"]["fresh"]), (1, 40))
+        self.assertEqual((top["c-edge"]["steps"], top["c-edge"]["fresh"]), (1, 15))
         self.assertEqual(top["x-1"]["project"], "demo")
         self.assertEqual(data["startup"]["median_fresh"], 15)
 

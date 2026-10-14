@@ -111,6 +111,8 @@ changes confidence or re-activates the rule; it means the skill did not do
 its job, and the weekly review offers to fix that skill.
 
 `scripts/session_cost.py` counts, without a model, token losses (steps after
-a tool error, repeated commands, repeated reads) and startup cost (steps up
-to the first reply to the user) for one week; the weekly review shows them.
-Nothing is fixed automatically.
+a tool error, repeated commands, repeated reads) and startup cost (leading steps that only load skills,
+Hub rules or the project index, plus the first reply) for one week; the weekly
+review shows them. Nothing is fixed automatically. Known biases: any non-zero
+exit code counts as an error (grep with no match too), Codex shell losses all
+show as label `exec`, and session dates are UTC.
