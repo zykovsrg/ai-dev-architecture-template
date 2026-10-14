@@ -109,3 +109,8 @@ repeats a rule retired with `moved to` is not added again: it is recorded as
 a `leak` case on the moved rule (`leaks` in the apply output). A leak never
 changes confidence or re-activates the rule; it means the skill did not do
 its job, and the weekly review offers to fix that skill.
+
+`scripts/session_cost.py` counts, without a model, token losses (steps after
+a tool error, repeated commands, repeated reads) and startup cost (steps up
+to the first reply to the user) for one week; the weekly review shows them.
+Nothing is fixed automatically.
