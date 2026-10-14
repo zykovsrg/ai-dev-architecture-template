@@ -75,9 +75,11 @@ Each step falls into at most one category, checked in this order:
 
 ### Startup
 
-Startup is every step from the session start up to and including the step
-that produced the first assistant text shown to the user. It covers loading
-Hub rules, skills and routing.
+A step is a loading step when it has calls and all of them are loading calls:
+`Skill`, `ToolSearch`, `Read` of a Hub-root `ai/`, `.claude/`, `CLAUDE.md` or
+`AGENTS.md`, or the script `scripts/read-compact-project-index.sh`. Startup is
+the leading loading steps plus the first reply (a step with text and no calls);
+it stops before the first step with any other call.
 
 ### Labels and privacy
 

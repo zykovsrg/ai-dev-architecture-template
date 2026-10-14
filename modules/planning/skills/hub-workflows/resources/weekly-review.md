@@ -49,6 +49,21 @@ Hub copy and is ported to the `ai-dev-architecture` source after that project
 is confirmed through routing.
 Retire the rule the mechanism replaces only after the user's explicit yes.
 
+Only when `learning` is listed in `ai/modules.md`, run
+`python3 scripts/session_cost.py --hub <hub> week --until <date>` and show
+`## Технические потери` in plain Russian: one line with sessions, fresh and
+cached tokens and the loss share; the top 5 labels of each loss category
+(`error_retry` «шаги после ошибки», `repeat_command` «повтор команды»,
+`repeat_read` «повторное чтение файла») with steps and fresh tokens; the
+startup median and the top 3 sessions. Read the label `exec` as "all Codex
+commands" and treat `repeat_command` rows for tests or `git status` as normal
+reruns, not waste. Then exactly three ranked conclusions
+`- <что чинить> — почему: <цифры> — экономия: <оценка>`, largest saving first;
+estimate the saving only from these numbers and say when it is a guess. With
+no sessions or no usage data write one line saying so. A fix the user accepts
+goes to `## Нужны решения` and follows the Superpowers flow of mechanism
+candidates; nothing is fixed without the user's yes.
+
 In the same review run the rule-home check exactly as `ai/rules/learning.md`
 § Rule home describes (logic, thresholds, commands and yes-gates live only
 there). Show under `## Нужны решения`:
