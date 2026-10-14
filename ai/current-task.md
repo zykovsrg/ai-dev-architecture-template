@@ -2,7 +2,7 @@
 
 Task ID: TASK-ai-dev-architecture-20261013-001
 Status: active
-Stage: spec
+Stage: plan
 
 ## Goal
 
@@ -43,4 +43,4 @@ Out of scope: dead-code and tech-debt checks (FT-20261013-001).
 
 Last agent: Claude Code
 Last completed task: TASK-ai-dev-architecture-20261010-007.
-Spec written 2026-10-14; waiting for the user to review it before the plan.
+Plan written 2026-10-14: docs/superpowers/plans/2026-10-14-session-cost-diagnostics.md; waiting for the user to review it and choose how to run it.
