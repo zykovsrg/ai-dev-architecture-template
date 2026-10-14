@@ -40,11 +40,11 @@ class RenderTests(unittest.TestCase):
         return r
 
     def test_global_cap_and_threshold(self):
-        rules = [self.strong(f"R-{i}", ["a", "b"]) for i in range(12)]
+        rules = [self.strong(f"R-{i}", ["a", "b"]) for i in range(32)]
         rules.append(self.strong("R-weak", ["a", "b"], n=2))
-        out = self.mod.render({"format": 1, "next_id": 20, "rules": rules}, TODAY)
+        out = self.mod.render({"format": 1, "next_id": 40, "rules": rules}, TODAY)
         lines = [l for l in out["ai/learned-rules.md"].splitlines() if l.startswith("- R-")]
-        self.assertEqual(len(lines), 10)
+        self.assertEqual(len(lines), 30)
         self.assertNotIn("R-weak", out["ai/learned-rules.md"])
 
     def test_project_file_and_hub_rules_go_global(self):

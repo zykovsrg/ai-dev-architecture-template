@@ -19,7 +19,11 @@ A successful `day-plan` renders these headings in this exact order:
 
 Only when `learning` is listed in `ai/modules.md`: after the final section,
 run `python3 scripts/session_collect.py --hub <hub> status` and add one plain
-line without a heading: `Разбор сессий: последний — <date or «не было»>; новых: «Клод» <n>, «Кодекс» <m>. Запустить разбор?`
+line without a heading: `Разбор сессий: последний — <date or «не было»>; новых сессий: «Клод» <n>, «Кодекс» <m>; записей журнала: <j>. Запустить разбор?`
+Take `<n>` and `<m>` from `sessions` (real sessions only) and `<j>` from
+`journal` (workflow-observation lines); add `; разборов: <r>` before the
+question only when `reviews` is above 0. Never report `pending` totals as
+sessions: they include journal lines.
 Starting the scan uses `hub-session-scan`.
 
 Do not add task-outside-calendar or recommendation sections. Overdue tasks are
@@ -59,7 +63,7 @@ When the requested date's read is complete, pipe one `HH:MM|HH:MM|<title>|<calen
 
 ## Task sections
 
-Under `## Просроченные задачи`, render every actionable task due before the requested date as `<exact canonical task title> — <project-id>; срок: <YYYY-MM-DD>; просрочено: <N> дн.; источник: <canonical-path>`. Use the exact canonical task title, never a generated summary. Do not repeat a task in another day-plan section.
+Paused tasks are in work: a paused record whose `Due:` is before the requested date is overdue and is rendered here like any other (user decision 2026-10-07); never filter it out by hand. Waiting tasks follow their `follow_up` rule instead. Under `## Просроченные задачи`, render every actionable task due before the requested date as `<exact canonical task title> — <project-id>; срок: <YYYY-MM-DD>; просрочено: <N> дн.; источник: <canonical-path>`. Use the exact canonical task title, never a generated summary. Do not repeat a task in another day-plan section.
 
 ## Editing the plan
 

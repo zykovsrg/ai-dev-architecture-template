@@ -16,6 +16,7 @@ records, and turn transcript info into scoped update proposals.
 ## Installs
 
 - modules/knowledge/rules.md -> ai/rules/knowledge.md
+- modules/knowledge/data/ai/knowledge/ -> ai/knowledge/
 - modules/knowledge/skills/hub-knowledge-enable/ -> ai/skills/hub-knowledge-enable/
 - modules/knowledge/skills/hub-knowledge-capture/ -> ai/skills/hub-knowledge-capture/
 - modules/knowledge/skills/hub-knowledge-review/ -> ai/skills/hub-knowledge-review/
@@ -27,7 +28,7 @@ records, and turn transcript info into scoped update proposals.
 
 ## Reads
 
-- project knowledge records
+- project knowledge records and explicitly published generic Hub references
 
 ## Writes
 

@@ -351,11 +351,22 @@ def main(argv=None):
         return
     sessions = pending(hub, ledger, now, args.claude_root, args.codex_root) + extra_sources(hub, ledger)
     if args.cmd == "status":
+        # `pending` counts every queued item; journal lines and review files are
+        # pseudo-sessions, so they are also reported apart from real sessions.
         counts = {"claude": 0, "codex": 0}
+        real = {"claude": 0, "codex": 0}
+        journal = reviews = 0
         for s in sessions:
             counts[s.tool] += 1
+            if s.id.startswith("obs-"):
+                journal += 1
+            elif s.id.startswith("review-"):
+                reviews += 1
+            else:
+                real[s.tool] += 1
         print(json.dumps({"cutover": ledger.get("cutover"), "last_scan": ledger.get("last_scan"),
-                          "pending": counts}, ensure_ascii=False))
+                          "pending": counts, "sessions": real, "journal": journal,
+                          "reviews": reviews}, ensure_ascii=False))
         return
     only, skip = _keys(args.session), _keys(args.skip)
     sessions = [s for s in sessions if (s.tool, s.id) not in skip and (not only or (s.tool, s.id) in only)]

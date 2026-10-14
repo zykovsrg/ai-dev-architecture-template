@@ -65,7 +65,11 @@ An accepted day-plan package or a user-requested task change may write across ac
 projects without a project switch, but its write scope is exactly the three
 canonical task records: `ai/current-task.md`, `ai/future-tasks.md`, and
 `ai/paused-tasks.md`. Every proposal shows project ID, exact `target_path`, and
-exact diff in the report after it is applied. No other project state is writable through this
+exact diff in the report after it is applied. The one exception is the
+evening review's project memory capture (planning skill
+`resources/evening-review.md`): for a project just reviewed there, the agent
+may also append to that project's `ai/decisions.md`, `ai/changelog.md` and
+`ai/project-context.md`. No other project state is writable through this
 scope.
 
 ## Canonical inputs and ranking
@@ -85,7 +89,9 @@ fields.
 
 Rank actionable work deterministically: overdue dated actionable work first,
 then actionable work due on the requested date, active current tasks, ready
-future tasks by earliest date, then undated ready work. Waiting work never
+future tasks by earliest date, then undated ready work. Paused tasks are
+actionable work: a paused record with a passed `Due:` is overdue and ranks
+with the overdue work (user decision 2026-10-07). Waiting work never
 enters the main actionable ranking. A waiting follow-up is due when its
 structured `follow_up` equals the requested date and overdue when earlier.
 Missing waiting fields are risks, not inferred values.
@@ -157,5 +163,6 @@ Source selection, recorder export consent, and project routing stay separate
 from writing. Writes need no confirmation except deletions. A capture package
 is applied by its owning project workflow.
 A day-plan or evening-review package may span active registered projects only
-within the exact three task-record write boundary above. Unknown, pending, failed, or ambiguous
+within the exact three task-record write boundary above, plus the evening
+review's project memory capture. Unknown, pending, failed, or ambiguous
 targets remain read-only proposals or questions.

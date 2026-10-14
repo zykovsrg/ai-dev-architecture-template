@@ -178,16 +178,32 @@ No future tasks yet.
 
 ### project-context.md
 
+Instantiate the fields below from the confirmed user request and verified local
+structure. Before finishing creation, reject unfilled angle-bracket fields,
+`TBD`, or `TODO` in project-context.md. If evidence is absent, state the fact
+as unknown and its evidence limit; do not fabricate a purpose or invariants.
+
 ```markdown
 # Project Context
 
 ## What this project is
 
-TBD
+<Registered project name and user-stated purpose; distinguish any inference.>
+
+## Local structure
+
+<Verified existing folders and canonical ai task files. State whether this is
+a software project or a task/material workspace. Do not invent launch steps.>
 
 ## Invariants
 
-TBD
+Keep this project's tasks and memory inside its registered root. Canonical
+task state lives in ai/current-task.md, ai/future-tasks.md, and ai/paused-tasks.md.
+Do not store secrets, personal data, or client data in Hub knowledge records.
+
+## Unknowns
+
+<List material facts not established yet; use explicit unknowns, not placeholders.>
 ```
 
 ### decisions.md

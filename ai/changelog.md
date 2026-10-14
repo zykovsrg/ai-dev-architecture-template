@@ -14,6 +14,22 @@
 
 ## Текущий changelog
 
+### 2026-10-14 — Session cost diagnostics installed
+
+- Change: `scripts/session_cost.py` counts, without a model, token losses
+  (steps after errors, repeated commands, repeated reads) and startup cost of
+  Hub sessions per week; the weekly review shows `## Технические потери` with
+  three ranked conclusions. Architecture rule and learning passport name it.
+- Impact: first real week 2026-W42: 72 sessions, losses 1.9% of fresh tokens,
+  mostly Codex `exec`; cache reads (749M) far exceed fresh tokens (20M).
+- Validation: 30 script tests; all four suites green after merging the
+  fix of six pre-existing test failures (bd111da); deployed to Hub f7598a1;
+  real run 3.5 s, saved file has no outside paths.
+- Limitations: subagent transcripts not counted; Codex sessions without token
+  numbers are skipped; any non-zero exit code counts as an error.
+- Closure 2026-10-14: TASK-ai-dev-architecture-20261013-001 closed.
+  Follow-up: FT-20261013-001 (dead code and tech debt) after two weeks of data.
+
 ### 2026-10-04 — Session learning installed
 
 - Change: hub-session-scan skill, transcript collector and rule catalog with
@@ -523,3 +539,81 @@ Reports: docs/audits/2026-10-02-all-project-compatibility.md; per-project
 ai/hub-compatibility-2026-10-02.md. Live calendar artifacts stay in Hub ai/tmp
 and are not committed. Session review: ai/session-reviews/2026-10-02-architecture-corrections-closure.md; issues-found with partial Luna chronology coverage.
 Work saved locally; no remote push or main-branch merge claimed.
+
+
+## 2026-10-10 — Untrusted code isolation article captured
+
+Task: TASK-ai-dev-architecture-20261010-001.
+Saved an original, attributed research summary from the user-provided PDF in
+knowledge/research/firecracker-warm-pools.md. Recorded source author and date,
+warm-pool lifecycle, reported timings, and verification limits. Status remains
+draft; external technical claims and the linked implementation were not
+independently checked. The original PDF was not copied. Record containment,
+required metadata, section structure, and current-task format checked.
+
+
+## 2026-10-10 — Python API caching article captured
+
+Task: TASK-ai-dev-architecture-20261010-002.
+Saved knowledge/research/python-api-caching.md: an original attributed summary
+of the user-provided article by Denis Kuderin, published 2026-07-28.
+Captured local/shared cache selection, invalidation, concurrent misses and
+failure handling. Source examples are distinguished from measured performance.
+Record metadata, containment, sections, related link and task format checked.
+Research remains draft; library documentation was not independently checked.
+Original PDF remains an attachment and was not copied into the project.
+
+
+## 2026-10-10 — SQL indexing article captured
+
+Task: TASK-ai-dev-architecture-20261010-003.
+Saved knowledge/research/sql-indexes.md from the user-provided article by
+Kristina Tultseva, displaying update date 2026-09-30 (publication date unknown).
+Separated article summary from four corrections checked against official
+PostgreSQL 18 documentation: multicolumn skip scan, expression indexes,
+pg_trgm pattern matching, and actual execution by EXPLAIN ANALYZE.
+Validated record metadata, containment, dates, sections, related link and task
+format. Status remains draft; no database commands were executed.
+Original PDF remains an attachment and was not copied into the project.
+
+
+## 2026-10-10 — Database normalization article captured
+
+Task: TASK-ai-dev-architecture-20261010-004.
+Saved knowledge/research/database-normalization.md from the user-provided
+article by Vadim Egortsev, displaying update date 2026-09-30.
+Captured normalization goals, 1NF/2NF/3NF, historical facts and migration steps.
+Separated source assumptions from focused caveats on keys, decomposition and
+index redundancy, with primary documentation and university references.
+Metadata, containment, related links and task format checked. Status remains
+draft; no SQL was executed and no original PDF or personal examples copied.
+
+
+## 2026-10-10 — Monolith and microservices article captured
+
+Task: TASK-ai-dev-architecture-20261010-005.
+Saved knowledge/research/monolith-microservices.md from the user-provided
+article by Denis Kuderin, displaying update date 2026-09-30.
+Captured architecture options, ownership, gradual migration and operating costs.
+Corrected the distributed transaction impossibility claim using PostgreSQL
+primary documentation. Flagged unverified statistics and cost claims, including
+CNCF and DORA attribution. Full CNCF report fetch exceeded web tool size limit;
+no unsupported conclusion that the statistic is false was recorded.
+Metadata, containment, dates, sections, related links and task format checked.
+Record remains draft; original PDF was not copied and architecture not changed.
+
+### 2026-10-10 — Topical knowledge lookup, published generic references, and context repair
+
+Task: TASK-ai-dev-architecture-20261010-006.
+
+25 architecture unit tests, strict module boundary check, consistency, fresh optional-module installation and repeat-preview checks pass. Five generic draft summaries published for bounded topic lookup. 48 project contexts repaired; new-project instructions require evidence-backed context without placeholders. Unrelated installed learning overrides preserved; no full release update or service restart.
+
+Changes saved locally; no remote push or production-service restart.
+
+### 2026-10-10 — Working Hub architecture release reconciled and applied
+
+Task: TASK-ai-dev-architecture-20261010-007.
+
+Preserved three installed project-scope learning clarifications in source commit 79c5922. Official release apply changed metadata only; calendar bridge rebuilt through the official sync after a sandbox-cache retry. Drift: no conflicts or unmanaged files; strict module boundaries: zero warnings. 37 focused tests, consistency and 9 install smoke tests passed. The full learning suite has five baseline date-fixture failures, reproduced on clean pre-change HEAD. User settings, calendar allowlist, registry and preexisting edits preserved; calendar events unchanged.
+
+Saved locally; no remote push.
