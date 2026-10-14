@@ -8,16 +8,19 @@ message text or paths outside the Hub.
 """
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import re
+import statistics
 import sys
 from dataclasses import dataclass, field
+from datetime import date, datetime, time as dtime, timedelta, timezone
 from pathlib import Path
 
 SCRIPTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPTS))
-from session_collect import REMINDER, _lines  # noqa: E402
+from session_collect import REMINDER, _files, _inside, _lines, project_for, save_json  # noqa: E402
 
 SHELL = {"Bash", "exec"}
 READ = {"Read"}
@@ -26,6 +29,8 @@ EXIT_CODE = re.compile(r"(?:exit_code|Exit code|exited with code)\D{0,5}(\d+)")
 HUB_SCRIPT = re.compile(r"(?<![\w/.])\.?/?(scripts/[\w.-]+\.(?:py|sh))")
 PROGRAM = re.compile(r"[A-Za-z0-9_.-]+")
 CATEGORIES = ("error_retry", "repeat_command", "repeat_read")
+COST_DIR = "ai/learning/cost"
+SCAN_MARK = "[hub-session-scan]"
 
 
 @dataclass
@@ -243,3 +248,92 @@ def startup(steps):
         if step.text:
             break
     return out
+
+
+def collect(hub, until, claude_root, codex_root):
+    since = until - timedelta(days=6)
+    # A file last written before the window cannot hold a session started in it
+    oldest = datetime.combine(since - timedelta(days=1), dtime.min, timezone.utc).timestamp()
+    sessions, skipped = [], []
+    if not Path(claude_root).exists() and not Path(codex_root).exists():
+        return sessions, skipped
+    for tool, path in _files(claude_root, codex_root):
+        if path.stat().st_mtime < oldest:
+            continue
+        session = parse_claude(path, hub) if tool == "claude" else parse_codex(path, hub)
+        if session is None or not session.cwd or not _inside(session.cwd, hub):
+            continue
+        if not since.isoformat() <= session.started[:10] <= until.isoformat():
+            continue
+        if session.first_user.startswith(SCAN_MARK):
+            continue
+        if not session.usage_seen:
+            skipped.append({"session": session.id, "tool": session.tool, "reason": "no usage data"})
+            continue
+        sessions.append(session)
+    return sessions, skipped
+
+
+def report(hub, until, sessions, skipped):
+    totals = {"steps": 0, "fresh": 0, "cached": 0, "output": 0, "loss_fresh": 0}
+    groups = {category: {} for category in CATEGORIES}
+    starts = []
+    for session in sessions:
+        for step, (category, label_) in zip(session.steps, classify(session.steps)):
+            totals["steps"] += 1
+            totals["fresh"] += step.fresh
+            totals["cached"] += step.cached
+            totals["output"] += step.output
+            if category:
+                group = groups[category].setdefault(
+                    label_, {"label": label_, "steps": 0, "fresh": 0, "cached": 0})
+                group["steps"] += 1
+                group["fresh"] += step.fresh
+                group["cached"] += step.cached
+                totals["loss_fresh"] += step.fresh
+        first = startup(session.steps)
+        starts.append({"session": session.id, "tool": session.tool,
+                       "project": project_for(session.cwd, hub), "date": session.started[:10],
+                       "steps": len(first), "fresh": sum(s.fresh for s in first),
+                       "cached": sum(s.cached for s in first)})
+    totals["loss_share"] = round(totals["loss_fresh"] / totals["fresh"], 3) if totals["fresh"] else 0.0
+    year, week, _ = until.isocalendar()
+    return {
+        "week": f"{year}-W{week:02d}",
+        "since": (until - timedelta(days=6)).isoformat(),
+        "until": until.isoformat(),
+        "sessions": len(sessions),
+        "totals": totals,
+        "losses": {category: sorted(groups[category].values(),
+                                    key=lambda g: (-g["fresh"], g["label"]))[:10]
+                   for category in CATEGORIES},
+        "startup": {"median_fresh": int(statistics.median([s["fresh"] for s in starts])) if starts else 0,
+                    "top": sorted(starts, key=lambda s: (-s["fresh"], s["session"]))[:5]},
+        "skipped": skipped,
+    }
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--hub", required=True, type=Path)
+    parser.add_argument("--claude-root", type=Path, default=Path.home() / ".claude/projects")
+    parser.add_argument("--codex-root", type=Path, default=Path.home() / ".codex/sessions")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+    week = sub.add_parser("week")
+    week.add_argument("--until", required=True)
+    args = parser.parse_args(argv)
+    hub = args.hub.resolve()
+    try:
+        until = date.fromisoformat(args.until)
+    except ValueError:
+        parser.error("--until must be YYYY-MM-DD")
+    sessions, skipped = collect(hub, until, args.claude_root, args.codex_root)
+    data = report(hub, until, sessions, skipped)
+    if not args.claude_root.exists() and not args.codex_root.exists():
+        data["note"] = "no transcript folders"
+    save_json(hub / COST_DIR / f"{data['week']}.json", data)
+    print(json.dumps(data, ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    main()

@@ -244,5 +244,96 @@ class ClassifyTests(unittest.TestCase):
         self.assertEqual(self.mod.startup([]), [])
 
 
+class WeekTests(Base):
+    def setUp(self):
+        super().setUp()
+        self.claude = self.root / "claude"
+        self.codex = self.root / "codex"
+        slug = self.claude / "slug"
+        hub_cwd = str(self.hub)
+        write(slug / "c-1.jsonl", [
+            c_user("PRIVATE-TEXT задача"),
+            c_assistant("m1", [text("Проверяю"),
+                               tool("t1", "Bash", {"command": "bash scripts/run.sh --token PRIVATE123"})]),
+            c_result("t1", error=True),
+            c_assistant("m2", [tool("t2", "Bash", {"command": "bash scripts/run.sh --token PRIVATE123"})]),
+            c_result("t2"),
+            c_assistant("m3", [tool("t3", "Read", {"file_path": "/etc/PRIVATE-PATH"})]),
+            c_assistant("m4", [tool("t4", "Read", {"file_path": "/etc/PRIVATE-PATH"})]),
+            c_assistant("m5", [text("Готово")]),
+        ], self.hub)
+        write(slug / "c-out.jsonl", [c_user("x", sid="c-out", cwd="/elsewhere"),
+                                     c_assistant("m1", [text("y")], sid="c-out", cwd="/elsewhere")], self.hub)
+        write(slug / "c-old.jsonl", [c_user("x", sid="c-old", ts="2026-10-07T23:00:00Z"),
+                                     c_assistant("m1", [text("y")], sid="c-old")], self.hub)
+        write(slug / "c-edge.jsonl", [c_user("x", sid="c-edge", ts="2026-10-08T00:10:00Z"),
+                                      c_assistant("m1", [text("y")], sid="c-edge")], self.hub)
+        write(slug / "c-scan.jsonl", [c_user("[hub-session-scan] batch", sid="c-scan"),
+                                      c_assistant("m1", [text("y")], sid="c-scan")], self.hub)
+        write(slug / "c-nousage.jsonl", [c_user("x", sid="c-nousage"),
+                                         c_assistant("m1", [text("y")], usage=None, sid="c-nousage")],
+              self.hub)
+        write(slug / "c-nocwd.jsonl", [c_user("x", sid="c-nocwd", cwd=""),
+                                       c_assistant("m1", [text("y")], sid="c-nocwd", cwd="")], self.hub)
+        write(self.codex / "2026/10/12/rollout-x-1.jsonl", [
+            x_meta(cwd=f"{hub_cwd}/projects/demo"), x_user("Сделай"), x_say("Ок"),
+            x_tokens(100, 60, 5, 105)], self.hub)
+
+    def run_week(self, until="2026-10-14", claude=None, codex=None):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.mod.main(["--hub", str(self.hub), "--claude-root", str(claude or self.claude),
+                           "--codex-root", str(codex or self.codex), "week", "--until", until])
+        return json.loads(out.getvalue()), out.getvalue()
+
+    def test_week_report_counts_and_filters(self):
+        data, _ = self.run_week()
+        self.assertEqual(data["since"], "2026-10-08")
+        self.assertEqual(data["sessions"], 3)  # c-1, c-edge, x-1
+        self.assertEqual([s["session"] for s in data["skipped"]], ["c-nousage"])
+        totals = data["totals"]
+        self.assertEqual(totals["steps"], 7)
+        self.assertEqual(totals["fresh"], 6 * 15 + 40)
+        self.assertEqual(totals["cached"], 6 * 100 + 60)
+        self.assertEqual(totals["loss_fresh"], 30)
+        self.assertEqual(totals["loss_share"], round(30 / 130, 3))
+        self.assertEqual(data["losses"]["error_retry"],
+                         [{"label": "Bash bash scripts/run.sh", "steps": 1, "fresh": 15, "cached": 100}])
+        self.assertEqual(data["losses"]["repeat_read"][0]["label"], "Read outside-hub")
+        self.assertEqual(data["losses"]["repeat_command"], [])
+        top = {s["session"]: s for s in data["startup"]["top"]}
+        self.assertEqual(top["c-1"]["steps"], 1)
+        self.assertEqual(top["x-1"]["project"], "demo")
+        self.assertEqual(data["startup"]["median_fresh"], 15)
+
+    def test_week_file_written_without_private_text(self):
+        data, printed = self.run_week()
+        year, week, _ = date(2026, 10, 14).isocalendar()
+        path = self.hub / f"ai/learning/cost/{year}-W{week:02d}.json"
+        self.assertEqual(data["week"], f"{year}-W{week:02d}")
+        stored = path.read_text(encoding="utf-8")
+        for blob in (stored, printed):
+            self.assertNotIn("PRIVATE", blob)
+            self.assertNotIn("задача", blob)
+
+    def test_old_files_are_not_parsed(self):
+        old = time.time() - 40 * 86400
+        for path in self.claude.glob("*/*.jsonl"):
+            os.utime(path, (old, old))
+        data, _ = self.run_week()
+        self.assertEqual(data["sessions"], 1)  # only x-1 keeps a fresh mtime
+
+    def test_missing_transcript_folders(self):
+        data, _ = self.run_week(claude=self.root / "none-c", codex=self.root / "none-x")
+        self.assertEqual(data["sessions"], 0)
+        self.assertEqual(data["note"], "no transcript folders")
+        self.assertEqual(data["startup"]["median_fresh"], 0)
+
+    def test_bad_until_date(self):
+        with self.assertRaises(SystemExit):
+            with contextlib.redirect_stderr(io.StringIO()):
+                self.run_week(until="14.10.2026")
+
+
 if __name__ == "__main__":
     unittest.main()
