@@ -199,7 +199,7 @@ def parse_codex(path, hub):
             inp, cached = last.get("input_tokens", 0), last.get("cached_input_tokens", 0)
             session.steps.append(Step(
                 fresh=max(inp - cached, 0), cached=cached,
-                output=last.get("output_tokens", 0) + last.get("reasoning_output_tokens", 0),
+                output=last.get("output_tokens", 0),
                 calls=pending, text=said, after_user=user_waiting))
             pending, said, user_waiting = [], False, False
     return session if session and session.id else None

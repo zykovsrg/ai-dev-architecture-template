@@ -156,7 +156,7 @@ class ParseTests(Base):
         self.assertEqual(s.first_user, "Сделай")
         self.assertEqual(len(s.steps), 2)
         first, second = s.steps
-        self.assertEqual((first.fresh, first.cached, first.output), (40, 60, 6))
+        self.assertEqual((first.fresh, first.cached, first.output), (40, 60, 5))
         self.assertTrue(first.after_user)
         self.assertTrue(first.calls[0].error)
         self.assertTrue(second.text)
