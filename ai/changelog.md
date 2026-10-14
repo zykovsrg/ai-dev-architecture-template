@@ -14,6 +14,22 @@
 
 ## Текущий changelog
 
+### 2026-10-14 — Session cost diagnostics installed
+
+- Change: `scripts/session_cost.py` counts, without a model, token losses
+  (steps after errors, repeated commands, repeated reads) and startup cost of
+  Hub sessions per week; the weekly review shows `## Технические потери` with
+  three ranked conclusions. Architecture rule and learning passport name it.
+- Impact: first real week 2026-W42: 72 sessions, losses 1.9% of fresh tokens,
+  mostly Codex `exec`; cache reads (749M) far exceed fresh tokens (20M).
+- Validation: 30 script tests; all four suites green after merging the
+  fix of six pre-existing test failures (bd111da); deployed to Hub f7598a1;
+  real run 3.5 s, saved file has no outside paths.
+- Limitations: subagent transcripts not counted; Codex sessions without token
+  numbers are skipped; any non-zero exit code counts as an error.
+- Closure 2026-10-14: TASK-ai-dev-architecture-20261013-001 closed.
+  Follow-up: FT-20261013-001 (dead code and tech debt) after two weeks of data.
+
 ### 2026-10-04 — Session learning installed
 
 - Change: hub-session-scan skill, transcript collector and rule catalog with
