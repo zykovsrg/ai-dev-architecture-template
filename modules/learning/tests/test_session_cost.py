@@ -176,6 +176,8 @@ class ParseTests(Base):
         self.assertEqual(self.mod.label("Bash", f"python3 {hub}/scripts/x.py SECRET", hub),
                          "Bash python3 scripts/x.py")
         self.assertEqual(self.mod.label("Bash", "/usr/bin/env SECRET", hub), "Bash ?")
+        self.assertEqual(self.mod.label("Bash", "ghp_SECRETTOKEN run", hub), "Bash ?")
+        self.assertEqual(self.mod.label("Bash", "sk-live-abc123", hub), "Bash ?")
         self.assertEqual(self.mod.label("Bash", "bash /elsewhere/scripts/y.sh", hub), "Bash bash")
         self.assertEqual(self.mod.label("exec", "await exec('scripts/z.py SECRET')", hub),
                          "exec scripts/z.py")

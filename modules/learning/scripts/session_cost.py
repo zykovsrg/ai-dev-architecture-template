@@ -27,7 +27,11 @@ READ = {"Read"}
 EDIT = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
 EXIT_CODE = re.compile(r"(?:exit_code|Exit code|exited with code)\D{0,5}(\d+)")
 HUB_SCRIPT = re.compile(r"(?<![\w/.])\.?/?(scripts/[\w.-]+\.(?:py|sh))")
-PROGRAM = re.compile(r"[A-Za-z0-9_.-]+")
+PROGRAMS = {"bash", "sh", "zsh", "python", "python3", "pip", "pip3", "uv", "node", "npm", "npx",
+            "git", "gh", "ls", "cat", "head", "tail", "sed", "awk", "grep", "rg", "find", "cd",
+            "mkdir", "cp", "mv", "rm", "touch", "chmod", "echo", "printf", "wc", "sort", "diff",
+            "jq", "curl", "date", "test", "make", "open", "osascript", "sqlite3", "swift",
+            "xcodebuild", "pytest"}
 CATEGORIES = ("error_retry", "repeat_command", "repeat_read")
 COST_DIR = "ai/learning/cost"
 SCAN_MARK = "[hub-session-scan]"
@@ -84,7 +88,7 @@ def label(tool, value, hub):
         tail = f" {script.group(1)}" if script else ""
         if tool == "Bash":
             words = command.split()
-            program = words[0] if words and PROGRAM.fullmatch(words[0]) else "?"
+            program = words[0] if words and words[0] in PROGRAMS else "?"
             return f"Bash {program}{tail}"
         return f"exec{tail}"
     if tool in READ or tool in EDIT:
