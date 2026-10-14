@@ -7,8 +7,8 @@ import os
 import subprocess
 import sys
 import tempfile
-import time
 import unittest
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import shutil
@@ -77,9 +77,9 @@ def make_hub(tmp: Path, current=CURRENT, yesterday=True) -> Path:
     (project / "ai/current-task.md").write_text(current, encoding="utf-8")
     (project / "ai/paused-tasks.md").write_text(PAUSED, encoding="utf-8")
     (project / "ai/future-tasks.md").write_text("# Future Tasks\n", encoding="utf-8")
-    if yesterday:
-        old = time.time() - 2 * 86400
-        os.utime(project / "ai/current-task.md", (old, old))
+    # Pin the file's change time to TODAY (or the day before) so the test does not depend on the real clock
+    changed = datetime.fromisoformat(TODAY).replace(hour=12) - timedelta(days=1 if yesterday else 0)
+    os.utime(project / "ai/current-task.md", (changed.timestamp(), changed.timestamp()))
     return tmp / "hub"
 
 

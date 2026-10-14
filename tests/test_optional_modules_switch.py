@@ -15,6 +15,12 @@ REMOVED = {
         "ai/skills/hub-knowledge-capture/SKILL.md",
         "ai/skills/hub-knowledge-review/SKILL.md",
         "ai/skills/hub-info-update/SKILL.md",
+        "ai/knowledge/README.md",
+        "ai/knowledge/research/database-normalization.md",
+        "ai/knowledge/research/firecracker-warm-pools.md",
+        "ai/knowledge/research/monolith-microservices.md",
+        "ai/knowledge/research/python-api-caching.md",
+        "ai/knowledge/research/sql-indexes.md",
     },
     "goals": {
         "ai/rules/goals.md",
