@@ -25,6 +25,7 @@ EDIT = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
 EXIT_CODE = re.compile(r"(?:exit_code|Exit code|exited with code)\D{0,5}(\d+)")
 HUB_SCRIPT = re.compile(r"(?<![\w/.])\.?/?(scripts/[\w.-]+\.(?:py|sh))")
 PROGRAM = re.compile(r"[A-Za-z0-9_.-]+")
+CATEGORIES = ("error_retry", "repeat_command", "repeat_read")
 
 
 @dataclass
@@ -203,3 +204,42 @@ def parse_codex(path, hub):
                 calls=pending, text=said, after_user=user_waiting))
             pending, said, user_waiting = [], False, False
     return session if session and session.id else None
+
+
+def classify(steps):
+    """Return (category, label) per step; at most one category per step."""
+    result, waiting, commands, reads = [], {}, set(), set()
+    for step in steps:
+        if step.after_user:
+            waiting.clear()
+        category = label_ = None
+        if waiting:
+            category, label_ = "error_retry", next(iter(waiting.values()))
+        for call in step.calls:
+            if call.tool in waiting and not call.error:
+                waiting.pop(call.tool)
+            if call.command is not None:
+                if call.command in commands and category is None:
+                    category, label_ = "repeat_command", call.label
+                commands.add(call.command)
+            if call.tool in READ and call.path:
+                if call.path in reads and category is None:
+                    category, label_ = "repeat_read", call.label
+                reads.add(call.path)
+            elif call.tool in EDIT and call.path:
+                reads.discard(call.path)
+        for call in step.calls:
+            if call.error:
+                waiting[call.tool] = call.label
+        result.append((category, label_))
+    return result
+
+
+def startup(steps):
+    """Steps from the session start up to the first assistant text, inclusive."""
+    out = []
+    for step in steps:
+        out.append(step)
+        if step.text:
+            break
+    return out

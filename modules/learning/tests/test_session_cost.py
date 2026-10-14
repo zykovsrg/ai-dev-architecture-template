@@ -190,5 +190,59 @@ class ParseTests(Base):
         self.assertEqual(self.mod.label("Skill", {"skill": "SECRET"}, hub), "Skill")
 
 
+class ClassifyTests(unittest.TestCase):
+    def setUp(self):
+        self.mod = load()
+
+    def step(self, *calls, text=False, after_user=False):
+        return self.mod.Step(fresh=10, calls=list(calls), text=text, after_user=after_user)
+
+    def bash(self, command, error=False):
+        return self.mod.Call("Bash", f"Bash {command}", command=command, error=error)
+
+    def read(self, path):
+        return self.mod.Call("Read", f"Read {path}", path=path)
+
+    def cats(self, steps):
+        return [c for c, _ in self.mod.classify(steps)]
+
+    def test_error_retry_until_same_tool_succeeds(self):
+        steps = [self.step(self.bash("a", error=True)), self.step(self.read("/f")),
+                 self.step(self.bash("b")), self.step(self.bash("c"))]
+        result = self.mod.classify(steps)
+        self.assertEqual([c for c, _ in result], [None, "error_retry", "error_retry", None])
+        self.assertEqual(result[1][1], "Bash a")
+
+    def test_user_message_ends_error_retry(self):
+        steps = [self.step(self.bash("a", error=True)), self.step(self.read("/f"), after_user=True)]
+        self.assertEqual(self.cats(steps), [None, None])
+
+    def test_failed_retry_keeps_waiting(self):
+        steps = [self.step(self.bash("a", error=True)), self.step(self.bash("b", error=True)),
+                 self.step(self.read("/f"))]
+        self.assertEqual(self.cats(steps), [None, "error_retry", "error_retry"])
+
+    def test_repeat_command(self):
+        steps = [self.step(self.bash("ls")), self.step(self.bash("ls"))]
+        self.assertEqual(self.cats(steps), [None, "repeat_command"])
+
+    def test_repeat_read_only_without_edit_between(self):
+        edit = self.mod.Call("Edit", "Edit /f", path="/f")
+        self.assertEqual(self.cats([self.step(self.read("/f")), self.step(self.read("/f"))]),
+                         [None, "repeat_read"])
+        self.assertEqual(self.cats([self.step(self.read("/f")), self.step(edit),
+                                    self.step(self.read("/f"))]), [None, None, None])
+
+    def test_error_retry_wins_over_repeat_command(self):
+        steps = [self.step(self.bash("x", error=True)), self.step(self.bash("x"))]
+        self.assertEqual(self.cats(steps), [None, "error_retry"])
+
+    def test_startup_ends_at_first_text(self):
+        steps = [self.step(), self.step(), self.step(text=True), self.step(text=True)]
+        self.assertEqual(len(self.mod.startup(steps)), 3)
+        self.assertEqual(len(self.mod.startup([self.step(), self.step()])), 2)
+        self.assertEqual(self.mod.startup([]), [])
+
+
 if __name__ == "__main__":
     unittest.main()
