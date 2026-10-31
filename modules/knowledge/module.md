@@ -27,7 +27,7 @@ records, and turn transcript info into scoped update proposals.
 
 ## Reads
 
-- project knowledge records
+- project knowledge records and explicitly published generic Hub references
 
 ## Writes
 
