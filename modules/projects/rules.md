@@ -81,6 +81,12 @@ The final report lists these actions. If GitHub access or remote
 creation is unavailable, local creation succeeds and is reported as
 `pending-sync`; the workflow never attaches or overwrites an existing remote.
 
+## Full Hub Synchronization
+
+Use `hub-full-sync` only for an explicit request to synchronize the Hub and all
+active registered projects. A status or progress question alone does not trigger
+synchronization.
+
 ## Project Switches And Task Switches
 
 A project switch changes the selected project. It always returns to

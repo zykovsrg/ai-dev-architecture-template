@@ -1,0 +1,3 @@
+interface:
+  display_name: "Полная синхронизация Хаба"
+  short_description: "Синхронизировать Хаб и проекты"
