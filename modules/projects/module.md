@@ -1,17 +1,17 @@
-# Module: projects
+# Модуль: projects
 
 Id: projects
 Required: yes
 Switchable: no
 Depends: core
-Uses if present: —
+Uses if present: planning
 Rules: ai/rules/projects.md
 Keywords: —
 
 ## Purpose
 
-Project registry and project cards: create, register, migrate, switch and
-audit the registered hub projects.
+Реестр и карточки проектов: создавать, регистрировать, переносить, переключать
+и проверять зарегистрированные проекты Хаба.
 
 ## Installs
 
@@ -27,6 +27,7 @@ audit the registered hub projects.
 - modules/projects/skills/hub-project-switch/ -> ai/skills/hub-project-switch/
 - modules/projects/skills/hub-registry-check/ -> ai/skills/hub-registry-check/
 - modules/projects/skills/hub-local-router-install/ -> ai/skills/hub-local-router-install/
+- modules/projects/skills/hub-full-sync/ -> ai/skills/hub-full-sync/
 
 ## Repository only
 
@@ -34,11 +35,11 @@ audit the registered hub projects.
 
 ## Reads
 
-- the project registry and project cards
+- реестр и карточки проектов
 
 ## Writes
 
-- the project registry and project cards
+- реестр и карточки проектов
 
 ## Subscribes
 
