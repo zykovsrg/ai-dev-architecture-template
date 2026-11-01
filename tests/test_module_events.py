@@ -49,10 +49,17 @@ class PlanningCalendarIsolationTests(unittest.TestCase):
         passports = load_passports(ROOT)
         hits = []
         for module_id in NO_PLANNING_CALENDAR:
+            passport = passports[module_id]
+            allowed = set(passport.depends + passport.uses_if_present)
             for source, _ in install_pairs(ROOT, passports, [module_id]):
                 text = (ROOT / source).read_text(encoding="utf-8", errors="replace")
                 for match in PLANNING_CALENDAR_TERMS.finditer(text):
-                    hits.append(f"{source}: {match.group(0)}")
+                    term = match.group(0)
+                    owner = "planning" if term in {
+                        "hub-workflows", "snapshot-calendar.sh", "calendar_task_sync.py",
+                    } else "calendar"
+                    if owner not in allowed:
+                        hits.append(f"{source}: {term}")
         self.assertEqual(hits, [])
 
     def test_task_skills_fire_before_task_confirmation(self):
@@ -79,7 +86,7 @@ class LifecycleEventTests(unittest.TestCase):
         self.assertIn("ai/modules.md", text)
         self.assertNotIn("hub-session-review", text)
         self.assertNotIn("hub-knowledge-review", text)
-        self.assertLess(text.index("`before-task-close`"), text.index("clearing task context"))
+        self.assertLess(text.index("`before-task-close`"), text.index("очистки контекста задачи"))
 
     def test_project_create_fires_after_project_create(self):
         text = self.skill("hub-project-create")
@@ -105,7 +112,7 @@ class LifecycleEventTests(unittest.TestCase):
 class OptionalActionGateTests(unittest.TestCase):
     def test_overview_gates_actions_of_switchable_modules(self):
         text = (ROOT / "modules/tasks/skills/hub-task-overview/SKILL.md").read_text(encoding="utf-8")
-        gate = text.split("Emit an action only when the module that owns it is listed", 1)
+        gate = text.split("Создавайте действие, только если владеющий модуль указан", 1)
         self.assertEqual(len(gate), 2)
         for action, module in (("create_knowledge", "knowledge"), ("update_knowledge", "knowledge"),
                                ("goal_progress", "goals"), ("add_observation", "learning"),

@@ -1,7 +1,7 @@
 ---
 name: hub-learning-consolidator
-description: Weekly duplicate-merge pass over the Hub rule catalog. Use only from the hub-session-scan skill.
+description: Недельный проход объединения повторов каталога правил Хаба. Использовать только из навыка hub-session-scan.
 model: opus
 tools: Read, Write
 ---
-Follow `ai/skills/hub-session-scan/resources/consolidator.md` and write your JSON to the output path you are given.
+Следуйте `ai/skills/hub-session-scan/resources/consolidator.md` и запишите свой JSON по переданному пути вывода.

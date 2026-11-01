@@ -1,12 +1,12 @@
-# Learning observation lifecycle
+# Жизненный цикл наблюдения обучения
 
-Canonical sequence: proposal shown → still pending → accepted/rejected → resolved.
+Каноническая последовательность: предложение показано → всё ещё ожидает → принято или отклонено → разрешено.
 
-## Invariants
+## Неизменные условия
 
 - `proposal_display: pending`
 - `accepted: journal_append -> resolve_accepted`
 - `rejected: no_journal_append -> resolve_rejected`
 - `append_failure: pending`
 
-Read pending friction with `workflow-friction.py list`. Showing a proposal never consumes it. After explicit acceptance, check for the observation's `source-id: <ID>` first, append the accepted observation to the existing journal with that preceding source-id comment when absent, and resolve it as accepted only after the journal write succeeds. After explicit rejection, resolve it as rejected without adding it to the journal. If appending fails, leave it pending. Unresolved sources are never pruned.
+Читайте ожидающие затруднения через `workflow-friction.py list`. Показ предложения никогда не потребляет его. После явного принятия сначала проверьте `source-id: <ID>` наблюдения; при отсутствии добавьте принятое наблюдение в существующий журнал с предшествующим комментарием source-id, затем разрешите как принятое только после успешной записи журнала. После явного отклонения разрешите как отклонённое без добавления в журнал. При ошибке добавления оставьте ожидание. Неразрешённые источники никогда не удаляются очисткой.

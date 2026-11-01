@@ -180,7 +180,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--hub', required=True, type=Path)
     parser.add_argument('--day', required=True)
-    parser.add_argument('--now', help='YYYY-MM-DD HH:MM in the calendar timezone; defaults to the current time')
+    parser.add_argument('--reminders', action='store_true', help='Объединить календарь с напоминаниями без календарной синхронизации задач')
+    parser.add_argument('--now', help='YYYY-MM-DD HH:MM for Calendar mode; ISO 8601 with timezone for --reminders; defaults to current time')
     args = parser.parse_args()
     try:
         data = json.load(sys.stdin)
@@ -188,11 +189,17 @@ def main():
         consumed = data.get('consumed', [])
         # The first run of a review must include the month window: the sync
         # check is part of the review, not an optional step to remember.
-        if not consumed and 'sync_window' not in data:
+        if not args.reminders and not consumed and 'sync_window' not in data:
             raise ValueError('sync_window is required on the first run: pass the guarded [D-30, D+31) read_events response')
         output = prepare_review(data['metadata'], data['today'], data['tomorrow'], projects, tasks,
-                                args.day, consumed, resolve=title_resolver(args.hub.resolve()))
-        if 'sync_window' in data:
+                                args.day, () if args.reminders else consumed, resolve=title_resolver(args.hub.resolve()))
+        if args.reminders:
+            import review_reminders
+            now = args.now or datetime.now(review_reminders.TZ).isoformat()
+            reminders, config = review_reminders.load_reminders(args.hub, args.day, now)
+            output = review_reminders.merge(output, reminders, config, tasks, consumed)
+            output['sync'] = dict(status='reminders-mode-no-calendar-task-sync')
+        elif 'sync_window' in data:
             timezone = ZoneInfo(output['timezone'])
             now = args.now or datetime.now(timezone).strftime('%Y-%m-%d %H:%M')
             datetime.strptime(now, '%Y-%m-%d %H:%M')
@@ -202,7 +209,7 @@ def main():
         else:
             output['sync'] = dict(status='done-earlier-this-review')
         print(json.dumps(output, ensure_ascii=False))
-    except (ValueError, KeyError, TypeError, OSError) as error:
+    except (ValueError, KeyError, TypeError, OSError, RuntimeError) as error:
         print(str(error), file=sys.stderr)
         return 2
     return 0

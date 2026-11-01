@@ -1,4 +1,4 @@
-# Module: learning
+# Модуль: learning
 
 Id: learning
 Required: no
@@ -10,8 +10,8 @@ Keywords: —
 
 ## Purpose
 
-Review agent behaviour for a finished task or session, save evidence-backed
-findings, and track workflow friction over time.
+Проверять поведение агента после завершения задачи или сессии, сохранять выводы
+с подтверждениями и отслеживать затруднения рабочего процесса во времени.
 
 ## Installs
 
@@ -26,6 +26,11 @@ findings, and track workflow friction over time.
 - modules/learning/scripts/session_collect.py -> scripts/session_collect.py
 - modules/learning/scripts/session_rules.py -> scripts/session_rules.py
 - modules/learning/scripts/session_scan_model.py -> scripts/session_scan_model.py
+- modules/learning/scripts/session_scan_run.py -> scripts/session_scan_run.py
+- modules/learning/scripts/session_case_review.py -> scripts/session_case_review.py
+- modules/learning/scripts/session_case_queue.py -> scripts/session_case_queue.py
+- modules/learning/scripts/session_cost.py -> scripts/session_cost.py
+- modules/learning/scripts/open_task_check.py -> scripts/open_task_check.py
 - modules/learning/data/ai/learning/rules.json -> ai/learning/rules.json
 - modules/learning/data/ai/learning/scan-ledger.json -> ai/learning/scan-ledger.json
 - modules/learning/data/ai/learned-rules.md -> ai/learned-rules.md
@@ -38,13 +43,14 @@ findings, and track workflow friction over time.
 
 ## Reads
 
-- session review records and workflow observations
-- Claude Code and Codex transcripts of Hub sessions (read-only)
+- записи разборов сессий и наблюдения о рабочем процессе
+- расшифровки сессий Хаба в Claude Code и Codex (только чтение)
 
 ## Writes
 
-- workflow observations
-- learning catalog, scan ledger and learned-rules files
+- наблюдения о рабочем процессе
+- каталог обучения, журнал сканирования и файлы усвоенных правил
+- еженедельные показатели стоимости сессий в `ai/learning/cost/`
 
 ## Subscribes
 

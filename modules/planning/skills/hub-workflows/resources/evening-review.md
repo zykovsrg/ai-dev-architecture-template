@@ -1,140 +1,276 @@
 # evening-review
 
-This resource defines only the `evening-review` scenario. The core `SKILL.md`
-remains authoritative for scope, security, canonical-source rules, proposal
-envelopes, write policy and learning lifecycle. Nothing here widens permissions.
+## Ветка «Напоминаний»
 
-## Default: guided conversation
+Перед выполнением сценария прочитайте раздел «Включённый режим „Напоминаний“»
+в `ai/skills/hub-workflows/SKILL.md` и указанный там договор задач.
 
-Start with tomorrow's events from the exact calendar name `Важно и срочно`.
-Resolve its ID through a successful fresh `list_calendar_metadata`; never hardcode
-an ID, infer it from a similar name, or substitute another calendar. Read the
-requested review date D and tomorrow D+1 through guarded `read_events`, with
-exactly the allowed IDs and the calendar timezone. Tomorrow is relative to D,
-including when the conversation crosses midnight; do not silently change D.
-Inspect `availability_complete` and `unavailable_calendar_ids` for every read.
-Name unavailable calendars, do not infer a free day from incomplete coverage,
-and skip full-window task sync when coverage is partial.
 
-The first reply renders `## Важно и срочно на завтра` and every event of that
-calendar for D+1, including events without projects. Render each timed event
-separately as `- HH:MM–HH:MM — <exact title>` and each all-day event separately
-as `- весь день — <exact title>`. Keep event titles verbatim: do not shorten, translate, group, or paraphrase them. If access is complete and there are no
-such events, say `- Нет.`. Missing or ambiguous calendar identity means
-unavailable, not empty. Then ask about the first eligible event of D.
-Do not ask about tomorrow's outcomes. Do not require an acknowledgement just
-because the urgent list was shown. A user request to discuss it takes priority.
+При `enabled: true` в `ai/reminders-sync.json` ревью объединяет календарь и
+«Напоминания». Сначала выполните обычную синхронизацию из основного навыка,
+перечитайте затронутые канонические записи и сообщите её реальные ошибки.
+Не запускайте календарную синхронизацию задач и не определяйте выполнение
+по календарному событию. Галочка приложения подтверждает выполнение;
+спрашивайте о результате и следующих действиях, а не «сделано ли?».
 
-Use the compact task index for discovery and only canonical task files for
-richer task facts, under the `hub-task-overview` personal-assistant boundary.
-Prepare inputs with `scripts/evening_review.py --hub <hub> --day <D>`; pipe a
-JSON object with `metadata`, `today`, `tomorrow` guarded responses and
-`sync_window` on stdin. `sync_window` is `{start, end, response}`: the guarded
-`read_events` response for a window covering [D-30, D+31). On the first run
-(no `consumed` keys) the helper refuses to start without it, so the sync check
-cannot be skipped. The helper validates active registered roots and reads only
-the three canonical task files. It returns urgent events, a chronological
-project-event queue, coverage flags, review keys and `sync` (`complete` with
-discrepancy items, or `incomplete` with no items). It performs no writes. Its output is selection
-evidence, not proof of completion. Report discovery warnings from the compact
-index. On a helper failure, state the failure and use only independently
-verified input; never invent an empty queue.
+Отсутствие связанного списка не останавливает разговор. Даже после отказа
+начальной синхронизации запустите помощник чтения ревью: он возвращает доступные
+задачи и `missing_lists`, а не исключение для отсутствующего списка.
+После срочных событий завтра покажите названия из `missing_lists` рядом с
+общим списком задач. Добавьте к общему запросу пункт о причине отсутствия
+списков: удалены намеренно или причина неизвестна. Смысл
+`clarification_question` сохраняется, но отдельный вопрос перед остальными
+задачами не требуется. Во всём ответе остаётся один общий вопрос. Если пользователь уже сообщил
+об удалении этих точных списков в текущем разговоре, не спрашивайте повторно.
+После ответа продолжайте очередь доступных задач; при неизвестной причине
+пометьте её как неизвестную. Не заменяйте конкретный список задач общим вопросом
+«что сделано сегодня». Не восстанавливайте списки, не отменяйте и не закрывайте
+задачи по одному отсутствию списка или подтверждению удаления списка.
+Согласование оставшихся связей — отдельное изменение через штатный механизм.
+До полного согласования `complete: false` и прежняя граница сохраняются,
+но доступные пункты ревью можно разобрать. Ошибки доступа, усечённые ответы
+и повреждённые метаданные не означают удаление и не превращаются в пустую очередь.
 
-### One project task at a time
+1. Получите свежие защищённые `metadata`, `today`, `tomorrow` календаря, как
+   описано ниже. Сначала покажите события завтра из «Важно и срочно» дословно.
+2. Запустите `python3 scripts/evening_review.py --hub <hub> --day <D> --reminders`.
+   Передайте JSON с этими тремя ответами стандартным вводом. `sync_window`
+   здесь не нужен. Помощник читает точные снимки только разрешённых списков
+   существующей ограниченной нативной программой, без изменения приложения.
+3. Получите объединённую очередь: события календаря D, напоминания с
+   `since < completed_at <= through` независимо от срока задачи, затем
+   открытые напоминания списка «сегодня». Этот список включает сегодняшние
+   и просроченные задачи. В ограниченной программе поле `smart_list` запрещено;
+   используется документированный состав встроенного списка: открытые записи
+   со сроком до следующей полуночи, включая местное время без часового пояса.
+   Источник определения: https://support.apple.com/en-mo/guide/reminders/-remnd854fc47/mac .
+   Поиск по сроку никогда не заменяет отбор выполненных по `completed_at`.
+4. Помощник читает границу из `ai/evening-review-state.json`. Если её нет,
+   явно скажите: «Это первое ревью с сохранённой границей; выполненные проверены
+   с начала сегодняшнего дня». Не называйте это полной историей прошлого ревью.
+   Не ищите прошлое ревью в произвольных беседах и не угадывайте дату.
+5. Храните исходный результат и `review_keys` в текущем разговоре; постоянную
+   очередь с текстами задач не создавайте. Повторные календарные блоки и
+   напоминание одной задачи объединены по точной сохранённой связи UUID/Task ID.
+   Одинаковые названия не доказывают тождество. Показывайте все неразобранные
+   пункты сразу; ответ по нескольким пунктам добавляет в `consumed` только
+   ключи явно разобранных задач. Явное «дальше» без уточнения относится лишь
+   к названному пункту; при неоднозначной ссылке уточните охват.
+   Несвязанные напоминания тоже показывайте, но не угадывайте проект, не
+   импортируйте и не изменяйте чужую задачу. Неоднозначность владельца
+   выясняйте только перед записью. Переносы задач обсуждайте без часов.
+6. После всей очереди, событий календаря, обоснованного обучения и записи
+   заявленных изменений завершите ревью командой
+   `python3 scripts/review_reminders.py finish --hub <hub>`.
+   Стандартный ввод — исходный результат помощника с итоговым `consumed` и
+   `calendar_reviewed: true`. Только завершённый разговор разрешает эту команду.
+   При частичной синхронизации, неразобранном конфликте или недоступном календаре
+   не вызывайте finish; сообщите, что граница не сдвинута.
+   Ошибка чтения, усечение, неизвестное время выполнения и необработанные ключи
+   также не разрешают продвижение границы. Продолжайте лишь проверенную часть.
+7. Состояние хранит только `last_reviewed_through` (время исходного снимка) и
+   `finished_at` (время завершения). Следующее ревью начинает проверку после
+   первой границы: выполнения во время разговора не теряются. Прерванное ревью,
+   предварительный просмотр, установка и проверка разработки границу не меняют.
+   Конкурентное ревью со старой границей отвергается. Отсутствие напоминания
+   не доказывает выполнение. Недоступные прошлые повторения не выдумывайте.
 
-Ask only about today's events that have one unambiguous active registered
-project: the project resolved from the nested title by
-`scripts/archiprojects.py resolve-title` (legacy `category/<project-id>/task`
-titles included), or one unique canonical event link. Skip projectless, inactive,
-unregistered and conflicting matches silently; never ask “skip this?” about
-sleep, travel, meals, broadcasts or other unmatched events. Do not infer a
-project from the category alone. A project event without a unique canonical
-task may still be reviewed, but resolve ambiguity before writing a task.
+Общие разделы ниже о памяти проекта, целях и обучении остаются обязательными
+в прежних границах доступа. При ошибке напоминаний явно назовите неполный охват;
+успешная установка сама по себе не доказывает полный разбор.
+Календарная синхронизация и прежняя очередь ниже действуют только при
+выключенном режиме напоминаний. Включённый режим использует новую объединённую очередь.
 
-Present one exact event title and its time, followed by exactly one short
-question about its outcome. Wait for the user's answer. No full calendar,
-six-section report, confidence list or batch questionnaire in interactive chat.
-The one-question limit applies to the entire reply, including ownership,
-waiting, synchronization, learning and goal-progress clarification.
 
-Apply the user's stated completion, progress, carry-over, waiting or new task
-immediately through existing write rules; report the exact target path and diff
-briefly, then ask the next eligible question in the same reply. `дальше`,
-`ничего не фиксируем`, and equivalent replies advance without writes or another
-question about that event. Matching Calendar never proves completion.
+Этот материал определяет только сценарий `evening-review`. Основной core `SKILL.md`
+остаётся каноническим источником пределов, безопасности, правил канонических
+источников, оболочек предложений, записи и жизненного цикла обучения.
+Ничто здесь не расширяет разрешения.
 
-Keep consumed review keys in conversation state. A user answer about one task
-consumes repeated blocks of the same task for D; do not re-ask the second block.
-Do not merge distinct tasks merely because they share a project. If the answer
-explicitly covers only part of a repeated task, keep its remaining work open.
-The helper accepts optional `consumed` keys on stdin to exclude covered tasks;
-no durable queue is created. Each subsequent turn advances from the current
-cursor; reread affected task files/dates after writes, not the full window.
+## По умолчанию: все пункты одним списком
 
-Explicit user requests can still correct Calendar events without projects,
-such as actual sleep or travel times. Those events receive no proactive outcome
-questions. Keep approximate times labelled approximate, do not invent end times,
-wait owners, follow-up dates or task completion. Changing a recurring event
-uses the exact occurrence and `this` scope unless the user requests otherwise.
-An explicit deletion request authorizes that exact deletion without asking
-again; other deletions still require an explicit yes.
+Начните с событий завтра из точного календаря `Важно и срочно`. Получите
+идентификатор успешным свежим `list_calendar_metadata`; никогда не задавайте
+его жёстко, не выводите из похожего имени и не заменяйте другим календарём.
+Прочитайте запрошенную дату разбора D и завтра D+1 защищённым `read_events`
+с ровно разрешёнными идентификаторами и часовым поясом календаря. Завтра
+относительно D, даже при переходе разговора через полночь; не меняйте D молча.
+Проверяйте `availability_complete` и `unavailable_calendar_ids` каждого чтения.
+Назовите недоступные календари, не выводите свободный день из неполного охвата
+и пропустите синхронизацию полного окна задач при частичном охвате.
 
-## Internal preparation and learning
+Первый ответ показывает `## Важно и срочно на завтра` и каждое событие этого
+календаря D+1, включая события без проектов. Каждое событие с временем
+показывайте отдельно как `- HH:MM–HH:MM — <exact title>`, целодневное —
+как `- весь день — <exact title>`. Сохраняйте названия дословно: не сокращайте,
+не переводите, не объединяйте и не пересказывайте. При полном доступе
+и отсутствии событий скажите `- Нет.`. Отсутствующая или неоднозначная
+идентичность календаря означает недоступность, не пустоту. Затем спросите
+одним общим вопросом о результатах всех подходящих пунктов D.
+Не спрашивайте о завтрашних результатах.
+Не требуйте подтверждения только из-за показа срочного списка.
+Просьба пользователя обсудить его имеет приоритет.
 
-Retain snapshots, calendar learning, sync and module gates behind the dialogue.
-After a complete D read, pipe one `HH:MM|HH:MM|<title>|<calendar>` per event in
-start order to `bash scripts/snapshot-calendar.sh --hub <hub> --at <D>-<HHMM>`.
-List prior snapshots with `--list --day <D>`.
+Используйте краткий указатель задач для поиска и только канонические файлы
+для подробных фактов в пределах личного помощника `hub-task-overview`.
+Подготовьте данные `scripts/evening_review.py --hub <hub> --day <D>`;
+передайте стандартным вводом объект JSON с защищёнными ответами `metadata`,
+`today`, `tomorrow` и `sync_window`. `sync_window` — `{start, end, response}`:
+защищённый ответ `read_events` окна, покрывающего [D-30, D+31). При первом
+запуске без ключей `consumed` помощник отказывается стартовать без окна,
+поэтому проверка синхронизации не пропускается. Он проверяет активные
+зарегистрированные корни и читает только три канонических файла задач.
+Возвращает срочные события, хронологическую очередь событий проектов,
+признаки охвата, ключи разбора и `sync`: `complete` с расхождениями или
+`incomplete` без пунктов. Он ничего не пишет. Вывод — доказательство выбора,
+не завершения. Сообщайте предупреждения поиска краткого указателя.
+При ошибке помощника назовите её и используйте только независимо проверенные
+данные; никогда не выдумывайте пустую очередь.
 
-Only when learning is listed in `ai/modules.md`, run
-`python3 scripts/calendar_drift.py --hub <hub> diff --day <D> --write`
-after the snapshot. Report the recorded observation count briefly at the end;
-fewer than two snapshots means drift cannot be compared.
-Only when `learning` is listed in `ai/modules.md`, read pending friction
-with `python3 scripts/workflow_friction.py --hub <hub> list --day <D>`.
-Each grounded issue may yield one `add_observation` proposal; display leaves it
-pending. Acceptance, rejection, journal ordering and append failure follow
-`resources/learning-lifecycle.md`. Ask at most one learning question per turn.
+### Все задачи за один ход
 
-The sync check is the helper's `sync` result; handle its items as in the
-`resources/day-plan.md` Sync section, before the first project question. Apply
-unambiguous task-time changes directly and report actual writes briefly; with
-`sync.status: incomplete`, say sync was skipped because coverage was partial.
-The final report always states the sync result in one line. Ambiguous/missing occurrences remain questions;
-do not replace a project-outcome question with a batch of sync questions.
-Never change status merely because Calendar changed; `Due:` moves only through
-`scheduled_after_due`, to a later block date, as in `resources/day-plan.md`.
+Спрашивайте только о сегодняшних событиях с одним однозначным активным
+зарегистрированным проектом: проект определяется из вложенного названия
+через `scripts/archiprojects.py resolve-title`, включая старые
+`category/<project-id>/task`, либо одной уникальной канонической связью события.
+Молча пропускайте события без проекта, неактивные, незарегистрированные
+и конфликтующие совпадения; никогда не спрашивайте «пропустить?» о сне,
+поездках, еде, трансляциях и других несопоставленных событиях. Не выводите
+проект только из категории. Событие проекта без уникальной канонической
+задачи всё ещё может разбираться, но устраните неоднозначность до записи задачи.
 
-Only when goals is listed in `ai/modules.md`, record user-stated amounts as
-`goal_progress`. Ask for an amount only while reviewing a relevant project task;
-do not add unrelated questions after the project queue. Do not infer publications
-from work blocks. Learning and sync questions also require a grounded project
-task in guided mode. After the queue, close with a short factual report.
+Покажите все неразобранные пункты одним нумерованным списком прямо в чате,
+разделив рабочие и личные задачи. Сохраняйте названия, проект, время события
+при наличии и сквозной номер пункта в текущем разговоре. Для календарной
+задачи без подтверждения результата укажите «результат не подтверждён»;
+для выполненного напоминания — «выполнено»; для открытого — «не завершено».
+Не требуйте повторно подтверждать выполнение по галочке. По выполненным
+нужны только существенный результат и следующие действия, если они есть.
+Задайте один общий вопрос: «Что нужно учесть, перенести или добавить по этим
+пунктам? Можно ответить сразу по номерам». Не задавайте отдельный вопрос
+после каждой задачи и не требуйте одного ответа на каждую галочку.
+Без полного календаря и отчёта шести разделов, если пользователь их не просил.
+Пошаговый разбор включайте только по явному запросу пользователя.
 
-## Optional explicit full report
+Сразу применяйте заявленные завершение, продвижение, перенос, ожидание или
+новую задачу существующими правилами записи; кратко сообщите точный путь
+и различия, затем покажите все оставшиеся неразобранные пункты вместе.
+`дальше`, `ничего не фиксируем` и равнозначные ответы продвигают без записи
+и повторного вопроса о событии. Совпадение календаря никогда не доказывает завершение.
 
-Only if the user explicitly requests a full report, render these headings:
+### Сохранение памяти проекта
+
+Решение пользователя (2026-10-07): после ответа о каждом разобранном проекте
+агент сам решает, содержит ли ответ полезное для памяти проекта, и пишет
+без вопроса. Источники — только ответ пользователя и уже установленное
+в том же разговоре об этом проекте, например встреча, обработанная ранее.
+Никогда не читайте для этого расшифровки других сессий.
+Цели — собственные файлы разобранного проекта:
+
+- `ai/decisions.md` — решение или договорённость, меняющие способ работы:
+  что нужно, не нужно или отложено и почему; как
+  `### YYYY-MM-DD — <short title>` под `## Current decisions`;
+- `ai/changelog.md` — заметный результат: встреча проведена, материал получен
+  или сохранён, пределы работы изменены; абзацем под `### YYYY-MM-DD`
+  в `## Current changelog`, повторно используйте сегодняшнюю дату при наличии;
+- `ai/project-context.md` — стабильный факт проекта: люди, структура страницы,
+  ограничения, которые должна знать дальнейшая работа.
+
+Не записывайте уже содержащиеся в задачах статус, даты и переходы этапов,
+обычную организацию, непроверенные утверждения как факты, медицинские
+или личные данные третьих лиц и секреты. Замените заполнитель `No ... yet.`
+при первой записи; иначе дописывайте, никогда не переписывайте и не удаляйте
+существующее. Исправление — новая датированная запись с указанием исправляемого.
+Большинство ответов ничего не порождают; не дополняйте ради объёма.
+Сообщайте каждую запись одной строкой с точным путём в том же ответе,
+что оставшиеся пункты; сохранение не добавляет отдельного вопроса.
+
+Храните потреблённые ключи разбора в состоянии разговора. Ответ об одной
+задаче потребляет повторные блоки той же задачи D; не спрашивайте второй
+блок снова. Не объединяйте разные задачи лишь из-за общего проекта.
+Если ответ явно касается только части повторной задачи, оставьте остальное
+открытым. Помощник принимает необязательные ключи `consumed` стандартным
+вводом для исключения охваченного; постоянная очередь не создаётся.
+Частичный ответ не закрывает остальные пункты. Отсутствие комментария не
+означает пропуск: явно названное «ничего добавлять по всем пунктам» потребляет
+весь показанный список; «дальше» с неясным охватом требует уточнения.
+Каждый следующий ход показывает все оставшиеся пункты; после записи
+перечитывайте затронутые файлы и даты, а не полное окно.
+
+Явные запросы пользователя могут исправлять события календаря без проектов,
+например фактическое время сна или поездки. Эти события не получают
+предварительных вопросов о результате. Приблизительное время отмечайте
+приблизительным, не выдумывайте конец, владельца ожидания, дату последующего
+действия или завершение задачи. Изменение повторяющегося события использует
+точное повторение и `this`, если пользователь не просит иначе.
+Явный запрос удаления разрешает ровно это удаление без повторного вопроса;
+другие удаления всё ещё требуют явного согласия.
+
+## Внутренняя подготовка и обучение
+
+Сохраняйте снимки, обучение календаря, синхронизацию и допуски модулей
+за разговором. После полного чтения D передайте по одной
+`HH:MM|HH:MM|<title>|<calendar>` на событие по началу в
+`bash scripts/snapshot-calendar.sh --hub <hub> --at <D>-<HHMM>`.
+Перечислите прежние снимки через `--list --day <D>`.
+
+Только если learning указан в `ai/modules.md`, после снимка выполните
+`python3 scripts/calendar_drift.py --hub <hub> diff --day <D> --write`.
+Кратко сообщите число записанных наблюдений в конце; меньше двух снимков
+означает невозможность сравнения расхождений. Только если `learning` указан
+в `ai/modules.md`, прочитайте ожидающие затруднения через
+`python3 scripts/workflow_friction.py --hub <hub> list --day <D>`.
+Каждая обоснованная проблема может дать один `add_observation`;
+показ оставляет ожидание. Принятие, отклонение, порядок журнала и ошибка
+добавления следуют `resources/learning-lifecycle.md`. Не более одного
+вопроса обучения за ход.
+
+Проверка синхронизации — результат `sync` помощника; обработайте пункты
+по разделу синхронизации `resources/day-plan.md` до первого вопроса проекта.
+Однозначные изменения времени задач применяйте сразу, кратко сообщайте
+реальные записи; при `sync.status: incomplete` скажите, что синхронизация
+пропущена из-за частичного охвата. Итоговый отчёт всегда одной строкой
+указывает результат синхронизации. Неоднозначные или отсутствующие повторения
+остаются вопросами; не заменяйте вопрос результата проекта пакетом вопросов
+синхронизации. Никогда не меняйте статус только из-за календаря;
+`Due:` переносится только через `scheduled_after_due` на более позднюю
+дату блока, как в `resources/day-plan.md`.
+
+Только если goals указан в `ai/modules.md`, записывайте названные количества
+как `goal_progress`. Спрашивайте количество только при разборе подходящей
+задачи проекта; не добавляйте посторонние вопросы после очереди.
+Не выводите публикации из рабочих блоков. Уточнения обучения и синхронизации
+включайте в общий запрос только при обоснованной связи с задачами разбора.
+После очереди завершите коротким фактическим отчётом.
+
+## Необязательный полный отчёт по явному запросу
+
+Только по явной просьбе полного отчёта покажите заголовки:
 `## Сегодняшний календарь`, `## События и проекты`, `## Ожидания`,
-`## Follow-ups`, `## Завтрашний Calendar`, `## Подтвердить`, in that order,
-preceded by `## Важно и срочно на завтра`. Render today's and tomorrow's exact
-events, including each all-day event separately. Project mappings are inference,
-not completion: show project, evidence, and high/low confidence; unmatched
-entries create no proactive questions or task proposals.
+`## Follow-ups`, `## Завтрашний Calendar`, `## Подтвердить` в этом порядке,
+с предварительным `## Важно и срочно на завтра`. Покажите точные события
+сегодня и завтра, включая каждое целодневное отдельно. Сопоставления проектов —
+выводы, не завершение: покажите проект, доказательства, высокую или низкую
+уверенность; несопоставленные записи не создают предварительных вопросов
+или предложений задач.
 
-Waiting facts come only from user statements/selected review-input `## Waiting`
-or structured canonical waiting fields with citations. Follow-ups come only
-from structured canonical fields. Selected `## Done` and `## Carry over` yield
-exact task changes, not calendar-inferred outcomes. Each change uses its own
-core proposal envelope, exact target path and diff. Full-report headings do not
-apply to the default guided conversation or its subsequent turns.
+Факты ожидания только из заявлений пользователя, `## Waiting` выбранных
+данных разбора либо структурированных канонических полей ожидания со ссылками.
+Последующие действия только из структурированных канонических полей.
+Выбранные `## Done` и `## Carry over` дают точные изменения задач,
+не результаты, выведенные из календаря. Каждое изменение использует
+собственную основную оболочку предложения, точный путь цели и различия.
+Заголовки полного отчёта не применяются к обычному разбору одним списком
+или последующим ходам.
 
-## Canonical writes
+## Канонические записи
 
-For a direct, unambiguous user statement, apply exactly one `update_task`,
-`update_due`, or `update_waiting` change with the project ID, exact target path
-and diff. Calendar pairing is required only for schedule changes, new dated
-tasks and closing tasks with future events. If the task reference is ambiguous,
-change nothing and ask which task is meant. Validate each task write through
-`scripts/check-all-task-records.sh` and repair failures before claiming success.
-All Calendar changes go through `hub-calendar`, preview then apply, with fresh
-verification and subscriber snapshots. Unknown ownership creates no task.
+Для прямого однозначного заявления сразу примените ровно одно `update_task`,
+`update_due` или `update_waiting` с идентификатором проекта, точным путём
+и различиями. Парный календарь нужен только для изменения расписания,
+новых датированных задач и закрытия задач с будущими событиями. При неоднозначной
+ссылке ничего не меняйте и спросите, какая задача имеется в виду.
+Проверяйте каждую запись через `scripts/check-all-task-records.sh`
+и исправляйте ошибки до заявления успеха. Все изменения календаря проходят
+через `hub-calendar`: просмотр, применение, свежая проверка и снимки
+подписчиков. Неизвестный владелец не создаёт задачу.

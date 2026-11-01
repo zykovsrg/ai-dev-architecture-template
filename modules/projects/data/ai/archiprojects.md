@@ -1,21 +1,22 @@
-# Archiprojects
+# Архитектурные группы проектов
 
-This is the canonical hub-owned archiproject group registry, not a parallel
-task store. Project/task files remain canonical for project work.
+Это канонический реестр архитектурных групп проектов Хаба, а не параллельное
+хранилище задач. Файлы проектов и задач остаются каноническими для работы проекта.
 
 ## Schema
 
-Use one human heading and one fenced YAML block for each group. A group
-organizes projects and has no fake metrics. `parent:` is optional; when
-present it must name another group in this file.
+Используйте один читаемый заголовок и один блок YAML для каждой группы.
+Группа объединяет проекты и не имеет выдуманных показателей. `parent:`
+необязателен; при наличии он должен назвать другую группу этого файла.
 
-A group may set `calendar_name: <short lowercase Cyrillic name>` for calendar
-event titles; without it the lowercased `name:` is used. Event titles show the
-whole chain: `<group names from the root>/<project Calendar name>/<task>`.
+Группа может задать `calendar_name: <short lowercase Cyrillic name>` для
+заголовков событий календаря: короткое имя строчными кириллическими буквами;
+без него используется `name:` строчными буквами. Заголовки событий показывают
+полную цепочку: `<group names from the root>/<project Calendar name>/<task>`.
 
-A group may set `stage_template: <hub-relative path>`. When a project of that
-group (or of a descendant group) is created, `scripts/seed_stage_template.py`
-adds the template's stages to the project's `ai/future-tasks.md`.
+Группа может задать `stage_template: <hub-relative path>`. При создании проекта
+этой группы или её потомка `scripts/seed_stage_template.py` добавляет
+этапы шаблона в `ai/future-tasks.md` проекта.
 
 ## <archiproject-id>
 

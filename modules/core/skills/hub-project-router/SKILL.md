@@ -1,138 +1,107 @@
 ---
 name: hub-project-router
-description: Classify an unconfirmed request, route personal-assistant work safely, or route project-specific work to a registered hub project.
+description: Классифицировать запрос, безопасно направить работу личного помощника или работу с конкретным проектом в зарегистрированный проект Хаба.
 ---
 
-# Project Router
+# Выбор проекта
 
-Use this skill for every real request when no project has been confirmed in the
-current chat. Classify intent before choosing a project.
+Используйте этот навык для каждого содержательного запроса, если в текущем чате
+ещё не выбран проект. Определите намерение до выбора проекта.
 
-## Intent-first route
+## Выбор по намерению
 
-Choose exactly one route before reading project data:
+Выберите ровно один маршрут до чтения данных проекта:
 
-1. A **personal-assistant request** asks for a day plan, cross-project status,
-   overdue or blocked work, an evening or weekly review, capture of supplied
-   task or meeting text, or cross-project knowledge search. Set `Mode:
-   assistant`. Capture and cross-project overviews (status, overdue, blocked)
-   invoke `hub-task-overview`. Day plans and evening/weekly reviews invoke the
-   planning skill listed under `## Skills` in `ai/modules.md`; if planning is
-   not listed, say planning is not installed and do not improvise a plan.
-2. A **project-specific request** asks to build, fix, review, or otherwise work
-   inside one named or implied project. Keep `Mode: routing` and use the
-   project-confirmation phases below.
-3. An architecture request names the architecture project; treat it as a
-   project-specific request and preserve its explicit project confirmation.
-4. If the route is genuinely unclear, ask one concise clarification question.
+1. **Запрос к личному помощнику** — план дня, статус нескольких проектов,
+   просроченная или заблокированная работа, вечерний или недельный разбор,
+   приём переданного текста задачи или встречи, поиск знаний между проектами.
+   Установите `Mode: assistant`. Приём задач и межпроектные обзоры статуса,
+   просрочек и блокировок вызывают `hub-task-overview`. Планы дня и вечерние
+   или недельные разборы вызывают навык планирования из `## Skills` в
+   `ai/modules.md`; если его нет, сообщите, что планирование не установлено,
+   и не составляйте план самостоятельно.
+2. **Запрос по конкретному проекту** — создание, исправление, проверка или
+   другая работа внутри названного или подразумеваемого проекта. Сохраните
+   `Mode: routing` и используйте этапы выбора проекта ниже.
+3. Запрос об архитектуре называет проект архитектуры; считайте его запросом
+   по конкретному проекту и выбирайте его без отдельного подтверждения.
+4. Если маршрут действительно неясен, задайте один короткий уточняющий вопрос.
 
-Treat clear requests including «распланируем сегодняшний день», «распланируем
-остаток дня», «план на сегодня», «план на остаток дня», «составь план дня»,
-and “plan today” as `day-plan`. Invoke
-the planning skill before writing a reply and render its three mandatory day-plan
-sections. Do not return a preliminary free-form calendar summary.
+Если `planning` указан в `ai/modules.md`, считайте ясные запросы «распланируем сегодняшний день», «распланируем
+остаток дня», «план на сегодня», «план на остаток дня», «составь план дня»
+и “plan today” запросами `day-plan`. Вызовите навык планирования до написания
+ответа и выведите три обязательных раздела плана дня. Не возвращайте
+предварительное свободное описание календаря.
 
-For a personal-assistant request, the invoked skill may read only
-`ai/current-task.md`, `ai/future-tasks.md`, and `ai/paused-tasks.md` from all
-active registered projects. It must separate personal and work results, cite
-the project and canonical record for every fact, and skip inactive or archived
-projects. Do not read project code, knowledge records, credentials, or arbitrary
-files in this route. The user does not need to confirm each project read; every
-write still uses the workflow's explicit proposal confirmation.
+Для запроса к личному помощнику вызванный навык может читать только
+`ai/current-task.md`, `ai/future-tasks.md` и `ai/paused-tasks.md` всех активных
+зарегистрированных проектов. Он должен разделять личные и рабочие результаты,
+указывать проект и каноническую запись для каждого факта и пропускать неактивные
+или архивные проекты. Не читайте код, знания, учётные данные и произвольные
+файлы проекта в этом маршруте. Пользователь не обязан подтверждать чтение
+каждого проекта; записи следуют правилам подтверждения записи в `ai/architecture.md`.
 
-A request such as “проверь эту сессию”, “разбери работу агента”, or
-“самопроверка сессии” is project-specific. Select and confirm the project
-first, then invoke the learning skill listed under `## Skills` in
-`ai/modules.md` for the current session or the exact session/range named by
-the user. If learning is not listed, say session review is not installed and do
-not improvise one. If the requested history is unavailable,
-record insufficient evidence and ask only for the missing session selection or
-access; do not read unrelated history.
+Запрос «проверь эту сессию», «разбери работу агента» или «самопроверка сессии»
+относится к конкретному проекту. Сначала выберите и проверьте проект, затем
+вызовите навык обучения из `## Skills` в `ai/modules.md` для текущей сессии
+или точной сессии либо диапазона, названных пользователем. Если обучения
+нет в списке, сообщите, что разбор сессий не установлен, и не создавайте его
+самостоятельно. Если запрошенная история недоступна, отметьте недостаточность
+доказательств и запросите только недостающий выбор сессии или доступ;
+не читайте постороннюю историю.
 
-## Read allowlist and phases
+## Разрешённое чтение и этапы
 
-Apply these phases only to a project-specific request.
+Применяйте эти этапы только к запросу по конкретному проекту.
 
-1. Run `scripts/read-compact-project-index.sh`. Before confirmation, use only
-   its six fields: `project_id`, `name`, `tags`, `status`, `purpose_brief`,
-   `group`. Do not read candidate cards, signals, project memory, knowledge,
-   source code, configuration, arbitrary hub files, or linked targets.
-2. Match the request against those six fields and select a maximum of three
-   candidates. An unregistered path is never a candidate. A group match by
-   itself is not a project confirmation: it narrows candidates, and the
-   normal single-project confirmation in step 4 still applies.
-3. Classify routing confidence as `high, medium, or low` and preserve evidence
-   confidence from the hub architecture (`verified`, `stated`, `inferred`, or
-   `unknown`). High means a direct registered ID/name match; medium means a
-   bounded metadata match; low means weak or conflicting metadata.
-4. To show a selected candidate, read its exact registered path only. Show the
-   reason, registered project ID, exact path, and confidence; then ask for and
-   wait for explicit confirmation. Do not enter, read, or change a project first.
+1. Запустите `bash scripts/read-compact-project-index.sh <hub>`. Используйте
+   только шесть полей: `project_id`, `name`, `tags`, `status`, `purpose_brief`,
+   `group`. По умолчанию команда исключает архив до чтения карточек.
+   Не ищите и не предлагайте архивные проекты без отдельного запроса пользователя.
+   Только если пользователь явно просит архив или называет архивный проект,
+   добавьте `--include-archived`; рассматривайте архив в пределах этого запроса.
+   Не переходите к поиску в архиве автоматически, если обычный поиск ничего не дал.
+2. Сопоставьте запрос с метаданными. Сразу выберите наиболее вероятный проект:
+   точное имя или идентификатор имеет преимущество перед совпадением темы;
+   затем сравните назначение и метки. Совпадение группы только сужает поиск.
+   Например, запрос «SEO-техничка» направляйте в действующий проект этой темы;
+   архивный `archived-seo-tech` не читайте и не предлагайте без запроса архива.
+   При равновероятных вариантах задайте один короткий вопрос о проекте.
+   Не требуйте повторного подтверждения выбранного имени или пути.
+3. Прочитайте из реестра только точную запись выбранного проекта и его путь.
+   Проверьте его командой `bash scripts/check-hub-registry.sh <hub> --project <project-id>`.
+   Она проверяет выбранную запись и границы без обхода карточек и каталогов
+   остальных проектов. Не запускайте полную проверку реестра ради перехода.
+   Допускайте только существующий канонический каталог — прямого потомка
+   `<hub>/projects`, без символических ссылок в пути. Остановитесь при ошибке.
+   `missing` и `registration-pending` требуют отдельной процедуры регистрации;
+   не открывайте их как готовые проекты.
+4. Сообщите «Перешёл в проект „<name>“ (`<project-id>`)» и продолжайте работу
+   без отдельного подтверждения. Сохраните идентификатор и проверенный путь
+   в `ai/active-project.md`; эта запись не разрешает доступ в новом чате сама по себе.
+   Выполните `hub-environment-check`, затем нужный процесс Хаба.
+   Уверенность выбора: высокая — прямое совпадение; средняя — совпадение темы;
+   низкая — слабые или противоречивые данные, требующие уточнения.
+   Проверенный идентификатор и путь отмечайте `verified`, вывод о теме — `inferred`.
 
-The registry is authoritative for the ID and path. If a candidate is missing
-from the compact index, has invalid compact metadata, or is outside allowed
-roots, reject it safely and ask for a registered alternative. A remembered
-active project is not a confirmation in a new chat.
+До проверки выбранной записи не читайте код, память, знания, настройки проекта
+и цели ссылок. Реестр — канонический источник идентификатора и пути.
+Незарегистрированный путь никогда не становится кандидатом.
+Если метаданные некорректны или путь вне разрешённого корня, отклоните выбор
+и кратко сообщите причину. Не ищите папки самостоятельно.
 
-Project/task files remain canonical; project cards are metadata only and remain
-unavailable before confirmation. Compact-index metadata never grants a project
-read, and a link never grants a project read. Waiting is task/subtask-only: do not place a project in Waiting
-while other work is actionable. Related archiproject links never add contribution.
+В прежних навыках «выбранный проект» означает проект, выбранный и проверенный
+по этому порядку; отдельного согласия на выбор больше не требуется.
+Выбор одного проекта не разрешает читать другие проекты или переносить их память.
+Ссылки, карточки и межпроектные сигналы не расширяют разрешённую область.
+Ожидание применяется только к задаче или подзадаче: не переводите проект в
+Waiting, пока другая работа доступна.
 
-## Required response shape
+## Короткие ответы
 
-Show `Mode: routing` and use one of these Russian templates. Replace only the
-angle-bracket placeholders with registered hub metadata.
+- Успешный выбор: «Перешёл в проект „<name>“ (`<project-id>`)»; далее выполните запрос.
+- Равные варианты: «Какой проект открыть: „<name-1>“ или „<name-2>“?»
+- Нет кандидата: «Подходящего действующего проекта нет в реестре. Назовите проект».
+- Ошибка границ: «Не могу открыть проект: <причина>».
 
-### One candidate
-
-```text
-Проект: <project-id>
-Путь: <registered-path>
-Режим: routing
-Уверенность маршрутизации: высокая|средняя|низкая
-Причина: <краткая причина из метаданных compact index>.
-
-Подтвердите, что открыть именно этот проект по указанному пути.
-```
-
-### Two or three candidates
-
-```text
-Режим: routing
-Нашёл несколько зарегистрированных вариантов:
-1. <project-id-1> — <exact-path-1> — Уверенность маршрутизации: <высокая|средняя|низкая> — <краткая причина>.
-2. <project-id-2> — <exact-path-2> — Уверенность маршрутизации: <высокая|средняя|низкая> — <краткая причина>.
-3. <project-id-3> — <exact-path-3> — Уверенность маршрутизации: <высокая|средняя|низкая> — <краткая причина>.
-
-Укажите номер или точное имя проекта и подтвердите путь. До подтверждения я ничего в проектах не открываю.
-```
-
-### No candidate
-
-```text
-Режим: routing
-В реестре нет подходящего зарегистрированного проекта. Я не буду искать папки самостоятельно.
-
-Назовите зарегистрированный проект или попросите отдельно зарегистрировать новый.
-```
-
-### Rejection
-
-```text
-Режим: routing
-Не могу выбрать <project-id>: <причина — нет в compact index|путь вне разрешённых корней|некорректные метаданные>.
-
-Назовите другой зарегистрированный проект или подтвердите отдельную регистрацию.
-```
-
-### Explicit project naming
-
-```text
-Вы назвали проект <project-id>. В реестре ему соответствует путь <registered-path>.
-Подтвердите: «Открыть <project-id> по пути <registered-path>».
-```
-
-Do not treat a project name, a number, or a request such as “open it” as
-explicit confirmation unless it unambiguously confirms the displayed project
-and exact path.
+Не выводите путь, режим и оценки уверенности отдельной анкетой без необходимости.

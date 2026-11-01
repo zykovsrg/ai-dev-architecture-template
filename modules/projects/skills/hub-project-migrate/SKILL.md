@@ -1,114 +1,118 @@
 ---
 name: hub-project-migrate
-description: Use when existing project folders must be moved from a user-named legacy directory into the portable hub projects root.
+description: Использовать для переноса существующих папок проектов из названной пользователем старой папки в переносимый корень проектов Хаба.
 ---
 
-# Project Migrate
+# Перенос проекта
 
-Use this workflow only for a user-requested relocation of existing projects
-into `<canonical-hub>/projects`. Stay in `Mode: routing` until the relevant
-confirmation gate is complete. Migration approval never authorizes project
-registration or project-content reads. Confirmations below are read/access gates (source and preflight) or deletion
-gates (cleanup); moving itself needs no separate confirmation.
+Используйте процесс только для переноса существующих проектов в
+`<canonical-hub>/projects` по запросу пользователя. Оставайтесь в `Mode: routing`,
+пока соответствующий допуск подтверждения не пройден. Разрешение переноса
+никогда не разрешает регистрацию или чтение содержимого проекта.
+Подтверждения ниже — допуски чтения и доступа к источнику и предварительной
+проверке либо удаления при очистке; само перемещение не требует отдельного подтверждения.
 
-Module rules: `ai/rules/projects.md`.
+Правила модуля: `ai/rules/projects.md`.
 
-## Temporary source gate
+## Допуск к временному источнику
 
-1. Validate that `ai/allowed-roots.md` contains exactly the canonical
-   `<canonical-hub>/projects` root.
-2. Ask the user to name and separately confirm a temporary migration source
-   and its canonical path. It must be an existing directory whose direct
-   children may contain legacy projects.
-3. Reject `/`, the canonical home directory, the hub directory, and
-   `<canonical-hub>/projects`. Reject a source or path component that is a
-   symlink. Do not create the source or accept a remembered path.
-4. The separately confirmed temporary migration source is read/move scope for
-   this workflow only: never write it to `ai/allowed-roots.md`, the registry,
-   cards, or durable memory. It expires when this workflow ends.
+1. Проверьте, что `ai/allowed-roots.md` содержит ровно канонический корень
+   `<canonical-hub>/projects`.
+2. Попросите пользователя назвать и отдельно подтвердить временный источник
+   переноса и его канонический путь. Это существующая папка, прямые потомки
+   которой могут содержать старые проекты.
+3. Отклоните `/`, каноническую домашнюю папку, папку Хаба и
+   `<canonical-hub>/projects`. Отклоните источник или компонент пути,
+   являющийся символической ссылкой. Не создавайте источник и не принимайте запомненный путь.
+4. Отдельно подтверждённый временный источник — пределы чтения и перемещения
+   только этого процесса: никогда не записывайте его в `ai/allowed-roots.md`,
+   реестр, карточки или постоянную память. Он прекращает действовать после процесса.
 
-## Name-only inventory
+## Перечень только имён
 
-After source confirmation, inventory direct-child directory names only and
-exclude the target `_ai-hub` when it is a child of the source. Classify names
-as possible project, likely backup/archive, or unknown. Never move backups,
-archives, symlinks, unknown folders, or unsafe candidates. Do not recurse or
-read candidate content, `.git`, project memory, source code, configuration, or
-secrets during inventory.
+После подтверждения источника перечислите только имена прямых дочерних папок
+и исключите целевой `_ai-hub`, если он является потомком источника.
+Классифицируйте имена как возможный проект, вероятная копия или архив,
+либо неизвестно. Никогда не перемещайте копии, архивы, символические ссылки,
+неизвестные папки и небезопасных кандидатов. Не обходите рекурсивно и не читайте
+содержимое кандидатов, `.git`, память проекта, исходный код, настройки
+или секреты во время составления перечня.
 
-Show candidate names and ask the user to supply or confirm each destination
-project ID, then require a separate per-candidate or explicitly listed batch
-preflight confirmation. The source name may differ from the ID. Each ID must
-be safe lowercase kebab-case with no separator, `.`, `..`, whitespace, control
-character, glob, or shell expansion.
+Покажите имена кандидатов и попросите пользователя задать или подтвердить
+идентификатор назначения каждого, затем потребуйте отдельное подтверждение
+предварительной проверки каждого кандидата или явно перечисленного пакета.
+Имя источника может отличаться от идентификатора. Каждый идентификатор безопасен:
+строчные слова через дефис, без разделителя, `.`, `..`, пробелов,
+управляющего символа, шаблона подстановки или раскрытия оболочки.
 
-## Confirmed preflight and move plan
+## Подтверждённая предварительная проверка и план переноса
 
-For only the preflight-confirmed candidates:
+Только для кандидатов с подтверждённой предварительной проверкой:
 
-1. Revalidate the temporary source, canonical projects root, direct-child
-   source and destination paths, candidate type, and absence of symlinks.
-2. Read only narrow Git metadata needed to report whether each candidate is a
-   repository and whether its status is clean, dirty, unreadable, or otherwise
-   concerning. Treat symlinked Git metadata or an external worktree pointer as
-   an integrity concern. Do not read application or memory content.
-3. Reject an existing destination of any kind. Treat unreadable Git metadata,
-   an unsafe name, path change, symlink, or collision as a blocker.
-4. Display every source-to-destination mapping, Git metadata, collision state,
-   and the exact candidates included in any batch. State that the whole folder
-   will move and preserve the existing `.git/` directory unchanged.
-5. Proceed to the move without a separate move confirmation.
+1. Повторно проверьте временный источник, канонический корень проектов,
+   прямые дочерние пути источника и назначения, тип кандидата и отсутствие символических ссылок.
+2. Прочитайте только узкие метаданные Git для отчёта о наличии репозитория
+   и состоянии: чистое, изменённое, недоступное для чтения или иное вызывающее
+   сомнения. Считайте символические ссылки в метаданных Git или внешний
+   указатель рабочего дерева сомнением в целостности. Не читайте приложение или память.
+3. Отклоните любое существующее назначение. Недоступные метаданные Git,
+   небезопасное имя, изменение пути, символическая ссылка или совпадение — препятствия.
+4. Покажите каждое соответствие источника и назначения, метаданные Git,
+   состояние совпадений и точных кандидатов любого пакета. Укажите,
+   что папка переместится целиком с сохранением существующей `.git/` без изменений.
+5. Переходите к перемещению без отдельного подтверждения перемещения.
 
-## Move and verification
+## Перемещение и проверка
 
-Immediately before each move, repeat the path, symlink, candidate,
-Git-integrity, and collision checks. Move, never copy, the whole preflighted
-folder to the displayed direct-child destination. Do not create backups,
-archives, staging copies, replacement Git repositories, or destination merges.
-Preserve the existing `.git/` directory and its contents unchanged.
+Непосредственно перед каждым перемещением повторите проверки путей,
+символических ссылок, кандидата, целостности Git и совпадений. Перемещайте,
+никогда не копируйте, целую проверенную папку в показанное прямое дочернее
+назначение. Не создавайте копии, архивы, промежуточные копии, заменяющие
+репозитории Git или объединения назначений. Сохраните существующую `.git/`
+и её содержимое без изменений.
 
-After each move, verify that the source is absent, the destination is present,
-and the recorded Git metadata still identifies the same repository when Git
-was present. Stop on the first failure, collision, or integrity concern; do not
-continue automatically with the remaining batch and do not attempt an
-automatic rollback.
+После каждого перемещения проверьте отсутствие источника, наличие назначения
+и то, что записанные метаданные Git всё ещё определяют тот же репозиторий,
+если Git был. Остановитесь при первой ошибке, совпадении или сомнении
+в целостности; не продолжайте оставшийся пакет автоматически и не пытайтесь
+откатить автоматически.
 
-## Separate registration gate
+## Отдельный допуск регистрации
 
-A successful move changes no hub metadata by itself. Show the moved project at
-its canonical destination and ask separately whether to prepare registration.
-Use `hub-project-register` for its narrow confirmed context read and draft. Write the
-card and registry entry directly, then run `scripts/check-hub-registry.sh`. On validator failure, stop and report
-the unchanged project location; do not register another project automatically.
+Успешное перемещение само не меняет метаданные Хаба. Покажите перенесённый
+проект в каноническом назначении и отдельно спросите о подготовке регистрации.
+Используйте `hub-project-register` для узкого подтверждённого чтения контекста
+и подготовки. Сразу запишите карточку и запись реестра, затем запустите
+`scripts/check-hub-registry.sh`. При ошибке проверки остановитесь и сообщите
+неизменное расположение проекта; не регистрируйте другой проект автоматически.
 
-## Optional legacy standalone cleanup
+## Необязательная очистка старых автономных правил
 
-Offer this phase after a successful migration, or when the user requests
-adaptation of one already registered project and has explicitly confirmed its
-ID and exact path. In both cases the project must be a direct child of
-`<canonical-hub>/projects`, its registration must be complete, and
-`scripts/check-hub-registry.sh` passed. The project remains usable through the
-hub when this phase is skipped.
+Предлагайте этот этап после успешного переноса либо по запросу адаптации
+уже зарегистрированного проекта с явно подтверждёнными идентификатором и точным
+путём. В обоих случаях проект — прямой потомок `<canonical-hub>/projects`,
+регистрация завершена и `scripts/check-hub-registry.sh` пройдена. Проект
+остаётся доступен через Хаб при пропуске этапа.
 
-Cleanup deletes files, so it always needs its own explicit yes. A previous
-source or preflight confirmation never authorizes cleanup.
+Очистка удаляет файлы, поэтому всегда требует собственного явного согласия.
+Предыдущее подтверждение источника или проверки никогда не разрешает очистку.
 
-Inventory only the existence and type of these exact candidate paths in the
-confirmed project. Never inspect their contents. Reject a candidate or any of
-its path components if it is a symlink.
+Проверяйте только наличие и тип следующих точных путей кандидатов внутри
+выбранного проекта. Никогда не исследуйте содержимое. Отклоните кандидата
+или любой компонент пути, если это символическая ссылка.
 
-Candidate allowlist:
+Разрешённый список кандидатов:
 
 - `AGENTS.md`
 - `CLAUDE.md`
 - `ai/architecture.md`
 - `ai/external-tools.md`
 
-Preserve `ai/skills/`, `.claude/`, and `.codex/` unchanged. They may contain
-user-created skills, permissions, hooks, or tool configuration and are never
-cleanup candidates.
+Сохраните `ai/skills/`, `.claude/` и `.codex/` без изменений. Они могут
+содержать пользовательские навыки, разрешения, обработчики событий или настройки
+инструментов и никогда не являются кандидатами очистки.
 
-Preserve these project-memory paths unchanged:
+Сохраните эти пути памяти проекта без изменений:
 
 - `ai/current-task.md`
 - `ai/paused-tasks.md`
@@ -117,12 +121,12 @@ Preserve these project-memory paths unchanged:
 - `ai/decisions.md`
 - `ai/changelog.md`
 
-Do not delete `ai/` as a directory. Do not delete `ai/skills/`, `.claude/`,
-or `.codex/`. Do not delete project source, `.git`, dependencies, unrelated
-configuration, or any preserved memory path.
+Не удаляйте папку `ai/`. Не удаляйте `ai/skills/`, `.claude/` и `.codex/`.
+Не удаляйте исходный код проекта, `.git`, зависимости, посторонние настройки
+или любой сохраняемый путь памяти.
 
-Show only the existing candidates in this preview. Recommend deletion because
-retaining two rule systems can make their instructions diverge.
+Покажите только существующих кандидатов в этом предварительном просмотре.
+Рекомендуйте удаление, поскольку две системы правил могут начать противоречить друг другу.
 
 ```text
 Режим: routing
@@ -141,14 +145,14 @@ _ai-hub уже является источником актуальных пра
 Подтвердите удаление только перечисленных путей для <project-id>.
 ```
 
-The cleanup confirmation must name the displayed project ID and the exact
-displayed candidate path list. If no candidates exist, report that no cleanup
-is needed. If the user declines or does not give that exact confirmation, leave
-every path unchanged.
+Подтверждение очистки должно назвать показанный идентификатор проекта и точный
+показанный список путей кандидатов. Если кандидатов нет, сообщите, что очистка
+не нужна. Если пользователь отказывает или не даёт точного подтверждения,
+сохраните каждый путь без изменений.
 
-Immediately before removal, revalidate the canonical direct-child project location, the current registry validation result, the unchanged allowlisted candidate list, and the absence of symlinks. Stop without deletion on any mismatch. Remove only confirmed existing candidates from the four-file allowlist. Do not archive, back up, copy, replace, or follow symlinks. Report every removed path, every preserved memory path, and that `ai/skills/`, `.claude/`, and `.codex/` were intentionally retained.
+Непосредственно перед удалением повторно проверьте каноническое прямое дочернее расположение проекта, текущий результат проверки реестра, неизменность разрешённого списка кандидатов и отсутствие символических ссылок. При любом несовпадении остановитесь без удаления. Удалите только подтверждённых существующих кандидатов из списка четырёх файлов. Не архивируйте, не создавайте резервную копию, не копируйте, не заменяйте и не следуйте символическим ссылкам. Сообщите каждый удалённый путь, каждый сохранённый путь памяти и факт намеренного сохранения `ai/skills/`, `.claude/`, `.codex/`.
 
-## Russian preview template
+## Русский шаблон предварительного просмотра
 
 ```text
 Режим: routing

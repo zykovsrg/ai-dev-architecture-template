@@ -1,56 +1,56 @@
 ---
 name: hub-local-router-install
-description: Install a small local area index inside one confirmed project after stable boundaries are proven.
+description: Установить небольшой локальный указатель областей внутри одного выбранного проекта после доказательства стабильных границ.
 ---
 
-# Local Router Installation
+# Установка локального указателя областей
 
-Use this skill only for a confirmed active project that has at least three stable independent areas. An area is stable when it has a clear responsibility,
-an enduring owner/boundary, and repeated work that does not require reading
-unrelated areas to understand it. Do not install a local router merely because
-the project has several folders or tags.
+Используйте навык только для выбранного активного проекта с минимум тремя
+стабильными независимыми областями. Область стабильна, когда у неё ясная
+ответственность, постоянный владелец или граница и повторяющаяся работа,
+понятная без чтения посторонних областей. Не устанавливайте локальный указатель
+лишь потому, что у проекта несколько папок или меток.
 
-Module rules: `ai/rules/projects.md`.
+Правила модуля: `ai/rules/projects.md`.
 
-## Preconditions
+## Предварительные условия
 
-1. Confirm the active project's registered ID and exact path through the hub.
-2. Read the confirmed project's entry instructions and smallest relevant
-   architecture context.
-3. Define the areas, their boundaries, and why each is stable and independent.
-4. The user's request to install the local router authorizes creating the
-   files; no separate confirmation is needed. Report the created files.
+1. Подтвердите зарегистрированный идентификатор активного проекта и точный путь через Хаб.
+2. Прочитайте входные инструкции выбранного проекта и минимальный подходящий контекст архитектуры.
+3. Определите области, их границы и причины стабильности и независимости каждой.
+4. Запрос пользователя на установку локального указателя разрешает создание
+   файлов; отдельное подтверждение не нужно. Сообщите созданные файлы.
 
-If the stability preconditions are absent, stay in `Mode: review`, create
-nothing, and explain which condition is missing.
+Если условий стабильности нет, оставайтесь в `Mode: review`, ничего
+не создавайте и объясните, какое условие отсутствует.
 
-## Installation boundary
+## Границы установки
 
-Create only these files:
+Создайте только эти файлы:
 
 - `ai/local-router/index.md`
-- `ai/local-router/areas/<id>.md` for each defined area
+- `ai/local-router/areas/<id>.md` для каждой определённой области
 
-Do not create another task store, Git repository, global project card, project
-registry, or cross-project signal store. Areas have no separate current task;
-the confirmed project's existing `ai/current-task.md` remains the only task
-memory. The local router is a navigation aid, not a permission to bypass that
-project's task-intake, task-switch, task-finish, access rules, or skill
-selection.
+Не создавайте другое хранилище задач, репозиторий Git, глобальную карточку,
+реестр проектов или хранилище межпроектных сигналов. У областей нет отдельной
+текущей задачи; существующий `ai/current-task.md` выбранного проекта
+остаётся единственной памятью задачи. Локальный указатель — помощь навигации,
+а не разрешение обходить приём, переключение и завершение задач, правила
+доступа или выбор навыков проекта.
 
-## Required content
+## Обязательное содержимое
 
-`index.md` lists only the local-router purpose, area IDs, one-line boundaries,
-and links to the area files. Each `areas/<id>.md` lists the area purpose,
-included paths or concepts, exclusions, relationships to other areas, and the
-smallest suggested context to read first. Do not copy source code, credentials,
-task history, or source transcripts.
+`index.md` перечисляет только назначение указателя, идентификаторы областей,
+границы одной строкой и ссылки на файлы областей. Каждый `areas/<id>.md`
+перечисляет назначение области, включённые пути или понятия, исключения,
+отношения с другими областями и минимальный рекомендуемый начальный контекст.
+Не копируйте исходный код, учётные данные, историю задач или исходные расшифровки.
 
-When a request spans areas, retain one project task and follow the existing
-task-switch process only if the project's task rules require it. The local
-router itself creates no separate current task.
+Когда запрос охватывает несколько областей, сохраняйте одну задачу проекта
+и следуйте существующему переключению задач, только если правила проекта
+этого требуют. Сам локальный указатель не создаёт отдельной текущей задачи.
 
-## Russian proposal template
+## Русский шаблон предложения
 
 ```text
 Режим: review

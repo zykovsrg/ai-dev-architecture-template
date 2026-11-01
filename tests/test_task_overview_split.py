@@ -14,13 +14,13 @@ def read(path):
 class TaskOverviewSplitTests(unittest.TestCase):
     def test_overview_skill_owns_contract_and_capture(self):
         text = read(TASKS_SKILLS / "hub-task-overview/SKILL.md")
-        self.assertIn("## Proposal envelope", text)
+        self.assertIn("## Оболочка предложения", text)
         self.assertIn("resources/capture.md", text)
         self.assertTrue((TASKS_SKILLS / "hub-task-overview/resources/capture.md").is_file())
 
     def test_workflows_delegates_contract(self):
         text = read(PLANNING_SKILLS / "hub-workflows/SKILL.md")
-        self.assertNotIn("## Proposal envelope", text)
+        self.assertNotIn("## Оболочка предложения", text)
         self.assertIn("`hub-task-overview`", text)
 
     def test_router_uses_overview_and_modules(self):

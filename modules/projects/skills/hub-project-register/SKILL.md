@@ -1,67 +1,68 @@
 ---
 name: hub-project-register
-description: Safely register one direct child of the hub's validated projects root.
+description: Безопасно зарегистрировать одного прямого потомка проверенного корня проектов Хаба.
 ---
 
-# Project Register
+# Регистрация проекта
 
-Use this skill only for a user-requested registration. Registration starts in
-`Mode: routing` and requires explicit confirmation before reading project context. Writing the card
-and registry entry needs no separate confirmation.
+Используйте навык только для регистрации по запросу пользователя.
+Регистрация начинается в `Mode: routing` и требует явного подтверждения до
+чтения контекста проекта. Запись карточки и реестра не требует отдельного подтверждения.
 
-Module rules: `ai/rules/projects.md`.
+Правила модуля: `ai/rules/projects.md`.
 
-## Primary inventory (before individual project confirmation)
+## Первичный перечень (до подтверждения отдельного проекта)
 
-1. Read `ai/allowed-roots.md` and canonicalize the hub directory. Require that
-   the file has exactly one entry, exactly `<canonical-hub>/projects`; reject
-   missing, duplicate, external, or noncanonical roots. Show this sole allowed
-   root and ask the user to confirm its narrow name-only inventory before
-   inspecting it. Do not offer a root choice.
-2. After that confirmation, inspect direct child directory names only. A
-   requested candidate must be one direct child directory name only, not an
-   absolute path, nested path, glob, `.`/`..`, or symlink target. Do not
-   recurse, list files inside candidates, or read project content. Directory
-   names are the entire inventory in this phase.
-3. Classify candidates from the directory name only:
-   - likely backup: a name containing a backup/archive/copy/time-stamp signal;
-   - possible project: a normal direct-child name with no backup signal;
-   - unknown: an ambiguous direct-child name.
-4. Present the name, proposed canonical path, classification, and the narrow
-   next action: confirm this individual project and exact path. The
-   classification is an inference, never registration.
+1. Прочитайте `ai/allowed-roots.md` и получите канонический путь Хаба.
+   Требуйте ровно одну запись, точно `<canonical-hub>/projects`; отклоняйте
+   отсутствующие, повторные, внешние или неканонические корни. Покажите этот
+   единственный корень и запросите подтверждение узкого перечня только имён
+   до его исследования. Не предлагайте выбор корня.
+2. После подтверждения исследуйте только имена прямых дочерних папок.
+   Запрошенный кандидат — только одно имя прямой дочерней папки, а не
+   абсолютный или вложенный путь, шаблон подстановки, `.`/`..` либо цель
+   символической ссылки. Не обходите рекурсивно, не перечисляйте файлы
+   внутри кандидатов и не читайте содержимое проекта. Имена папок — весь
+   перечень этого этапа.
+3. Классифицируйте кандидатов только по имени папки:
+   - вероятная резервная копия: имя содержит признаки копии, архива или временной метки;
+   - возможный проект: обычное имя прямого потомка без признака копии;
+   - неизвестно: неоднозначное имя прямого потомка.
+4. Покажите имя, предлагаемый канонический путь, классификацию и узкое
+   следующее действие: подтверждение отдельного проекта и точного пути.
+   Классификация — вывод, никогда не регистрация.
 
-Never auto-register backups. Do not infer a project ID, purpose, card content,
-or relationship from a directory name.
+Никогда не регистрируйте резервные копии автоматически. Не выводите из имени
+папки идентификатор проекта, назначение, содержимое карточки или отношения.
 
-## After individual project confirmation
+## После подтверждения отдельного проекта
 
-After the user explicitly confirms one displayed direct child and exact path,
-revalidate the sole allowed root and require that the canonical path remains a
-direct child of `<canonical-hub>/projects`. Only then may the agent inspect narrow `.git`
-metadata and the smallest project context needed to classify that confirmed
-candidate. This confirmation is not permission to read unrelated projects or
-to recurse through the confirmed project.
+После явного подтверждения пользователем одного показанного прямого потомка
+и точного пути повторно проверьте единственный разрешённый корень и требуйте,
+чтобы канонический путь оставался прямым потомком `<canonical-hub>/projects`.
+Только затем агент может исследовать узкие метаданные `.git` и минимальный
+контекст, нужный для классификации подтверждённого кандидата. Это подтверждение
+не разрешает читать посторонние проекты или рекурсивно обходить выбранный проект.
 
-## Read gate and writes
+## Допуск к чтению и записи
 
-The individual confirmation above is the explicit approval before reading project context.
-Read only the smallest project entry/context information needed to draft
-metadata, then write the card and registry entry directly and show them in the
-report. Run `scripts/check-hub-registry.sh` after the write; report its result
-without reading unrelated projects.
+Подтверждение отдельного проекта выше — явное разрешение до чтения контекста.
+Прочитайте только минимальные входные и контекстные сведения проекта для
+подготовки метаданных, затем сразу запишите карточку и запись реестра и
+покажите их в отчёте. После записи запустите `scripts/check-hub-registry.sh`;
+сообщите результат без чтения посторонних проектов.
 
-The card must contain exactly these required fields: `Project ID:`,
+Карточка должна содержать ровно эти обязательные поля: `Project ID:`,
 `Name:`, `Type:`, `Status:`, `Last updated:`, `Purpose:`, `Typical tasks:`,
-and `Memory entry point:`. `Project ID`, `Name`, `Type`, and `Status` must
-match the registry entry. The memory entry point must be an absolute path
-beneath the confirmed project's `ai/` directory; the validator must not read the memory entry point. `Boundaries:` and `Related
-projects:` are optional, compact fields. The optional archiproject field is
-`primary_archiproject: <group-id|none>`. Use `none` where absent. A project
-belongs to exactly one, most specific group; it is also a member of every
-ancestor group.
+`Memory entry point:`. `Project ID`, `Name`, `Type`, `Status` должны совпадать
+с записью реестра. Точка входа памяти — абсолютный путь внутри `ai/`
+выбранного проекта; проверка не должна читать эту точку входа.
+`Boundaries:` и `Related projects:` — необязательные краткие поля.
+Необязательное поле архитектурной группы — `primary_archiproject: <group-id|none>`.
+При отсутствии используйте `none`. Проект принадлежит ровно одной самой
+конкретной группе и каждой её родительской группе.
 
-## Russian response template
+## Русский шаблон ответа
 
 ```text
 Режим: routing
@@ -73,26 +74,28 @@ ancestor group.
 Это только предварительная проверка по имени папки; содержимое проекта не читалось. Подтвердите следующий шаг: проверить <child-name> по пути <canonical-path>.
 ```
 
-## Readiness after registration
+## Готовность после регистрации
 
-Registration proves identity and location, not readiness of project memory.
-After individual project/path confirmation and registry validation, check only
-this project's six canonical memory paths: `ai/current-task.md`,
+Регистрация доказывает идентичность и расположение, а не готовность памяти.
+После выбора отдельного проекта и проверки пути по реестру проверьте
+только шесть канонических путей памяти этого проекта: `ai/current-task.md`,
 `ai/future-tasks.md`, `ai/paused-tasks.md`, `ai/project-context.md`,
-`ai/decisions.md`, and `ai/changelog.md`. Reject symlinks or paths escaping the
-confirmed project. Preserve every existing file and project-specific instruction.
+`ai/decisions.md`, `ai/changelog.md`. Отклоняйте символические ссылки и пути
+за пределами выбранного проекта. Сохраните каждый существующий файл
+и инструкции конкретного проекта.
 
-Create missing memory files only, using the corresponding minimal templates
-from `hub-project-create` (its `current-task.md` through `changelog.md`
-sections). Use create-if-missing semantics; never overwrite an existing record.
-Validate each task file with `python3 scripts/task_records.py --file <exact-path>
---project-id <id> --kind current|future|paused --strict-headings`. Report
-`ready` only when all three checks pass and all six memory files are available;
-otherwise report `registered; adaptation needed` with exact affected paths.
-Do not rewrite invalid existing tasks automatically or scan application code.
+Создайте только недостающие файлы памяти по соответствующим минимальным
+шаблонам `hub-project-create` (разделы от `current-task.md` до `changelog.md`).
+Создавайте только при отсутствии; никогда не перезаписывайте существующую запись.
+Проверьте каждый файл задач через `python3 scripts/task_records.py --file <exact-path>
+--project-id <id> --kind current|future|paused --strict-headings`. Сообщайте
+`ready`, только когда все три проверки пройдены и все шесть файлов памяти
+доступны; иначе сообщите `registered; adaptation needed` с точными затронутыми
+путями. Не переписывайте некорректные существующие задачи автоматически
+и не сканируйте код приложения.
 
-`resources/registered-project-entry.md` and
-`resources/registered-project-architecture.md` explain optional compatibility
-pointers; registration does not overwrite entry files. If a confirmed project
-has conflicting legacy shared rules, use the optional cleanup phase in
-`hub-project-migrate`, including its separate deletion confirmation.
+`resources/registered-project-entry.md` и
+`resources/registered-project-architecture.md` объясняют необязательные указатели
+совместимости; регистрация не перезаписывает входные файлы. Если в подтверждённом
+проекте конфликтуют старые общие правила, используйте необязательную очистку
+`hub-project-migrate` с её отдельным подтверждением удаления.

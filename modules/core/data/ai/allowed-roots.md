@@ -1,3 +1,3 @@
-# Allowed Roots
+# Разрешённые корни
 
-<!-- The installer writes the sole allowed root: <hub>/projects. -->
+<!-- Установщик записывает единственный разрешённый корень: <hub>/projects. -->

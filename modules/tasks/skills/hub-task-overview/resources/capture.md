@@ -1,15 +1,15 @@
 # capture
 
-This resource defines only the `capture` scenario. The core `SKILL.md` remains authoritative for scope, security, canonical-source rules, proposal envelopes, and the write policy; the learning lifecycle is owned by the planning module. Nothing here widens those permissions.
+Этот материал определяет только сценарий `capture`. Основной `SKILL.md` остаётся каноническим источником пределов, безопасности, правил канонических источников, оболочек предложений и правил записи; жизненный цикл обучения принадлежит модулю планирования. Ничто здесь не расширяет разрешения.
 
-Read the first non-empty source line as the declared kind. Accept only `Kind: meeting` or `Kind: task`.
+Считайте первую непустую строку источника объявленным типом. Принимайте только `Kind: meeting` или `Kind: task`.
 
-For `Kind: meeting`, the first proposal is exactly one canonical meeting-record proposal. Task, project, knowledge (only when `knowledge` is listed in `ai/modules.md`), deadline, and waiting proposals may refer to that meeting record but remain independent proposals.
+Для `Kind: meeting` первое предложение — ровно одно предложение канонической записи встречи. Предложения задач, проектов, знаний (только если `knowledge` указан в `ai/modules.md`), сроков и ожидания могут ссылаться на запись встречи, но остаются независимыми предложениями.
 
-For `Kind: task`, emit no meeting-record proposal. Allow only task proposals, or knowledge proposals when `knowledge` is listed in `ai/modules.md`, grounded in the selected source and permitted canonical records.
+Для `Kind: task` не создавайте предложение записи встречи. Разрешайте только предложения задач либо знаний, если `knowledge` указан в `ai/modules.md`, основанные на выбранном источнике и разрешённых канонических записях.
 
-If no registered project fits, keep the unknown target as an `action: create_project` proposal. Do not create, register, inspect, or read the proposed project automatically.
+Если подходящего зарегистрированного проекта нет, сохраните неизвестную цель как предложение `action: create_project`. Не создавайте, не регистрируйте, не исследуйте и не читайте предложенный проект автоматически.
 
-Before proposals, report source type and separate sections for source facts, stated decisions, action candidates, likely project candidates, knowledge candidates, dates, waiting/follow-up, and ambiguities. Ground every item in the selected source or permitted canonical records and label inference explicitly.
+Перед предложениями сообщите тип источника и отдельные разделы: факты источника, заявленные решения, возможные действия, вероятные проекты, возможные знания, даты, ожидание и последующие действия, неоднозначности. Обоснуйте каждый пункт выбранным источником или разрешёнными каноническими записями и явно отмечайте выводы.
 
-Then emit proposal envelopes in source order using the core `SKILL.md` schema. Each candidate write keeps its own exact target path and diff. The owning project workflow applies them directly and reports the result; only deletions wait for an explicit yes. `create_project` stays a suggestion until the user asks to create it.
+Затем создайте оболочки предложений в порядке источника по схеме основного `SKILL.md`. Каждая возможная запись сохраняет свой точный целевой путь и различия. Процесс проекта-владельца применяет их сразу и сообщает результат; только удаления ждут явного согласия. `create_project` остаётся предложением, пока пользователь не попросит создать проект.

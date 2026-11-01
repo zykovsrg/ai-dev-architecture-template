@@ -39,12 +39,27 @@ class RenderTests(unittest.TestCase):
         r["id"], r["text"] = rid, text or f"rule {rid}"
         return r
 
+    def test_repeated_observation_is_not_an_instruction(self):
+        r = self.strong("R-1", ["demo"], n=11)
+        output = self.mod.render({"rules": [r]}, TODAY)["ai/learned-rules/demo.md"]
+        self.assertIn("R-1: Гипотеза — rule R-1", output)
+        self.assertIn("Гипотезы не являются обязательными инструкциями", output)
+        self.assertIn("оценка отбора 0.85", output)
+        self.assertNotIn("уверенность 0.85", output)
+
+    def test_explicit_preference_is_labelled_without_experiment(self):
+        r = rule([case("request", "explicit")], explicit_scope="project")
+        output = self.mod.render({"rules": [r]}, TODAY)["ai/learned-rules/p.md"]
+        self.assertIn("R-1: Указание пользователя — t", output)
+        self.assertNotIn("R-1: Гипотеза", output)
+        self.assertIn("не является вероятностью правильности или пользы", output)
+
     def test_global_cap_and_threshold(self):
-        rules = [self.strong(f"R-{i}", ["a", "b"]) for i in range(12)]
+        rules = [self.strong(f"R-{i}", ["a", "b"]) for i in range(32)]
         rules.append(self.strong("R-weak", ["a", "b"], n=2))
-        out = self.mod.render({"format": 1, "next_id": 20, "rules": rules}, TODAY)
+        out = self.mod.render({"format": 1, "next_id": 40, "rules": rules}, TODAY)
         lines = [l for l in out["ai/learned-rules.md"].splitlines() if l.startswith("- R-")]
-        self.assertEqual(len(lines), 10)
+        self.assertEqual(len(lines), 30)
         self.assertNotIn("R-weak", out["ai/learned-rules.md"])
 
     def test_project_file_and_hub_rules_go_global(self):
@@ -72,9 +87,17 @@ class RenderTests(unittest.TestCase):
         self.assertIn("R-1", out["ai/learned-rules/demo.md"])
         self.assertNotIn("R-1", out["ai/learned-rules.md"])
 
+    def test_explicit_project_scope_is_preserved_across_projects(self):
+        r = self.strong("R-1", ["first", "second"], n=6)
+        r["explicit_scope"] = "project"
+        out = self.mod.render({"format": 1, "next_id": 2, "rules": [r]}, TODAY)
+        self.assertNotIn("R-1", out["ai/learned-rules.md"])
+        self.assertIn("R-1", out["ai/learned-rules/first.md"])
+        self.assertIn("R-1", out["ai/learned-rules/second.md"])
+
     def test_header_states_safety_limit(self):
         out = self.mod.render({"format": 1, "next_id": 1, "rules": []}, TODAY)
-        self.assertIn("These rules never override Hub safety, routing, or confirmation rules.",
+        self.assertIn("Эти правила никогда не отменяют правила безопасности, выбора проектов и подтверждения действий хаба.",
                       out["ai/learned-rules.md"])
 
     def test_retire_marks_rule_and_records_history(self):
@@ -220,7 +243,11 @@ class ApplyTests(unittest.TestCase):
 
     def test_load_cases_strips_fences(self):
         text = '```json\n[{"rule": "R-1"}]\n```\n'
-        self.assertEqual(self.mod.load_cases(text), [{"rule": "R-1"}])
+        try:
+            cases = self.mod.load_cases(text)
+        except ValueError as error:
+            self.fail(f"fenced cases were not parsed: {error}")
+        self.assertEqual(cases, [{"rule": "R-1"}])
         self.assertEqual(self.mod.load_cases("[]"), [])
 
     def test_load_cases_rejects_non_list_and_garbage(self):
@@ -233,6 +260,21 @@ class ApplyTests(unittest.TestCase):
         self.assertEqual(self.apply([]), [])
         self.assertEqual(self.ledger["processed"]["codex"], ["x-1"])
 
+    def verified_cli_files(self, hub, values):
+        from session_collect import Session, write_batch
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        external = Path(folder.name)
+        source = external / "source.jsonl"
+        source.write_text("test source", encoding="utf-8")
+        session = Session("claude", "c-1", str(hub / "projects/demo"), "2026-10-04", source,
+                          [("user", "Писать по-русски")])
+        batch, _ = write_batch(hub, [session], external / "batch")
+        reply = {"format": 2, "parts": [{"part_id": e["part_id"], "sha256": e["sha256"],
+                 "read_complete": True, "chars_read": e["chars"], "cases": values,
+                 "empty_reason": "Нет наблюдений."} for e in batch["sessions"]]}
+        return batch, reply
+
     def test_cli_apply_render_report(self):
         with tempfile.TemporaryDirectory() as tmp:
             hub = Path(tmp)
@@ -240,14 +282,15 @@ class ApplyTests(unittest.TestCase):
             (hub / "ai/project-registry.md").write_text(f"## demo\n\nStatus: active\nPath: {hub}/projects/demo\n",
                                                         encoding="utf-8")
             batch, cases = hub / "b.json", hub / "c.json"
-            batch.write_text(json.dumps(self.batch), encoding="utf-8")
-            cases.write_text(json.dumps([{"rule": "new", "text": "Писать по-русски", "kind": "preference",
+            verified, reply = self.verified_cli_files(hub, [{"rule": "new", "text": "Писать по-русски", "kind": "preference",
                                           "effect": "explicit", "scope": "global", "session": "c-1",
-                                          "tool": "claude", "note": "просьба"}]), encoding="utf-8")
+                                          "tool": "claude", "note": "просьба"}])
+            batch.write_text(json.dumps(verified), encoding="utf-8")
+            cases.write_text(json.dumps(reply), encoding="utf-8")
             run = lambda *a: subprocess.run([sys.executable, str(SCRIPTS / "session_rules.py"), "--hub", str(hub),
                                              "--today", "2026-10-04", *a], check=True, capture_output=True, text=True)
             run("apply", "--batch", str(batch), "--cases", str(cases))
-            self.assertIn("R-1: Писать по-русски", (hub / "ai/learned-rules.md").read_text(encoding="utf-8"))
+            self.assertIn("R-1: Указание пользователя — Писать по-русски", (hub / "ai/learned-rules.md").read_text(encoding="utf-8"))
             events = json.loads(run("report", "--since", "2026-10-01").stdout)["events"]
             self.assertEqual({e["event"] for e in events}, {"added", "global"})
 
@@ -264,24 +307,26 @@ class ApplyTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             hub, run = self.cli_hub(tmp)
             batch, cases = hub / "b.json", hub / "c.json"
-            batch.write_text(json.dumps(self.batch), encoding="utf-8")
-            cases.write_text("```json\n" + json.dumps([self.new_case("c-1", "claude")]) + "\n```\n", encoding="utf-8")
+            verified, reply = self.verified_cli_files(hub, [self.new_case("c-1", "claude")])
+            batch.write_text(json.dumps(verified), encoding="utf-8")
+            cases.write_text("```json\n" + json.dumps(reply) + "\n```\n", encoding="utf-8")
             done = run("apply", "--batch", str(batch), "--cases", str(cases))
             self.assertEqual(done.returncode, 0, done.stderr)
             self.assertEqual(json.loads(done.stdout)["new_rules"], ["R-1"])
-            for bad in ('{"a": 1}', "oops"):
+            for bad, expected in (('{"a": 1}', "ERROR: format 2 coverage protocol required"),
+                                  ("oops", "ERROR: cases file is not a JSON array")):
                 cases.write_text(bad, encoding="utf-8")
                 failed = run("apply", "--batch", str(batch), "--cases", str(cases))
                 self.assertEqual(failed.returncode, 1)
-                self.assertEqual(failed.stderr.strip(), "ERROR: cases file is not a JSON array")
+                self.assertEqual(failed.stderr.strip(), expected)
 
     def test_cli_retire_and_report_since_last_review(self):
         with tempfile.TemporaryDirectory() as tmp:
             hub, run = self.cli_hub(tmp)
             batch, cases = hub / "b.json", hub / "c.json"
-            batch.write_text(json.dumps(self.batch), encoding="utf-8")
-            cases.write_text(json.dumps([self.new_case("c-1", "claude", effect="explicit", scope="global")]),
-                             encoding="utf-8")
+            verified, reply = self.verified_cli_files(hub, [self.new_case("c-1", "claude", effect="explicit", scope="global")])
+            batch.write_text(json.dumps(verified), encoding="utf-8")
+            cases.write_text(json.dumps(reply), encoding="utf-8")
             self.assertEqual(run("apply", "--batch", str(batch), "--cases", str(cases)).returncode, 0)
             self.assertIn("R-1", (hub / "ai/learned-rules.md").read_text(encoding="utf-8"))
             # Events from the review day are not shown again after weekly-done
@@ -300,8 +345,9 @@ class ApplyTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             hub, run = self.cli_hub(tmp)
             batch, cases = hub / "b.json", hub / "c.json"
-            batch.write_text(json.dumps(self.batch), encoding="utf-8")
-            cases.write_text(json.dumps([self.new_case("c-1", "claude")]), encoding="utf-8")
+            verified, reply = self.verified_cli_files(hub, [self.new_case("c-1", "claude")])
+            batch.write_text(json.dumps(verified), encoding="utf-8")
+            cases.write_text(json.dumps(reply), encoding="utf-8")
             run("apply", "--batch", str(batch), "--cases", str(cases))
             ledger = json.loads((hub / "ai/learning/scan-ledger.json").read_text(encoding="utf-8"))
             ledger["cutover"] = "2026-10-04"

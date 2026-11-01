@@ -1,61 +1,72 @@
 ---
 name: hub-project-create
-description: Use when a user asks to create and register a new project directly beneath the hub's validated projects root.
+description: Использовать, когда пользователь просит создать и зарегистрировать новый проект непосредственно под проверенным корнем проектов Хаба.
 ---
 
-# Project Create
+# Создание проекта
 
-Use this workflow only to create a new project. The user's request to create the
-project authorizes creation; no separate confirmation step is needed (Write
-Confirmation Policy in `ai/architecture.md`). `hub-project-register` is for an already existing project; do not
-invoke it for this creation workflow.
+Используйте процесс только для создания нового проекта. Запрос пользователя
+разрешает создание; отдельное подтверждение не нужно (правила подтверждения
+записи в `ai/architecture.md`). `hub-project-register` предназначен для уже
+существующего проекта; не вызывайте его в процессе создания.
 
-Module rules: `ai/rules/projects.md`.
+Правила модуля: `ai/rules/projects.md`.
+Если `planning` указан в `ai/modules.md` и «Напоминания» включены, новый проект получает отдельный список
+в выбранной существующей группе, без напоминания с именем проекта.
+Прочитайте `resources/reminders-project-create.md` до плана создания.
+Это часть запрошенного создания в пределах действующих разрешений; явные
+ограничения пользователя на расширение доступа сохраняются. Неизвестное
+назначение или совпадение имени требует остановки внешней части.
 
-## Before creation: narrow read and validation boundary
+## До создания: узкие пределы чтения и проверки
 
-1. Read only `ai/allowed-roots.md`, `ai/project-registry.md`,
-   `ai/active-project.md`, `ai/modules.md`, and the rules file of each
-   `after-project-create` subscriber it lists (needed to build the creation plan
-   below). Do not read `ai/project-cards/`,
-   `ai/cross-project-signals.md`, `ai/archive/`, or any project directory in
-   this phase. Canonicalize the hub directory and require that
-   `ai/allowed-roots.md` has exactly one entry, exactly
-   `<canonical-hub>/projects`. This validated path is the allowed
-   root; do not offer a root choice or accept an external root.
-2. Obtain the project name and type if they were not already supplied. Derive the ID as lowercase kebab-case from the
-   project name; ask for a safe name if no unambiguous ID can be derived.
-3. Validate without writing:
-   - Revalidate the canonical hub projects root and its sole allowed-root entry.
-   - Construct exactly one new direct-child path as
+1. Прочитайте только `ai/allowed-roots.md`, `ai/project-registry.md`,
+   `ai/active-project.md`, `ai/modules.md` и файл правил каждого указанного
+   подписчика `after-project-create` для построения плана ниже. Не читайте
+   `ai/project-cards/`, `ai/cross-project-signals.md`, `ai/archive/`
+   или любую папку проекта на этом этапе. Получите канонический путь Хаба
+   и требуйте ровно одну запись `ai/allowed-roots.md`, точно
+   `<canonical-hub>/projects`. Этот проверенный путь — разрешённый корень;
+   не предлагайте выбор корня и не принимайте внешний корень.
+2. Получите имя и тип проекта, если они ещё не переданы. Выведите идентификатор
+   из имени строчными словами через дефис; запросите безопасное имя,
+   если нельзя получить однозначный идентификатор.
+3. Проверьте без записи:
+   - Повторно проверьте канонический корень проектов Хаба и его единственную запись разрешённого корня.
+   - Постройте ровно один путь нового прямого потомка:
      `<canonical-hub>/projects/<id>`.
-     The ID must be nonempty lowercase kebab-case and contain no path
-     separator, `.` or `..`, whitespace, control character, glob, shell
-     expansion, or other unsafe project names.
-   - Reject a symlink at the root, target, or any resolved target component;
-     reject a collision with an existing registry ID, card path, filesystem
-     entry, or existing path. Do not replace, merge with, or inspect a
-     collision.
-   - Do not list or recurse into the candidate. The agent must not read
-     project memory, source code, or application code before creation.
+     Идентификатор непустой, строчными словами через дефис, без разделителя
+     пути, `.` или `..`, пробелов, управляющих символов, шаблонов подстановки,
+     раскрытия оболочки или других небезопасных имён проекта.
+   - Отклоните символическую ссылку в корне, цели или любом разрешённом
+     компоненте цели; отклоните совпадение с существующим идентификатором
+     реестра, путём карточки, записью файловой системы или существующим путём.
+     Не заменяйте, не объединяйте и не исследуйте совпавшее содержимое.
+   - Не перечисляйте содержимое кандидата и не обходите его рекурсивно.
+     Агент не должен читать память проекта, исходный код или код приложения до создания.
 
-Stop with no writes when any check fails. Never widen the root, follow a
-symlink, or infer a different ID.
+При любой ошибке остановитесь без записи. Никогда не расширяйте корень,
+не следуйте символической ссылке и не выводите другой идентификатор.
 
-## Creation plan
+## План создания
 
-After the checks succeed, build the plan: name, ID, type, canonical path,
-exactly six `<path>/ai/` files, the items added by `after-project-create`
-subscribers, the card, the registry entry, and the active-project decision.
-Inspect `git status --short -- ai/active-project.md` without writing. Preserve
-the current active-project selection unless the user asked to switch to the new
-project; if that file has uncommitted changes, do not switch and say why.
+После успешных проверок составьте план: имя, идентификатор, тип, канонический
+путь, ровно шесть файлов `<path>/ai/`, пункты подписчиков `after-project-create`,
+карточка, запись реестра и решение об активном проекте.
+Если `planning` указан в `ai/modules.md` и в `ai/reminders-sync.json` стоит `enabled: true`, добавьте в этот же просмотр
+точное внешнее назначение и привязки по `resources/reminders-project-create.md`.
+Для этого разрешено узко прочитать конфигурацию, связанные разрешения, описание
+структуры, метаданные выбранной группы и свежие метаданные приложения.
+Не читайте задачи или материалы других проектов.
+Проверьте `git status --short -- ai/active-project.md` без записи. Сохраните
+текущий активный проект, если пользователь не просил перейти к новому;
+если в файле есть несохранённые в истории изменения, не переключайте и объясните причину.
 
-Read `<hub>/ai/modules.md`; each subscriber listed under `after-project-create`
-adds its own items to the plan by following its rules file. If a subscriber
-cannot build its part, say which one and why and create nothing.
+Прочитайте `<hub>/ai/modules.md`; каждый подписчик `after-project-create`
+добавляет свои пункты в план по собственному файлу правил. Если подписчик
+не может подготовить свою часть, назовите его и причину и ничего не создавайте.
 
-Proceed to creation without asking. The final report uses this shape:
+Переходите к созданию без вопроса. Итоговый отчёт имеет такой вид:
 
 ```text
 Новый проект: <project-name>
@@ -65,147 +76,170 @@ ID: <project-id>
 Confirmation required on new chat: yes
 ```
 
-The plan explicitly excludes `ai/architecture.md`,
-`ai/external-tools.md`, project `AGENTS.md`, project `CLAUDE.md`, shared skills,
-`ai/cross-project-signals.md`, and `ai/archive/`.
+План явно исключает `ai/architecture.md`, `ai/external-tools.md`, проектные
+`AGENTS.md`, `CLAUDE.md`, общие навыки, `ai/cross-project-signals.md` и `ai/archive/`.
 
-## Creation procedure
+Новый проект наследует правило мутационного подтверждения тестов из `<hub>/ai/architecture.md`; не создавайте отдельную копию правила или общий набор тестов в проекте. Каждый новый тест проекта подтверждайте релевантной мутацией по общему правилу.
 
-1. Revalidate the allowed root, canonical path, direct-child rule, ID, name,
-   symlink safety, and collision absence. Stop with
-   no writes if any value changed or is unsafe.
-2. Create `<canonical-path>/ai/`. Create only the six standard memory files
-   listed in the plan using the built-in memory templates below:
-   `current-task.md`, `paused-tasks.md`, `future-tasks.md`,
-   `project-context.md`, `decisions.md`, and `changelog.md`. Do not copy
-   `ai/architecture.md` or `ai/external-tools.md`.
-3. Do not copy generic workflow skills, project instructions, or any other
-   project files into the new project.
-4. Write the existing-schema card at
-   `ai/project-cards/<project-id>.md` and the registry entry exactly as
-   planned. The card must retain all required fields and its
-   `Memory entry point: <canonical-path>/ai/current-task.md`. The optional
-   `primary_archiproject:` field uses `none` where absent. Add `Calendar name:` —
-   a short lowercase Cyrillic name for calendar titles (no `/`), unique within
-   its group. A project belongs
-   to exactly one, most specific group; it is also a member of every
-   ancestor group. Do not read that memory entry point while validating.
-5. Run `scripts/check-hub-registry.sh`. On a failure, stop and report the
-   validator output. Do not update active-project selection or invoke a
-   project workflow.
-6. Only after successful validation and when the user asked to switch, update
-   `ai/active-project.md` with the new ID and canonical path. It is a
-   selection record, not permission for a future chat.
-7. Run the `after-project-create` event: read `<hub>/ai/modules.md`; for each
-   subscriber listed under `after-project-create`, read its rules file and
-   apply exactly its planned items for the new project only. If one fails,
-   stop and report it; do not initialize Git or continue.
-   Then, when the card has a `primary_archiproject:`, run
+## Порядок создания
+
+1. Повторно проверьте разрешённый корень, канонический путь, правило прямого
+   потомка, идентификатор, имя, безопасность символических ссылок и отсутствие
+   совпадений. Остановитесь без записи, если значение изменилось или небезопасно.
+2. Создайте `<canonical-path>/ai/`. Создайте только шесть стандартных файлов
+   памяти плана по встроенным шаблонам ниже: `current-task.md`, `paused-tasks.md`,
+   `future-tasks.md`, `project-context.md`, `decisions.md`, `changelog.md`.
+   Не копируйте `ai/architecture.md` или `ai/external-tools.md`.
+3. Не копируйте общие навыки процессов, инструкции проектов или любые другие
+   файлы проекта в новый проект.
+4. Запишите карточку существующей схемы в `ai/project-cards/<project-id>.md`
+   и запись реестра точно по плану. Карточка сохраняет все обязательные поля
+   и `Memory entry point: <canonical-path>/ai/current-task.md`. Необязательное
+   `primary_archiproject:` использует `none` при отсутствии. Добавьте
+   `Calendar name:` — короткое имя строчными кириллическими буквами для
+   заголовков календаря без `/`, уникальное внутри группы. Проект принадлежит
+   ровно одной самой конкретной группе и каждой её родительской группе.
+   Не читайте точку входа памяти при проверке.
+5. Запустите `scripts/check-hub-registry.sh`. При ошибке остановитесь и сообщите
+   вывод проверки. Не обновляйте выбор активного проекта и не вызывайте процесс проекта.
+6. Только после успешной проверки и при просьбе пользователя переключиться
+   обновите `ai/active-project.md` новым идентификатором и каноническим путём.
+   Это запись выбора, а не разрешение будущему чату.
+7. Запустите `after-project-create`: прочитайте `<hub>/ai/modules.md`; для
+   каждого подписчика прочитайте файл правил и примените ровно его пункты
+   плана только для нового проекта. При ошибке остановитесь и сообщите её;
+   не инициализируйте Git и не продолжайте. Затем при наличии в карточке
+   `primary_archiproject:` запустите
    `python3 scripts/seed_stage_template.py --hub <hub> --project <project-id>`.
-   It adds the stage template of that group or its nearest ancestor to
-   `ai/future-tasks.md`, or reports `"template": null` and writes nothing.
-   Report the created task IDs. On an error, stop and report it.
-8. Initialize a local Git repository and commit only the created scaffold.
-   If authenticated GitHub CLI access is available, verify that `<project-id>`
-   is unused, create a private repository with that exact name, add `origin`,
-   and push `main`. If this remote provisioning is unavailable, retain local
-   Git and report `pending-sync`; never attach or overwrite an existing remote.
-9. Only when the user asked to switch to the new project and step 6 selected
-   it, invoke hub-owned `hub-environment-check` and then hub-owned
-   `hub-task-intake` for it. Otherwise stop after the report: a create-only
-   request does not select the project, and entering it later needs the
-   normal routing confirmation. Those workflows operate only on the selected
-   project's `ai/` memory and cannot override hub routing, allowed roots,
-   secret, or memory-isolation rules.
+   Он добавляет шаблон этапов этой группы или ближайшего предка в
+   `ai/future-tasks.md` либо сообщает `"template": null` и ничего не пишет.
+   Сообщите созданные идентификаторы задач. При ошибке остановитесь и сообщите её.
+8. Если `planning` указан в `ai/modules.md` и «Напоминания» включены, выполните создание и проверку списка
+   проекта и привязок по `resources/reminders-project-create.md`. Корень-задачу не создавайте.
+   Затем синхронизируйте только новый проект и перечитайте обе стороны;
+   это относится и к задачам, добавленным шаблоном этапов. Ошибка означает
+   частичный результат: локальный проект создан, внешняя часть не подтверждена.
+   Не объявляйте полный успех и не удаляйте созданные части автоматически.
+9. Инициализируйте локальный репозиторий Git и сохраните в истории только
+   созданную структуру. Авторизация GitHub CLI не является согласием пользователя
+   на передачу данных. Только при явном разрешении конкретной внешней копии
+   и доступном авторизованном GitHub CLI проверьте
+   свободность `<project-id>`, создайте закрытый репозиторий с точно этим
+   именем, добавьте `origin` и отправьте `main`. Если разрешения на эту внешнюю копию нет или инструмент недоступен,
+   сохраните локальный Git и сообщите `pending-sync`; никогда не подключайте
+   и не перезаписывайте существующий удалённый репозиторий.
+10. Только если пользователь просил перейти к новому проекту и шаг 6 выбрал его,
+   вызовите `hub-environment-check` Хаба, затем `hub-task-intake` Хаба.
+   Иначе остановитесь после отчёта: запрос только создания не выбирает проект,
+   а последующий вход следует обычному выбору и проверке проекта. Эти процессы
+   действуют только с памятью `ai/` выбранного проекта и не могут отменять правила Хаба о выборе проекта,
+   разрешённых корнях, секретах или изоляции памяти.
 
-## Non-negotiable exclusions
+## Неотменяемые исключения
 
-The workflow must not add application code, dependencies, services, AGENTS.md, CLAUDE.md, or shared
-skills. It must not write cross-project signals, archives, another project's
-memory, or any path outside the allowed root and hub metadata needed
-for this creation.
+Процесс не должен добавлять код приложения, зависимости, сервисы, AGENTS.md,
+CLAUDE.md или общие навыки. Он не должен писать межпроектные сигналы, архивы,
+память другого проекта или любой путь вне разрешённого корня и метаданных Хаба,
+нужных для создания.
 
-## Built-in memory templates
+## Встроенные шаблоны памяти
 
-Use these contents exactly as the initial six project-memory files. They are
-embedded here because the repository distributes them from `modules/*/data/`,
-not a standalone `template/` directory.
+Используйте это содержимое точно для начальных шести файлов памяти проекта.
+Шаблоны встроены здесь, поскольку репозиторий распространяет их из
+`modules/*/data/`, а не отдельной папки `template/`.
 
 ### current-task.md
 
 ```markdown
-# Current Task
+# Текущая задача
 
 Status: empty
 Stage: intake
 
 ## Goal
 
-No active task.
+Нет активной задачи.
 
 ## Relevant files
 
-None yet.
+Пока нет.
 
 ## Done criteria
 
-Define during task intake.
+Определите при приёме задачи.
 ```
 
 ### paused-tasks.md
 
 ```markdown
-# Paused Tasks
+# Приостановленные задачи
 
-Use this file only for unfinished tasks intentionally paused through task-switch.
+Используйте файл только для незавершённых задач, намеренно приостановленных через task-switch.
 
 ## Paused tasks
 
-No paused tasks yet.
+Пока нет приостановленных задач.
 ```
 
 ### future-tasks.md
 
 ```markdown
-# Future Tasks
+# Будущие задачи
 
-Use this file for confirmed future ideas that are outside the current task.
+Используйте файл для подтверждённых будущих идей за пределами текущей задачи.
 
 ## Future tasks
 
-No future tasks yet.
+Пока нет будущих задач.
 ```
 
 ### project-context.md
 
+Заполните поля ниже из подтверждённого запроса пользователя и проверенной
+локальной структуры. До завершения создания отклоните незаполненные поля
+в угловых скобках, `TBD` и `TODO` в project-context.md. При отсутствии
+доказательств отметьте факт как неизвестный и пределы доказательств;
+не выдумывайте назначение или неизменные условия.
+
 ```markdown
-# Project Context
+# Контекст проекта
 
 ## What this project is
 
-TBD
+<Зарегистрированное имя проекта и назначение со слов пользователя; отделяйте выводы.>
+
+## Local structure
+
+<Проверенные существующие папки и канонические файлы задач ai. Укажите,
+программный ли это проект или пространство задач и материалов. Не выдумывайте шаги запуска.>
 
 ## Invariants
 
-TBD
+Храните задачи и память проекта внутри зарегистрированного корня. Каноническое
+состояние задач находится в ai/current-task.md, ai/future-tasks.md и ai/paused-tasks.md.
+Не храните секреты, личные или клиентские данные в записях знаний Хаба.
+
+## Unknowns
+
+<Перечислите ещё не установленные существенные факты; явно указывайте неизвестность, не заполнители.>
 ```
 
 ### decisions.md
 
 ```markdown
-# Decisions
+# Решения
 
 ## Current decisions
 
-No project decisions yet.
+Пока нет решений проекта.
 ```
 
 ### changelog.md
 
 ```markdown
-# Changelog
+# Журнал изменений
 
 ## Current changelog
 
-No notable changes yet.
+Пока нет заметных изменений.
 ```

@@ -1,38 +1,53 @@
-# Task record format
+# Формат записи задачи
 
-Use `Task ID:`, `Status:`, and `Due: YYYY-MM-DD`. Both legacy `due:` and
-canonical `Due:` can be read, but new task writes use `Due:`. A date must be a
-real calendar date. Current, future, and paused records keep their existing
-status sets and must carry an ID belonging to their registered project.
+Используйте `Task ID:`, `Status:` и `Due: YYYY-MM-DD`. Читаются устаревший `due:`
+и канонический `Due:`, но новые записи используют `Due:`. Дата должна быть
+реальной календарной датой. Текущие, будущие и приостановленные записи сохраняют
+существующие наборы статусов и должны иметь идентификатор своего зарегистрированного проекта.
 
-Headings are machine-read; a record whose heading does not match is silently
-skipped by task discovery and never reaches day plans or reviews.
+Завершённую будущую задачу записывайте только как `Status: done`.
+При чтении `completed` распознаётся как `done` для совместимости; другие неизвестные статусы вызывают ошибку.
 
-- Future record (`ai/future-tasks.md`): heading
-  `### FT-YYYYMMDD-NNN — <title>` (or `### TASK-<project-id>-YYYYMMDD-NNN — <title>`),
-  followed by `Status:` (`idea|ready|blocked|promoted|done|dropped`), optional
-  `Due:`, and `Created: YYYY-MM-DD` before any prose.
-- Paused record (`ai/paused-tasks.md`): heading `### YYYY-MM-DD — <title>`
-  (pause date), followed by `Task ID:` and `Status: paused` before any prose.
-- `NNN` is the next free number for that date within the project.
-- Never write a task under a free-text `###` heading without an ID.
-- Optional schedule link, directly after `Запланировано:`:
+Заголовки читаются программой; запись с несовпадающим заголовком молча
+пропускается при поиске задач и никогда не попадает в планы дня или разборы.
+
+- Будущая запись (`ai/future-tasks.md`): заголовок
+  `### FT-YYYYMMDD-NNN — <title>` (или `### TASK-<project-id>-YYYYMMDD-NNN — <title>`),
+  затем `Status:` (`idea|ready|blocked|promoted|done|dropped`), необязательный
+  `Due:` и `Created: YYYY-MM-DD` до любого обычного текста.
+- Приостановленная запись (`ai/paused-tasks.md`): заголовок `### YYYY-MM-DD — <title>`
+  (дата приостановки), затем `Task ID:` и `Status: paused` до любого обычного текста.
+- `NNN` — следующий свободный номер для этой даты внутри проекта.
+- Никогда не записывайте задачу под произвольным заголовком `###` без идентификатора.
+- Необязательная связь расписания сразу после `Запланировано:`:
   `Событие: <calendar-id>/<event-id> · синхронизировано: YYYY-MM-DD HH:MM-HH:MM`.
-  Write it whenever a change creates or moves a timed, non-recurring
-  event for the task; refresh `синхронизировано` on every sync. A
-  malformed line fails the canonical check.
+  Записывайте её при создании или переносе неповторяющегося события задачи
+  с заданным временем; обновляйте `синхронизировано` при каждой синхронизации.
+  Некорректная строка не проходит каноническую проверку.
 
-Schedule and synchronized-link fields require real dates and valid 24-hour
-times, with the end strictly after the start on the same day. Malformed
-schedule fields fail validation instead of being treated as absent.
+Поля расписания и синхронизированной связи требуют реальных дат и корректного
+24-часового времени; конец строго позже начала в тот же день. Некорректные
+поля расписания вызывают ошибку проверки, а не считаются отсутствующими.
 
-Legacy `Запланировано: YYYY-MM-DD (весь день).` remains readable with a
-validated real date; it does not participate in timed-event synchronization.
+Устаревшее `Запланировано: YYYY-MM-DD (весь день).` остаётся читаемым с проверенной
+реальной датой; оно не участвует в синхронизации событий с заданным временем.
 
-Trailing schedule comments after a comma remain readable. Legacy start-only
-schedules are validated and preserved but have no inferred end time; they do
-not participate in interval synchronization. New schedules use explicit ranges.
+Комментарии расписания после запятой остаются читаемыми. Устаревшее расписание
+только с началом проверяется и сохраняется, но время конца не выводится;
+оно не участвует в синхронизации интервалов. Новое расписание использует явные диапазоны.
 
-Legacy date-only `Запланировано: YYYY-MM-DD.` and release-note
-`Запланировано: релиз YYYY-MM-DD. Ожидание: <text>` fields remain readable
-with validated dates. They do not infer intervals, completion, or new deadlines.
+Устаревшее поле только даты `Запланировано: YYYY-MM-DD.` и поле примечания выпуска
+`Запланировано: релиз YYYY-MM-DD. Ожидание: <text>` остаются читаемыми
+с проверенными датами. Из них не выводятся интервалы, завершение или новые сроки.
+
+## Безопасная запись
+
+Для пустого `ai/current-task.md` используйте `Status: empty`; статус `idle`
+не поддерживается. Для непустого файла нужны `Task ID:` и `## Goal`.
+В `ai/paused-tasks.md` возможен только статус `paused`; завершённую запись
+переносите в `ai/future-tasks.md` со статусом `done`, прежним идентификатором
+и сохранённым контекстом.
+
+Записывайте подготовленный полный текст через `scripts/task_records.py write`
+по правилам `ai/rules/tasks.md`. Сначала сохраните SHA-256 прочитанного исходника.
+Не меняйте файл напрямую и не исправляйте неизвестные статусы предположением.

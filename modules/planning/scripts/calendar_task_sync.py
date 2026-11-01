@@ -19,8 +19,9 @@ _index = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_index)
 
 CLOSED = {"done", "completed", "dropped"}
-# Waiting or paused work has no schedule to keep, so passed or late blocks are not drift.
-NO_SCHEDULE_CHECK = CLOSED | {"waiting", "paused"}
+# Waiting work has no schedule to keep, so passed or late blocks are not drift.
+# Paused work is still in work (user decision 2026-10-07) and keeps its schedule checks.
+NO_SCHEDULE_CHECK = CLOSED | {"waiting"}
 
 
 def collect_tasks(hub):

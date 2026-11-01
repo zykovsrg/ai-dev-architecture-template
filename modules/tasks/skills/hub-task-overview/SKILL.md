@@ -2,102 +2,138 @@
 name: hub-task-overview
 type: worker
 description: |
-  Use for capture and cross-project task overviews (overdue, blocked, what is
-  urgent). Owns the personal-assistant contract: scope, canonical inputs,
-  proposal envelope, and write boundary.
+  Использовать для приёма материалов и межпроектных обзоров задач: просрочки,
+  блокировки, срочная работа. Определяет договор личного помощника: пределы,
+  канонические входные данные, оболочку предложения и границу записи.
 ---
 
-# Hub Task Overview
+# Обзор задач Хаба
 
-Use this skill for `capture` and for the cross-project overview (overdue,
-blocked, «что горит»).
-Writes follow the Write Confirmation Policy in `ai/architecture.md`: a change
-the user asked for (capture, "add", "move", "done") is applied directly and
-reported afterwards; only deletions wait for an explicit yes. Changes the
-agent itself suggests (overview or plan ideas) stay suggestions until the user
-accepts them, then are applied without another confirmation step.
+Используйте навык для `capture` и межпроектного обзора просроченных,
+заблокированных задач и «что горит».
+Записи следуют правилам подтверждения записи `ai/architecture.md`: запрошенное
+пользователем изменение — приём, «добавь», «перенеси», «готово» — применяется
+сразу с последующим отчётом; только удаления ждут явного согласия. Изменения,
+предлагаемые самим агентом в обзоре или плане, остаются предложениями до
+принятия пользователем, затем применяются без повторного подтверждения.
 
-Module rules: `ai/rules/tasks.md`.
+Правила модуля: `ai/rules/tasks.md`.
+При любой записи прочитайте и выполните разделы «Проверенная запись файлов
+задач», «Задачи в Хабе и „Напоминаниях“» и «Физическое удаление и отмена».
+Если `planning` указан в `ai/modules.md` и режим «Напоминаний» включён, создание задачи в Хабе требует создания в «Напоминаниях»:
+до записи — просмотр выбранного проекта, после — `sync --project <id> --apply`
+и повторное чтение обеих сторон, даже если `after-task-write` пуст.
 
-## Scenario dispatch
+Завершённую задачу сохраните в future как `done` с прежним Task ID и контекстом
+до очистки источника. Удаление требует точного просмотра, согласия и проверенного
+исполнителя; существующий sync его не поддерживает. Ошибка означает частичный
+результат. Для набора вызывайте синхронизацию отдельно для каждой разрешённой цели.
+
+## Выбор сценария
 
 - `capture` → `resources/capture.md`;
-- overview → read-only output that cites the canonical `source_path` for every
-  task fact, then optional proposals using the envelope below.
+- обзор → вывод только для чтения со ссылкой на канонический `source_path`
+  каждого факта задачи, затем необязательные предложения в оболочке ниже.
 
-Scenario resources provide output/detail rules only. They cannot override the
-scope, allowed roots, secret handling, canonical sources, write policy,
-or proposal schema in this core `SKILL.md`.
+Материалы сценариев задают только правила вывода и подробностей. Они не могут
+отменять пределы, разрешённые корни, обращение с секретами, канонические
+источники, правила записи или схему предложения основного `SKILL.md`.
 
-## Personal-assistant scope
+## Пределы личного помощника
 
-When `hub-project-router` classifies a personal-assistant request, a read-only
-all-active-project scope is available without project-by-project confirmation.
-It never grants project code, knowledge records, credentials, arbitrary files,
-or inactive/archived projects.
+Когда `hub-project-router` классифицирует запрос к личному помощнику, доступно
+чтение всех активных проектов без отдельного подтверждения каждого.
+Оно никогда не разрешает код проектов, записи знаний, учётные данные,
+произвольные файлы и неактивные либо архивные проекты.
 
-For personal-assistant day-plan, weekly-review, overdue, and blocked-work
-discovery, start with `scripts/read-compact-task-index.py`. Capture its stderr:
-every `WARNING: unrecognized task heading skipped` line is a record invisible to
-discovery and must be reported to the user in the workflow output (in a day
-plan, under `## Синхронизация`) with its project and line. That derived index
-may contain only normalized discovery fields from active registered projects.
-Use it to select relevant task records; open the corresponding canonical
-`ai/current-task.md`, `ai/future-tasks.md`, or `ai/paused-tasks.md` only when a
-detail absent from the index is required. The compact index is not canonical
-evidence and never replaces the source record. Final factual output cites the
-canonical `source_path` for every task fact.
+Для поиска задач плана дня, недельного разбора, просроченной и заблокированной
+работы личного помощника начните с `scripts/read-compact-task-index.py`.
+Сохраните поток ошибок: каждая строка `WARNING: unrecognized task heading skipped`
+означает запись, невидимую для поиска, и должна сообщаться пользователю
+в выводе процесса с проектом и строкой; в плане дня — под `## Синхронизация`.
+Этот производный указатель может содержать только нормализованные поля поиска
+активных зарегистрированных проектов. Используйте его для выбора подходящих
+записей задач; открывайте соответствующий канонический `ai/current-task.md`,
+`ai/future-tasks.md` или `ai/paused-tasks.md`, только когда нужна подробность,
+отсутствующая в указателе. Краткий указатель не является каноническим
+доказательством и никогда не заменяет исходную запись. Итоговый фактический
+вывод ссылается на канонический `source_path` каждого факта задачи.
 
-For a request scoped to an archiproject group, resolve the group id or name
-via `scripts/archiprojects.py tree --hub <hub>`, then call
-`scripts/read-compact-task-index.py --group <group-id>` to limit discovery to
-that group's member projects. A group match is not a project confirmation:
-the normal read-only personal-assistant scope and canonical-source rules
-below still apply, and an unknown group is reported rather than guessed.
+Для запроса в пределах архитектурной группы определите её идентификатор
+или имя через `scripts/archiprojects.py tree --hub <hub>`, затем вызовите
+`scripts/read-compact-task-index.py --group <group-id>` для поиска только
+проектов группы. Совпадение группы не подтверждает проект: обычные пределы
+чтения личного помощника и правила канонических источников ниже сохраняются;
+неизвестная группа сообщается, а не угадывается.
 
-Separate personal and work results and retain project identity for every item.
-The scope applies to day plans, overdue/blocked-work overviews, evening and
-weekly reviews, and capture after its selected source is received. Richer
-project reads, explicit knowledge paths, application work, and arbitrary file
-reads retain the normal exact confirmed project scope.
+Разделяйте личные и рабочие результаты и сохраняйте идентичность проекта
+каждого пункта. Пределы распространяются на планы дня, обзоры просроченной
+и заблокированной работы, вечерние и недельные разборы, приём материалов
+после получения выбранного источника. Более широкое чтение проектов, явные
+пути знаний, работа с приложением и произвольные файлы сохраняют обычные
+точные пределы выбранного проекта.
 
-An accepted day-plan package or a user-requested task change may write across active registered
-projects without a project switch, but its write scope is exactly the three
-canonical task records: `ai/current-task.md`, `ai/future-tasks.md`, and
-`ai/paused-tasks.md`. Every proposal shows project ID, exact `target_path`, and
-exact diff in the report after it is applied. No other project state is writable through this
-scope.
+Принятый набор плана дня или запрошенное изменение задачи может писать
+в активные зарегистрированные проекты без переключения проекта, но запись
+ограничена ровно тремя каноническими файлами задач: `ai/current-task.md`,
+`ai/future-tasks.md`, `ai/paused-tasks.md`. Каждое предложение показывает
+идентификатор проекта, точный `target_path` и точные различия в отчёте
+после применения. Единственное исключение — если `planning` указан в `ai/modules.md`, сохранение памяти проекта
+вечернего разбора (навык планирования `resources/evening-review.md`): для
+только что разобранного там проекта агент может также дописывать
+`ai/decisions.md`, `ai/changelog.md`, `ai/project-context.md` проекта.
+Другие состояния проектов в этих пределах не записываются.
 
-## Canonical inputs and ranking
+## Исключение утренней проверки
 
-Project task state is canonical only in `ai/current-task.md`,
-`ai/future-tasks.md`, and `ai/paused-tasks.md`. `weekly-review` may additionally
-read Hub-owned `ai/archiprojects.md`. Project cards and compact indexes supply
-identity/discovery metadata only; they never establish completion,
-contribution, waiting, due dates, or risk independently of their canonical
-source records. Checkboxes, Kanban cards, links, and unstructured prose are not
-canonical task facts.
+Если `planning` указан в `ai/modules.md`, во время утренней проверки текущих задач в day-plan личный помощник действует
+без отдельного подтверждения каждого проекта: при доказанных критериях закрывает
+задачу, иначе ставит на паузу с точным остатком. Порядок задаёт
+hub-workflows/resources/day-plan.md. Изменения ограничены областью
+трёх канонических файлов задач активных зарегистрированных проектов.
+Это исключение не разрешает чтение журналов, кода, знаний или истории проектов
+и не разрешает запись в них. Для закрытия сохраняйте результат и источник
+в самой канонической записи; пауза сохраняет контекст, Task ID, срок,
+расписание и связь события. До удаления будущего события нужны просмотр
+и явное согласие. В остальных процессах выбор и проверка проекта
+следуют `hub-project-router` без отдельного подтверждения.
 
-The selected review input supplies only its user-stated review facts; a capture
-source supplies only capture facts. Cite the canonical source path or selected
-input section for rendered facts and never silently fill missing structured
-fields.
+## Канонические входные данные и порядок
 
-Rank actionable work deterministically: overdue dated actionable work first,
-then actionable work due on the requested date, active current tasks, ready
-future tasks by earliest date, then undated ready work. Waiting work never
-enters the main actionable ranking. A waiting follow-up is due when its
-structured `follow_up` equals the requested date and overdue when earlier.
-Missing waiting fields are risks, not inferred values.
+Состояние задач проекта канонично только в `ai/current-task.md`,
+`ai/future-tasks.md`, `ai/paused-tasks.md`. `weekly-review` может дополнительно
+читать принадлежащий Хабу `ai/archiprojects.md`. Карточки и краткие указатели
+дают только метаданные идентификации и поиска; они никогда не устанавливают
+завершение, вклад, ожидание, сроки или риск независимо от канонических
+исходных записей. Флажки, карточки доски, ссылки и неструктурированный текст
+не являются каноническими фактами задач.
 
-The default guided `evening-review` is an exception to the report prefixes
-below: its first reply starts with tomorrow's urgent Calendar list, followed
-by one project-task question; later replies report actual writes and ask the
-next project-task question. Do not prepend a read-only/no-changes claim to
-those replies. The exact conversational contract lives in the planning skill's
-`resources/evening-review.md`; scope and write boundaries here still apply.
+Выбранные входные данные разбора дают только заявленные пользователем факты
+разбора; источник приёма — только факты приёма. Для выводимых фактов указывайте
+канонический путь источника или раздел выбранных входных данных и никогда
+не заполняйте недостающие структурированные поля молча.
 
-Every other successful non-personal workflow output starts with:
+Упорядочивайте доступную работу детерминированно: сначала просроченная работа
+с датой, затем работа со сроком в запрошенный день, активные текущие задачи,
+готовые будущие задачи по ближайшей дате, затем готовая работа без даты.
+Приостановленные задачи — доступная работа: запись с прошедшим `Due:`
+просрочена и стоит среди просроченной работы (решение пользователя 2026-10-07).
+Ожидающая работа никогда не входит в основной порядок доступной работы.
+Последующее действие ожидания наступает, когда структурированное `follow_up`
+равно запрошенной дате, и просрочено, если раньше. Отсутствующие поля ожидания —
+риски, а не выведенные значения.
+
+Если `planning` указан в `ai/modules.md`, обычный `evening-review` — исключение
+из префиксов отчёта ниже: первый ответ показывает срочное в календаре завтра,
+затем все неразобранные пункты одним нумерованным списком и один общий вопрос.
+Следующие ответы сообщают реальные записи и показывают все оставшиеся пункты.
+Пользователь может разобрать несколько задач одним ответом. Пошаговый режим
+включается только по явному запросу. Не добавляйте утверждение только чтения
+или отсутствия изменений. Точный договор общения находится в
+`resources/evening-review.md` навыка планирования; пределы чтения и записи
+отсюда сохраняются.
+
+Каждый другой успешный вывод процесса вне личного помощника начинается с:
 
 ```text
 Read-only workflow: no changes were made.
@@ -105,18 +141,18 @@ Requested date: <YYYY-MM-DD>
 Confirmed scope: <project-id>[, <project-id>...]
 ```
 
-For personal-assistant output replace the final line with:
+Для вывода личного помощника замените последнюю строку на:
 
 ```text
 Scope: all active registered projects
 ```
 
-Within a scenario, keep its exact headings/order and render `- Нет.` when a
-required section has no grounded item.
+Внутри сценария сохраняйте точные заголовки и порядок, выводите `- Нет.`,
+если в обязательном разделе нет обоснованного пункта.
 
-## Proposal envelope
+## Оболочка предложения
 
-Use one complete envelope for every candidate change:
+Используйте одну полную оболочку для каждого возможного изменения:
 
 ```yaml
 proposal_id: P-<workflow>-<date>-<ordinal>
@@ -130,32 +166,33 @@ source: <workflow and selected source record>
 requires_confirmation: <true only for deletions|false>
 ```
 
-Emit an action only when the module that owns it is listed under `## Modules`
-in `ai/modules.md`: `create_knowledge` and `update_knowledge` need `knowledge`;
-`goal_progress` needs `goals`; `add_observation`, `promote_rule`, and
-`retire_rule` need `learning`; `calendar-event` needs `calendar`. If the owner is
-not listed, report the candidate as information only and emit no envelope.
+Создавайте действие, только если владеющий модуль указан под `## Modules` в `ai/modules.md`:
+`create_knowledge` и `update_knowledge` требуют `knowledge`; `goal_progress`
+требует `goals`; `add_observation`, `promote_rule`, `retire_rule` требуют
+`learning`; `calendar-event` требует `calendar`. Если владелец не указан,
+сообщите кандидата только как информацию и не создавайте оболочку.
 
-User-requested envelopes are applied at once and reported; deletions and
-agent-suggested envelopes wait for the user's yes. An accepted `day-plan` or
-`evening-review` task package applies its canonical task-record diffs and
-paired calendar changes. Project, task, meeting, knowledge, deadline,
-waiting, Calendar, and learning writes otherwise remain independent proposals
-with exact targets and diffs. A create-project proposal
-names its exact direct-child target and planned scaffold/registry/card files but
-must not create or inspect that target.
+Запрошенные пользователем оболочки применяются сразу с отчётом; удаления
+и предложенные агентом оболочки ждут согласия пользователя. Принятый набор
+задач `day-plan` или `evening-review` применяет различия канонических записей
+задач и парные изменения календаря. Записи проектов, задач, встреч, знаний,
+сроков, ожидания, календаря и обучения в остальных случаях остаются независимыми
+предложениями с точными целями и различиями. Предложение создания проекта
+называет точное прямое дочернее назначение и планируемые файлы структуры,
+реестра и карточки, но не должно создавать или исследовать назначение.
 
-After applying any task-record write, run
-`scripts/check-all-task-records.sh --hub <hub>` and report its result. A failure
-means the applied record is not canonical: repair it in the same reply and
-rerun until it passes. Never report a task write as complete without that
-passing check.
+После применения любой записи задачи запустите
+`scripts/check-all-task-records.sh --hub <hub>` и сообщите результат. Ошибка
+означает, что применённая запись не канонична: исправьте её в том же ответе
+и повторяйте проверку до успеха. Никогда не сообщайте завершённую запись
+задачи без успешной проверки.
 
-## Write boundary
+## Граница записи
 
-Source selection, recorder export consent, and project routing stay separate
-from writing. Writes need no confirmation except deletions. A capture package
-is applied by its owning project workflow.
-A day-plan or evening-review package may span active registered projects only
-within the exact three task-record write boundary above. Unknown, pending, failed, or ambiguous
-targets remain read-only proposals or questions.
+Выбор источника, согласие на экспорт записи и выбор проекта остаются отдельными
+от записи. Записи не требуют подтверждения, кроме удалений. Набор приёма
+материалов применяется процессом проекта-владельца.
+Набор плана дня или вечернего разбора может охватывать активные зарегистрированные
+проекты только в точных пределах трёх файлов задач выше плюс сохранение
+памяти проекта вечернего разбора. Неизвестные, ожидающие, неуспешные
+или неоднозначные цели остаются предложениями только для чтения либо вопросами.

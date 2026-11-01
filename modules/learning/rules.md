@@ -1,62 +1,143 @@
-# Learning Module Rules
+# Правила модуля обучения
 
-## Hub-Managed Project Flow
+## Процесс проекта под управлением Хаба
 
-- `hub-session-review` — on the user's request only, reviews an explicitly
-  selected session of a confirmed project. Reviews live only in the selected project's
-  `ai/session-reviews/`; improvements the review finds are applied directly
-  and reported; removing an existing rule waits for an explicit yes.
-- `hub-session-scan` — scans new Claude Code and Codex sessions into the
-  learning catalog with a cheap model and runs the weekly merge pass; removing
-  a catalog rule waits for an explicit yes.
+- `hub-session-review` — только по запросу пользователя проверяет явно выбранную
+  сессию выбранного проекта. Разборы находятся только в `ai/session-reviews/`
+  выбранного проекта; прямые указания и доказанные исправления применяются с сообщением;
+  гипотезы улучшений сначала проходят сравнение;
+  удаление существующего правила ждёт явного согласия.
+- `hub-session-scan` — сканирует новые сессии Claude Code и Codex в каталог
+  обучения дешёвой моделью и выполняет недельное объединение; удаление правила
+  каталога ждёт явного согласия.
 
-## Self-Learning Workflows
+## Процессы самообучения
 
-`ai/workflow-observations.md` is the canonical append-only journal of workflow
-friction and calendar drift. Rule maturity is computed only by `scripts/session_rules.py` (see
-`## Session learning`). Accepted observations are fed to the next session scan
-as input; removing a catalog rule needs an explicit yes.
+`ai/workflow-observations.md` — канонический журнал затруднений процессов
+и расхождений календаря, допускающий только добавление. Зрелость правил
+вычисляет только `scripts/session_rules.py` (см. `## Обучение по сессиям`).
+Принятые наблюдения передаются следующему сканированию сессий как входные данные;
+удаление правила каталога требует явного согласия.
 
-`ai/tmp/calendar-snapshots/` and `ai/tmp/workflow-friction/` are non-canonical
-caches, written directly and pruned after 14 days.
-`scripts/check-workflow-memory.sh` validates the two canonical learning files.
-These workflows remain independent of `hub-session-review`: a session review
-supplies improvement proposals but never automatically changes a rule or
-consumes a pending observation.
+`ai/tmp/calendar-snapshots/` и `ai/tmp/workflow-friction/` — неканонические кеши,
+записываемые сразу и очищаемые через 14 дней.
+`scripts/check-workflow-memory.sh` проверяет два канонических файла обучения.
+Эти процессы независимы от `hub-session-review`: разбор сессии не меняет
+каталог обучения и не потребляет ожидающее наблюдение. Исправления файлов
+выполняются в пределах запроса по разделу «Указания и гипотезы».
 
-## Open review proposals
+## Открытые предложения разборов
 
-The weekly review may read, across active registered projects, only the
-`## Improvement proposals` sections of `ai/session-reviews/*.md`, through
-`python3 scripts/review_proposals.py --hub <hub> list --until <date>`. Apart from the
-`## Findings` read by the session scan (see `## Session learning`), this is the
-only cross-project read of session reviews; evidence and other review text stay
-project-scoped.
+Недельный разбор может читать в активных зарегистрированных проектах только
+разделы `## Improvement proposals` файлов `ai/session-reviews/*.md` через
+`python3 scripts/review_proposals.py --hub <hub> list --until <date>`.
+Кроме `## Findings`, читаемого сканированием сессий (см. `## Обучение по сессиям`),
+это единственное межпроектное чтение разборов; доказательства и остальной
+текст разбора остаются в пределах проекта.
 
-Show each open proposal (project, review, ID, change, age) and ask the user to
-accept, reject or skip it. Record the answer with
+Покажите каждое открытое предложение: проект, разбор, идентификатор, изменение,
+возраст; попросите пользователя принять, отклонить или пропустить.
+Запишите ответ через
 `python3 scripts/review_proposals.py --hub <hub> set --project <id> --review <path> --proposal <ID> --decision <accepted|rejected>`;
-the script rewrites only that proposal's `Disposition:` line. An accepted
-proposal also gets a future-task entry in that project's `ai/future-tasks.md`
-(the personal-assistant task-record write scope), unless an entry for the same
-review and proposal already exists. Skipping changes nothing. When the work for
-an accepted proposal is done in its project, set `--decision implemented`.
+скрипт переписывает только строку `Disposition:` этого предложения.
+Принятое предложение также получает будущую задачу в `ai/future-tasks.md`
+проекта в пределах записи задач личного помощника, если запись для того же
+разбора и предложения ещё не существует. Пропуск ничего не меняет. Когда
+работа принятого предложения завершена в проекте, установите `--decision implemented`.
 
-## Task closure
+## Закрытие задачи
 
-Task closure does not run a session review. Sessions, including the ones that
-closed tasks, are learned from by `hub-session-scan`; this avoids reviewing
-the same session twice. `hub-session-review` runs only when the user asks for
-it for a confirmed project and an explicit session or range.
+Закрытие задачи не запускает разбор сессии. Из сессий, в том числе закрывших
+задачи, обучается `hub-session-scan`; это устраняет повторный разбор одной
+сессии. `hub-session-review` запускается только по запросу пользователя
+для выбранного проекта и явной сессии или диапазона.
 
-## Session learning
+## Обучение по сессиям
 
-`hub-session-scan` scans new Claude Code and Codex Hub sessions with a cheap
-model (Haiku 4.5 or GPT-6-Luna) and writes cases to `ai/learning/rules.json`.
-`scripts/session_rules.py` alone computes confidence and scope and renders
-`ai/learned-rules.md` and `ai/learned-rules/<project-id>.md`. Each scan also
-passes new entries of `ai/workflow-observations.md` and the `## Findings`
-section of new session reviews in active registered projects to the scanner
-as extra sessions (`obs-<n>`, `review-<project>-<file>`), tracked in the same
-ledger. The weekly review runs the weekly pass. The scan may also read the
-`## Findings` section of session reviews in active registered projects.
+Обучение по сессиям: `hub-session-scan` сканирует новые сессии Хаба Claude Code
+и Codex дешёвой моделью Haiku 4.5 или GPT-6-Luna и записывает случаи в
+`ai/learning/rules.json`. Только `scripts/session_rules.py` вычисляет
+уверенность и пределы, создаёт `ai/learned-rules.md` и
+`ai/learned-rules/<project-id>.md`. Каждое сканирование также передаёт сканеру
+новые записи `ai/workflow-observations.md` и раздел `## Findings` новых
+разборов сессий активных зарегистрированных проектов как дополнительные
+сессии `obs-<n>`, `review-<project>-<file>`, отслеживаемые в том же журнале.
+Недельный разбор выполняет недельный проход. Сканирование также может читать
+раздел `## Findings` разборов сессий активных зарегистрированных проектов.
+
+## Указания и гипотезы
+
+Случай `explicit` означает прямое постоянное указание пользователя, которое
+выполняется в его пределах. Одобрение одного результата и вывод агента о пользе
+не превращаются в `explicit`. Остальные наблюдения — гипотезы для проверки,
+даже когда число повторов достигло порога выдачи. Числовая оценка служит отбору,
+не измеряет вероятность правильности или полезности. Генератор помечает каждую
+строку как «Указание пользователя» или «Гипотеза»; гипотеза не является обязательной
+инструкцией и не переносится в навык по одному числу повторов.
+
+Перед внедрением гипотезы выполните сравнение по разделу «Проверяемые улучшения
+процесса» архитектуры. Прямые указания и воспроизводимые исправления не ждут
+такого опыта. Сохраните результат сравнения в существующем разборе или журнале
+выбранного проекта. Доказанное изменение внесите в файл-владелец через
+обычный процесс; не подменяйте доказательство новым `explicit`. Для вывода
+дублирующего правила из действия по-прежнему нужно согласие на удаление.
+
+## Место правила
+
+Этот раздел — единственное описание механизма (решения пользователя
+2026-10-08); недельный разбор и навык сканирования ссылаются сюда.
+
+Где показывается правило. Каждый случай имеет проект: проект сессии либо,
+для сессии в корне Хаба, проект, которого касается случай (сканер называет
+его даже при нескольких подтверждённых проектах сессии), либо `hub` для
+общей работы. Правило попадает в `ai/learned-rules.md`, если его пределы
+глобальные или все случаи — `hub`; иначе оно попадает в файл каждого проекта
+своих случаев. Поэтому правило процесса одного проекта никогда не попадает
+в глобальный файл только из-за обучения в сессии корня Хаба.
+
+Ограничения. `ai/learned-rules.md` содержит не более 30 глобальных правил;
+файлы правил проектов не имеют ограничения количества. Каждый
+`ai/skills/**/*.md`, `ai/rules/*.md` и файл усвоенных правил не превышает
+300 строк: `python3 scripts/session_rules.py --hub <hub> check-limits`
+перечисляет превышения, а недельный разбор предлагает сжать или разделить их.
+Каталог `ai/learning/rules.json` не имеет архива: помощник никогда его
+не читает, а сканер получает не более 60 правил.
+
+Временное хранение. Усвоенное правило не имеет постоянного места здесь.
+Правило одного процесса находится в навыке или файле правил модуля этого
+процесса. Недельный разбор сначала отделяет указания от гипотез по разделу выше,
+затем без отдельной просьбы анализирует каждое внедряемое
+правило отдельно:
+- файл-владелец уже содержит правило → предложите вывести его из действия,
+  указав точную строку; подтвердите строку через
+  `session_rules.py --hub <hub> check-home --file <hub-relative path> --quote "<line>"`;
+- правило относится к одному процессу, но файл его не содержит → предложите
+  добавить его туда, затем вывести усвоенное правило из действия;
+- минимум 3 правила описывают процесс без подходящего навыка, а их случаи
+  получены минимум из 3 разных сессий → предложите новый навык; сначала
+  сопоставьте описание с существующими навыками и предпочтите расширение существующего;
+- правило касается работы в целом → оно остаётся в `ai/learned-rules.md`.
+Правило нескольких проектов никогда не перемещается в навык одного проекта.
+Файлы навыков проекта находятся вне чтения недельного разбора: перенос
+в навык проекта проверяется после выбора и проверки проекта.
+Каждое изменение навыка или файла правил выполняйте в пределах разрешённой
+задачи и правил подтверждения записи архитектуры. Для нового или изменённого
+навыка используйте `superpowers:writing-skills`. Вывод из действия требует
+явного согласия на удаление. Используйте `--note "moved to <file>"`, чтобы каталог сохранял
+место переноса.
+
+Повторы и утечки (`session_rules.py apply`). Новое правило, повторяющее
+`CLAUDE.md` или `AGENTS.md`, отбрасывается (`skipped_standing`). Правило,
+повторяющее выведенное из действия с `moved to`, не добавляется снова:
+оно записывается как случай `leak` перенесённого правила (`leaks` в выводе
+применения). Утечка никогда не меняет уверенность и не активирует правило
+повторно; она означает, что навык не выполнил работу, и недельный разбор
+предлагает исправить навык.
+
+`scripts/session_cost.py` без модели считает потери токенов за неделю:
+шаги после ошибки инструмента, повторные команды, повторные чтения;
+и затраты запуска: начальные шаги только загрузки навыков, правил Хаба
+или указателя проектов плюс первый ответ. Недельный разбор показывает их.
+Ничто не исправляется автоматически. Известные искажения: любой ненулевой
+код завершения считается ошибкой, даже отсутствие совпадений grep;
+потери командной оболочки Codex показываются меткой `exec`, даты сессий — UTC.

@@ -1,17 +1,17 @@
-# Module: core
+# Модуль: core
 
 Id: core
 Required: yes
 Switchable: no
 Depends: —
-Uses if present: learning, knowledge
+Uses if present: learning, knowledge, calendar
 Rules: ai/architecture.md
 Keywords: —
 
 ## Purpose
 
-Base Hub scaffolding: architecture rules, allowed roots, active-project pointer,
-and the project router skill that every other module builds on.
+Базовая структура Хаба: правила архитектуры, разрешённые корни, указатель активного проекта
+и навык выбора проекта, на котором основаны остальные модули.
 
 ## Installs
 
@@ -33,7 +33,7 @@ and the project router skill that every other module builds on.
 
 ## Reads
 
-- nothing outside its own installed files
+- ничего за пределами собственных установленных файлов
 
 ## Writes
 

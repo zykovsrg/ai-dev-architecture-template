@@ -207,7 +207,7 @@ class DueAndPassed(unittest.TestCase):
 
     def test_passed_skips_closed_and_waiting(self):
         self.assertEqual(self.kinds([task(status="waiting")], [event()], now="2026-09-23 09:00"), [])
-        self.assertEqual(self.kinds([task(status="paused")], [event()], now="2026-09-23 09:00"), [])
+        self.assertEqual(self.kinds([task(status="paused")], [event()], now="2026-09-23 09:00"), ["schedule_passed"])
 
     def test_missing_event_does_not_add_schedule_items(self):
         self.assertEqual(self.kinds([task(due="2026-09-21")], [], now="2026-09-23 09:00"), ["event_missing"])

@@ -1,17 +1,17 @@
-# Module: tasks
+# Модуль: tasks
 
 Id: tasks
 Required: yes
 Switchable: no
 Depends: core, projects
-Uses if present: —
+Uses if present: learning, planning
 Rules: ai/rules/tasks.md
 Keywords: —
 
 ## Purpose
 
-Task record lifecycle for a registered project: intake, switch, finish and
-environment checks, backed by the compact task index.
+Жизненный цикл записи задачи зарегистрированного проекта: приём, переключение, завершение
+и проверки среды с использованием краткого указателя задач.
 
 ## Installs
 
@@ -33,11 +33,11 @@ environment checks, backed by the compact task index.
 
 ## Reads
 
-- project task files
+- файлы задач проекта
 
 ## Writes
 
-- project task files
+- файлы задач проекта
 
 ## Subscribes
 

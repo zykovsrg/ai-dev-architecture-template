@@ -139,7 +139,7 @@ fi
 [ -n "$CONFIRM_PLAN" ] || die "--apply requires --confirm-plan from the reviewed preview"
 [ "$CONFIRM_PLAN" = "$PLAN_SHA" ] || die "confirmed plan differs from current preview"
 if [ "$ALLOW_DIRTY" -ne 1 ] && git -C "$HUB_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1 && [ -n "$(git -C "$HUB_DIR" status --porcelain)" ]; then
-  die "Hub working tree is dirty; commit/stash first or use --allow-dirty"
+  die "Hub working tree is dirty; stop and ask the user how to preserve local changes before updating."
 fi
 
 if [ -n "$RESOLVED_SHA" ]; then

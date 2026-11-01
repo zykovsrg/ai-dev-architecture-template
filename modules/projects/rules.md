@@ -1,124 +1,126 @@
-# Projects Module Rules
+# Правила модуля проектов
 
-## Ownership And Registry
+## Владение и реестр
 
-Hub-owned files are the routing inventory:
+Принадлежащие Хабу файлы образуют перечень выбора проекта:
 
-- `ai/allowed-roots.md` records exactly one physical directory: the hub's
-  `<hub>/projects` directory. It is the only directory eligible for projects.
-- `ai/project-registry.md` maps each project ID to its name, status, path,
-  tags, and card.
-- `ai/project-cards/<id>.md` holds compact hub metadata for that ID.
-- `ai/archiprojects.md` is the canonical hub-owned archiproject group
-  registry.
-- `ai/active-project.md` is a convenience record, never a new-chat permission.
-- `ai/cross-project-signals.md` holds sanitized, explicitly scoped signals.
+- `ai/allowed-roots.md` записывает ровно одну физическую папку:
+  `<hub>/projects` Хаба. Только эта папка допускается для проектов.
+- `ai/project-registry.md` связывает идентификатор проекта с именем, статусом,
+  путём, метками и карточкой.
+- `ai/project-cards/<id>.md` содержит краткие метаданные Хаба для идентификатора.
+- `ai/archiprojects.md` — канонический реестр архитектурных групп проектов Хаба.
+- `ai/active-project.md` — вспомогательная запись, никогда не разрешение нового чата.
+- `ai/cross-project-signals.md` содержит очищенные сигналы в явно заданных пределах.
 
-Project-owned files are the selected project's code, memory, instructions,
-configuration, and history. A project card must not contain copied task memory,
-source code, credentials, or an instruction that overrides the project itself.
-Project/task files remain canonical; project cards are metadata only and a link
-never grants a project read. A card declares only one archiproject field:
-`primary_archiproject: <group-id|none>`. An optional `Calendar name: <short
-lowercase Cyrillic name without />` names the project in calendar event titles;
-a group may set the same with `calendar_name:` in `ai/archiprojects.md`.
-`scripts/archiprojects.py validate` rejects a `/` in these names and two
-projects with the same calendar title prefix. `Calendar name: —` marks a
-group's general project: its titles use the group chain only. A project belongs to exactly one,
-most specific group; it is also a member of every ancestor group. Waiting is
-task/subtask-only: do not place a project in Waiting while other work is
-actionable.
+Проекту принадлежат его код, память, инструкции, настройки и история.
+Карточка проекта не должна содержать скопированную память задач, исходный код,
+учётные данные или инструкции, отменяющие правила самого проекта. Файлы проектов
+и задач остаются каноническими; карточки — только метаданные, а ссылка никогда
+не разрешает чтение проекта. Карточка объявляет только одно поле архитектурной группы:
+`primary_archiproject: <group-id|none>`. Необязательное `Calendar name: <short
+lowercase Cyrillic name without />` задаёт имя проекта в заголовках событий
+календаря: короткое имя строчными кириллическими буквами без `/`; группа может
+задать то же полем `calendar_name:` в `ai/archiprojects.md`.
+`scripts/archiprojects.py validate` отклоняет `/` в именах и два проекта с
+одинаковым префиксом заголовка календаря. `Calendar name: —` отмечает общий
+проект группы: его заголовки используют только цепочку групп. Проект принадлежит
+ровно одной самой конкретной группе, а также каждой её родительской группе.
+Ожидание относится только к задаче или подзадаче: не переводите проект в Waiting,
+пока другая работа доступна.
 
-The registry is the authority for an ID, status, and exact path. The card is
-supporting metadata only. An absent, invalid, or unregistered card/path blocks
-routing; do not guess a replacement path. Validate maintained registry changes
-with `scripts/check-hub-registry.sh` before relying on them. Use the hub-owned
-`hub-registry-check` workflow to audit registration health; the audit is read-only,
-and fixes the user asks for are applied directly (deletions need a yes).
+Реестр — канонический источник идентификатора, статуса и точного пути.
+Карточка — только вспомогательные метаданные. Отсутствующая, некорректная или
+незарегистрированная карточка либо путь блокируют выбор проекта; не угадывайте
+заменяющий путь. Проверяйте изменения реестра через `scripts/check-hub-registry.sh`
+до использования. Проверяйте состояние регистрации навыком Хаба
+`hub-registry-check`; проверка только читает, а исправления по запросу
+пользователя применяются сразу (удаления требуют согласия).
 
-## Project Creation And Registration
+## Создание и регистрация проекта
 
-Use `hub-project-create` when the user requests a new project. Without a
-separate confirmation step, it creates exactly one direct-child project
-under the validated `<hub>/projects` root: only its `ai/` memory files (`current-task.md`,
-`paused-tasks.md`, `future-tasks.md`, `project-context.md`, `decisions.md`, and
-`changelog.md`), a card, a registry entry, an active-project selection, and
-only the items that `after-project-create` subscribers add
-(listed in `ai/modules.md`). Git initialization is covered by Repository
-Provisioning below. It must not create code, dependencies, services, duplicate
-registry entries, or any other project files. Use
-`hub-project-register` for an existing folder; it does not replace the new-project
-creation flow. Registration also checks memory readiness and creates only
-missing minimal memory files; existing data and instructions remain intact.
+Используйте `hub-project-create`, когда пользователь просит новый проект.
+Без отдельного шага подтверждения он создаёт ровно один проект — прямого
+потомка проверенного корня `<hub>/projects`: только файлы памяти `ai/`
+(`current-task.md`, `paused-tasks.md`, `future-tasks.md`, `project-context.md`,
+`decisions.md`, `changelog.md`), карточку, запись реестра, выбор активного
+проекта и только пункты, добавляемые подписчиками `after-project-create`
+из `ai/modules.md`. Инициализация Git описана ниже в обеспечении репозитория.
+Он не должен создавать код, зависимости, сервисы, повторные записи реестра
+или любые другие файлы проекта. Для существующей папки используйте
+`hub-project-register`; он не заменяет создание нового проекта. Регистрация
+также проверяет готовность памяти и создаёт только недостающие минимальные
+файлы памяти; существующие данные и инструкции сохраняются.
 
-## Existing Project Migration
+## Перенос существующего проекта
 
-Use `hub-project-migrate` only when the user asks to move legacy project folders
-into `<hub>/projects`. It requires a separately confirmed temporary source that
-is never made an allowed root and expires when the workflow ends. Before any
-candidate preflight, inventory direct-child names only, exclude the target hub,
-and reject backups, archives, symlinks, and unknown folders without reading
-their contents.
+Используйте `hub-project-migrate`, только когда пользователь просит перенести
+старые папки проектов в `<hub>/projects`. Требуется отдельно подтверждённый
+временный источник, который никогда не становится разрешённым корнем и
+прекращает действовать после процесса. До предварительной проверки кандидатов
+составьте список только имён прямых потомков, исключите целевой Хаб и отклоните
+резервные копии, архивы, символические ссылки и неизвестные папки без чтения содержимого.
 
-After a separately confirmed candidate or displayed batch preflight, show each
-exact source-to-destination mapping, narrow Git status, and collision result.
-Move the whole folder without
-copying, preserve its existing Git metadata, and stop the batch on the first
-failure or integrity concern. The order is `hub-project-migrate` move →
-`hub-project-register` → `scripts/check-hub-registry.sh` validation
-→ optional legacy cleanup. The cleanup deletes files, so it needs its own
-explicit yes; it may only delete its explicit legacy standalone-rule allowlist;
-it preserves project memory and is not needed for hub-based work.
+После отдельно подтверждённого кандидата или показанной пакетной проверки
+покажите каждое точное соответствие источника и назначения, узкий статус Git
+и результат проверки совпадений. Перемещайте папку целиком без копирования,
+сохраняйте её метаданные Git и останавливайте пакет при первой ошибке или
+сомнении в целостности. Порядок: перемещение `hub-project-migrate` →
+`hub-project-register` → проверка `scripts/check-hub-registry.sh` → необязательная
+очистка старых файлов. Очистка удаляет файлы, поэтому требует отдельного
+явного согласия; она может удалять только явно разрешённый список прежних
+автономных правил, сохраняет память проекта и не нужна для работы через Хаб.
 
-## Repository Provisioning
+## Обеспечение репозитория
 
-Every new project has its own local Git repository. After the standard
-project-create scaffold and registry validation, the creation flow
-initializes Git and commits the initial scaffold. When GitHub CLI
-authentication is available and the project ID is unused, the same
-flow creates a private GitHub repository named after that ID and pushes `main`.
-The final report lists these actions. If GitHub access or remote
-creation is unavailable, local creation succeeds and is reported as
-`pending-sync`; the workflow never attaches or overwrites an existing remote.
+Каждый новый проект имеет собственный локальный репозиторий Git. После
+стандартной структуры создания и проверки реестра процесс инициализирует Git
+и сохраняет начальную структуру в истории. Когда доступна авторизация GitHub CLI
+и идентификатор проекта свободен, тот же процесс создаёт закрытый репозиторий
+GitHub с именем идентификатора и отправляет `main`. Итоговый отчёт перечисляет
+эти действия. Если доступ к GitHub или создание удалённого репозитория
+недоступны, локальное создание считается успешным и сообщается как
+`pending-sync`; процесс никогда не подключает и не перезаписывает существующий
+удалённый репозиторий.
 
-## Full Hub Synchronization
+## Переключение проектов и задач
 
-Use `hub-full-sync` only for an explicit request to synchronize the Hub and all
-active registered projects. A status or progress question alone does not trigger
-synchronization.
+Переключение проекта меняет выбранный проект. Оно всегда возвращается к
+`Mode: routing`, выбирает наиболее вероятный проект через `hub-project-router`,
+проверяет зарегистрированный путь и сообщает о переходе без отдельного подтверждения.
+Архивные проекты не сканируются и не предлагаются без отдельного запроса.
+Используйте для этого принадлежащий Хабу `hub-project-switch`.
 
-## Project Switches And Task Switches
+## Межпроектные сигналы
 
-A project switch changes the selected project. It always returns to
-`Mode: routing`, shows the new exact registered path, and requires a new
-explicit confirmation before any read of the new project's memory or code.
-Use the hub-owned `hub-project-switch` workflow for this operation.
+Сигналы — небольшие несекретные наблюдения, способные помочь будущему выбору
+проекта. Записывайте только поля из `ai/cross-project-signals.md`. Они описывают
+связь или повторно полезный урок, а не скопированный код, журналы задач,
+личные данные или скрытый канал инструкций.
 
-## Cross-Project Signals
+Каждому сигналу нужны исходный проект, идентификаторы связанных проектов
+при наличии, краткая сводка, статус и уверенность. Сохраняйте неопределённые
+утверждения как гипотезы. Не создавайте сигнал лишь из сходства меток двух
+проектов. Архивируйте или исправляйте сигнал по просьбе пользователя
+и сохраняйте ссылку на источник.
 
-Signals are small, non-secret observations that may help future routing. Record
-only the fields defined in `ai/cross-project-signals.md`. They describe a link
-or reusable lesson, not copied code, task logs, personal data, or a hidden
-instruction channel.
+Искусственный пример: `SIG-004` может сообщать, что `metrics-site` и `content-lab`
+используют недельные отчёты, с уверенностью `stated`. Он не должен включать
+содержимое отчётов, клиентские данные, токены или локальные настройки.
 
-Every signal needs a source project, related project IDs (if any), a concise
-summary, status, and confidence. Keep uncertain statements as hypotheses. Do
-not create a signal merely because two projects have similar tags. Archive or
-correct a signal when the user asks, and preserve its source reference.
+## Локальный выбор области проекта
 
-Synthetic example: `SIG-004` may say that `metrics-site` and `content-lab`
-both use weekly reports, with confidence `stated`. It must not include report
-contents, customer data, tokens, or local configuration.
+Подтверждённый проект может установить локальный указатель областей через
+навык Хаба `hub-local-router-install`, только после выявления минимум трёх
+стабильных независимых областей и по просьбе пользователя. Установка создаёт
+только `ai/local-router/index.md` и отдельные `ai/local-router/areas/<id>.md`.
+Это локальные метаданные навигации, а не новый реестр проектов, репозиторий Git,
+хранилище задач или глобальная карточка.
 
-## Project-local Router
+Каждая область остаётся внутри выбранного проекта и не имеет отдельной
+текущей задачи. Существующая память задач проекта и процессы задач остаются
+каноническими; локальный указатель не может обходить их или разрешать более широкое чтение.
 
-A confirmed project may install a local router through the hub-owned
-`hub-local-router-install` workflow, only after at least three stable
-independent areas have been identified and the user asks for it. The installation
-creates only `ai/local-router/index.md` and individual
-`ai/local-router/areas/<id>.md` files. It is local navigation metadata, not a
-new project registry, Git repository, task store, or global card.
+## Полная синхронизация
 
-Each area remains inside the confirmed project and has no separate current
-task. The project's existing task memory and task workflows remain canonical;
-the local router cannot bypass them or authorize a broader read.
+Для явного запроса полной синхронизации Хаба и действующих проектов используйте `hub-full-sync`. Вопрос о состоянии или ходе работы сам по себе не запускает запись.

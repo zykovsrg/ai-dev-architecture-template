@@ -1,57 +1,87 @@
 ---
 name: hub-task-finish
-description: Verify one confirmed registered project's task and, when nothing blocks closure, clean its task memory and save the result in the same step.
+description: Проверить задачу одного выбранного зарегистрированного проекта и, если закрытию ничего не мешает, сохранить завершённую запись задачи и освободить текущую задачу.
 ---
 
-# Hub Task Finish
+Перед выполнением прочитайте «Общий порядок записи задач» в `ai/rules/tasks.md`. Он определяет применимый режим, проверки и события для всей операции.
 
-Use this skill only after explicit confirmation of a confirmed registered
-project and when the user asks to close its task. Its scope is the selected
-project `ai/` memory only; do not require or read duplicated project
-`AGENTS.md` or `CLAUDE.md` files.
+# Завершение задачи Хаба
 
-Module rules: `ai/rules/tasks.md`.
+Используйте полную процедуру ниже только после выбора и проверки зарегистрированного проекта,
+когда пользователь просит закрыть задачу, когда агент завершил и проверил задачу
+в этой сессии (см. `## Закрытие завершённой работы` в `ai/rules/tasks.md`) или, если
+`learning` указан в `ai/modules.md`, для решения `close` утренней проверки задач `hub-session-scan`; там проверкой служат
+указанные доказательства сессии. Его пределы — только память `ai/` выбранного
+проекта; не требуйте и не читайте дубликаты `AGENTS.md` или `CLAUDE.md` проекта.
 
-## Procedure
+Правила модуля: `ai/rules/tasks.md`, раздел «Общий порядок записи задач».
+Его обязательные проверки выполняются в пределах выбранного проекта.
 
-1. Read the selected project's `ai/current-task.md` and the smallest relevant
-   `ai/decisions.md`, `ai/changelog.md`, or `ai/future-tasks.md` file.
-2. Check recorded Done criteria and report any missing verification or open
-   risk. Do not change task memory during this check.
-   Run the deterministic task-record and review checks before any model call;
-   report a deterministic failure directly and leave the task open.
-3. If the Done criteria pass, run the `before-task-close` event before
-   clearing task context: read `<hub>/ai/modules.md`; for each subscriber
-   listed under `before-task-close`, read its rules file and run its command
-   for this task of the confirmed project only. A subscriber failure leaves
-   the task open and its context intact. With no subscribers, continue.
-4. If the check found no blocker, write the changelog entry, any durable
-   decision, future-task entries, any reference a subscriber added,
-   and the `ai/current-task.md` cleanup. Stop and report instead of writing only when
-   the check found a blocker. Before writing, follow `## Write extensions`
-   below. An improvement suggested by a subscriber is applied directly,
-   reported, and is not a closure blocker.
-5. Then save only the selected project's result through its repository and
-   report every write, the commit, and whether it was pushed or stayed local.
-6. After a write to the selected project's task files, run the
-   `after-task-write` event: read `<hub>/ai/modules.md`; for each subscriber
-   listed under `after-task-write`, read its rules file and run its command
-   for the confirmed project ID only. With no subscribers, do nothing. Apply a
-   subscriber's pending proposal directly unless it deletes something; a
-   deletion waits for the user's explicit yes.
+## Ограниченное закрытие в утреннем плане
 
-## Write extensions
+Если `planning` указан в `ai/modules.md`, для утренней проверки через day-plan допускается закрытие без отдельного подтверждения
+каждого активного зарегистрированного проекта, только если каждый критерий
+подтверждён канонической записью или прямым решением пользователя.
+Это исключение ограничено областью трёх канонических файлов задач;
+полная процедура ниже с журналом, решениями и репозиторием в нём не применяется.
+Сохраните полный контекст, результат и его источник в future-записи `done` с прежним Task ID до очистки источника. Если критерии не подтверждены,
+используйте паузу по hub-workflows/resources/day-plan.md с сохранением контекста,
+срока, расписания и связи события. Выполните подписчиков в разрешённых границах
+и проверку записей. Будущее событие требует просмотра и согласия на удаление
+до совместного закрытия. Самостоятельное закрытие вне утреннего плана
+по-прежнему требует выбранного проекта и полной процедуры ниже.
 
-Task writes need no user confirmation (see Write Confirmation Policy in
-`ai/architecture.md`); report what was written afterwards. Before a task
-write, run the `before-task-write` event: read `<hub>/ai/modules.md`; each
-subscriber listed under `before-task-write` prepares and applies its own items
-by following its rules file. If a subscriber cannot build its part, say which
-one and why and write nothing. If a subscriber's part is a deletion, show it
-and wait for an explicit yes before applying anything.
+## Порядок действий
 
-This workflow cannot override hub routing, allowed roots, secret, or
-memory-isolation rules. Its closure writes remain limited to selected project
-`ai/` memory. It never closes, copies, or cleans another project's task memory,
-and an optional subscriber offer does not authorize reading or writing
-project records.
+1. Прочитайте `ai/current-task.md` выбранного проекта и минимальный подходящий
+   файл `ai/decisions.md`, `ai/changelog.md` или `ai/future-tasks.md`.
+2. После выполнения критериев и обязательных проверок завершайте работу.
+   Повторная проверка нужна при новом изменении, отказе проверки или конкретном
+   нерешённом риске; назовите причину и условие остановки. Число проверяющих
+   не является критерием готовности.
+   Проверьте записанные критерии завершения и сообщите о недостающих проверках
+   или открытых рисках. Не меняйте память задачи во время проверки.
+   До любого вызова модели запустите детерминированные проверки записей задач
+   и разборов; напрямую сообщите об ошибке такой проверки и оставьте задачу открытой.
+3. Если критерии завершения пройдены, запустите событие `before-task-close`
+   до очистки контекста задачи: прочитайте `<hub>/ai/modules.md`; для каждого
+   подписчика из `before-task-close` прочитайте файл правил и выполните команду
+   только для этой задачи выбранного проекта. Ошибка подписчика оставляет
+   задачу открытой и сохраняет её контекст. Без подписчиков продолжайте.
+4. Если проверка не обнаружила препятствий, запишите журнал изменений, постоянные
+   решения, будущие задачи, справочный материал, добавленный подписчиком,
+   и завершённую запись в `ai/future-tasks.md` с прежним Task ID и `Status: done`.
+   Перед всем переносом выполните подготовку из «Общего порядка записи задач».
+   Заголовок целевой записи: `### <тот же Task ID> — <название>`.
+   Каждый файл пишите проверенной командой с исходной контрольной суммой.
+   Сначала сохраните и перечитайте эту запись со всем контекстом и результатом;
+   только затем очистите `ai/current-task.md` (`Status: empty`) или уберите
+   исходную запись из paused. Уже существующую done-запись обновите без дубликата.
+   Между записями не вызывайте повторный просмотр, синхронизацию или подписчиков,
+   читающих весь набор: временный дубликат Task ID заблокирует их. После всего
+   переноса проверьте полный набор. Синхронизацию и повторное чтение выполните
+   в завершающем этапе шага 5, один раз для результата этого переноса.
+   При сбое сохраните обе записи и исходный контекст; не применяйте частичную
+   синхронизацию. Исчезновение Task ID ломает синхронизацию и не является завершением. Останавливайтесь с сообщением вместо записи,
+   только если проверка выявила препятствие. Перед записью следуйте
+   `## Расширения записи` ниже. Улучшение, предложенное подписчиком, применяется
+   сразу с сообщением и не препятствует закрытию.
+5. Завершите операцию по разделу «Общий порядок записи задач»
+   в `ai/rules/tasks.md`: обязательные проверки результата и `after-task-write`.
+   При частичном сбое сообщите незавершённый результат; к шагу 6 не переходите.
+6. Затем сохраните только проверенный результат выбранного проекта через его
+   репозиторий и сообщите каждую запись, сохранение в истории и факт отправки
+   либо локального хранения.
+
+
+## Расширения записи
+
+События `before-task-write` и `after-task-write` из `ai/modules.md`
+выполните по «Общему порядку записи задач» в `ai/rules/tasks.md`.
+Ссылка не добавляет повторный запуск уже выполненного события.
+
+Этот процесс не может отменять правила Хаба о выборе проекта, разрешённых
+корнях, секретах и изоляции памяти. Записи закрытия ограничены памятью `ai/`
+выбранного проекта. Он никогда не закрывает, не копирует и не очищает память
+задач другого проекта, а предложение необязательного подписчика не разрешает
+чтение или запись данных проекта.

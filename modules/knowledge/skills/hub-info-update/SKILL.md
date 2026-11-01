@@ -1,126 +1,129 @@
 ---
 name: hub-info-update
-description: Turn temporary meeting information into project-scoped memory updates without retaining the source transcript.
+description: Преобразует временную информацию встречи в изменения памяти выбранных проектов без сохранения исходной расшифровки.
 ---
 
-# Info Update
+# Обновление информации
 
-Use this skill when the user supplies temporary meeting text or asks to update
-selected project memories from it. Writes need no confirmation (Write Confirmation Policy in
-`ai/architecture.md`); only opening each project still needs its routing
-confirmation, and deletions need an explicit yes.
+Используйте этот навык, когда пользователь предоставляет временный текст встречи
+или просит обновить по нему память выбранных проектов. Записи не требуют
+подтверждения (правило подтверждения записи в `ai/architecture.md`);
+выбор и проверка каждого проекта следуют `hub-project-router` без отдельного подтверждения,
+а удаления — явного согласия.
 
-Module rules: `ai/rules/knowledge.md`.
+Правила модуля: `ai/rules/knowledge.md`.
 
-## Boundaries
+## Границы
 
-Do not save the source transcript by default. Treat it as temporary input and
-extract only the smallest sanitized facts, decisions, tasks, signals, and
-hypotheses needed for the update. Never copy secrets, personal data, source
-code, task logs, or private customer details into hub or project memory.
+Не сохраняйте исходную расшифровку по умолчанию. Считайте её временным входом
+и извлекайте только минимальные очищенные факты, решения, задачи, сигналы
+и гипотезы, необходимые для обновления. Никогда не копируйте секреты,
+персональные данные, исходный код, журналы задач или частные сведения клиентов
+в память хаба или проектов.
 
-Open each affected project through its own routing confirmation. A confirmation
-for one project never permits reading or writing another project, even when the same meeting mentions
-both. Before the first project group, use the hub router to show that project's
-registered ID and exact path, then obtain the separate project confirmation.
+Выбирайте и проверяйте каждый проект через `hub-project-router` без отдельного
+подтверждения. Обрабатывайте только проекты, для которых пользователь поручил
+обновление. Упоминание другого проекта само по себе не расширяет область.
+Сообщайте о каждом переходе; архив включайте только по отдельному запросу.
 
-This skill must not replace the current task. It may apply a refinement to an
-already confirmed project's current task only when that refinement fits the
-existing Done criteria. A different task requires that project's separate
-confirmed `hub-task-switch` workflow. A completed task requires its separate
-confirmed `hub-task-finish` workflow. This skill MUST NOT invoke or perform `hub-task-finish`; it stops and requires that separate confirmed workflow. Never overwrite, pause, finish, or copy a current task from this skill.
+Этот навык не должен заменять текущую задачу. Он может уточнить текущую задачу
+уже выбранного проекта, только если уточнение укладывается в существующие
+Done criteria. Другая задача требует отдельного подтверждённого процесса
+`hub-task-switch` этого проекта. Завершённая задача требует отдельного
+подтверждённого процесса `hub-task-finish`. Этот навык НЕ ДОЛЖЕН вызывать
+или выполнять `hub-task-finish`; он останавливается и требует отдельного
+подтверждённого процесса. Никогда не перезаписывайте, не приостанавливайте,
+не завершайте и не копируйте текущую задачу из этого навыка.
 
-This skill MUST NOT invoke or perform `hub-project-switch`. It must not invoke or
-perform `hub-project-switch` automatically. If the meeting requires another
-project, it stops after the current project group. A separate confirmed
-`hub-project-switch` between project groups is required before any read or write
-for the next project; resume `hub-info-update` only after that switch. Project
-confirmations inside this skill remain separate confirmation gates; they do not
-authorize a project switch.
+Если поручение охватывает несколько проектов, завершите группу одного проекта,
+затем выполните `hub-project-switch` без отдельного подтверждения и продолжите
+только в следующем явно включённом в поручение проекте. Не переносите память
+между проектами и не открывайте проекты лишь из-за упоминания во встрече.
 
-## Procedure
+## Процедура
 
-Read only the supplied temporary text and the smallest selected-project `ai/`
-memory allowed by the hub-managed flow. First present one meeting summary and a distinct `Affected projects`
-section listing every affected project ID and exact path. Then prepare the
-following sections for the currently confirmed project group only. Before a
-next group, stop for the separate confirmed `hub-project-switch`; do not read or
-write for that group until `hub-info-update` resumes after the switch. Do not
-merge items from different projects into a shared facts, decisions, or task
-list.
+Читайте только предоставленный временный текст и минимальную память `ai/`
+выбранного проекта, разрешённую процессом хаба. Сначала покажите одно резюме
+встречи и отдельный раздел `Affected projects` со всеми затронутыми
+идентификаторами проектов и точными путями. Затем подготовьте следующие
+разделы только для текущей выбранной группы проекта. Перед следующей
+группой выполните `hub-project-switch` и проверку её проекта;
+читайте и записывайте эту группу только после перехода. Не объединяйте пункты разных проектов в общий список
+фактов, решений или задач.
 
-## Per-project proposal sections
+## Разделы предложения по проекту
 
-For the currently confirmed project group, use this exact order:
+Для текущей выбранной группы проекта соблюдайте именно этот порядок:
 
-### Project identity and path
+### Идентификатор и путь проекта
 
-State the registered project ID and exact registered path.
+Укажите зарегистрированный идентификатор проекта и точный зарегистрированный путь.
 
-### Facts
+### Факты
 
-### Decisions
+### Решения
 
-### Task changes
+### Изменения задачи
 
-Include only an in-scope refinement; otherwise say that a separate confirmed
-`hub-task-switch` or `hub-task-finish` workflow is required and stop that item.
+Включайте только уточнения в допустимой области; иначе сообщите, что нужен
+отдельный подтверждённый процесс `hub-task-switch` или `hub-task-finish`,
+и остановите этот пункт.
 
-### Future tasks
+### Будущие задачи
 
-### Signals
+### Сигналы
 
-### Hypotheses
+### Гипотезы
 
-### Uncertainties
+### Неопределённости
 
-### Proposed file edits
+### Предлагаемые изменения файлов
 
-### Per-project writes
+### Записи по проекту
 
-For every item, name its source and confidence (`verified`, `stated`,
-`inferred`, or `uncertain`). Keep facts and decisions separate from hypotheses
-and uncertainties. A hypothesis is optional, explicitly labelled, and never a
-permission to write or route: hypotheses and uncertainties are reported, not
-written. Work in one project group permits neither a read nor a write in
-another group.
+Для каждого пункта назовите источник и уверенность (`verified`, `stated`,
+`inferred` или `uncertain`). Отделяйте факты и решения от гипотез
+и неопределённостей. Гипотеза необязательна, явно помечается и никогда
+не разрешает запись или выбор проекта: гипотезы и неопределённости сообщаются,
+но не записываются. Работа в одной группе проекта не разрешает ни чтение,
+ни запись другой группы.
 
-A cross-project signal may appear in a separate hub section only after every
-related project group has been processed. It must name the related project
-IDs and retain its source and confidence; it is written directly like any
-other update.
+Сигнал между проектами может появиться в отдельном разделе хаба только после
+обработки всех связанных групп проектов. Он должен назвать идентификаторы
+связанных проектов и сохранить источник и уверенность; он записывается
+напрямую, как любое другое обновление.
 
-## Writes
+## Записи
 
-Map each write to the selected project's existing controlled-memory
-rule before changing it:
+Перед изменением сопоставьте каждую запись с существующим правилом
+управляемой памяти выбранного проекта:
 
-- Facts or durable project context: the project's `ai/project-context.md`
-  workflow, if its rules allow the update.
-- Durable decisions: the project's `ai/decisions.md` workflow.
-- A future task: the project's `ai/future-tasks.md` workflow.
-- An in-scope current-task refinement: the project's `ai/current-task.md`
-  rules, without changing its status or replacing its task.
-- A cross-project signal: the hub's `ai/cross-project-signals.md`, with its
-  source-project reference, sanitized summary, and confidence.
+- Факты или долговременный контекст проекта: процесс `ai/project-context.md`
+  проекта, если его правила разрешают обновление.
+- Долговременные решения: процесс `ai/decisions.md` проекта.
+- Будущая задача: процесс `ai/future-tasks.md` проекта.
+- Уточнение текущей задачи в допустимой области: правила `ai/current-task.md`
+  проекта без изменения статуса или замены задачи.
+- Сигнал между проектами: `ai/cross-project-signals.md` хаба со ссылкой
+  на исходный проект, очищенным резюме и уверенностью.
 
-Apply the writes directly in `Mode: implementation` and show the exact
-per-file diffs in the report. After every selected-project write to `ai/current-task.md` or
-`ai/future-tasks.md`, run the `after-task-write` event: read
-`<hub>/ai/modules.md`; for each subscriber listed under `after-task-write`,
-read its rules file and run its command for the confirmed project ID only.
-With no subscribers, do nothing. Apply a subscriber's pending proposal
-directly unless it deletes something; a deletion waits for an explicit yes.
-Then report
-each changed file and any item intentionally left as uncertain.
+Применяйте записи напрямую в `Mode: implementation` и показывайте точные
+различия по каждому файлу в отчёте. После каждой записи в `ai/current-task.md`
+или `ai/future-tasks.md` выбранного проекта выполняйте событие `after-task-write`:
+прочитайте `<hub>/ai/modules.md`; для каждого подписчика из `after-task-write`
+прочитайте его файл правил и выполните его команду только для подтверждённого
+идентификатора проекта. При отсутствии подписчиков ничего не делайте.
+Применяйте ожидающее предложение подписчика напрямую, если оно ничего
+не удаляет; удаление ожидает явного согласия.
+Затем сообщите каждый изменённый файл и каждый пункт, намеренно оставленный неопределённым.
 
-## Russian report template
+## Шаблон отчёта на русском
 
 ```text
 Режим: implementation
 
 1. Краткое резюме встречи
-<санитизированное резюме; исходная расшифровка не сохраняется>.
+<очищенное резюме; исходная расшифровка не сохраняется>.
 
 2. Affected projects
 - <project-id> — <exact-registered-path>.
@@ -156,15 +159,14 @@ Source: <...> — confidence: <verified|stated|inferred|uncertain>.
 - <что требует уточнения|нет> — источник: <...> — уверенность: <...>.
 
 #### Изменённые файлы
-- <file> — <точный diff или блок замены>.
+- <file> — <точные различия или блок замены>.
 
 
-3. Межпроектные сигналы hub (только после каждой связанной группы проектов).
-- <санитизированный сигнал|нет> — связанные проекты: <...> — источник: <...> — уверенность: <...>.
+3. Сигналы между проектами хаба (только после каждой связанной группы проектов).
+- <очищенный сигнал|нет> — связанные проекты: <...> — источник: <...> — уверенность: <...>.
 Записано в `ai/cross-project-signals.md`.
 
 4. Следующая группа проекта
-Если есть следующий <project-id>, остановитесь. Нужен отдельный подтверждённый
-project-switch между группами проектов; после него возобновите info-update
-только для нового подтверждённого проекта.
+Если следующий <project-id> включён в поручение, выполните `hub-project-switch`
+без отдельного подтверждения и продолжите только в новом выбранном проекте.
 ```

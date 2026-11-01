@@ -1,21 +1,25 @@
-# Calendar Module Rules
+# Правила модуля календаря
 
-## Guarded Apple Calendar
+## Защищённый календарь Apple Calendar
 
-Apple Calendar uses only `hub-calendar` and the pinned local guarded MCP.
-Raw upstream tools are forbidden. The allowlist is empty by default and may
-contain only user-selected stable calendar IDs. Reads require explicit IDs and
-IANA timezone and return their EventKit source. Every write uses a fresh,
-single-use preview; create and update previews are applied immediately without
-asking the user, and only delete previews wait for the user's confirmation
-(see Write Confirmation Policy in `ai/architecture.md`). An authorized writable calendar may update or
-delete events regardless of whether they are past or future; recurring writes
-require `this` or `future`. A delete removes only one single event, never a
-series, and is reported only after the tool confirms the event is gone. No background checks, notifications, secrets, or
-calendar content are stored in architecture files. Updates are audited; only deletions are
-separately confirmed.
+Apple Calendar использует только `hub-calendar` и закреплённый локальный
+защищённый MCP. Исходные инструменты поставщика запрещены. Разрешённый список
+изначально пуст и может содержать только стабильные идентификаторы календарей,
+выбранных пользователем. Чтение требует явных идентификаторов и часового пояса
+IANA и возвращает источник EventKit. Каждая запись использует свежий одноразовый
+просмотр; просмотры создания и обновления применяются сразу без вопроса,
+только просмотры удаления ждут подтверждения пользователя (см. правила
+подтверждения записи в `ai/architecture.md`). Разрешённый записываемый календарь
+может менять или удалять прошлые и будущие события; повторяющиеся записи
+требуют `this` или `future`. Удаление убирает только одно событие, никогда
+не серию, и сообщается лишь после подтверждения инструментом отсутствия события.
+Фоновые проверки, уведомления, секреты или содержимое календаря не сохраняются
+в файлах архитектуры. Обновления проверяются; только удаления подтверждаются отдельно.
 
-Before a workflow reads a day, it calls `list_calendar_metadata`; the returned
-allowed entries are the only source for the IDs sent to `read_events`. A missing
-or failed metadata response must be reported as bridge unavailability or denied
-permission, never as an empty allowlist.
+Перед чтением дня процесс вызывает `list_calendar_metadata`; возвращённые
+разрешённые записи — единственный источник идентификаторов для `read_events`.
+Отсутствующий или неуспешный ответ метаданных сообщается как недоступность
+моста или отказ в доступе, никогда не как пустой разрешённый список.
+
+Рабочие встречи пользователя попадают в календарь «Важно и срочно»
+(перенесено из усвоенного правила R-3, решение пользователя 2026-10-08).

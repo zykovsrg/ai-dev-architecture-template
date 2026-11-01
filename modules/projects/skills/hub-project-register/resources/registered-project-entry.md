@@ -1,17 +1,16 @@
-# Registered Project Entry
+# Входной файл зарегистрированного проекта
 
-This project is a registered child of the Personal AI Hub two directories above
-this file. Shared operating rules belong to that hub:
+Этот проект — зарегистрированный потомок личного Хаба ИИ, расположенного
+на две папки выше этого файла. Общие правила работы принадлежат Хабу:
 
-- `../../AGENTS.md` or `../../CLAUDE.md` for the active agent;
-- `../../ai/architecture.md` for shared workflows and rule precedence.
+- `../../AGENTS.md` или `../../CLAUDE.md` для активного агента;
+- `../../ai/architecture.md` для общих процессов и приоритета правил.
 
-Do not copy hub rules into this project. Keep only project-specific facts and
-constraints in `ai/project-context.md` and durable project decisions in
-`ai/decisions.md`. The task records in `ai/current-task.md`,
-`ai/paused-tasks.md`, and `ai/future-tasks.md` remain canonical for this
-project.
+Не копируйте правила Хаба в проект. Храните только факты и ограничения проекта
+в `ai/project-context.md`, а постоянные решения проекта — в `ai/decisions.md`.
+Записи задач `ai/current-task.md`, `ai/paused-tasks.md` и `ai/future-tasks.md`
+остаются каноническими для проекта.
 
-If the project is moved outside this hub, this pointer is no longer valid.
-Return through Hub routing and confirm a registered location; never guess
-another hub or restore the retired standalone architecture.
+Если проект перенесён за пределы Хаба, указатель больше не действует.
+Вернитесь через выбор проекта Хаба и подтвердите зарегистрированное расположение;
+никогда не угадывайте другой Хаб и не восстанавливайте отменённую автономную архитектуру.

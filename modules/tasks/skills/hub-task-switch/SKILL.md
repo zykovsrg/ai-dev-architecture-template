@@ -1,48 +1,43 @@
 ---
 name: hub-task-switch
-description: Change one confirmed registered project's unfinished task and report the change.
+description: Изменить незавершённую задачу одного выбранного зарегистрированного проекта и сообщить изменение.
 ---
 
-# Hub Task Switch
+Перед выполнением прочитайте «Общий порядок записи задач» в `ai/rules/tasks.md`. Он определяет применимый режим, проверки и события для всей операции.
 
-Use this skill only after explicit confirmation of a confirmed registered
-project and after the hub-owned `hub-task-intake` classifies the request as a
-different task. Its scope is the selected project `ai/` memory only; do not
-require or read duplicated project `AGENTS.md` or `CLAUDE.md` files.
+# Переключение задачи Хаба
 
-Module rules: `ai/rules/tasks.md`.
+Используйте навык только после выбора и проверки зарегистрированного проекта
+и после классификации запроса как другой задачи принадлежащим Хабу
+`hub-task-intake`. Его пределы — только память `ai/` выбранного проекта;
+не требуйте и не читайте дубликаты `AGENTS.md` или `CLAUDE.md` проекта.
 
-## Procedure
+Правила модуля: `ai/rules/tasks.md`, раздел «Общий порядок записи задач».
+Его обязательные проверки выполняются в пределах выбранного проекта.
 
-1. Read only the selected project's `ai/current-task.md` and
-   `ai/paused-tasks.md`.
-2. Pause the current task, write the replacement task, or promote a future
-   task directly, then report the old goal, the new goal, and the changed
-   files.
-3. Make only the requested memory changes in the selected project. Never transfer task content to another project. Keep the paused
-   task's existing immutable `Task ID:` when moving it into
-   `ai/paused-tasks.md`. Give the replacement task
-   a concrete immutable `Task ID:` in the
-   `TASK-<project-id>-<UTC-date>-<NNN>` form, where `<NNN>` is the next free
-   three-digit number for that date in the selected project; never leave a
-   placeholder. A promoted future task keeps exactly the same immutable ID
-   when it becomes current.
-4. After a write to the selected project's task files, run the
-   `after-task-write` event: read `<hub>/ai/modules.md`; for each subscriber
-   listed under `after-task-write`, read its rules file and run its command
-   for the selected project ID only. With no subscribers, do nothing. Apply a
-   subscriber's pending proposal directly unless it deletes something; a
-   deletion waits for the user's explicit yes.
+## Порядок действий
 
-## Write extensions
+1. Прочитайте только `ai/current-task.md` и `ai/paused-tasks.md` выбранного проекта.
+2. Приостановите текущую задачу, запишите заменяющую задачу или сразу сделайте
+   будущую задачу текущей, затем сообщите прежнюю цель, новую цель и изменённые файлы.
+3. Внесите только запрошенные изменения памяти выбранного проекта. Никогда
+   не переносите содержимое задачи в другой проект. Сохраните существующий
+   неизменяемый `Task ID:` при переносе приостановленной задачи в
+   `ai/paused-tasks.md`. Сначала запишите `ai/paused-tasks.md`, затем
+   `ai/current-task.md`: иначе запись получит отказ `task_id_lost`. Дайте заменяющей задаче конкретный неизменяемый
+   `Task ID:` в виде `TASK-<project-id>-<UTC-date>-<NNN>`, где `<NNN>` — следующий
+   свободный трёхзначный номер для этой даты в выбранном проекте; никогда
+   не оставляйте заполнитель. Будущая задача при переходе в текущую сохраняет
+   точно тот же неизменяемый идентификатор.
+4. Завершите операцию по разделу «Общий порядок записи задач»
+   в `ai/rules/tasks.md`: обязательные проверки результата и `after-task-write`.
 
-Task writes need no user confirmation (see Write Confirmation Policy in
-`ai/architecture.md`); report what was written afterwards. Before a task
-write, run the `before-task-write` event: read `<hub>/ai/modules.md`; each
-subscriber listed under `before-task-write` prepares and applies its own items
-by following its rules file. If a subscriber cannot build its part, say which
-one and why and write nothing. If a subscriber's part is a deletion, show it
-and wait for an explicit yes before applying anything.
 
-This workflow cannot override hub routing, allowed roots, secret, or
-memory-isolation rules. It never changes task state during a project switch.
+## Расширения записи
+
+События `before-task-write` и `after-task-write` из `ai/modules.md`
+выполните по «Общему порядку записи задач» в `ai/rules/tasks.md`.
+Ссылка не добавляет повторный запуск уже выполненного события.
+
+Этот процесс не может отменять правила Хаба о выборе проекта, разрешённых
+корнях, секретах и изоляции памяти. Он никогда не меняет состояние задачи при переключении проекта.

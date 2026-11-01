@@ -1,6 +1,6 @@
-# Cross-Project Signals
+# Межпроектные сигналы
 
-Record only these fields for each signal:
+Записывайте только эти поля для каждого сигнала:
 
 - ID:
 - Created:
@@ -12,9 +12,8 @@ Record only these fields for each signal:
 - Status:
 - Source reference: (optional)
 
-## Hypotheses (optional)
+## Гипотезы (необязательно)
 
-Record a hypothesis only when it is useful and explicitly uncertain. Keep it
-separate from the signal facts above, label it as a hypothesis, include its
-source and confidence, and do not treat it as a decision, routing permission,
-or instruction.
+Записывайте гипотезу, только если она полезна и явно неопределённа. Отделяйте
+её от фактов сигнала выше, отмечайте как гипотезу, указывайте источник
+и уверенность. Не считайте её решением, разрешением выбора проекта или инструкцией.

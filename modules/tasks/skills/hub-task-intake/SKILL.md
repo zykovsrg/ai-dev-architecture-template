@@ -1,48 +1,43 @@
 ---
 name: hub-task-intake
-description: Record or classify requested work for one confirmed registered project without crossing hub boundaries.
+description: Записать или классифицировать запрошенную работу одного выбранного зарегистрированного проекта, не выходя за границы Хаба.
 ---
 
-# Hub Task Intake
+Перед выполнением прочитайте «Общий порядок записи задач» в `ai/rules/tasks.md`. Он определяет применимый режим, проверки и события для всей операции.
 
-Use this skill only after explicit confirmation of a confirmed registered
-project and after the hub-owned `hub-environment-check`. Its scope is the selected
-project `ai/` memory only; do not require or read duplicated project
-`AGENTS.md` or `CLAUDE.md` files.
+# Приём задачи Хаба
 
-Module rules: `ai/rules/tasks.md`.
+Используйте навык только после выбора и проверки зарегистрированного проекта
+и принадлежащего Хабу `hub-environment-check`. Его пределы — только память
+`ai/` выбранного проекта; не требуйте и не читайте дубликаты
+`AGENTS.md` или `CLAUDE.md` проекта.
 
-## Procedure
+Правила модуля: `ai/rules/tasks.md`, раздел «Общий порядок записи задач».
+Его обязательные проверки выполняются в пределах выбранного проекта.
 
-1. Read the selected project's `ai/current-task.md`.
-2. If it is empty, record the user's requested goal, scope, Done criteria, and
-   `Stage: intake` in that same file. Write a concrete unique `Task ID:` in the
-   `TASK-<project-id>-<UTC-date>-<NNN>` form, where `<NNN>` is the next free
-   three-digit number for that date in the selected project. This project
-   namespace makes the immutable ID globally unique without reading another
-   project's memory; never leave the placeholder.
-3. If it is unfinished, compare the request with its recorded Done criteria.
-   Continue only when it fits; otherwise stop and require the hub-owned
-   `hub-task-switch` workflow.
-4. Record out-of-scope ideas the user asks for in the project's
-   `ai/future-tasks.md` directly; do not mix them into the current task.
-5. After a write to the selected project's task files, run the
-   `after-task-write` event: read `<hub>/ai/modules.md`; for each subscriber
-   listed under `after-task-write`, read its rules file and run its command
-   for the selected project ID only. With no subscribers, do nothing. Apply a
-   subscriber's pending proposal directly unless it deletes something; a
-   deletion waits for the user's explicit yes.
+## Порядок действий
 
-## Write extensions
+1. Прочитайте `ai/current-task.md` выбранного проекта.
+2. Если он пуст, запишите цель пользователя, пределы работы, критерии завершения
+   и `Stage: intake` в тот же файл. Запишите конкретный уникальный `Task ID:`
+   в виде `TASK-<project-id>-<UTC-date>-<NNN>`, где `<NNN>` — следующий свободный
+   трёхзначный номер для этой даты в выбранном проекте. Пространство имён проекта
+   делает неизменяемый идентификатор глобально уникальным без чтения памяти
+   другого проекта; никогда не оставляйте заполнитель.
+3. Если задача не завершена, сопоставьте запрос с записанными критериями завершения.
+   Продолжайте только при соответствии; иначе остановитесь и потребуйте
+   принадлежащий Хабу процесс `hub-task-switch`.
+4. Записывайте запрошенные пользователем идеи вне пределов текущей работы прямо
+   в `ai/future-tasks.md` проекта; не смешивайте их с текущей задачей.
+5. Завершите операцию по разделу «Общий порядок записи задач»
+   в `ai/rules/tasks.md`: обязательные проверки результата и `after-task-write`.
 
-Task writes need no user confirmation (see Write Confirmation Policy in
-`ai/architecture.md`); report what was written afterwards. Before a task
-write, run the `before-task-write` event: read `<hub>/ai/modules.md`; each
-subscriber listed under `before-task-write` prepares and applies its own items
-by following its rules file. If a subscriber cannot build its part, say which
-one and why and write nothing. If a subscriber's part is a deletion, show it
-and wait for an explicit yes before applying anything.
 
-This workflow cannot override hub routing, allowed roots, secret, or
-memory-isolation rules. It never reads, writes, or classifies another project's
-memory.
+## Расширения записи
+
+События `before-task-write` и `after-task-write` из `ai/modules.md`
+выполните по «Общему порядку записи задач» в `ai/rules/tasks.md`.
+Ссылка не добавляет повторный запуск уже выполненного события.
+
+Этот процесс не может отменять правила Хаба о выборе проекта, разрешённых
+корнях, секретах и изоляции памяти. Он никогда не читает, не записывает и не классифицирует память другого проекта.

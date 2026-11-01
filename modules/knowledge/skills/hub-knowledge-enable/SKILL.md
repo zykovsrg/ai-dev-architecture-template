@@ -2,49 +2,51 @@
 name: hub-knowledge-enable
 type: implementation
 description: |
-  Use on demand to add the optional empty knowledge scaffold to an existing
-  confirmed registered hub project. It never migrates standalone projects.
+  Используйте по запросу для добавления необязательного пустого каркаса знаний
+  в существующий подтверждённый зарегистрированный проект хаба.
+  Этот процесс никогда не переносит самостоятельные проекты.
 ---
 
-# Knowledge Enable
+# Включение знаний
 
-Use this workflow only for an existing confirmed registered project. Legacy
-standalone migration is out of scope. Do not use this workflow to discover,
-register, move, import, copy, or transform a project or its records.
+Используйте этот процесс только для существующего подтверждённого зарегистрированного
+проекта. Перенос старых самостоятельных проектов вне области работы. Не используйте
+его для поиска, регистрации, перемещения, импорта, копирования или преобразования
+проекта либо его записей.
 
-Module rules: `ai/rules/knowledge.md`.
+Правила модуля: `ai/rules/knowledge.md`.
 
-## Preconditions and read boundary
+## Предварительные условия и границы чтения
 
-1. The router must already have confirmed the registered project ID and exact
-   registered path. If it has not, return to `Mode: routing`; do not infer a
-   project from a remembered active-project record.
-2. Revalidate the canonical hub, its sole `<canonical-hub>/projects` allowed
-   root, the registry ID, and the exact registered path. The path must remain
-   one direct child of that root.
-3. Inspect path types with `lstat` before classifying anything as present. The
-   confirmed project path itself must be a real directory, not a symlink. An
-   existing `knowledge/` or existing category path must be a real directory;
-   every existing category path must be a real directory, not another type.
-   An existing `README.md` or `record-template.md` must be a regular file, not
-   another type. Any type mismatch stops the workflow with no writes.
-4. Inspect metadata only for these exact paths: `knowledge/README.md`,
+1. Процесс выбора проекта уже должен проверить зарегистрированный идентификатор
+   и точный зарегистрированный путь. Иначе вернитесь к `Mode: routing`; не выводите
+   проект из сохранённой записи активного проекта.
+2. Повторно проверьте канонический хаб, его единственный разрешённый корень
+   `<canonical-hub>/projects`, идентификатор реестра и точный зарегистрированный
+   путь. Путь должен оставаться одним непосредственным дочерним каталогом этого корня.
+3. Проверяйте типы путей через `lstat`, прежде чем считать их существующими.
+   Сам подтверждённый путь проекта должен быть настоящим каталогом, а не
+   символической ссылкой. Существующий `knowledge/` и каждый путь категории
+   должны быть настоящими каталогами, а не объектами другого типа.
+   Существующий `README.md` или `record-template.md` должен быть обычным файлом,
+   а не объектом другого типа. Любое несовпадение типов останавливает процесс без записей.
+4. Проверяйте метаданные только точных путей: `knowledge/README.md`,
    `knowledge/record-template.md`, `knowledge/research/`,
-   `knowledge/decisions/`, `knowledge/risks/`, and `knowledge/runbooks/`.
-   Also inspect `knowledge/inbox/` as an exact scaffold path.
-   Do not read unrelated project content, enumerate directories, or read an
-   existing knowledge record.
-5. Never follow a symlink. Stop with no writes if the hub root, projects root,
-   project path, `knowledge/`, or any exact scaffold path is a symlink or
-   resolves through one.
-6. The user's request to enable knowledge authorizes this scaffold change; no
-   separate confirmation is needed.
+   `knowledge/decisions/`, `knowledge/risks/` и `knowledge/runbooks/`.
+   Также проверяйте `knowledge/inbox/` как точный путь каркаса.
+   Не читайте постороннее содержимое проекта, не перечисляйте каталоги
+   и не читайте существующие записи знаний.
+5. Никогда не переходите по символической ссылке. Остановитесь без записей,
+   если корень хаба, корень проектов, путь проекта, `knowledge/` или любой
+   точный путь каркаса является символической ссылкой либо проходит через неё.
+6. Запрос пользователя на включение знаний разрешает изменение каркаса;
+   отдельное подтверждение не требуется.
 
-## Report
+## Отчёт
 
-After creating the scaffold, report the confirmed registered project identity and
-the exact registered path. It must name every scaffold path and identify which
-ones are absent, without opening existing records:
+После создания каркаса сообщите подтверждённую зарегистрированную идентичность
+проекта и точный зарегистрированный путь. Назовите каждый путь каркаса и укажите,
+какие отсутствуют, не открывая существующие записи:
 
 ```text
 Project: <project-id>
@@ -60,69 +62,77 @@ Mode: knowledge-enable
 - <exact-registered-path>/knowledge/runbooks/
 - <exact-registered-path>/knowledge/inbox/
 
-Не будет прочитано: существующие records, код, task memory и иной контент проекта.
-Не будет изменено: существующие records, Git, инструкции проекта, skills,
+Не будет прочитано: существующие записи, код, память задач и иное содержимое проекта.
+Не будет изменено: существующие записи, Git, инструкции проекта, навыки,
 реестр, карточка или active-project.
 
 Подтвердите: «Включить knowledge для <project-id> по пути <exact-registered-path>».
 ```
 
-Any mismatch, changed registry mapping, collision concern, or
-symlink stops the workflow with no writes.
+Любое несовпадение, изменение соответствия в реестре, риск конфликта
+или символическая ссылка останавливают процесс без записей.
 
-## Enablement
+## Включение
 
-1. Revalidate every precondition and the exact
-   absent paths without reading record contents.
-2. Create only absent scaffold files and directories: `knowledge/README.md`,
+1. Повторно проверьте все предварительные условия и точные отсутствующие пути,
+   не читая содержимое записей.
+2. Создайте только отсутствующие файлы и каталоги каркаса: `knowledge/README.md`,
    `knowledge/record-template.md`, `knowledge/research/`,
-   `knowledge/decisions/`, `knowledge/risks/`, and `knowledge/runbooks/`.
-   Also create only an absent `knowledge/inbox/` directory.
-3. Write the canonical README and record template below only when that exact
-   file is absent. It must never overwrite records, an existing README, or an existing
-   record template; do not merge, rename, delete, or inspect existing records.
-4. Report only the exact created and already-present scaffold paths.
+   `knowledge/decisions/`, `knowledge/risks/` и `knowledge/runbooks/`.
+   Также создайте `knowledge/inbox/`, только если каталог отсутствует.
+3. Запишите канонические README и шаблон записи ниже, только если именно этот
+   файл отсутствует. Никогда не перезаписывайте записи, существующий README
+   или шаблон записи; не объединяйте, не переименовывайте, не удаляйте и не
+   изучайте существующие записи.
+4. Сообщите только точные созданные и уже существовавшие пути каркаса.
 
-## Non-negotiable exclusions
+## Обязательные исключения
 
-Do not create or modify Git, application code, dependencies, services,
-`AGENTS.md`, `CLAUDE.md`, project skills, registry entries, cards, or
-`ai/active-project.md`. Do not read task memory, source code, credentials,
-environment files, or any unrelated project path. Do not create capture or
-review workflows as part of enablement.
+Не создавайте и не меняйте Git, код приложения, зависимости, службы,
+`AGENTS.md`, `CLAUDE.md`, навыки проекта, записи реестра, карточки или
+`ai/active-project.md`. Не читайте память задач, исходный код, учётные данные,
+файлы окружения и посторонние пути проекта. Не создавайте процессы сохранения
+или проверки знаний в рамках включения.
 
 ## Canonical scaffold files
 
 ### knowledge/README.md
 
 ```markdown
-# Project Knowledge
+# Знания проекта
 
-This local knowledge base is optional reference material. Read it only when a
-task or the user explicitly needs it. It is not default context and is not an
-automatic archive of conversations.
+Эта локальная база знаний — необязательные справочные материалы. Читайте её,
+только когда задача или пользователь явно требуют этого. Она не является
+контекстом по умолчанию или автоматическим архивом бесед.
 
-Store records in the category that matches their purpose:
+Храните записи в категории, соответствующей их назначению:
 
-- `research/` — investigated questions and evidence.
-- `decisions/` — durable choices and their rationale.
-- `risks/` — known risks, assumptions, and mitigations.
-- `runbooks/` — repeatable operational procedures.
+- `research/` — изученные вопросы и свидетельства.
+- `decisions/` — долговременные решения и их обоснования.
+- `risks/` — известные риски, предположения и меры снижения рисков.
+- `runbooks/` — повторяемые рабочие процедуры.
 
-Create and update records only through the hub-owned `hub-knowledge-capture` or
-`hub-knowledge-review` workflow. Do not copy generic
-workflow skills into this project.
+Создавайте и обновляйте записи только через принадлежащие хабу процессы
+`hub-knowledge-capture` или `hub-knowledge-review`. Не копируйте общие
+навыки процессов в этот проект.
 
-Knowledge records must contain no secrets, personal data or client data. Never
-store credentials, passwords, tokens, private keys, raw environment values,
-personally identifying material, or client-confidential material. Omit or
-redact prohibited content without echoing the rejected value; refer to an
-approved secure location instead of recording it.
+При заполнении записи явно выбирайте `origin`: `stated` — прямое утверждение
+пользователя или источника, `inferred` — вывод агента, `observation` —
+неподтверждённое наблюдение. Значение в шаблоне — пример, а не выбор по умолчанию.
+Наблюдения хранятся в `knowledge/inbox/`, временной области вне четырёх
+долговременных категорий. `valid_from` — дата начала действия утверждения
+в формате `YYYY-MM-DD`; оставляйте `null`, если дата неизвестна. Не подменяйте
+её датой создания записи `created`.
 
-The only allowed statuses are `draft`, `verified`, `needs-review`, `stale`, or
-`superseded`. Retain stale and superseded records at their original paths and
-link each one to its replacement under `Related records`; never silently delete
-it.
+Записи знаний не должны содержать секреты, персональные или клиентские данные.
+Никогда не сохраняйте учётные данные, пароли, токены, закрытые ключи, исходные
+значения окружения, сведения, идентифицирующие человека, или конфиденциальные
+материалы клиентов. Пропускайте или скрывайте запрещённое содержимое без
+повторения отклонённого значения; ссылайтесь на одобренное безопасное хранилище.
+
+Допустимы только статусы `draft`, `verified`, `needs-review`, `stale` и
+`superseded`. Сохраняйте устаревшие и заменённые записи на исходных путях,
+связывайте каждую с заменой в `Related records`; никогда не удаляйте её молча.
 ```
 
 ### knowledge/record-template.md
@@ -131,12 +141,14 @@ it.
 ---
 type: research
 status: draft
+origin: stated
+valid_from: null
 created: YYYY-MM-DD
 reviewed: YYYY-MM-DD
 sources: []
 ---
 
-# Record title
+# Название записи
 
 ## Statement
 

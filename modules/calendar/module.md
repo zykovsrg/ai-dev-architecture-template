@@ -1,4 +1,4 @@
-# Module: calendar
+# Модуль: calendar
 
 Id: calendar
 Required: no
@@ -10,8 +10,8 @@ Keywords: —
 
 ## Purpose
 
-Read selected Apple Calendar calendars safely and prepare one-time confirmed
-changes.
+Безопасно читать выбранные календари Apple Calendar и применять изменения
+через одноразовый просмотр; только удаления ждут согласия пользователя.
 
 ## Installs
 
@@ -28,11 +28,11 @@ changes.
 
 ## Reads
 
-- selected Apple Calendar calendars
+- выбранные календари Apple Calendar
 
 ## Writes
 
-- calendar events, only through a previewed and confirmed change
+- события календаря, только через одноразовый просмотр; удаление — после согласия пользователя
 
 ## Subscribes
 

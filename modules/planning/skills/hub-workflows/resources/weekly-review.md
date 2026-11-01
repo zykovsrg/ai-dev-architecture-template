@@ -1,52 +1,122 @@
 # weekly-review
 
-This resource defines only the `weekly-review` scenario. The core `SKILL.md` remains authoritative for scope, security, canonical-source rules, proposal envelopes, write policy, and learning lifecycle. Nothing here widens those permissions.
+## Ветка «Напоминаний»
 
-Render these blocks in this exact order:
+При включённом режиме сначала выполните синхронизацию основного навыка.
+Работу и выполнение оценивайте по каноническим задачам и отметкам связанных
+напоминаний; календарь используйте только для встреч и других событий
+с фиксированным началом. Дни выполнения отделяйте от крайних сроков.
+Остальные разделы недельного разбора и обучение сохраняются.
+
+
+Этот материал определяет только сценарий `weekly-review`. Основной core `SKILL.md` остаётся каноническим источником пределов, безопасности, правил канонических источников, оболочек предложений, записи и жизненного цикла обучения. Ничто здесь не расширяет разрешения.
+
+Показывайте блоки точно в таком порядке:
 
 1. `## Архипроекты`
-2. one `### <archiproject-id> — <name>` block per scoped primary archiproject
-3. optional `#### Детали проектов` immediately after its owning archiproject block
+2. один блок `### <archiproject-id> — <name>` на каждую основную архитектурную группу в пределах
+3. необязательные `#### Детали проектов` сразу после блока своей группы
 4. `## Три результата недели`
 5. `## Нужны решения`
 
-Each archiproject block uses this field order: `- Цель:`, `- Вклад основного проекта:`, `- Срок/прогноз:`, `- Ожидания и follow-up:`, `- Риск:`. Only canonical primary-archiproject membership counts; a related link never implies contribution.
+Каждый блок группы использует порядок полей: `- Цель:`, `- Вклад основного проекта:`, `- Срок/прогноз:`, `- Ожидания и follow-up:`, `- Риск:`. Учитывается только каноническое членство основной группы; связанная ссылка никогда не означает вклад.
 
-Show `#### Детали проектов` only for a dated risk, blocker, or waiting record. Render detail as `- <project-id> — <risk, blocker, or waiting>; дата: <YYYY-MM-DD>; источник: <canonical-path>`.
+Показывайте `#### Детали проектов` только для датированного риска, препятствия или записи ожидания. Подробность имеет вид `- <project-id> — <risk, blocker, or waiting>; дата: <YYYY-MM-DD>; источник: <canonical-path>`.
 
-Under `## Три результата недели`, render exactly three numbered executable outcomes grounded in canonical records. If a grounded result is unavailable, preserve the slot and write `Недостаточно канонических данных для результата.` Do not invent an outcome.
+Под `## Три результата недели` покажите ровно три нумерованных исполнимых результата, обоснованных каноническими записями. Если обоснованного результата нет, сохраните место и напишите `Недостаточно канонических данных для результата.` Не выдумывайте результат.
 
-If `ai/archiprojects.md` is missing or has no scoped archiproject, state that under `## Архипроекты`, omit invented archiproject blocks, still show safe project-level risks, then keep all three result slots.
+Если `ai/archiprojects.md` отсутствует или не содержит группы в пределах, сообщите это под `## Архипроекты`, пропустите выдуманные блоки групп, всё равно покажите безопасные риски уровня проектов и сохраните все три места результатов.
 
-When the request names an archiproject group, resolve it via `scripts/archiprojects.py tree --hub <hub>` and pass `--group <group-id>` to `scripts/read-compact-task-index.py`, same as the core `SKILL.md` group filter; report an unknown group instead of guessing. This only narrows which projects' task records are read — it never substitutes for project confirmation elsewhere.
+Если запрос называет группу, определите её через `scripts/archiprojects.py tree --hub <hub>` и передайте `--group <group-id>` в `scripts/read-compact-task-index.py`, как фильтр основного core `SKILL.md`; сообщайте неизвестную группу вместо угадывания. Это лишь сужает чтение задач проектов и никогда не заменяет подтверждение проектов в других процессах.
 
-Render active numeric goal pace/forecast only when `goals` is listed in `ai/modules.md`.
+Показывайте темп и прогноз активных числовых целей, только если `goals` указан в `ai/modules.md`.
 
-Only when `learning` is listed in `ai/modules.md`, read the observation journal and run `python3 scripts/calendar_drift.py --hub <hub> summary --until <date>` for calendar repeat candidates (kind, project, count), group repeated friction/calendar drift, then run the `hub-session-scan` weekly pass and show `session_rules.py report`
-(since the last weekly review; several weeks if reviews were skipped): rules
-added, changed, made global, merged or unmerged, in plain Russian; offer to undo
-any merge; offer `retire_rule` only for a catalog rule the user wants removed, and only after the user's explicit yes run `python3 scripts/session_rules.py --hub <hub> retire --rule R-n` (status `retired`, shown in the report). Before either rule-change proposal run `check-workflow-memory.sh`; failure blocks rule changes only. All learning changes use the core proposal/confirmation contract.
+Только если `learning` указан в `ai/modules.md`, прочитайте журнал наблюдений и выполните `python3 scripts/calendar_drift.py --hub <hub> summary --until <date>` для кандидатов повторов календаря: тип, проект, количество. Сгруппируйте повторные затруднения и расхождения, затем выполните недельный проход `hub-session-scan` и покажите `session_rules.py report`
+с последнего недельного разбора, за несколько недель при пропусках: добавленные,
+изменённые, ставшие глобальными, объединённые или разъединённые правила простым
+русским языком. Предложите отменить любое объединение; `retire_rule`
+предлагайте только для правила каталога, которое пользователь хочет удалить,
+и только после явного согласия выполните
+`python3 scripts/session_rules.py --hub <hub> retire --rule R-n`: статус
+`retired`, показывается в отчёте. До любого предложения изменения правила
+выполните `check-workflow-memory.sh`; ошибка блокирует только изменения правил.
+Все изменения обучения используют основной договор предложения и подтверждения.
 
-Only when `learning` is listed in `ai/modules.md`, run a mechanism review
-(asked for by the user 2026-10-05). Go through every active learned rule in
-`ai/learned-rules.md` and `ai/learned-rules/*.md`, every rule in
-`ai/workflow-context.md`, and the friction repeated this week. For each, decide
-whether a mechanism would enforce it better than an instruction the agent must
-remember: a script check, a validator, a skill step, or a hook. Signs: the rule
-is deterministic and checkable (format, IDs, scope, paths, counts, model
-names); it was broken although it was written down; or breaking it is costly.
-Show each candidate under `## Нужны решения` as
-`- <rule id or source> — <proposed mechanism>; почему: <evidence>`, every
-candidate with no count limit (user's choice, 2026-10-05), strongest evidence
-first; write `- Механизмы: кандидатов нет.`
-when there are none. Implement each candidate the user accepts in the same
-session through the Superpowers workflow (user's choice, 2026-10-05):
-`superpowers:brainstorming`, then `superpowers:writing-plans`, then
-`superpowers:test-driven-development` and
-`superpowers:verification-before-completion`. If Superpowers is not
-available, say so and ask before using another method. The change goes to the
-Hub copy and is ported to the `ai-dev-architecture` source after that project
-is confirmed through routing.
-Retire the rule the mechanism replaces only after the user's explicit yes.
+Только если `learning` указан в `ai/modules.md`, выполните разбор механизмов,
+запрошенный пользователем 2026-10-05. Пройдите каждое активное усвоенное
+правило `ai/learned-rules.md`, `ai/learned-rules/*.md`, каждое правило
+`ai/workflow-context.md` и повторившиеся за неделю затруднения. Для каждого
+решите, обеспечит ли механизм соблюдение лучше запоминаемой агентом инструкции:
+проверка скриптом, средство проверки, шаг навыка или обработчик события.
+Признаки: правило детерминировано и проверяемо — формат, идентификаторы,
+пределы, пути, количества, имена моделей; оно нарушено при наличии записи;
+либо нарушение дорого. Покажите каждого кандидата под `## Нужны решения`:
+`- <rule id or source> — <proposed mechanism>; почему: <evidence>`,
+всех без ограничения числа (выбор пользователя 2026-10-05), сильнейшие
+доказательства первыми; при отсутствии напишите `- Механизмы: кандидатов нет.`.
+Принятие гипотезы к проверке разрешает опыт, но не доказывает пользу и не
+превращает её в постоянное указание. Внедряйте кандидата после успешного
+сравнения либо по прямому указанию изменить процесс, в пределах полномочий,
+процессом Superpowers
+(выбор пользователя 2026-10-05): `superpowers:brainstorming`, затем
+`superpowers:writing-plans`, затем `superpowers:test-driven-development`
+и `superpowers:verification-before-completion`. Если Superpowers недоступен,
+сообщите и спросите до использования другого метода. Изменение попадает
+в копию Хаба и переносится в исходный `ai-dev-architecture` после подтверждения
+этого проекта через выбор. Выводите заменённое механизмом правило из действия
+только после явного согласия пользователя.
 
-Only when `learning` is listed in `ai/modules.md`, also handle open session-review proposals as `ai/rules/learning.md` § Open review proposals defines: oldest first, at most ten per review, and report how many remain.
+Только если `learning` указан в `ai/modules.md`, выполните
+`python3 scripts/session_cost.py --hub <hub> week --until <date>` и покажите
+`## Технические потери` простым русским языком: одна строка с сессиями,
+свежими и кешированными токенами, долей потерь; пять ведущих меток каждой
+категории потерь (`error_retry` «шаги после ошибки», `repeat_command`
+«повтор команды», `repeat_read` «повторное чтение файла») с шагами и свежими
+токенами; медиану запуска и три ведущие сессии. Метку `exec` читайте как
+«все команды Codex», строки `repeat_command` тестов или `git status`
+считайте обычными повторными запусками, не растратой. Затем до трёх обоснованных
+упорядоченных выводов `- <что чинить> — почему: <цифры> — экономия: <оценка>`,
+наибольшая экономия первой; оценивайте только из этих чисел, отмечайте
+предположение. Если обоснованных исправлений нет, сообщите это без выдуманных
+предложений. Если нет сессий или данных использования, сообщите одной
+строкой. Принятое исправление попадает в `## Нужны решения` и следует
+процессу Superpowers кандидатов механизмов; ничего не исправляется без согласия.
+
+В том же разборе проверьте место правила точно по `ai/rules/learning.md`
+§ Место правила; логика, пороги, команды и допуски согласия находятся только там.
+Покажите под `## Нужны решения`:
+- `- <rule id> — <«уже есть в» | «перенести в»> <file>; правило: <what it asks, in plain Russian>; цитата: «<line>»`
+- `- Новый навык «<name>» — собрать правила <rule ids>; процесс: <what it covers>; почему: <how often it recurs>`
+- `- Утечка <rule id> — правило из <file> снова понадобилось в сессиях <n>; предложение: <fix the skill>`
+- `- Предел: <file> — <lines> строк из 300; предложение: <сжать | разделить>`
+либо `- Перенос в навыки: кандидатов нет.`.
+
+Только если `learning` указан в `ai/modules.md`, также обработайте открытые
+предложения разборов сессий по `ai/rules/learning.md` § Открытые предложения разборов:
+старейшие первыми, не более десяти за разбор; сообщите число оставшихся.
+
+## Проверка пользы одного изменения
+
+Выполняйте этот раздел, только если `learning` указан в `ai/modules.md`.
+После отбора кандидатов отделите прямые указания от гипотез по
+`ai/rules/learning.md` § Указания и гипотезы. Гипотезу нельзя внедрять или
+переносить в навык только из-за повторов. Выберите одну с наиболее существенным
+ожидаемым эффектом и подготовьте сравнение по архитектуре. Если гипотез нет,
+напишите «Проверка пользы: кандидатов нет»; не создавайте опыт ради отчёта.
+
+В существующем разделе «Нужны решения» покажите краткую карточку:
+
+- Гипотеза и источник; причина проблемы либо отметка «неизвестна».
+- Старый и новый порядок; одно существенное изменение.
+- Одинаковые задачи и условия; обычный случай, контрпример, повторы при неоднозначности.
+- Критерий принятия: обязательное качество сохранено, выбранный полезный показатель улучшился.
+- Измерения до/после: качество, время исправлений пользователем, длительность, стоимость;
+  недоступные данные — «неизвестно», не ноль и не предполагаемая экономия.
+- Итог: проверить / предварительно поддержана / не поддержана / недостаточно данных;
+  источник результатов и способ возврата.
+
+Подготовка карточки не разрешает читать другие проекты или выполнять внешние
+действия. Испытание в проекте выполняется после его подтверждения в рамках
+разрешённой задачи; до этого только предложение. Сохраните результаты в
+существующем разборе или журнале этого проекта. При отсутствии измерений не
+утверждайте, что процесс улучшился. Указания пользователя выполняйте без опыта.

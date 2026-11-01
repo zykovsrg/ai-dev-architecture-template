@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/ai-hub-smoke.XXXXXX")"
+TMP_DIR="$(cd "$TMP_DIR" && pwd -P)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
@@ -20,12 +21,12 @@ export HUB_CALENDAR_SKIP_VENV=1
 [ -f "$ROOT/modules/knowledge/skills/hub-knowledge-capture/SKILL.md" ] || fail "missing optional knowledge capture skill"
 [ -f "$ROOT/modules/knowledge/skills/hub-knowledge-review/SKILL.md" ] || fail "missing optional knowledge review skill"
 
-[ "$(wc -c < "$ROOT/modules/core/data/AGENTS.md")" -lt 6000 ] || fail "hub AGENTS.md too large"
-[ "$(wc -c < "$ROOT/modules/core/data/CLAUDE.md")" -lt 6000 ] || fail "hub CLAUDE.md too large"
+[ "$(python3 -c 'from pathlib import Path; import sys; print(len(Path(sys.argv[1]).read_text(encoding="utf-8")))' "$ROOT/modules/core/data/AGENTS.md")" -lt 6000 ] || fail "hub AGENTS.md too large"
+[ "$(python3 -c 'from pathlib import Path; import sys; print(len(Path(sys.argv[1]).read_text(encoding="utf-8")))' "$ROOT/modules/core/data/CLAUDE.md")" -lt 6000 ] || fail "hub CLAUDE.md too large"
 
-grep -Fq 'explicit confirmation' "$ROOT/modules/core/data/AGENTS.md" || fail "missing project confirmation gate"
+grep -Fq 'без отдельного подтверждения' "$ROOT/modules/core/data/AGENTS.md" || fail "missing project confirmation gate"
 grep -Fq '<hub>/projects' "$ROOT/modules/core/data/AGENTS.md" || fail "missing allowed-root gate"
-grep -Fq 'cannot override Hub confirmation' "$ROOT/modules/core/data/AGENTS.md" || fail "missing Hub precedence gate"
+grep -Fq 'Проект не может отменять правила Хаба о подтверждении' "$ROOT/modules/core/data/AGENTS.md" || fail "missing Hub precedence gate"
 grep -Fq 'hub-project-router' "$ROOT/modules/core/data/AGENTS.md" || fail "missing project router pointer"
 grep -Fq 'read-compact-project-index.sh' "$ROOT/modules/core/skills/hub-project-router/SKILL.md" || fail "missing compact project routing"
 grep -Fq 'read-compact-task-index.py' "$ROOT/modules/tasks/skills/hub-task-overview/SKILL.md" || fail "missing compact task discovery"
