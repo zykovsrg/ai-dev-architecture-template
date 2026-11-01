@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Проверенное внешнее исключение: отсутствие только в разрешённой области."""
 import argparse
+import base64
+import binascii
 import copy
 import importlib.util
 import json
@@ -8,6 +10,7 @@ import os
 import tempfile
 from pathlib import Path
 import uuid
+import zlib
 
 
 def cancellation_module():
@@ -19,6 +22,7 @@ def cancellation_module():
 cancel = cancellation_module()
 sync = cancel.sync
 KIND = 'external_retirement'
+PACKED_LIMIT = 16_777_216
 
 
 def permissions(hub, config):
@@ -105,11 +109,11 @@ def absent(observation, ids):
 def read(path, digest):
     path = cancel.canonical(path); raw = cancel.document_bytes(path)
     if cancel.digest(raw) != digest: raise ValueError('retirement_plan_checksum_mismatch')
-    plan = json.loads(raw); hub = cancel.canonical(plan['hub'])
+    plan = unpack_plan(json.loads(raw)); hub = cancel.canonical(plan['hub'])
     cancel.valid_uuid(plan['operation'])
-    if path != hub / 'ai/reminders-external-retirements' / plan['operation'] / 'plan.json' or plan.get('kind') != KIND or plan.get('version') not in (1, 2):
+    if path != hub / 'ai/reminders-external-retirements' / plan['operation'] / 'plan.json' or plan.get('kind') != KIND or plan.get('version') not in (1, 2, 3):
         raise ValueError('invalid_retirement_plan')
-    if plan['version'] == 2:
+    if plan['version'] in (2, 3):
         # В файле конфигурация хранится один раз; исходная строка нужна для побайтного CAS.
         if 'config' in plan or not isinstance(plan.get('config_raw'), str):
             raise ValueError('invalid_retirement_config')
@@ -211,9 +215,49 @@ def stage_bytes(path, payload):
         os.fsync(handle.fileno())
 
 
+def unpack_plan(plan):
+    if plan.get('version') != 3:
+        return plan
+    if ('config_raw' in plan or 'projects' in plan or
+            not isinstance(plan.get('packed'), str)):
+        raise ValueError('invalid_retirement_packed')
+    try:
+        compressed = base64.b64decode(plan['packed'], validate=True)
+        decoder = zlib.decompressobj()
+        raw = decoder.decompress(compressed, PACKED_LIMIT + 1)
+        if len(raw) > PACKED_LIMIT or decoder.unconsumed_tail:
+            raise ValueError('retirement_packed_too_large')
+        if not decoder.eof or decoder.unused_data:
+            raise ValueError('invalid_retirement_packed')
+        value = json.loads(raw)
+    except (binascii.Error, zlib.error, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError('invalid_retirement_packed') from error
+    if (not isinstance(value, dict) or set(value) != {'config_raw', 'projects'} or
+            not isinstance(value['config_raw'], str) or not isinstance(value['projects'], dict)):
+        raise ValueError('invalid_retirement_packed')
+    result = dict(plan)
+    result.pop('packed')
+    result.update(value)
+    return result
+
+
+def plan_payload(plan):
+    payload = cancel.encoded(plan).encode('utf-8')
+    if len(payload) <= 2_097_152:
+        return payload
+    # Сжимаем точные строки без потерь; лимит файла и проверка CAS сохраняются.
+    value = {key: plan[key] for key in ('config_raw', 'projects')}
+    raw = json.dumps(value, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
+    if len(raw) > PACKED_LIMIT:
+        raise ValueError('retirement_packed_too_large')
+    packed = {key: value for key, value in plan.items() if key not in ('config_raw', 'projects')}
+    packed.update(version=3, packed=base64.b64encode(zlib.compress(raw)).decode('ascii'))
+    return bounded_payload(packed)
+
+
 def publish_preview(hub, plan):
     # Проверяем размер до создания журнала. Читатели видят план и состояние вместе.
-    payload = bounded_payload(plan)
+    payload = plan_payload(plan)
     digest = cancel.digest(payload)
     state = bounded_payload(dict(sha256=digest, approved=False, phase='preview'))
     root = cancel.canonical(hub / 'ai/reminders-external-retirements')

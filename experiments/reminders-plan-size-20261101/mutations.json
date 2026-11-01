@@ -1,0 +1,66 @@
+[
+  {
+    "test": "test_large_plan_apply_and_receipt_preserve_exact_history",
+    "mutation": "    payload = cancel.encoded(plan).encode('utf-8')\n    if len(payload)",
+    "rejected": true,
+    "returncode": 1,
+    "output": "E\n======================================================================\nERROR: test_large_plan_apply_and_receipt_preserve_exact_history (test_reminders_external_retirement_plan_size.PlanSizeTests.test_large_plan_apply_and_receipt_preserve_exact_history)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/private/tmp/reminders-publication-20261101-source/modules/planning/tests/test_reminders_external_retirement_plan_size.py\", line 20, in test_large_plan_apply_and_receipt_preserve_exact_history\n    p = self.large()\n  File \"/private/tmp/reminders-publication-20261101-source/modules/planning/tests/test_reminders_external_retirement_plan_size.py\", line 17, in large\n    return self.prepare()\n           ~~~~~~~~~~~~^^\n  File \"/private/tmp/reminders-publication-20261101-source/modules/planning/tests/test_reminders_external_retirement.py\", line 73, in prepare\n    def prepare(self): return m.preview(self.hub,self.targets,self.intent,self.native)\n                              ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<temporary-path>\", line 201, in preview\n    return publish_preview(hub, plan)\n  File \"<temporary-path>\", line 261, in publish_preview\n    payload = plan_payload(plan)\n  File \"<temporary-path>\", line 245, in plan_payload\n    return bounded_payload(plan)\n  File \"<temporary-path>\", line 207, in bounded_payload\n    raise ValueError('file_too_large')\nValueError: file_too_large\n\n----------------------------------------------------------------------\nRan 1 test in 0.237s\n\nFAILED (errors=1)\n",
+    "restored_pass": true
+  },
+  {
+    "test": "test_decompression_limit_rejects_bomb",
+    "mutation": "PACKED_LIMIT = 16_777_216",
+    "rejected": true,
+    "returncode": 1,
+    "output": "F\n======================================================================\nFAIL: test_decompression_limit_rejects_bomb (test_reminders_external_retirement_plan_size.PlanSizeTests.test_decompression_limit_rejects_bomb)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"<temporary-path>\", line 232, in unpack_plan\n    value = json.loads(raw)\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/decoder.py\", line 345, in decode\n    obj, end = self.raw_decode(s, idx=_w(s, 0).end())\n               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/decoder.py\", line 363, in raw_decode\n    raise JSONDecodeError(\"Expecting value\", s, err.value) from None\njson.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)\n\nThe above exception was the direct cause of the following exception:\n\nValueError: invalid_retirement_packed\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/private/tmp/reminders-publication-20261101-source/modules/planning/tests/test_reminders_external_retirement_plan_size.py\", line 44, in test_decompression_limit_rejects_bomb\n    with self.assertRaisesRegex(ValueError, 'retirement_packed_too_large'):\n         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: \"retirement_packed_too_large\" does not match \"invalid_retirement_packed\"\n\n----------------------------------------------------------------------\nRan 1 test in 0.234s\n\nFAILED (failures=1)\n",
+    "restored_pass": true
+  },
+  {
+    "test": "test_invalid_or_trailing_compressed_payload_rejected",
+    "mutation": "if not decoder.eof or decoder.unused_data:",
+    "rejected": true,
+    "returncode": 1,
+    "output": "F\n======================================================================\nFAIL: test_invalid_or_trailing_compressed_payload_rejected (test_reminders_external_retirement_plan_size.PlanSizeTests.test_invalid_or_trailing_compressed_payload_rejected)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/private/tmp/reminders-publication-20261101-source/modules/planning/tests/test_reminders_external_retirement_plan_size.py\", line 54, in test_invalid_or_trailing_compressed_payload_rejected\n    with self.assertRaisesRegex(ValueError, 'invalid_retirement_packed'):\n         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ValueError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.290s\n\nFAILED (failures=1)\n",
+    "restored_pass": true
+  },
+  {
+    "test": "test_packed_plan_rejects_ambiguous_plain_fields",
+    "mutation": "'config_raw' in plan or 'projects' in plan or",
+    "rejected": true,
+    "returncode": 1,
+    "output": "F\n======================================================================\nFAIL: test_packed_plan_rejects_ambiguous_plain_fields (test_reminders_external_retirement_plan_size.PlanSizeTests.test_packed_plan_rejects_ambiguous_plain_fields)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/private/tmp/reminders-publication-20261101-source/modules/planning/tests/test_reminders_external_retirement_plan_size.py\", line 60, in test_packed_plan_rejects_ambiguous_plain_fields\n    with self.assertRaisesRegex(ValueError, 'invalid_retirement_packed'):\n         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ValueError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.317s\n\nFAILED (failures=1)\n",
+    "restored_pass": true
+  },
+  {
+    "test": "test_oversize_expansion_leaves_no_journal",
+    "mutation": "if len(raw) > PACKED_LIMIT:\n        raise",
+    "rejected": true,
+    "returncode": 1,
+    "output": "F\n======================================================================\nFAIL: test_oversize_expansion_leaves_no_journal (test_reminders_external_retirement_plan_size.PlanSizeTests.test_oversize_expansion_leaves_no_journal)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/private/tmp/reminders-publication-20261101-source/modules/planning/tests/test_reminders_external_retirement_plan_size.py\", line 65, in test_oversize_expansion_leaves_no_journal\n    with self.assertRaisesRegex(ValueError,'retirement_packed_too_large'):\n         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ValueError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 1.405s\n\nFAILED (failures=1)\n",
+    "restored_pass": true
+  },
+  {
+    "test": "test_large_plan_resume_after_canonical_write",
+    "mutation": "allowed=[plan['config'],changed_config(plan,digest),changed_config(plan,digest,True)]",
+    "rejected": true,
+    "returncode": 1,
+    "output": "E\n======================================================================\nERROR: test_large_plan_resume_after_canonical_write (test_reminders_external_retirement_plan_size.PlanSizeTests.test_large_plan_resume_after_canonical_write)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/private/tmp/reminders-publication-20261101-source/modules/planning/tests/test_reminders_external_retirement_plan_size.py\", line 75, in test_large_plan_resume_after_canonical_write\n    self.apply(p);self.assertTrue(self.verify())\n    ~~~~~~~~~~^^^\n  File \"/private/tmp/reminders-publication-20261101-source/modules/planning/tests/test_reminders_external_retirement.py\", line 74, in apply\n    def apply(self,p): return m.apply(p['plan'],p['sha256'],True,self.native)\n                              ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<temporary-path>\", line 331, in apply\n    if config not in allowed or raw not in raw_allowed or state['phase'] in {'canonical','committing'} and config==plan['config']: raise ValueError('retirement_config_cas_conflict')\n                                                                                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nValueError: retirement_config_cas_conflict\n\n----------------------------------------------------------------------\nRan 1 test in 0.448s\n\nFAILED (errors=1)\n",
+    "restored_pass": true
+  },
+  {
+    "test": "test_large_plan_exact_config_cas_is_preserved",
+    "mutation": "or raw not in raw_allowed or",
+    "rejected": true,
+    "returncode": 1,
+    "output": "F\n======================================================================\nFAIL: test_large_plan_exact_config_cas_is_preserved (test_reminders_external_retirement_plan_size.PlanSizeTests.test_large_plan_exact_config_cas_is_preserved)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/private/tmp/reminders-publication-20261101-source/modules/planning/tests/test_reminders_external_retirement_plan_size.py\", line 81, in test_large_plan_exact_config_cas_is_preserved\n    with self.assertRaisesRegex(ValueError,'cas_conflict'):self.apply(p)\n         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ValueError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.553s\n\nFAILED (failures=1)\n",
+    "restored_pass": true
+  },
+  {
+    "test": "v2:test_oversize_preview_leaves_no_active_journal",
+    "mutation": "return bounded_payload(packed)",
+    "rejected": true,
+    "returncode": 1,
+    "output": "F\n======================================================================\nFAIL: test_oversize_preview_leaves_no_active_journal (test_reminders_external_retirement_plan_v2.PlanV2Tests.test_oversize_preview_leaves_no_active_journal)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/private/tmp/reminders-publication-20261101-source/modules/planning/tests/test_reminders_external_retirement_plan_v2.py\", line 41, in test_oversize_preview_leaves_no_active_journal\n    with self.assertRaisesRegex(ValueError, 'file_too_large'):\n         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ValueError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.246s\n\nFAILED (failures=1)\n",
+    "restored_pass": true
+  }
+]

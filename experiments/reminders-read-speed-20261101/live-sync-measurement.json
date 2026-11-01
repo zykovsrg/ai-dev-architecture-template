@@ -1,0 +1,27 @@
+{
+  "seconds": 247.03173570893705,
+  "returncode": 1,
+  "ok": false,
+  "applied": true,
+  "summary": {
+    "incoming": 0,
+    "outgoing": 0,
+    "converged": 0,
+    "conflict": 25,
+    "task_fields_merged": 0,
+    "pending_projects": 0
+  },
+  "items": 76,
+  "errors": {
+    "project_list_structure_conflict": 23,
+    "missing_bound_child": 2,
+    "unidentified_completed_task_requires_review": 1
+  },
+  "actions": {
+    "none": 26,
+    "cancellation_verified": 38,
+    "recurrence_history_ignored": 12
+  },
+  "same_errors_and_projects": true,
+  "new_errors": []
+}

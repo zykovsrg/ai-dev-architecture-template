@@ -112,6 +112,12 @@ def snapshot(native, roles, names, detailed=False, detailed_ids=(), include_grou
         raise ValueError('missing_allowed_list')
     if set(lists) != set(roles):
         raise ValueError('unconfirmed_list_role')
+    batch = detailed and value.get('detailed_reminder_snapshot') is True
+    detail_module = None
+    if batch:
+        spec = importlib.util.spec_from_file_location('structure_batch_details', Path(__file__).with_name('reminders_project_lists.py'))
+        detail_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(detail_module)
     reminders = {}
     for lid in sorted(roles):
         value = native.call('find_reminders', {'list': lid, 'include_completed': True, 'limit': 500})
@@ -120,6 +126,10 @@ def snapshot(native, roles, names, detailed=False, detailed_ids=(), include_grou
             raise ValueError('incomplete_reminder_snapshot')
         if 'count' in value and value['count'] != len(rows):
             raise ValueError('incomplete_reminder_snapshot')
+        # Подробности читаются заново для каждого снимка, в том числе после записи.
+        details = detail_module.detailed_rows(native, lid) if batch else None
+        if batch and set(details) != {row.get('id') for row in rows}:
+            raise ValueError('structure_snapshot_changed')
         for row in rows:
             if row.get('list_id', lid) != lid or row.get('list', lists[lid]['name']) != lists[lid]['name']:
                 raise ValueError('foreign_list_in_snapshot')
@@ -128,7 +138,9 @@ def snapshot(native, roles, names, detailed=False, detailed_ids=(), include_grou
             if row['id'] in reminders:
                 raise ValueError('duplicate_reminder')
             if detailed or row['id'] in detailed_ids:
-                detail=native.call('get_reminder',{'id':row['id']})
+                detail = details[row['id']] if batch else native.call('get_reminder', {'id': row['id']})
+                if batch and detail_module.summary_projection(detail) != detail_module.summary_projection(row):
+                    raise ValueError('structure_snapshot_changed')
                 if detail.get('id')!=row['id'] or detail.get('version')!=row['version'] or detail.get('list_id')!=lid:
                     raise ValueError('structure_snapshot_changed')
                 row=detail
