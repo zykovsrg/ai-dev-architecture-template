@@ -1,0 +1,77 @@
+.FFFFF.FFF
+======================================================================
+FAIL: test_batch_preserves_exact_legacy_snapshot_and_reduces_calls (test_reminders_structure_batch.BatchSnapshotTests.test_batch_preserves_exact_legacy_snapshot_and_reduces_calls)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<local-path>", line 56, in test_batch_preserves_exact_legacy_snapshot_and_reduces_calls
+    self.assertEqual(sum(tool == 'get_reminder' for tool, _ in new.calls), 0)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 3 != 0
+
+======================================================================
+FAIL: test_cyclic_batch_hierarchy_is_rejected (test_reminders_structure_batch.BatchSnapshotTests.test_cyclic_batch_hierarchy_is_rejected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<local-path>", line 93, in test_cyclic_batch_hierarchy_is_rejected
+    with self.assertRaisesRegex(ValueError, 'invalid_detailed_parent_reference'):
+         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_each_snapshot_reads_fresh_details_and_child_order (test_reminders_structure_batch.BatchSnapshotTests.test_each_snapshot_reads_fresh_details_and_child_order)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<local-path>", line 105, in test_each_snapshot_reads_fresh_details_and_child_order
+    self.assertEqual(sum(bool(args.get('detail')) for _, args in native.calls), 4)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 0 != 4
+
+======================================================================
+FAIL: test_extra_detail_row_is_rejected (test_reminders_structure_batch.BatchSnapshotTests.test_extra_detail_row_is_rejected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<local-path>", line 80, in test_extra_detail_row_is_rejected
+    with self.assertRaisesRegex(ValueError, 'structure_snapshot_changed'):
+         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_invalid_batch_protocol_is_not_silently_downgraded (test_reminders_structure_batch.BatchSnapshotTests.test_invalid_batch_protocol_is_not_silently_downgraded)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<local-path>", line 85, in test_invalid_batch_protocol_is_not_silently_downgraded
+    with self.assertRaisesRegex(ValueError, 'incomplete_detailed_snapshot'):
+         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_summary_projection_drift_is_rejected (test_reminders_structure_batch.BatchSnapshotTests.test_summary_projection_drift_is_rejected) (field='title')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<local-path>", line 75, in test_summary_projection_drift_is_rejected
+    with self.assertRaisesRegex(ValueError, 'structure_snapshot_changed'):
+         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_summary_projection_drift_is_rejected (test_reminders_structure_batch.BatchSnapshotTests.test_summary_projection_drift_is_rejected) (field='notes')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<local-path>", line 75, in test_summary_projection_drift_is_rejected
+    with self.assertRaisesRegex(ValueError, 'structure_snapshot_changed'):
+         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_summary_projection_drift_is_rejected (test_reminders_structure_batch.BatchSnapshotTests.test_summary_projection_drift_is_rejected) (field='due')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<local-path>", line 75, in test_summary_projection_drift_is_rejected
+    with self.assertRaisesRegex(ValueError, 'structure_snapshot_changed'):
+         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.002s
+
+FAILED (failures=8)

@@ -1,0 +1,25 @@
+{
+  "ok": true,
+  "lists": 115,
+  "reminders": 625,
+  "live_snapshot_seconds": 101.66581237502396,
+  "old_replay_calls": {
+    "list_lists": 1,
+    "find_reminders": 115,
+    "get_reminder": 625
+  },
+  "new_replay_calls": {
+    "list_lists": 1,
+    "find_reminders": 115,
+    "find_reminders:detail": 115
+  },
+  "live_calls": {
+    "list_lists": 1,
+    "find_reminders": 115,
+    "find_reminders:detail": 115
+  },
+  "live_time_by_tool": {
+    "list_lists": 28.019046374829486,
+    "find_reminders": 73.56996937049553
+  }
+}

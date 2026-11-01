@@ -1,0 +1,90 @@
+[
+  {
+    "test": "test_batch_preserves_exact_legacy_snapshot_and_reduces_calls",
+    "file": "reminders_structure.py",
+    "before": "batch = detailed and value.get('detailed_reminder_snapshot') is True",
+    "after": "batch = False",
+    "clean": 0,
+    "mutated": 1,
+    "restored": 0,
+    "verified": true,
+    "evidence": "F\n======================================================================\nFAIL: test_batch_preserves_exact_legacy_snapshot_and_reduces_calls (test_reminders_structure_batch.BatchSnapshotTests.test_batch_preserves_exact_legacy_snapshot_and_reduces_calls)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/private/tmp/reminders-publication-20261101-source/modules/planning/tests/test_reminders_structure_batch.py\", line 56, in test_batch_preserves_exact_legacy_snapshot_and_reduces_calls\n    self.assertEqual(sum(tool == 'get_reminder' for tool, _ in new.calls), 0)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 3 != 0\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (failures=1)\n"
+  },
+  {
+    "test": "test_absent_capability_keeps_legacy_detail_reads",
+    "file": "reminders_structure.py",
+    "before": "batch = detailed and value.get('detailed_reminder_snapshot') is True",
+    "after": "batch = detailed",
+    "clean": 0,
+    "mutated": 1,
+    "restored": 0,
+    "verified": true,
+    "evidence": "F\n======================================================================\nFAIL: test_absent_capability_keeps_legacy_detail_reads (test_reminders_structure_batch.BatchSnapshotTests.test_absent_capability_keeps_legacy_detail_reads)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/private/tmp/reminders-publication-20261101-source/modules/planning/tests/test_reminders_structure_batch.py\", line 61, in test_absent_capability_keeps_legacy_detail_reads\n    self.assertEqual(sum(tool == 'get_reminder' for tool, _ in native.calls), 3)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 0 != 3\n\n----------------------------------------------------------------------\nRan 1 test in 0.019s\n\nFAILED (failures=1)\n"
+  },
+  {
+    "test": "test_shallow_snapshot_keeps_narrow_detail_read",
+    "file": "reminders_structure.py",
+    "before": "batch = detailed and value.get('detailed_reminder_snapshot') is True",
+    "after": "batch = (detailed or bool(detailed_ids)) and value.get('detailed_reminder_snapshot') is True",
+    "clean": 0,
+    "mutated": 1,
+    "restored": 0,
+    "verified": true,
+    "evidence": "F\n======================================================================\nFAIL: test_shallow_snapshot_keeps_narrow_detail_read (test_reminders_structure_batch.BatchSnapshotTests.test_shallow_snapshot_keeps_narrow_detail_read)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/private/tmp/reminders-publication-20261101-source/modules/planning/tests/test_reminders_structure_batch.py\", line 66, in test_shallow_snapshot_keeps_narrow_detail_read\n    self.assertEqual([args['id'] for tool, args in native.calls if tool == 'get_reminder'], [P])\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Lists differ: [] != ['00000000-0000-0000-0000-000000000011']\n\nSecond list contains 1 additional elements.\nFirst extra element 0:\n'00000000-0000-0000-0000-000000000011'\n\n- []\n+ ['00000000-0000-0000-0000-000000000011']\n\n----------------------------------------------------------------------\nRan 1 test in 0.021s\n\nFAILED (failures=1)\n"
+  },
+  {
+    "test": "test_summary_projection_drift_is_rejected",
+    "file": "reminders_structure.py",
+    "before": "if batch and detail_module.summary_projection(detail) != detail_module.summary_projection(row):",
+    "after": "if False:",
+    "clean": 0,
+    "mutated": 1,
+    "restored": 0,
+    "verified": true,
+    "evidence": "FFF\n======================================================================\nFAIL: test_summary_projection_drift_is_rejected (test_reminders_structure_batch.BatchSnapshotTests.test_summary_projection_drift_is_rejected) (field='title')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/private/tmp/reminders-publication-20261101-source/modules/planning/tests/test_reminders_structure_batch.py\", line 75, in test_summary_projection_drift_is_rejected\n    with self.assertRaisesRegex(ValueError, 'structure_snapshot_changed'):\n         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ValueError not raised\n\n======================================================================\nFAIL: test_summary_projection_drift_is_rejected (test_reminders_structure_batch.BatchSnapshotTests.test_summary_projection_drift_is_rejected) (field='notes')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/private/tmp/reminders-publication-20261101-source/modules/planning/tests/test_reminders_structure_batch.py\", line 75, in test_summary_projection_drift_is_rejected\n    with self.assertRaisesRegex(ValueError, 'structure_snapshot_changed'):\n         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ValueError not raised\n\n======================================================================\nFAIL: test_summary_projection_drift_is_rejected (test_reminders_structure_batch.BatchSnapshotTests.test_summary_projection_drift_is_rejected) (field='due')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/private/tmp/reminders-publication-20261101-source/modules/planning/tests/test_reminders_structure_batch.py\", line 75, in test_summary_projection_drift_is_rejected\n    with self.assertRaisesRegex(ValueError, 'structure_snapshot_changed'):\n         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ValueError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.073s\n\nFAILED (failures=3)\n"
+  },
+  {
+    "test": "test_extra_detail_row_is_rejected",
+    "file": "reminders_structure.py",
+    "before": "if batch and set(details) != {row.get('id') for row in rows}:",
+    "after": "if False:",
+    "clean": 0,
+    "mutated": 1,
+    "restored": 0,
+    "verified": true,
+    "evidence": "F\n======================================================================\nFAIL: test_extra_detail_row_is_rejected (test_reminders_structure_batch.BatchSnapshotTests.test_extra_detail_row_is_rejected)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/private/tmp/reminders-publication-20261101-source/modules/planning/tests/test_reminders_structure_batch.py\", line 80, in test_extra_detail_row_is_rejected\n    with self.assertRaisesRegex(ValueError, 'structure_snapshot_changed'):\n         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ValueError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.020s\n\nFAILED (failures=1)\n"
+  },
+  {
+    "test": "test_invalid_batch_protocol_is_not_silently_downgraded",
+    "file": "reminders_project_lists.py",
+    "before": "not isinstance(listing, list) or value.get('detail') is not True or",
+    "after": "not isinstance(listing, list) or",
+    "clean": 0,
+    "mutated": 1,
+    "restored": 0,
+    "verified": true,
+    "evidence": "F\n======================================================================\nFAIL: test_invalid_batch_protocol_is_not_silently_downgraded (test_reminders_structure_batch.BatchSnapshotTests.test_invalid_batch_protocol_is_not_silently_downgraded)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/private/tmp/reminders-publication-20261101-source/modules/planning/tests/test_reminders_structure_batch.py\", line 85, in test_invalid_batch_protocol_is_not_silently_downgraded\n    with self.assertRaisesRegex(ValueError, 'incomplete_detailed_snapshot'):\n         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ValueError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.022s\n\nFAILED (failures=1)\n"
+  },
+  {
+    "test": "test_cyclic_batch_hierarchy_is_rejected",
+    "file": "reminders_project_lists.py",
+    "before": "    validate_detailed_parents(result)\n",
+    "after": "    # Мутация: не проверять цикл родителей.\n",
+    "clean": 0,
+    "mutated": 1,
+    "restored": 0,
+    "verified": true,
+    "evidence": "F\n======================================================================\nFAIL: test_cyclic_batch_hierarchy_is_rejected (test_reminders_structure_batch.BatchSnapshotTests.test_cyclic_batch_hierarchy_is_rejected)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/private/tmp/reminders-publication-20261101-source/modules/planning/tests/test_reminders_structure_batch.py\", line 93, in test_cyclic_batch_hierarchy_is_rejected\n    with self.assertRaisesRegex(ValueError, 'invalid_detailed_parent_reference'):\n         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ValueError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.020s\n\nFAILED (failures=1)\n"
+  },
+  {
+    "test": "test_each_snapshot_reads_fresh_details_and_child_order",
+    "file": "reminders_structure.py",
+    "before": "        details = detail_module.detailed_rows(native, lid) if batch else None\n",
+    "after": "        details = None\n        if batch:\n            if not hasattr(native, '_stale_batch'): native._stale_batch = {}\n            if lid not in native._stale_batch: native._stale_batch[lid] = detail_module.detailed_rows(native, lid)\n            details = native._stale_batch[lid]\n",
+    "clean": 0,
+    "mutated": 1,
+    "restored": 0,
+    "verified": true,
+    "evidence": "F\n======================================================================\nFAIL: test_each_snapshot_reads_fresh_details_and_child_order (test_reminders_structure_batch.BatchSnapshotTests.test_each_snapshot_reads_fresh_details_and_child_order)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/private/tmp/reminders-publication-20261101-source/modules/planning/tests/test_reminders_structure_batch.py\", line 104, in test_each_snapshot_reads_fresh_details_and_child_order\n    self.assertNotEqual(first, second)\n    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^\nAssertionError: {'lists': {'00000000-0000-0000-0000-000000000001': {'id': '00000000-0000-0000-0000-000000000001', 'name': 'Первый', 'group_id': 'g'}, '00000000-0000-0000-0000-000000000002': {'id': '00000000-0000-0000-0000-000000000002', 'name': 'Второй', 'group_id': 'g'}}, 'reminders': {'00000000-0000-0000-0000-000000000011': {'id': '00000000-0000-0000-0000-000000000011', 'list_id': '00000000-0000-0000-0000-000000000001', 'list': 'Первый', 'title': 'Родитель', 'version': 'v1', 'notes': 'Текст', 'subtasks': [{'id': '00000000-0000-0000-0000-000000000012', 'title': 'Ребёнок', 'completed': False}, {'id': '00000000-0000-0000-0000-000000000013', 'title': 'Ещё ребёнок', 'completed': False}]}, '00000000-0000-0000-0000-000000000012': {'id': '00000000-0000-0000-0000-000000000012', 'list_id': '00000000-0000-0000-0000-000000000001', 'list': 'Первый', 'title': 'Ребёнок', 'version': 'v2', 'parent_id': '00000000-0000-0000-0000-000000000011'}, '00000000-0000-0000-0000-000000000013': {'id': '00000000-0000-0000-0000-000000000013', 'list_id': '00000000-0000-0000-0000-000000000001', 'list': 'Первый', 'title': 'Ещё ребёнок', 'version': 'v3', 'parent_id': '00000000-0000-0000-0000-000000000011'}}, 'groups': {'g': {'id': 'g', 'name': 'Группа'}}} == {'lists': {'00000000-0000-0000-0000-000000000001': {'id': '00000000-0000-0000-0000-000000000001', 'name': 'Первый', 'group_id': 'g'}, '00000000-0000-0000-0000-000000000002': {'id': '00000000-0000-0000-0000-000000000002', 'name': 'Второй', 'group_id': 'g'}}, 'reminders': {'00000000-0000-0000-0000-000000000011': {'id': '00000000-0000-0000-0000-000000000011', 'list_id': '00000000-0000-0000-0000-000000000001', 'list': 'Первый', 'title': 'Родитель', 'version': 'v1', 'notes': 'Текст', 'subtasks': [{'id': '00000000-0000-0000-0000-000000000012', 'title': 'Ребёнок', 'completed': False}, {'id': '00000000-0000-0000-0000-000000000013', 'title': 'Ещё ребёнок', 'completed': False}]}, '00000000-0000-0000-0000-000000000012': {'id': '00000000-0000-0000-0000-000000000012', 'list_id': '00000000-0000-0000-0000-000000000001', 'list': 'Первый', 'title': 'Ребёнок', 'version': 'v2', 'parent_id': '00000000-0000-0000-0000-000000000011'}, '00000000-0000-0000-0000-000000000013': {'id': '00000000-0000-0000-0000-000000000013', 'list_id': '00000000-0000-0000-0000-000000000001', 'list': 'Первый', 'title': 'Ещё ребёнок', 'version': 'v3', 'parent_id': '00000000-0000-0000-0000-000000000011'}}, 'groups': {'g': {'id': 'g', 'name': 'Группа'}}}\n\n----------------------------------------------------------------------\nRan 1 test in 0.034s\n\nFAILED (failures=1)\n"
+  }
+]
