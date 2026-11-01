@@ -11,6 +11,12 @@ else
   ARCHIPROJECTS_PY="$SCRIPT_DIR/../../projects/scripts/archiprojects.py"
 fi
 HUB_DIR="${1:-.}"
+SELECTED_PROJECT=""
+[ "$#" -eq 0 ] || shift
+if [ "$#" -gt 0 ]; then
+  [ "$#" -eq 2 ] && [ "$1" = --project ] || { echo "ERROR: expected --project ID" >&2; exit 1; }
+  SELECTED_PROJECT="$2"
+fi
 HUB_DIR="$(cd "$HUB_DIR" && pwd -P)"
 ROOTS_FILE="$HUB_DIR/ai/allowed-roots.md"
 REGISTRY_FILE="$HUB_DIR/ai/project-registry.md"
@@ -171,6 +177,7 @@ validate_project_memory() {
 
 
 reset_entry() {
+  entry_fields_seen="|"
   entry_name=""
   entry_type=""
   entry_status=""
@@ -183,6 +190,7 @@ reset_entry() {
 validate_entry_schema() {
   local canonical_card card_memory canonical_memory card_count
   [ -n "$current_id" ] || return 0
+  [ -z "$SELECTED_PROJECT" ] || [ "$current_id" = "$SELECTED_PROJECT" ] || return 0
   [ -n "$entry_name" ] || die "missing Name for $current_id"
   [ -n "$entry_type" ] || die "missing Type for $current_id"
   [ -n "$entry_status" ] || die "missing Status for $current_id"
@@ -194,6 +202,9 @@ validate_entry_schema() {
 
   # Validate the project boundary before opening a card or parsing its memory path.
   canonical_path="$(validate_project_path "$entry_path")"
+  if [ -n "$SELECTED_PROJECT" ]; then
+    [ -d "$canonical_path" ] || die "selected project directory is missing: $current_id"
+  fi
   canonical_card="$(validate_card_path "$entry_card")"
   for card_field in 'Project ID:' 'Name:' 'Type:' 'Status:' 'Last updated:' 'Purpose:' 'Typical tasks:' 'Memory entry point:'; do
     card_count="$(grep -Ec "^$card_field .+" "$canonical_card" || true)"
@@ -238,13 +249,28 @@ validate_skill_namespace() {
 validate_entry_files
 validate_skill_namespace
 validate_projects_root
-python3 "$ARCHIPROJECTS_PY" validate --hub "$HUB_DIR"
+if [ -z "$SELECTED_PROJECT" ]; then
+  python3 "$ARCHIPROJECTS_PY" validate --hub "$HUB_DIR"
+else
+  id_ok "$SELECTED_PROJECT" || die "invalid selected project ID"
+fi
 
 ids=""
 current_id=""
 project_count=0
 reset_entry
-while IFS= read -r line; do
+while IFS= read -r line || [ -n "$line" ]; do
+  if [ -n "$current_id" ]; then
+    case "$line" in
+      'Name: '*|'Type: '*|'Status: '*|'Path: '*|'Tags: '*|'Card: '*)
+        field="${line%%:*}"
+        case "$entry_fields_seen" in
+          *"|$field|"*) die "duplicate $field for $current_id" ;;
+        esac
+        entry_fields_seen="${entry_fields_seen}${field}|"
+        ;;
+    esac
+  fi
   case "$line" in
     '## '*)
       validate_entry_schema
@@ -285,6 +311,10 @@ warn_unregistered_directories() {
   done
 }
 
-warn_unregistered_directories
-
-echo "Registry check passed: $project_count projects"
+if [ -n "$SELECTED_PROJECT" ]; then
+  printf '%s\n' "$ids" | grep -Fxq "$SELECTED_PROJECT" || die "selected project not found: $SELECTED_PROJECT"
+  echo "Registry check passed: selected project $SELECTED_PROJECT"
+else
+  warn_unregistered_directories
+  echo "Registry check passed: $project_count projects"
+fi

@@ -34,12 +34,12 @@ def card(project_id, primary="none", calendar=None):
 def make_hub(tmp):
     hub = Path(tmp) / "hub"
     write(hub / "ai/archiprojects.md", "# Archiprojects\n\n## Schema\n\n"
-          + group("hadassah", "Хадасса", calendar="хадасса")
-          + group("hadassah-promo", "Промо", parent="hadassah", calendar="промостраницы")
+          + group("example-org", "Организация", calendar="организация")
+          + group("example-org-promo", "Промо", parent="example-org", calendar="промостраницы")
           + group("dela", "Дела"))
     cards = {
-        "release-page-varicocele": card("release-page-varicocele", "hadassah-promo", "варикоцеле"),
-        "promo-pages": card("promo-pages", "hadassah-promo", "—"),
+        "release-page-example": card("release-page-example", "example-org-promo", "услуга"),
+        "promo-pages": card("promo-pages", "example-org-promo", "—"),
         "rutina-i-byt": card("rutina-i-byt", "dela", "дела"),
         "zdorove": card("zdorove", "none", "здоровье"),
         "legacy": card("legacy", "dela"),
@@ -69,8 +69,8 @@ class CalendarTitles(unittest.TestCase):
         return resolve_title(self.groups, self.cards, title)
 
     def test_nested_chain(self):
-        self.assertEqual(self.title("release-page-varicocele", "Доработать текст"),
-                         "хадасса/промостраницы/варикоцеле/доработать текст")
+        self.assertEqual(self.title("release-page-example", "Доработать текст"),
+                         "организация/промостраницы/услуга/доработать текст")
 
     def test_group_without_calendar_name_uses_lowercase_name(self):
         self.assertEqual(self.title("rutina-i-byt", "Купить пылесос"), "дела/дела/купить пылесос")
@@ -86,31 +86,107 @@ class CalendarTitles(unittest.TestCase):
             self.title("nope", "x")
 
     def test_resolve_nested(self):
-        self.assertEqual(self.resolve("хадасса/промостраницы/варикоцеле/доработать текст"),
-                         ("release-page-varicocele", "доработать текст"))
+        self.assertEqual(self.resolve("организация/промостраницы/услуга/доработать текст"),
+                         ("release-page-example", "доработать текст"))
 
     def test_resolve_is_case_insensitive_and_keeps_slashes_in_task(self):
-        self.assertEqual(self.resolve("Хадасса/Промостраницы/Варикоцеле/a/b"), ("release-page-varicocele", "a/b"))
+        self.assertEqual(self.resolve("Организация/Промостраницы/Услуга/a/b"), ("release-page-example", "a/b"))
 
     def test_project_named_like_its_group_is_not_repeated(self):
-        self.assertEqual(self.title("promo-pages", "Встреча с Шелунцовым"), "хадасса/промостраницы/встреча с шелунцовым")
-        self.assertEqual(self.resolve("хадасса/промостраницы/встреча с шелунцовым"),
-                         ("promo-pages", "встреча с шелунцовым"))
+        self.assertEqual(self.title("promo-pages", "Встреча с редактором"), "организация/промостраницы/встреча с редактором")
+        self.assertEqual(self.resolve("организация/промостраницы/встреча с редактором"),
+                         ("promo-pages", "встреча с редактором"))
 
     def test_resolve_without_archiproject(self):
         self.assertEqual(self.resolve("здоровье/измерять давление"), ("zdorove", "измерять давление"))
 
     def test_resolve_legacy_project_id_title(self):
-        self.assertEqual(self.resolve("хадасса/release-page-varicocele/написать текст"),
-                         ("release-page-varicocele", "написать текст"))
+        self.assertEqual(self.resolve("организация/release-page-example/написать текст"),
+                         ("release-page-example", "написать текст"))
+
+    def add_replacement(self, replacement="content-project", status="active"):
+        old = card("old-content-tool", "example-org", "сео-тексты").replace(
+            "Status: active", "Status: archived")
+        old += f"Replacement project: {replacement}\n"
+        write(self.hub / "ai/project-cards/old-content-tool.md", old)
+        write(self.hub / "ai/project-cards/content-project.md",
+              card("content-project", "example-org", "контент").replace("Status: active", f"Status: {status}"))
+        (self.hub / "projects/content-project").mkdir(parents=True, exist_ok=True)
+        write(self.hub / "ai/project-registry.md",
+              f"# Реестр\n\n## content-project\nStatus: active\n"
+              f"Path: {self.hub / 'projects/content-project'}\n"
+              "Card: ai/project-cards/content-project.md\n")
+        self.groups, self.cards = load(self.hub)
+
+    def test_old_cyrillic_title_resolves_to_replacement_and_keeps_task(self):
+        self.add_replacement()
+        self.assertEqual(self.resolve("Организация/Сео-тексты/Доработать/a"),
+                         ("content-project", "Доработать/a"))
+        old = next(c for c in self.cards if c["project_id"] == "old-content-tool")
+        self.assertEqual(old.get("replacement_project"), "content-project")
+        self.assertEqual(self.title("old-content-tool", "задача"), "организация/сео-тексты/задача")
+
+    def test_old_legacy_title_resolves_to_replacement(self):
+        self.add_replacement()
+        self.assertEqual(self.resolve("работа/old-content-tool/Подготовить текст"),
+                         ("content-project", "Подготовить текст"))
+
+    def test_missing_replacement_does_not_resolve(self):
+        self.add_replacement("missing")
+        self.assertIsNone(self.resolve("организация/сео-тексты/задача"))
+
+    def test_replacement_cycle_does_not_resolve(self):
+        self.add_replacement()
+        path = self.hub / "ai/project-cards/content-project.md"
+        write(path, path.read_text() + "Replacement project: old-content-tool\n")
+        self.groups, self.cards = load(self.hub)
+        self.assertIsNone(self.resolve("организация/сео-тексты/задача"))
+
+    def test_ambiguous_replacement_does_not_resolve(self):
+        self.add_replacement()
+        write(self.hub / "ai/project-cards/duplicate.md", card("content-project", "none", "дубликат"))
+        self.groups, self.cards = load(self.hub)
+        self.assertIsNone(self.resolve("организация/сео-тексты/задача"))
+
+    def test_inactive_replacement_does_not_resolve(self):
+        self.add_replacement(status="paused")
+        self.assertIsNone(self.resolve("организация/сео-тексты/задача"))
+
+    def test_orphan_active_card_is_not_a_replacement(self):
+        self.add_replacement()
+        (self.hub / "ai/project-registry.md").unlink()
+        self.groups, self.cards = load(self.hub)
+        self.assertIsNone(self.resolve("организация/сео-тексты/задача"))
+
+    def test_archived_registry_entry_overrides_active_card(self):
+        self.add_replacement()
+        path = self.hub / "ai/project-registry.md"
+        write(path, path.read_text().replace("Status: active", "Status: archived"))
+        self.groups, self.cards = load(self.hub)
+        self.assertIsNone(self.resolve("организация/сео-тексты/задача"))
+
+    def test_replacement_root_outside_projects_does_not_resolve(self):
+        self.add_replacement()
+        path = self.hub / "ai/project-registry.md"
+        write(path, path.read_text().replace(str(self.hub / "projects/content-project"), str(self.hub)))
+        self.groups, self.cards = load(self.hub)
+        self.assertIsNone(self.resolve("организация/сео-тексты/задача"))
+
+    def test_registry_card_mismatch_does_not_resolve(self):
+        self.add_replacement()
+        path = self.hub / "ai/project-registry.md"
+        write(path, path.read_text().replace("Card: ai/project-cards/content-project.md",
+                                            "Card: ai/project-cards/other.md"))
+        self.groups, self.cards = load(self.hub)
+        self.assertIsNone(self.resolve("организация/сео-тексты/задача"))
 
     def test_group_general_project_needs_a_group(self):
         write(self.hub / "ai/project-cards/orphan.md", card("orphan", "none", "—"))
         self.assertTrue(any("needs an archiproject" in e for e in validate(self.hub)))
 
     def test_resolve_unknown_or_empty_task(self):
-        self.assertIsNone(self.resolve("хадасса/неизвестно/x"))
-        self.assertIsNone(self.resolve("хадасса/промостраницы/варикоцеле/"))
+        self.assertIsNone(self.resolve("организация/неизвестно/x"))
+        self.assertIsNone(self.resolve("организация/промостраницы/услуга/"))
         self.assertIsNone(self.resolve("просто событие"))
 
     def test_round_trip_for_every_card(self):
@@ -119,7 +195,7 @@ class CalendarTitles(unittest.TestCase):
             self.assertEqual(self.resolve(self.title(pid, "задача")), (pid, "задача"))
 
     def test_validate_rejects_duplicate_chains(self):
-        write(self.hub / "ai/project-cards/dup.md", card("dup", "hadassah-promo", "варикоцеле"))
+        write(self.hub / "ai/project-cards/dup.md", card("dup", "example-org-promo", "услуга"))
         self.assertTrue(any("calendar title" in e for e in validate(self.hub)))
 
     def test_validate_rejects_slash_in_calendar_name(self):

@@ -18,7 +18,7 @@ class LiveHubMergeTests(unittest.TestCase):
         goals = source("modules/goals/rules.md")
         learning = source("modules/learning/rules.md")
         planning = source("modules/planning/rules.md")
-        self.assertIn("## Goal Progress", goals)
+        self.assertIn("## Продвижение к целям", goals)
         self.assertIn("## Self-Learning Workflows", learning)
         self.assertIn("hub-session-review", learning)
         self.assertIn("snapshot-calendar.sh", planning)

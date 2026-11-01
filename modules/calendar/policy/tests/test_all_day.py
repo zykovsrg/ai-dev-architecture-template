@@ -129,10 +129,13 @@ def test_update_payload_keeps_all_day_false_instead_of_dropping_it() -> None:
 
 
 def test_preview_hash_separates_all_day_from_a_timed_change() -> None:
-    timed = json.dumps(create(start=START, end=END, all_day=False).model_dump(mode="json"), sort_keys=True)
-    whole_day = json.dumps(create().model_dump(mode="json"), sort_keys=True)
+    from hub_calendar_policy.preview import _payload_hash
 
-    assert timed != whole_day
+    timed = create(start=DAY, end=NEXT_DAY, all_day=False)
+    whole_day = create()
+
+    assert timed.model_dump(exclude={"all_day"}) == whole_day.model_dump(exclude={"all_day"})
+    assert _payload_hash(timed) != _payload_hash(whole_day)
 
 
 def test_preview_shows_that_the_change_is_all_day() -> None:

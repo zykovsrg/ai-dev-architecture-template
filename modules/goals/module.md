@@ -1,4 +1,4 @@
-# Module: goals
+# Модуль: goals
 
 Id: goals
 Required: no
@@ -10,8 +10,8 @@ Keywords: —
 
 ## Purpose
 
-Track progress toward numeric hub goals and append confirmed progress
-entries to the canonical goal log.
+Отслеживать продвижение к числовым целям Хаба и добавлять подтверждённые записи
+о продвижении в канонический журнал целей.
 
 ## Installs
 
@@ -27,11 +27,11 @@ entries to the canonical goal log.
 
 ## Reads
 
-- the goal log
+- журнал целей
 
 ## Writes
 
-- the goal log
+- журнал целей
 
 ## Subscribes
 

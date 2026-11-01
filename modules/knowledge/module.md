@@ -1,4 +1,4 @@
-# Module: knowledge
+# Модуль: knowledge
 
 Id: knowledge
 Required: no
@@ -10,12 +10,13 @@ Keywords: —
 
 ## Purpose
 
-Optional per-project knowledge scaffold: enable, capture and review knowledge
-records, and turn transcript info into scoped update proposals.
+Необязательная структура знаний проекта: включать, сохранять и проверять записи знаний,
+превращать сведения из расшифровок в предложения обновлений в разрешённых пределах.
 
 ## Installs
 
 - modules/knowledge/rules.md -> ai/rules/knowledge.md
+- modules/knowledge/data/ai/knowledge/ -> ai/knowledge/
 - modules/knowledge/skills/hub-knowledge-enable/ -> ai/skills/hub-knowledge-enable/
 - modules/knowledge/skills/hub-knowledge-capture/ -> ai/skills/hub-knowledge-capture/
 - modules/knowledge/skills/hub-knowledge-review/ -> ai/skills/hub-knowledge-review/
@@ -27,13 +28,13 @@ records, and turn transcript info into scoped update proposals.
 
 ## Reads
 
-- project knowledge records and explicitly published generic Hub references
+- записи знаний проекта и явно опубликованные общие справочные материалы Хаба
 
 ## Writes
 
-- project knowledge records
+- записи знаний проекта
 
 ## Subscribes
 
-- before-task-close: follow ai/rules/knowledge.md § before-task-close
-- after-project-create: follow ai/rules/knowledge.md § after-project-create
+- before-task-close: следовать ai/rules/knowledge.md § before-task-close
+- after-project-create: следовать ai/rules/knowledge.md § after-project-create

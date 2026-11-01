@@ -1,0 +1,45 @@
+--- a/Package.swift
++++ b/Package.swift
+@@ -16,5 +16,6 @@
+         .executableTarget(name: "AppleRemindersMCP", dependencies: ["Wire", "Launcher", "ReminderKitShim", "Agents"]),
+         .testTarget(name: "AgentsTests", dependencies: ["Agents"]),
+         .testTarget(name: "WireTests", dependencies: ["Wire"]),
++        .testTarget(name: "OutputTests", dependencies: ["AppleRemindersMCP"]),
+     ]
+ )
+--- a/Sources/AppleRemindersMCP/Tools/Output.swift
++++ b/Sources/AppleRemindersMCP/Tools/Output.swift
+@@ -89,6 +89,8 @@
+ 
+     static func list(_ list: ListInfo, groups: [GroupInfo], counts: (open: Int, total: Int)? = nil, isDefault: Bool = false) -> JSON {
+         var o: [String: JSON] = ["id": .string(list.id), "name": .string(list.name)]
++        // Проверки привязки отличают явный запрет общего доступа от неизвестного состояния.
++        o["shared"] = .bool(list.shared)
+         o["group_id"] = list.groupID.map(JSON.string) ?? .null
+         o["account_id"] = list.accountID.map(JSON.string) ?? .null
+         if let counts {
+@@ -104,7 +106,6 @@
+         if let sorting = list.sorting, sorting != "default" { o["sort"] = .string(sortNames.first { $0.stored == sorting }?.tool ?? sorting) }
+         if !list.sections.isEmpty { o["sections"] = .array(list.sections.map { .string($0.name) }) }
+         if list.shared {
+-            o["shared"] = true
+             o["people"] = .array(list.sharees.map { person in
+                 var row: [String: JSON] = ["name": .string(person.name)]
+                 if person.me { row["me"] = true }
+--- a/Tests/OutputTests/ListSharingTests.swift
++++ b/Tests/OutputTests/ListSharingTests.swift
+@@ -0,0 +1,14 @@
++import Testing
++import Wire
++@testable import AppleRemindersMCP
++
++struct ListSharingTests {
++    @Test func explicitSharingState() {
++        for shared in [false, true] {
++            let list = ListInfo(["id": "test-list", "name": "Тест", "shared": shared])
++            let value = Output.list(list, groups: [])
++            #expect(value["shared"] == .bool(shared))
++            #expect((value["people"] != nil) == shared)
++        }
++    }
++}

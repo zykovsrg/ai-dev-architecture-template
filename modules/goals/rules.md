@@ -1,22 +1,23 @@
-# Goals Module Rules
+# Правила модуля целей
 
-## Ownership And Registry
+## Владение и реестр
 
-- `ai/goals.md` is the canonical hub-owned numeric goal registry; each goal
-  references a group in `ai/archiprojects.md` via `group`.
-- `ai/goal-log.md` is the canonical hub-owned progress log for numeric goals.
+- `ai/goals.md` — канонический реестр числовых целей Хаба; каждая цель
+  ссылается на группу `ai/archiprojects.md` через `group`.
+- `ai/goal-log.md` — канонический журнал продвижения к числовым целям Хаба.
 
-## Goal Progress
+## Продвижение к целям
 
-Numeric goals live in `ai/goals.md` as blocks with `group`, `target`, `unit`,
-and `due`; `group` must name a known group in `ai/archiprojects.md`. Their
-progress lives in the canonical `ai/goal-log.md`, one line per event: date,
-goal id, amount in the goal's unit, optional project, optional note. Adding a
-goal is a registry change only; the counter, the evening question, and the
-weekly figures follow from it with no further edit.
+Числовые цели находятся в `ai/goals.md` как блоки с `group`, `target`, `unit`
+и `due`; `group` называет известную группу `ai/archiprojects.md`.
+Продвижение находится в каноническом `ai/goal-log.md`, одна строка на событие:
+дата, идентификатор цели, количество в единицах цели, необязательные проект
+и заметка. Добавление цели меняет только реестр; счётчик, вечерний вопрос
+и недельные показатели следуют из него без дополнительного изменения.
 
-`scripts/count-goal-progress.sh` is the only computation of progress, pace, and
-forecast, and the only validator of the log. Workflows render its output
-verbatim and never recompute it. `hub-goal-progress` is the only writer of
-`ai/goal-log.md`; it appends one line with the amount the user stated, without asking again. An amount is never
-inferred from a task or calendar event.
+`scripts/count-goal-progress.sh` — единственное вычисление продвижения, темпа
+и прогноза и единственная проверка журнала. Процессы показывают его вывод
+дословно и никогда не пересчитывают. `hub-goal-progress` — единственный
+записывающий `ai/goal-log.md`; он добавляет строку с количеством, названным
+пользователем, без повторного вопроса. Количество никогда не выводится
+из задачи или события календаря.

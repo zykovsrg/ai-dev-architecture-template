@@ -1,45 +1,44 @@
 ---
 name: hub-goal-progress
 type: worker
-description: Show progress toward numeric hub goals and append one progress entry to the canonical goal log.
+description: Показать продвижение к числовым целям Хаба и добавить одну запись продвижения в канонический журнал целей.
 ---
 
-# Hub Goal Progress
+# Продвижение к целям Хаба
 
-Use this skill to show progress toward the numeric goals registered in
-`ai/goals.md`, or to record one progress entry. It is the only writer
-of `ai/goal-log.md`.
+Используйте навык для показа продвижения к числовым целям `ai/goals.md`
+или записи одного события продвижения. Только он записывает `ai/goal-log.md`.
 
-Module rules: `ai/rules/goals.md`.
+Правила модуля: `ai/rules/goals.md`.
 
-## Scope
+## Пределы
 
-Read only `ai/goals.md`, `ai/goal-log.md`, and the output of
-`scripts/count-goal-progress.sh`. Do not read project code, project memory,
-knowledge records, or Git history. Write only `ai/goal-log.md`.
+Читайте только `ai/goals.md`, `ai/goal-log.md` и вывод
+`scripts/count-goal-progress.sh`. Не читайте код проекта, память проекта,
+записи знаний или историю Git. Записывайте только `ai/goal-log.md`.
 
-The counter's output shows each goal's group (from `ai/archiprojects.md` via
-`ai/goals.md`'s `group` field); this skill does not resolve or display group
-membership beyond what the counter already prints.
+Вывод счётчика показывает группу каждой цели из `ai/archiprojects.md` через
+поле `group` в `ai/goals.md`; навык не определяет и не показывает членство
+в группах сверх уже напечатанного счётчиком.
 
-This skill never closes a task, never edits a project task record, and never
-touches the calendar.
+Навык никогда не закрывает задачу, не меняет запись задачи проекта
+и не затрагивает календарь.
 
-## Show
+## Показ
 
-Run the counter and render its output unchanged:
+Запустите счётчик и покажите вывод без изменений:
 
 ```text
 bash scripts/count-goal-progress.sh --hub <hub> [--goal <goal-id>] [--as-of <YYYY-MM-DD>]
 ```
 
-## Record
+## Запись
 
-1. Establish date, `goal_id`, amount, optional project and note from the user.
-   Never infer an amount from a task, calendar event or summary.
-2. Verify `goal_id` exists in `ai/goals.md`. Do not create a goal here.
-3. Append the log row directly and show it.
-4. Re-run the counter and show updated figures.
-5. Commit and report the write.
+1. Получите от пользователя дату, `goal_id`, количество, необязательные проект
+   и заметку. Никогда не выводите количество из задачи, события календаря или сводки.
+2. Проверьте наличие `goal_id` в `ai/goals.md`. Не создавайте цель здесь.
+3. Сразу добавьте строку журнала и покажите её.
+4. Повторно запустите счётчик и покажите обновлённые показатели.
+5. Сохраните в истории и сообщите запись.
 
-Entries are append-only. Correcting one is a normal edit; removing one needs an explicit yes.
+Записи только добавляются. Исправление — обычное изменение; удаление требует явного согласия.

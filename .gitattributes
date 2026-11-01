@@ -1,0 +1,2 @@
+# Пробелы контекста являются частью формата проверенного патча.
+modules/planning/patches/native-reminders-explicit-sharing.patch -whitespace

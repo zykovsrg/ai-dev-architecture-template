@@ -2,6 +2,15 @@
 set -euo pipefail
 
 HUB_DIR="${1:-.}"
+INCLUDE_ARCHIVED=0
+[ "$#" -eq 0 ] || shift
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --include-archived) INCLUDE_ARCHIVED=1 ;;
+    *) echo "ERROR: unknown option: $1" >&2; exit 1 ;;
+  esac
+  shift
+done
 HUB_DIR="$(cd "$HUB_DIR" && pwd -P)"
 TAB="$(printf '\t')"
 CR="$(printf '\r')"
@@ -122,6 +131,10 @@ END {
 rows=""
 if [ -n "$registry_rows" ]; then
   while IFS="$TAB" read -r project_id name tags status; do
+    # Filter before opening the card: ordinary routing never scans archived cards.
+    if [ "$status" = archived ] && [ "$INCLUDE_ARCHIVED" -eq 0 ]; then
+      continue
+    fi
     card_rel="ai/project-cards/$project_id.md"
     require_safe_regular_file "$card_rel"
     card_fields="$(awk -v project_id="$project_id" -v tab="$TAB" -v cr="$CR" '
