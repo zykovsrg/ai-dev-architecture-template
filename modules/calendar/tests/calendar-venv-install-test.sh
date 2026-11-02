@@ -1,53 +1,38 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
-# Covers the calendar server venv step of sync-calendar-policy.sh: creation
-# with a chosen interpreter, an existing venv being left untouched, the
-# failure path removing a half-made venv, and --dry-run wording. Uses a
-# stubbed HUB_CALENDAR_PYTHON so it needs no real Python >=3.11 and no
-# network. HUB_CALENDAR_SKIP_BRIDGE=1 keeps the macOS bridge build out of
-# scope for this test.
-
-ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+SOURCE="$(cd "$ROOT/../.." && pwd -P)"
 SYNC="$ROOT/scripts/sync-calendar-policy.sh"
-WORK="$(mktemp -d)"
+source "$SOURCE/tests/helpers/shell-scenarios.sh"
+WORK="$(mktemp -d "${TMPDIR:-/private/tmp}/calendar-venv-scenarios.XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT
 WORK="$(cd "$WORK" && pwd -P)"
 
-fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
-
-make_source() {
-  local dest="$WORK/$1"
-  mkdir -p "$dest/scripts" "$dest/modules/calendar/policy"
-  cp -R "$ROOT/policy/src" "$dest/modules/calendar/policy/src"
-  cp -R "$ROOT/policy/bridge" "$dest/modules/calendar/policy/bridge"
-  cp "$ROOT/policy/pyproject.toml" "$dest/modules/calendar/policy/pyproject.toml"
-  printf '%s\n' "$dest"
+expect_ok() {
+  local code
+  scenario_accept_exit 1 ''
+  scenario_exec code "$@"
+  scenario_assert_exit 0 "$code"
 }
 
-make_hub() {
-  local hub="$WORK/$1"
-  mkdir -p "$hub"
-  printf '%s\n' "$hub"
-}
-
-# A stub "python" interpreter: `-c ...` reports a satisfying version, `-m venv
-# DIR` creates DIR/bin/python as a second stub that logs any `-m pip install`
-# invocation to $STUB_LOG and exits with $PIP_EXIT (default 0).
-make_python_stub() {
-  local path="$1" log="$2" pip_exit="${3:-0}"
-  cat > "$path" <<STUB
+make_fixture() {
+  local name="$1" pip_exit="${2:-0}"
+  source_dir="$WORK/$name-source"; hub="$WORK/$name-hub"; tool="$hub/tools/apple-calendar-policy"
+  python_stub="$WORK/$name-python"; pip_log="$WORK/$name-pip.log"
+  mkdir -p "$source_dir/modules/calendar/policy" "$hub"
+  cp -R "$ROOT/policy/src" "$ROOT/policy/bridge" "$source_dir/modules/calendar/policy/"
+  cp "$ROOT/policy/pyproject.toml" "$source_dir/modules/calendar/policy/pyproject.toml"
+  cat > "$python_stub" <<STUB
 #!/usr/bin/env bash
-if [ "\$1" = "-c" ]; then
-  exit 0
-fi
-if [ "\$1" = "-m" ] && [ "\$2" = "venv" ]; then
+set -euo pipefail
+if [ "\$1" = -c ]; then exit 0; fi
+if [ "\$1" = -m ] && [ "\$2" = venv ]; then
   dir="\$3"
   mkdir -p "\$dir/bin"
-  cat > "\$dir/bin/python" <<INNER
+  cat > "\$dir/bin/python" <<'INNER'
 #!/usr/bin/env bash
-if [ "\\\$1" = "-m" ] && [ "\\\$2" = "pip" ]; then
-  printf '%s\\n' "\\\$*" >> "$log"
+if [ "\$1" = -m ] && [ "\$2" = pip ]; then
+  printf '%s\\n' "\$*" >> "$pip_log"
   exit $pip_exit
 fi
 exit 0
@@ -57,67 +42,89 @@ INNER
 fi
 exit 1
 STUB
-  chmod +x "$path"
+  chmod +x "$python_stub"
 }
 
-source_dir="$(make_source source-1)"
+install_subject() {
+  local code
+  scenario_accept_exit 1 ''
+  scenario_exec code env HUB_CALENDAR_SKIP_BRIDGE=1 HUB_CALENDAR_SKIP_VENV=0 HUB_CALENDAR_PYTHON="$python_stub" \
+    bash "$SYNC" --source "$source_dir" --hub "$hub" "$@" >"$WORK/install.out"
+  scenario_assert_exit 0 "$code"
+}
 
-# 1. Fresh install with no existing venv creates one and installs editable.
-hub1="$(make_hub hub-1)"
-log1="$WORK/pip-1.log"
-python_stub1="$WORK/python-stub-1"
-make_python_stub "$python_stub1" "$log1" 0
-HUB_CALENDAR_SKIP_BRIDGE=1 HUB_CALENDAR_PYTHON="$python_stub1" \
-  bash "$SYNC" --source "$source_dir" --hub "$hub1" >/dev/null
+creates_environment() {
+  scenario_begin
+  make_fixture create
+  install_subject
+  expect_ok test -x "$tool/.venv/bin/python"
+  expect_ok test -f "$pip_log"
+  expect_ok grep -Fq -- "-m pip install --quiet -e $tool" "$pip_log"
+  scenario_pass
+}
 
-tool1="$hub1/tools/apple-calendar-policy"
-[ -x "$tool1/.venv/bin/python" ] || fail "venv python was not created"
-[ -f "$log1" ] || fail "pip was never invoked"
-grep -Fq -- "-m pip install --quiet -e $tool1" "$log1" \
-  || fail "pip was not called with -e on the tool dir: $(cat "$log1")"
+preserves_existing_environment() {
+  scenario_begin
+  make_fixture keep
+  install_subject
+  : > "$pip_log"
+  install_subject
+  expect_ok grep -Fq "Existing .venv is kept: $tool/.venv" "$WORK/install.out"
+  expect_ok test ! -s "$pip_log"
+  scenario_pass
+}
 
-# 2. A second run must keep the existing venv and must not call pip again.
-: > "$log1"
-out2="$(HUB_CALENDAR_SKIP_BRIDGE=1 HUB_CALENDAR_PYTHON="$python_stub1" \
-  bash "$SYNC" --source "$source_dir" --hub "$hub1")"
-printf '%s\n' "$out2" | grep -Fq "Existing .venv is kept: $tool1/.venv" \
-  || fail "rerun did not report the venv as kept: $out2"
-[ ! -s "$log1" ] || fail "rerun called pip again: $(cat "$log1")"
+cleans_failed_environment() {
+  local code expected
+  scenario_begin
+  make_fixture failure 1
+  printf -v expected 'ERROR: could not install the calendar server into its venv.\nFinish it by hand:\n  <python3.11+> -m venv "%s/.venv"\n  "%s/.venv/bin/python" -m pip install -e "%s"\nERROR: calendar server venv was not created\n' "$tool" "$tool" "$tool"
+  scenario_accept_exit 1 "$expected"
+  scenario_exec code env HUB_CALENDAR_SKIP_BRIDGE=1 HUB_CALENDAR_SKIP_VENV=0 HUB_CALENDAR_PYTHON="$python_stub" \
+    bash "$SYNC" --source "$source_dir" --hub "$hub" >"$WORK/failure.out"
+  scenario_assert_exit 1 "$code"
+  expect_ok test ! -e "$tool/.venv"
+  scenario_pass
+}
 
-# 3. Failure path: pip fails during a fresh install. The half-made venv is
-# removed and the whole install fails.
-hub3="$(make_hub hub-3)"
-log3="$WORK/pip-3.log"
-python_stub3="$WORK/python-stub-3"
-make_python_stub "$python_stub3" "$log3" 1
-if HUB_CALENDAR_SKIP_BRIDGE=1 HUB_CALENDAR_PYTHON="$python_stub3" \
-     bash "$SYNC" --source "$source_dir" --hub "$hub3" >/dev/null 2>"$WORK/err3"; then
-  fail "install succeeded despite a failing pip"
-fi
-tool3="$hub3/tools/apple-calendar-policy"
-[ ! -e "$tool3/.venv" ] || fail "a half-made venv survived the failure"
-grep -Fq "ERROR" "$WORK/err3" || fail "no ERROR was printed on failure: $(cat "$WORK/err3")"
+dry_run_new_environment() {
+  scenario_begin
+  make_fixture dry-new
+  install_subject --dry-run
+  expect_ok grep -Fq "Would create $tool/.venv" "$WORK/install.out"
+  expect_ok test ! -e "$hub/tools"
+  expect_ok test ! -e "$pip_log"
+  scenario_pass
+}
 
-# 4. --dry-run reports "would create" for a fresh hub and "is kept" for one
-# that already has a venv; it writes nothing.
-hub4="$(make_hub hub-4)"
-out4="$(HUB_CALENDAR_SKIP_BRIDGE=1 HUB_CALENDAR_PYTHON="$python_stub1" \
-  bash "$SYNC" --source "$source_dir" --hub "$hub4" --dry-run)"
-printf '%s\n' "$out4" | grep -Fq "Would create $hub4/tools/apple-calendar-policy/.venv" \
-  || fail "dry run did not announce venv creation: $out4"
-[ ! -e "$hub4/tools" ] || fail "dry run created files"
+dry_run_existing_environment() {
+  scenario_begin
+  make_fixture dry-existing
+  install_subject
+  : > "$pip_log"
+  install_subject --dry-run
+  expect_ok grep -Fq "Existing .venv is kept: $tool/.venv" "$WORK/install.out"
+  expect_ok test ! -s "$pip_log"
+  scenario_pass
+}
 
-out1_dry="$(HUB_CALENDAR_SKIP_BRIDGE=1 HUB_CALENDAR_PYTHON="$python_stub1" \
-  bash "$SYNC" --source "$source_dir" --hub "$hub1" --dry-run)"
-printf '%s\n' "$out1_dry" | grep -Fq "Existing .venv is kept: $tool1/.venv" \
-  || fail "dry run did not report an existing venv as kept: $out1_dry"
+explicit_skip() {
+  local code
+  scenario_begin
+  make_fixture skip
+  scenario_exec code env HUB_CALENDAR_SKIP_BRIDGE=1 HUB_CALENDAR_SKIP_VENV=1 HUB_CALENDAR_PYTHON="$python_stub" \
+    bash "$SYNC" --source "$source_dir" --hub "$hub" >"$WORK/skip.out"
+  scenario_assert_exit 0 "$code"
+  expect_ok grep -Fq 'Calendar server venv step skipped: HUB_CALENDAR_SKIP_VENV=1.' "$WORK/skip.out"
+  expect_ok test ! -e "$tool/.venv"
+  expect_ok test ! -e "$pip_log"
+  scenario_pass
+}
 
-# 5. HUB_CALENDAR_SKIP_VENV=1 skips the step entirely and says so.
-hub5="$(make_hub hub-5)"
-out5="$(HUB_CALENDAR_SKIP_BRIDGE=1 HUB_CALENDAR_SKIP_VENV=1 \
-  bash "$SYNC" --source "$source_dir" --hub "$hub5")"
-printf '%s\n' "$out5" | grep -Fq "Calendar server venv step skipped: HUB_CALENDAR_SKIP_VENV=1." \
-  || fail "skip was not reported: $out5"
-[ ! -e "$hub5/tools/apple-calendar-policy/.venv" ] || fail "venv was created despite the skip"
-
-printf 'PASS: calendar server venv is created, kept, cleaned up on failure, and skippable.\n'
+scenario_declare venv-create-and-install-editable creates_environment
+scenario_declare venv-rerun-keeps-environment preserves_existing_environment
+scenario_declare venv-failed-pip-removes-environment cleans_failed_environment
+scenario_declare venv-dry-run-new-environment dry_run_new_environment
+scenario_declare venv-dry-run-existing-environment dry_run_existing_environment
+scenario_declare venv-explicit-skip explicit_skip
+scenario_main "$@"

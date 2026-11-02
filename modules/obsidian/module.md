@@ -1,4 +1,4 @@
-# Module: obsidian
+# Модуль: obsidian
 
 Id: obsidian
 Required: no
@@ -10,8 +10,8 @@ Keywords: Obsidian, obsidian-vault
 
 ## Purpose
 
-Read-only projection of projects and tasks into the central Obsidian vault;
-manual board edits become proposals back, never direct task writes.
+Проекция проектов и задач только для чтения в центральное хранилище Obsidian;
+ручные изменения доски превращаются в обратные предложения, но никогда не записываются прямо в задачи.
 
 ## Installs
 
@@ -27,13 +27,13 @@ manual board edits become proposals back, never direct task writes.
 
 ## Reads
 
-- registry and project cards (projects)
-- project task files (tasks)
+- реестр и карточки проектов (projects)
+- файлы задач проекта (tasks)
 
 ## Writes
 
-- the central vault `projects/ai-dev-architecture/obsidian-vault`
-- task files only through a confirmed reverse proposal applied by the user
+- центральное хранилище `projects/ai-dev-architecture/obsidian-vault`
+- файлы задач только через подтверждённое обратное предложение, применяемое пользователем
 
 ## Subscribes
 

@@ -1,11 +1,11 @@
-# Goal Log
+# Журнал целей
 
-Canonical hub-owned progress log for numeric goals in `ai/goals.md`.
-One line per progress event. Only `hub-goal-progress` writes here.
+Канонический журнал продвижения к числовым целям `ai/goals.md`, принадлежащий Хабу.
+Одна строка на событие продвижения. Только `hub-goal-progress` записывает сюда.
 
-Columns: `дата` (YYYY-MM-DD), `goal_id` (an id from `ai/goals.md`),
-`сколько` (positive integer in that goal's `unit`),
-`проект` (registered project id or `—`), `заметка` (free text or `—`).
+Столбцы: `дата` (YYYY-MM-DD), `goal_id` (идентификатор из `ai/goals.md`),
+`сколько` (положительное целое в `unit` цели),
+`проект` (зарегистрированный идентификатор проекта или `—`), `заметка` (произвольный текст или `—`).
 
 | дата | goal_id | сколько | проект | заметка |
 | --- | --- | --- | --- | --- |

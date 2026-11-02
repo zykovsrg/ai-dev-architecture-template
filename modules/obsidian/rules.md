@@ -1,50 +1,50 @@
-# Obsidian Module Rules
+# Правила модуля Obsidian
 
-## Vault
+## Хранилище
 
-The hub has one central Obsidian vault at `<hub>/projects/ai-dev-architecture/obsidian-vault`.
-Workflows derive this path from the confirmed hub root; they must not ask for
-or accept a per-project vault path. The selected board is
-`Obsidian/Projects/<project-id>/Kanban.md` inside that vault. A reverse
-proposal always selects exactly one confirmed project board by its registered
-project ID.
+У Хаба одно центральное хранилище Obsidian:
+`<hub>/projects/ai-dev-architecture/obsidian-vault`. Процессы выводят путь из
+подтверждённого корня Хаба; они не должны спрашивать или принимать отдельное
+хранилище проекта. Выбранная доска — `Obsidian/Projects/<project-id>/Kanban.md`
+внутри этого хранилища. Обратное предложение всегда выбирает ровно одну
+подтверждённую доску проекта по зарегистрированному идентификатору.
 
-Use a scope file containing only the confirmed project ID. Never expand scope
-to bypass a refresh error. A partial refresh updates only scoped boards, their
-overview rows, and their manifest entries; it preserves all other projects
-without reading their files. A full-registry refresh requires explicit
-authorization for that full scope. If a partial refresh is blocked, report the
-blocker and leave the generated views unchanged.
+Используйте файл области, содержащий только подтверждённый идентификатор проекта.
+Никогда не расширяйте пределы ради обхода ошибки обновления. Частичное обновление
+меняет только выбранные доски, их строки обзора и записи манифеста; все другие
+проекты сохраняются без чтения их файлов. Обновление всего реестра требует
+явного разрешения на весь объём. Если частичное обновление заблокировано,
+сообщите препятствие и сохраните созданные представления без изменений.
 
-Manual Obsidian edits are never written to canonical records automatically:
-they produce a reviewable proposal only.
+Ручные изменения Obsidian никогда не записываются в канонические записи
+автоматически: они создают только предложение для проверки.
 
 ## after-task-write
 
-After an approved selected-project task write, invoke the guarded trusted
-architecture-to-Obsidian refresh with:
+После разрешённой записи задачи выбранного проекта вызовите защищённое
+доверенное обновление из архитектуры в Obsidian:
 
 ```text
 bash scripts/generate-obsidian-projects-kanban.sh --hub <hub> --scope <scope-file> --vault <hub>/projects/ai-dev-architecture/obsidian-vault --write --refresh-from-architecture
 ```
 
-This direction is trusted only from canonical `ai/` records to generated
-Obsidian views. Keep manifest validation enabled. If it detects a manual
-Obsidian edit, run the local `obsidian-task-sync scan --project-id
-<confirmed-project-id>` to create its pending proposal, report that proposal,
-and do not overwrite the board.
+Это направление доверенное только из канонических записей `ai/` в созданные
+представления Obsidian. Сохраняйте проверку манифеста включённой. Если она
+обнаружит ручное изменение Obsidian, запустите локальный `obsidian-task-sync scan --project-id
+<confirmed-project-id>` для создания ожидающего предложения, сообщите предложение
+и не перезаписывайте доску.
 
-## Reverse proposals
+## Обратные предложения
 
-Obsidian-to-`ai/` is a confirmed Obsidian-to-architecture proposal only:
-show its exact status and require `apply --project-id <confirmed-project-id>
---confirm-proposal <sha256>` before any canonical task write. Use these
-commands with the real hub, scope, and vault values:
+Obsidian → `ai/` — только подтверждённое предложение из Obsidian в архитектуру:
+покажите точный статус и требуйте `apply --project-id <confirmed-project-id>
+--confirm-proposal <sha256>` до любой канонической записи задачи. Используйте
+команды с настоящими значениями Хаба, области и хранилища:
 
 ```text
 bash scripts/obsidian-task-sync.sh scan --project-id <confirmed-project-id> --hub <hub> --scope <scope-file> --vault <hub>/projects/ai-dev-architecture/obsidian-vault
 bash scripts/obsidian-task-sync.sh apply --project-id <confirmed-project-id> --confirm-proposal <sha256> --hub <hub> --scope <scope-file> --vault <hub>/projects/ai-dev-architecture/obsidian-vault
 ```
 
-The ID is mandatory for both scan and apply. Apply only after the user
-confirms the proposal SHA.
+Идентификатор обязателен для сканирования и применения. Применяйте только
+после подтверждения пользователем контрольной суммы предложения.

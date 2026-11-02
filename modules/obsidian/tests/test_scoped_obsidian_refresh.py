@@ -143,11 +143,21 @@ class ScopedRefreshTests(unittest.TestCase):
         self.assertEqual(before, self.snapshot())
 
     def test_unregistered_duplicate_and_unsafe_scope_fail_without_writes(self):
-        for scope in ["unknown\n", "alpha\nalpha\n", "../alpha\n", "\n"]:
-            self.scope.write_text(scope)
-            before = self.snapshot()
-            self.run_generator(success=False)
-            self.assertEqual(before, self.snapshot())
+        cases = [
+            ("unregistered", "unknown\n", "unregistered or duplicate project ID: unknown"),
+            ("duplicate", "alpha\nalpha\n", "duplicate project ID in scope"),
+            ("unsafe", "../alpha\n", "invalid project ID: ../alpha"),
+            ("empty", "\n", "scope is empty"),
+        ]
+        # All ordinary inputs already pass in setUp. Check each earliest guard,
+        # so a later rejection or a shell crash cannot conceal its removal.
+        for case, scope, reason in cases:
+            with self.subTest(case=case):
+                self.scope.write_text(scope)
+                before = self.snapshot()
+                result = self.run_generator(success=False)
+                self.assertEqual(result.stderr.strip(), "error: " + reason)
+                self.assertEqual(before, self.snapshot())
 
     def test_full_refresh_still_updates_all_and_detects_manual_edits(self):
         self.complete_alpha()
@@ -217,8 +227,11 @@ exec /bin/mv "$@"
         self.run_generator(success=False)
         self.registry.write_text(original_registry)
         current = self.projects / "alpha/ai/current-task.md"
+        outside = self.hub / "outside-current-task.md"
+        outside.write_text(current.read_text())
         current.unlink()
-        current.symlink_to(self.projects / "beta/ai/current-task.md")
+        # A valid alpha record behind the link: only the symlink check may reject it.
+        current.symlink_to(outside)
         self.run_generator(success=False)
 
     def test_partial_refresh_replaces_only_selected_task_entries(self):

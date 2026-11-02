@@ -16,6 +16,50 @@ from scripts.hub_release import apply, build_manifest, decide, drift, preview, r
 ROOT = Path(__file__).resolve().parents[1]
 
 
+class TargetPathTests(unittest.TestCase):
+    def test_absolute_path_inside_root_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            with self.assertRaises(ValueError):
+                target_path(root, str(root / "ai/file.md"))
+
+    def test_parent_segment_that_stays_inside_root_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            (root / "ai").mkdir()
+            with self.assertRaises(ValueError):
+                target_path(root, "ai/../file.md")
+
+    def test_empty_target_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            for relative in ("", "."):
+                with self.subTest(relative=relative), self.assertRaises(ValueError):
+                    target_path(root, relative)
+
+    def test_nested_symlink_inside_root_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            (root / "ai").mkdir()
+            (root / "inside").mkdir()
+            (root / "ai/link").symlink_to(root / "inside", target_is_directory=True)
+            with self.assertRaises(ValueError):
+                target_path(root, "ai/link/file.md")
+
+    def test_leaf_symlink_inside_root_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            (root / "actual.md").write_text("fixture", encoding="utf-8")
+            (root / "link.md").symlink_to(root / "actual.md")
+            with self.assertRaises(ValueError):
+                target_path(root, "link.md")
+
+    def test_regular_nested_target_returns_the_requested_path(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            self.assertEqual(target_path(root, "ai/new/file.md"), root / "ai/new/file.md")
+
+
 class ReleaseDecisionTests(unittest.TestCase):
     def source_copy(self, root):
         source = root / "source"

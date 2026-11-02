@@ -2,83 +2,88 @@
 name: hub-knowledge-capture
 type: implementation
 description: |
-  Use on demand to create or update one knowledge record inside the currently
-  confirmed registered hub project and report the exact written path.
+  Используйте по запросу для создания или обновления одной записи знаний
+  внутри текущего выбранного зарегистрированного проекта хаба
+  и сообщения точного записанного пути.
 ---
 
-# Hub Knowledge Capture
+# Сохранение знаний проекта через хаб
 
-This is a central hub-owned workflow. Do not copy it or any other generic
-workflow into a project. It may act only on the currently confirmed registered
-project and cannot override hub routing, allowed roots, secret, or
-memory-isolation rules.
+Это центральный процесс хаба. Не копируйте его или другие общие процессы
+в проект. Он может работать только с текущим подтверждённым зарегистрированным
+проектом и не может отменять правила выбора проектов, разрешённых корней,
+секретов или изоляции памяти хаба.
 
-Module rules: `ai/rules/knowledge.md`.
+Правила модуля: `ai/rules/knowledge.md`.
 
-## Preconditions and scope
+## Предварительные условия и область работы
 
-1. Revalidate the confirmed project ID and registered path against the registry
-   and require the path to remain a canonical direct child of the sole allowed projects root.
-2. Require an active task in the selected project `ai/` memory. Read only its
-   `ai/current-task.md` and explicitly relevant records.
-3. Require the user to select one type and exact project-relative target path:
+1. Повторно сверяйте подтверждённый идентификатор проекта и зарегистрированный
+   путь с реестром; путь должен оставаться каноническим непосредственным
+   дочерним каталогом единственного разрешённого корня проектов.
+2. Требуйте действующую задачу в памяти `ai/` выбранного проекта. Читайте
+   только её `ai/current-task.md` и явно относящиеся к ней записи.
+3. Пользователь должен выбрать один тип и точный целевой путь относительно проекта:
    - research → `knowledge/research/`
    - decision → `knowledge/decisions/`
    - risk → `knowledge/risks/`
    - runbook → `knowledge/runbooks/`
-4. Write without asking for confirmation, then name the exact written path.
+4. Записывайте без запроса подтверждения, затем называйте точный записанный путь.
 
-Require an explicit `origin` choice: `stated`, `inferred`, or `observation`.
-Capture must not default to `stated`. Observation targets must be below
-`knowledge/inbox/`; stated and inferred targets stay below the selected durable
-category.
+Требуйте явного выбора `origin`: `stated`, `inferred` или `observation`.
+Сохранение не должно использовать `stated` по умолчанию. Цели observation
+должны находиться внутри `knowledge/inbox/`; stated и inferred остаются
+внутри выбранной долговременной категории.
 
-## Containment preflight
+## Предварительная проверка границ
 
-Perform these checks before reading an existing target and again right
-before writing:
+Выполняйте эти проверки перед чтением существующей цели и повторно
+непосредственно перед записью:
 
-1. Resolve the canonical registered project root and require it and
-   `knowledge/` to be real directories, not symlinks.
-2. Reject absolute paths and any path containing a `..` segment. Also reject
-   empty, `.` or ambiguous path segments.
-3. Inspect every existing path component with `lstat` and reject any symlink component without following it. For a new file, validate the nearest existing
-   parent before constructing the unresolved leaf.
-4. Canonicalize only validated components and require the result to remain in
-   this selected project's canonical `knowledge/` tree. The canonical target must remain beneath the directory mapped from the selected type.
+1. Определите канонический зарегистрированный корень проекта; он и `knowledge/`
+   должны быть настоящими каталогами, а не символическими ссылками.
+2. Отклоняйте абсолютные пути и пути с сегментом `..`. Также отклоняйте
+   пустые, `.` или неоднозначные сегменты.
+3. Проверяйте каждый существующий компонент пути через `lstat` и отклоняйте
+   любые символические ссылки, не переходя по ним. Для нового файла проверьте
+   ближайший существующий родительский каталог до построения ещё не разрешённого конечного пути.
+4. Приводите к каноническому виду только проверенные компоненты; результат
+   должен оставаться в каноническом дереве `knowledge/` выбранного проекта.
+   Каноническая цель должна оставаться внутри каталога, соответствующего выбранному типу.
 
-Stop without reading or writing on any mismatch. The user's request never authorizes
-path traversal, symlink access, another project, or an unregistered path.
+При любом несовпадении остановитесь без чтения или записи. Запрос пользователя
+никогда не разрешает выход за границы каталогов, доступ через символическую
+ссылку, другой проект или незарегистрированный путь.
 
-## Content contract
+## Требования к содержимому
 
-Knowledge records must contain no secrets, personal data or client data. Never
-store credentials, passwords, tokens, private keys, raw environment values,
-personally identifying material, or client-confidential material. Reject,
-omit, or redact prohibited content without echoing the rejected value; refer to
-an approved secure location when one exists.
+Записи знаний не должны содержать секреты, персональные или клиентские данные.
+Никогда не сохраняйте учётные данные, пароли, токены, закрытые ключи, исходные
+значения окружения, сведения, идентифицирующие человека, или конфиденциальные
+материалы клиентов. Отклоняйте, пропускайте или скрывайте запрещённое содержимое
+без повторения его значений; ссылайтесь на одобренное безопасное хранилище, если оно есть.
 
-The type must be exactly `research`, `decision`, `risk`, or `runbook` and match
-the category directory. The status must be exactly `draft`, `verified`,
-`needs-review`, `stale`, or `superseded`. New records start as `draft` unless
-the selected evidence supports another allowed status.
+Тип должен быть строго `research`, `decision`, `risk` или `runbook` и совпадать
+с каталогом категории. Статус должен быть строго `draft`, `verified`,
+`needs-review`, `stale` или `superseded`. Новые записи начинают с `draft`,
+если выбранные свидетельства не обосновывают другой допустимый статус.
 
-Require `valid_from` to be `null` or a real `YYYY-MM-DD` date.
+Требуйте, чтобы `valid_from` был `null` или настоящей датой `YYYY-MM-DD`.
 
-Never delete a stale or superseded record. Retain it at its original path and
-add a link to its replacement under `Related records`; each write is reported by
-its exact path.
+Никогда не удаляйте устаревшую или заменённую запись. Сохраните её на исходном
+пути и добавьте ссылку на замену в `Related records`; сообщайте о каждой записи
+с указанием точного пути.
 
-## Procedure
+## Процедура
 
-1. Show the selected project ID, canonical path, type, exact record path, and a
-   concise proposed summary.
-2. Validate containment, required frontmatter, data safety, type, status, and
-   retention before writing.
-3. Choose the exact project-relative record path.
-4. After repeated validation, create or update only that
-   record from `knowledge/record-template.md`.
-5. Report the exact changed path, sources or lack of sources, and uncertainty.
+1. Покажите выбранный идентификатор проекта, канонический путь, тип,
+   точный путь записи и краткое предлагаемое содержание.
+2. Перед записью проверьте границы, обязательные вводные метаданные,
+   безопасность данных, тип, статус и сохранение старых записей.
+3. Выберите точный путь записи относительно проекта.
+4. После повторной проверки создайте или обновите только эту запись
+   по `knowledge/record-template.md`.
+5. Сообщите точный изменённый путь, источники или их отсутствие и неопределённость.
 
-Do not change hub metadata, another project, project instructions, generic
-skills, Git, application code, or unrelated task memory.
+Не меняйте метаданные хаба, другой проект, инструкции проекта, общие
+навыки, Git, код приложения или постороннюю память задач.

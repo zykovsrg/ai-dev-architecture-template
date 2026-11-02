@@ -18,25 +18,25 @@ class LiveHubMergeTests(unittest.TestCase):
         goals = source("modules/goals/rules.md")
         learning = source("modules/learning/rules.md")
         planning = source("modules/planning/rules.md")
-        self.assertIn("## Goal Progress", goals)
-        self.assertIn("## Self-Learning Workflows", learning)
+        self.assertIn("## Продвижение к целям", goals)
+        self.assertIn("## Процессы самообучения", learning)
         self.assertIn("hub-session-review", learning)
         self.assertIn("snapshot-calendar.sh", planning)
 
     def test_template_workflows_keep_calendar_and_rule_lifecycle(self):
-        workflows = source("modules/planning/skills/hub-workflows/SKILL.md")
+        workflows = " ".join(source("modules/planning/skills/hub-workflows/SKILL.md").split())
         calendar = source("modules/calendar/skills/hub-calendar/SKILL.md")
-        self.assertIn("session-learning report", workflows)
+        self.assertIn("отчёт обучения сессий", workflows)
         self.assertIn("retire_rule", workflows)
         self.assertIn("snapshot-calendar.sh", workflows)
         self.assertIn("after-calendar-change", calendar)
 
     def test_task_close_reviews_before_memory_clear(self):
         finish = template("modules/tasks/skills/hub-task-finish/SKILL.md")
-        self.assertLess(finish.index("`before-task-close`"), finish.index("clearing task context"))
+        self.assertLess(finish.index("`before-task-close`"), finish.index("очистки контекста задачи"))
         learning = source("modules/learning/rules.md")
-        self.assertIn("Task closure does not run a session review", learning)
-        self.assertIn("deterministic", finish)
+        self.assertIn("Закрытие задачи не запускает разбор сессии", learning)
+        self.assertIn("детерминированные", finish)
 
 
 if __name__ == "__main__":

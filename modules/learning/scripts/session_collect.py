@@ -9,6 +9,7 @@ inside the Hub.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -35,14 +36,17 @@ class Session:
     started: str
     path: Path
     turns: list = field(default_factory=list)
+    source_sha256: str = ""
 
 
-def _lines(path):
+def _lines(path, strict=False):
     with open(path, encoding="utf-8") as handle:
         for raw in handle:
             try:
                 yield json.loads(raw)
             except ValueError:
+                if strict:
+                    raise ValueError(f"invalid transcript record in {path}")
                 continue
 
 
@@ -77,7 +81,7 @@ def drop_scan_turns(turns):
 def parse_claude(path):
     sid = cwd = started = None
     turns, names = [], {}
-    for rec in _lines(path):
+    for rec in _lines(path, strict=True):
         if rec.get("type") not in ("user", "assistant") or rec.get("isSidechain") or rec.get("isMeta"):
             continue
         sid = sid or rec.get("sessionId")
@@ -109,7 +113,7 @@ def parse_claude(path):
 
 def parse_codex(path):
     meta, turns, last_tool = None, [], "tool"
-    for rec in _lines(path):
+    for rec in _lines(path, strict=True):
         payload = rec.get("payload") or {}
         if rec.get("type") == "session_meta":
             meta = payload
@@ -119,7 +123,7 @@ def parse_codex(path):
         kind = payload.get("type")
         if kind == "message" and payload.get("role") in ("user", "assistant"):
             text = " ".join(part.get("text", "") for part in payload.get("content") or []).strip()
-            if text and not text.startswith("<") and not text.startswith("# AGENTS.md"):
+            if text and not text.startswith(("<environment_context>", "<permissions instructions>", "<collaboration_mode>")) and not text.startswith("# AGENTS.md"):
                 turns.append((payload["role"], text))
         elif kind in ("custom_tool_call", "function_call"):
             last_tool = payload.get("name", "tool")
@@ -129,7 +133,7 @@ def parse_codex(path):
             output = output if isinstance(output, str) else json.dumps(output, ensure_ascii=False)
             if "error" in output.lower():
                 turns.append(("error", f"{last_tool}: {_short(output)}"))
-    if not meta or not meta.get("id"):
+    if not meta or not meta.get("id") or (isinstance(meta.get("source"), dict) and "subagent" in meta["source"]):
         return None
     return Session("codex", meta["id"], meta.get("cwd", ""), meta.get("timestamp", ""), Path(path), turns)
 
@@ -209,27 +213,77 @@ def _files(claude_root, codex_root):
         yield "codex", path
 
 
-def pending(hub, ledger, now, claude_root, codex_root, active_minutes=15):
+def source_hash(session):
+    return hashlib.sha256(session.path.read_bytes()).hexdigest() if session.path.is_file() else hashlib.sha256(full_text(session).encode()).hexdigest()
+
+
+def source_key(tool, sid, digest):
+    return f"{tool}:{sid}:{digest}"
+
+
+def full_text(session):
+    return "\n".join(f"{role.upper()}: {text}" for role, text in session.turns)
+
+
+def _metadata_id(tool, path):
+    """Read only a bounded header prefix, never full unrelated transcript bodies."""
+    field = "sessionId" if tool == "claude" else "id"
+    with path.open("r", encoding="utf-8") as handle:
+        for _ in range(8):
+            prefix = handle.readline(16384)
+            if not prefix:
+                break
+            if tool == "claude" or re.search(r'"type"\s*:\s*"session_meta"', prefix):
+                match = re.search(r'"' + field + r'"\s*:\s*("(?:[^"\\]|\\.)*")', prefix)
+                if match:
+                    return json.loads(match.group(1))
+            if not prefix.endswith("\n"):
+                break
+    return None
+
+
+def pending(hub, ledger, now, claude_root, codex_root, active_minutes=15, replay=()):
+    wanted = {key for key in replay if not (key[0] == "claude" and key[1].startswith(("obs-", "review-")))}
+    if replay and not wanted:
+        return []
     if not ledger.get("cutover"):
+        if wanted:
+            raise ValueError("selected replay sources require an initialized cutover")
         return []
     cutover = ledger["cutover"]
     fresh = now - timedelta(minutes=active_minutes)
-    latest = {}
+    latest, found = {}, set()
     for tool, path in _files(claude_root, codex_root):
+        if replay and (tool, _metadata_id(tool, path)) not in replay:
+            continue
         mtime = path.stat().st_mtime
         if datetime.fromtimestamp(mtime, timezone.utc) > fresh:
+            if replay:
+                raise ValueError(f"selected replay source still active: {tool}:{path.name}")
             continue
+        before_hash = hashlib.sha256(path.read_bytes()).hexdigest()
         session = parse_claude(path) if tool == "claude" else parse_codex(path)
-        if (session is None or session.id in ledger["processed"].get(tool, [])
+        if hashlib.sha256(path.read_bytes()).hexdigest() != before_hash:
+            raise ValueError("source changed during parsing")
+        if (session is None or (session.id in ledger["processed"].get(tool, []) and (tool, session.id) not in replay
+                    and not any(k.startswith(f"{tool}:{session.id}:") for k in ledger.get("completed_sources", [])))
                 or session.started[:10] < cutover or not _inside(session.cwd, hub)):
             continue
         # Skip sessions started by the learning scanner itself
         if session.turns and session.turns[0][0] == "user" and session.turns[0][1].startswith("[hub-session-scan]"):
             continue
+        if replay and (tool, session.id) not in replay:
+            continue
+        session.source_sha256 = before_hash
+        found.add((tool, session.id))
+        if source_key(tool, session.id, session.source_sha256) in ledger.get("completed_sources", []):
+            continue
         session.turns = drop_scan_turns(session.turns)
         key = (session.tool, session.id)
         if key not in latest or mtime >= latest[key][0]:
             latest[key] = (mtime, session)
+    if wanted - found:
+        raise ValueError("selected replay sources unavailable: " + ", ".join(f"{t}:{sid}" for t, sid in sorted(wanted - found)))
     return [session for _, session in latest.values()]
 
 
@@ -241,36 +295,62 @@ def _find_date(text):
     return "-".join(parts)
 
 
-def extra_sources(hub, ledger):
+def _read_snapshot(path):
+    raw = path.read_bytes()
+    return raw.decode("utf-8"), hashlib.sha256(raw).hexdigest()
+
+
+def extra_sources(hub, ledger, replay=()):
     """New workflow observations and session-review findings as pseudo-sessions."""
+    wanted = {key for key in replay if key[0] == "claude" and key[1].startswith(("obs-", "review-"))}
     cutover = ledger.get("cutover")
     if not cutover:
+        if wanted:
+            raise ValueError("selected replay sources require an initialized cutover")
         return []
     out, done = [], set(ledger["processed"].get("claude", []))
     journal = hub / "ai/workflow-observations.md"
-    if journal.exists():
-        entries = [l for l in journal.read_text(encoding="utf-8").splitlines() if re.match(r"^- \d{4}-\d{2}-\d{2} \|", l)]
+    journal_selected = not replay or any(tool == "claude" and sid.startswith("obs-") for tool, sid in replay)
+    if journal_selected and journal.exists():
+        journal_text, journal_digest = _read_snapshot(journal)
+        entries = [l for l in journal_text.splitlines() if re.match(r"^- \d{4}-\d{2}-\d{2} \|", l)]
         for number, line in enumerate(entries, 1):
             sid = f"obs-{number}"
-            if sid not in done and line[2:12] >= cutover:
-                out.append(Session("claude", sid, str(hub), line[2:12], journal, [("user", line[2:])]))
+            if replay and ("claude", sid) not in replay:
+                continue
+            if (sid not in done or ("claude", sid) in replay) and line[2:12] >= cutover:
+                out.append(Session("claude", sid, str(hub), line[2:12], journal, [("user", line[2:])], source_sha256=journal_digest))
     for pid, entry in registry(hub).items():
         if entry.get("status") != "active":
             continue
         for review in sorted(Path(entry["path"], "ai/session-reviews").glob("*.md")):
             sid = f"review-{pid}-{review.stem}"
-            if sid in done:
+            if replay and ("claude", sid) not in replay:
                 continue
-            text = review.read_text(encoding="utf-8")
+            if sid in done and ("claude", sid) not in replay:
+                continue
+            text, review_digest = _read_snapshot(review)
             date = _find_date(review.stem) or _find_date(text)
             if not date or date < cutover:
                 continue
             if "## Findings" not in text:
                 continue
             findings = text.split("## Findings", 1)[1].split("\n## ", 1)[0].strip()
-            if findings and findings != "none":
-                out.append(Session("claude", sid, entry["path"], date, review, [("user", findings)]))
-    return out
+            if (findings and findings != "none") or ("claude", sid) in wanted:
+                turns = [("user", findings)] if findings and findings != "none" else []
+                out.append(Session("claude", sid, entry["path"], date, review, turns, source_sha256=review_digest))
+    selected, found = [], set()
+    for session in out:
+        if replay and (session.tool, session.id) not in replay:
+            continue
+        if source_hash(session) != session.source_sha256:
+            raise ValueError("source changed after reading extra source")
+        found.add((session.tool, session.id))
+        if source_key(session.tool, session.id, session.source_sha256) not in ledger.get("completed_sources", []):
+            selected.append(session)
+    if wanted - found:
+        raise ValueError("selected replay extra sources unavailable: " + ", ".join(f"{t}:{sid}" for t, sid in sorted(wanted - found)))
+    return selected
 
 
 def default_batch_dir():
@@ -282,35 +362,66 @@ def _session_file(tool, sid):
 
 
 def write_batch(hub, sessions, out_dir, limit=10, max_chars=BATCH_CHARS):
-    """Write up to `limit` sessions, at most `max_chars` in total, as plain-text files.
-
-    Returns (index, remaining). The first session is always taken; it is cut to
-    fit. Session files of earlier batches are blanked (overwritten), never removed.
-    """
+    """Write bounded, contiguous parts. `remaining` retains its source-count meaning."""
     out_dir = Path(out_dir)
+    if _inside(out_dir, hub):
+        raise ValueError("batch folder must be outside the Hub")
+    if limit < 1 or max_chars < 1024:
+        raise ValueError("batch budget must allow at least one part")
     out_dir.mkdir(parents=True, exist_ok=True)
-    chosen, total = [], 0
-    for s in sessions[:limit]:
-        project = project_for(s.cwd, hub)
-        head = f"Session: {s.tool} {s.id}\nDate: {s.started[:10]}\nProject: {project}\n\n"
-        body = head + normalize(s, limit=min(SESSION_CHARS, max_chars - len(head) - 20)) + "\n"
-        if chosen and total + len(body) > max_chars:
+    ledger = load_ledger(hub)
+    entries, names, total, chosen = [], set(), 0, 0
+    for session in sessions:
+        if len(entries) >= limit:
             break
-        chosen.append((s, project, body))
-        total += len(body)
-    entries, names = [], set()
-    for s, project, body in chosen:
-        path = out_dir / _session_file(s.tool, s.id)
-        path.write_text(body, encoding="utf-8")
-        names.add(path.name)
-        entries.append({"tool": s.tool, "id": s.id, "date": s.started[:10], "project": project,
-                        "file": str(path), "chars": len(body)})
+        project = project_for(session.cwd, hub)
+        digest = session.source_sha256 or source_hash(session)
+        if source_hash(session) != digest:
+            raise ValueError("source changed before collection")
+        key = source_key(session.tool, session.id, digest)
+        done = ledger.get("parts", {}).get(key, {})
+        text = full_text(session)
+        size = next(iter(done.values()))["size"] if done else min(30000, max_chars - 512)
+        if size + 512 > max_chars:
+            raise ValueError("budget smaller than existing part layout")
+        pieces = [text[n:n + size] for n in range(0, len(text), size)] or [""]
+        added = False
+        # One part per source per batch prevents a long source monopolising a batch.
+        for number, piece in enumerate(pieces):
+            part_id = hashlib.sha256(f"{key}:{number * size}:{len(piece)}".encode()).hexdigest()
+            if part_id in done:
+                continue
+            offset, cursor, start_role = number * size, 0, "user"
+            for role, turn_text in session.turns:
+                end = cursor + len(f"{role.upper()}: {turn_text}") + 1
+                if cursor <= offset < end:
+                    start_role = role
+                    break
+                cursor = end
+            head = f"Session: {session.tool} {session.id}\nDate: {session.started[:10]}\nProject: {project}\nPart: {number + 1}/{len(pieces)}\nRole at part start: {start_role.upper()}\n\n"
+            body = head + piece
+            if total + len(body) > max_chars:
+                break
+            name = _session_file(session.tool, session.id)[:-4] + "-" + part_id[:16] + ".txt"
+            path = out_dir / name
+            path.write_text(body, encoding="utf-8")
+            entries.append({"tool": session.tool, "id": session.id, "date": session.started[:10], "project": project,
+                            "file": str(path), "chars": len(body), "part_id": part_id,
+                            "part_index": number, "part_count": len(pieces), "part_size": size,
+                            "sha256": hashlib.sha256(body.encode()).hexdigest(), "source_sha256": digest,
+                            "source_file": str(session.path.resolve()) if session.path.is_file() else None})
+            names.add(name)
+            total += len(body)
+            added = True
+            break
+        if added:
+            chosen += 1
     for stale in out_dir.glob("*.txt"):
         if stale.name not in names and stale.stat().st_size:
             stale.write_text("", encoding="utf-8")
-    index = {"sessions": entries}
+    index = {"format": 2, "sessions": entries}
     save_json(out_dir / "index.json", index)
-    return index, len(sessions) - len(chosen)
+    return index, len(sessions) - chosen
 
 
 def _keys(values):
@@ -338,6 +449,7 @@ def main(argv=None):
     batch.add_argument("--out-dir", type=Path, default=None)
     batch.add_argument("--session", action="append", help="only this <tool>:<id> (repeatable)")
     batch.add_argument("--skip", action="append", help="leave out this <tool>:<id> (repeatable)")
+    batch.add_argument("--replay", action="append", help="replay only selected processed <tool>:<id> without clearing history")
     args = parser.parse_args(argv)
     hub = args.hub.resolve()
     ledger = load_ledger(hub)
@@ -349,13 +461,28 @@ def main(argv=None):
         save_json(hub / LEDGER, ledger)
         print(json.dumps({"cutover": args.cutover}))
         return
-    sessions = pending(hub, ledger, now, args.claude_root, args.codex_root) + extra_sources(hub, ledger)
+    replay = _keys(getattr(args, "replay", None))
+    try:
+        sessions = pending(hub, ledger, now, args.claude_root, args.codex_root, replay=replay) + extra_sources(hub, ledger, replay=replay)
+    except (OSError, ValueError) as error:
+        raise SystemExit(f"ERROR: {error}")
     if args.cmd == "status":
+        # `pending` counts every queued item; journal lines and review files are
+        # pseudo-sessions, so they are also reported apart from real sessions.
         counts = {"claude": 0, "codex": 0}
+        real = {"claude": 0, "codex": 0}
+        journal = reviews = 0
         for s in sessions:
             counts[s.tool] += 1
+            if s.id.startswith("obs-"):
+                journal += 1
+            elif s.id.startswith("review-"):
+                reviews += 1
+            else:
+                real[s.tool] += 1
         print(json.dumps({"cutover": ledger.get("cutover"), "last_scan": ledger.get("last_scan"),
-                          "pending": counts}, ensure_ascii=False))
+                          "pending": counts, "sessions": real, "journal": journal,
+                          "reviews": reviews}, ensure_ascii=False))
         return
     only, skip = _keys(args.session), _keys(args.skip)
     sessions = [s for s in sessions if (s.tool, s.id) not in skip and (not only or (s.tool, s.id) in only)]

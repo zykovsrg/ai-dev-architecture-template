@@ -44,7 +44,8 @@ class WorkflowFrictionTests(unittest.TestCase):
             file = source / "2026-09-09.txt"
             file.write_text("first\n", encoding="utf-8")
             pending = list_pending(hub, "2026-09-09")
-            file.write_text("changed\n", encoding="utf-8")
+            # The first observation keeps its ID; only the source hash shows the change.
+            file.write_text("first\nchanged\n", encoding="utf-8")
             with self.assertRaises(ValueError):
                 resolve(hub, "2026-09-09", pending["source_sha256"], pending["entries"][0]["id"], "accepted")
 

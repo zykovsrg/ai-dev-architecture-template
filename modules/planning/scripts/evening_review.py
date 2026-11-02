@@ -106,6 +106,26 @@ def prepare_review(metadata, today, tomorrow, projects, tasks, day, consumed=(),
                 unavailable_calendar_ids=sorted(set(today['unavailable_calendar_ids'] + tomorrow['unavailable_calendar_ids'])))
 
 
+def prepare_daily_calendar(metadata, today, day):
+    """Полный календарь дня: каждое событие сохраняет собственную идентичность."""
+    if metadata.get('source') != SOURCE:
+        raise ValueError('expected guarded Calendar metadata')
+    calendars = metadata['calendars']
+    allowed = {c['id'] for c in calendars}
+    if len(allowed) != len(calendars):
+        raise ValueError('duplicate calendar IDs')
+    timezone = ZoneInfo(today['timezone'])
+    if any(c.get('timezone', timezone.key) != timezone.key for c in calendars):
+        raise ValueError('mixed calendar timezones')
+    events, complete = select_events(today, date.fromisoformat(day), timezone, allowed)
+    queue = [dict(event=e, project_id=None, task_id=None, source_path=None,
+                  review_key=json.dumps(['calendar', e['calendar_id'], e['id'], e['start']], ensure_ascii=False))
+             for e in events]
+    return dict(day=day, timezone=timezone.key, queue=queue, calendar_events=events, daily_review=True,
+                today_complete=complete, tomorrow_complete=True,
+                unavailable_calendar_ids=today['unavailable_calendar_ids'], skipped=0)
+
+
 def prepare_sync(window, day, timezone, allowed, hub, now):
     """Run the mandatory [D-30, D+31) task/Calendar sync check (read-only)."""
     start = local_datetime(window['start'], timezone)
@@ -180,19 +200,36 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--hub', required=True, type=Path)
     parser.add_argument('--day', required=True)
-    parser.add_argument('--now', help='YYYY-MM-DD HH:MM in the calendar timezone; defaults to the current time')
+    parser.add_argument('--reminders', action='store_true', help='Объединить календарь с напоминаниями без календарной синхронизации задач')
+    parser.add_argument('--sync', action='store_true', help='Полная синхронизация перед чтением напоминаний')
+    parser.add_argument('--now', help='YYYY-MM-DD HH:MM for Calendar mode; ISO 8601 with timezone for --reminders; defaults to current time')
     args = parser.parse_args()
+    if args.sync and not args.reminders:
+        parser.error('--sync требует --reminders')
     try:
         data = json.load(sys.stdin)
-        projects, tasks = canonical_inputs(args.hub.resolve())
+        if not args.reminders:
+            projects, tasks = canonical_inputs(args.hub.resolve())
         consumed = data.get('consumed', [])
         # The first run of a review must include the month window: the sync
         # check is part of the review, not an optional step to remember.
-        if not consumed and 'sync_window' not in data:
+        if not args.reminders and not consumed and 'sync_window' not in data:
             raise ValueError('sync_window is required on the first run: pass the guarded [D-30, D+31) read_events response')
-        output = prepare_review(data['metadata'], data['today'], data['tomorrow'], projects, tasks,
-                                args.day, consumed, resolve=title_resolver(args.hub.resolve()))
-        if 'sync_window' in data:
+        if args.reminders:
+            output = prepare_daily_calendar(data['metadata'], data['today'], args.day)
+        else:
+            output = prepare_review(data['metadata'], data['today'], data['tomorrow'], projects, tasks,
+                                    args.day, consumed, resolve=title_resolver(args.hub.resolve()))
+        if args.reminders:
+            import review_reminders
+            now = args.now or datetime.now(review_reminders.TZ).isoformat()
+            reminders, config = review_reminders.load_reminders(args.hub, args.day, now, sync_first=args.sync)
+            projects, tasks = canonical_inputs(args.hub.resolve())
+            output = review_reminders.merge(output, reminders, config, tasks, consumed)
+            output['sync'] = (dict(status='complete' if output['sync_complete'] else 'incomplete',
+                                   errors=output['sync_errors']) if args.sync else
+                              dict(status='reminders-mode-no-calendar-task-sync'))
+        elif 'sync_window' in data:
             timezone = ZoneInfo(output['timezone'])
             now = args.now or datetime.now(timezone).strftime('%Y-%m-%d %H:%M')
             datetime.strptime(now, '%Y-%m-%d %H:%M')
@@ -202,7 +239,7 @@ def main():
         else:
             output['sync'] = dict(status='done-earlier-this-review')
         print(json.dumps(output, ensure_ascii=False))
-    except (ValueError, KeyError, TypeError, OSError) as error:
+    except (ValueError, KeyError, TypeError, OSError, RuntimeError) as error:
         print(str(error), file=sys.stderr)
         return 2
     return 0

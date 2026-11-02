@@ -1,17 +1,53 @@
 #!/usr/bin/env bash
-set -uo pipefail
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+source "$ROOT/tests/helpers/shell-scenarios.sh"
+SANDBOX="$(mktemp -d "${TMPDIR:-/tmp}/shell-memory-goals.XXXXXX")"
+cleanup() { rm -rf "$SANDBOX"; }
+trap cleanup EXIT
 
-SCRIPT="$(cd "$(dirname "$0")/.." && pwd -P)/modules/learning/scripts/check-workflow-memory.sh"
-FAILED=0
-TMP="$(mktemp -d)"
-trap 'rm -rf "$TMP"' EXIT
+# Каждый продуктовый запуск сохраняет stdout отдельно, а stderr проверяет сборщик.
+run_product() {
+  local expected="$1" accepted="$2" diagnostic="$3" observed
+  shift 3
+  scenario_accept_exit "$accepted" "$diagnostic"
+  scenario_exec observed "$@" > "$OUTPUT"
+  scenario_assert_exit "$expected" "$observed"
+}
 
-pass() { echo "ok   - $1"; }
-fail() { echo "FAIL - $1"; [ -n "${2:-}" ] && echo "       $2"; FAILED=1; }
+# Нормальный false доверенного oracle: код 1 и пустой stderr. Сбой test/grep/awk
+# остаётся инфраструктурой; он не превращается в собственное утверждение.
+assert_value() {
+  local observed
+  scenario_accept_exit 1 ''
+  scenario_exec observed test "$1" = "$2"
+  scenario_assert_exit 0 "$observed"
+}
+assert_contains() {
+  local observed
+  scenario_accept_exit 1 ''
+  scenario_exec observed grep -Fq -- "$1" "$OUTPUT"
+  scenario_assert_exit 0 "$observed"
+}
+assert_absent() {
+  local observed
+  scenario_accept_exit 1 ''
+  scenario_exec observed grep -Fiq -- "$1" "$OUTPUT"
+  scenario_assert_exit 1 "$observed"
+}
+assert_fields() {
+  local observed
+  scenario_accept_exit 0 ''
+  scenario_exec observed awk -F'\t' "$1" "$OUTPUT" > "$FIELD"
+  scenario_assert_exit 0 "$observed"
+  assert_value "$(< "$FIELD")" "$2"
+}
+
+SCRIPT="$ROOT/modules/learning/scripts/check-workflow-memory.sh"
 
 make_hub() {
   local dir
-  dir="$(mktemp -d "$TMP/hub.XXXXXX")"
+  dir="$(mktemp -d "$SANDBOX/hub.XXXXXX")"
   mkdir -p "$dir/ai"
   cat >"$dir/ai/workflow-observations.md" <<'OBS'
 # Журнал наблюдений
@@ -27,61 +63,58 @@ OBS
 
 - 2026-09-08 | редактура занимает около часа, а не 30 минут | основание: 3 повтора за 2 недели
 CTX
-  echo "$dir"
+  HUB="$(cd "$dir" && pwd -P)"
+  OUTPUT="$HUB/output"
+  FIELD="$HUB/field"
 }
 
-# 1. корректные файлы проходят
-HUB="$(make_hub)"
-if bash "$SCRIPT" --hub "$HUB" >/dev/null 2>&1; then
-  pass "корректные файлы проходят проверку"
-else
-  fail "корректные файлы проходят проверку"
-fi
 
-# 1b. без модуля planning файла правил нет — это не ошибка
-HUBN="$(make_hub)"
-rm "$HUBN/ai/workflow-context.md"
-if bash "$SCRIPT" --hub "$HUBN" >/dev/null 2>&1; then
-  pass "отсутствие workflow-context.md не ошибка"
-else
-  fail "отсутствие workflow-context.md не ошибка"
-fi
+accepts_valid_memory() {
+  make_hub
+  scenario_begin
+  run_product 0 1 $'ERROR: bad observation line: - 2026-09-08 | day-plan | friction | пришлось спрашивать про длительность редактуры\n' bash "$SCRIPT" --hub "$HUB"
+  scenario_pass
+}
 
-# 2. битая строка журнала отвергается
-HUB2="$(make_hub)"
-echo '- мусор без полей' >>"$HUB2/ai/workflow-observations.md"
-if bash "$SCRIPT" --hub "$HUB2" >/dev/null 2>&1; then
-  fail "битая строка журнала отвергается" "скрипт завершился успешно"
-else
-  pass "битая строка журнала отвергается"
-fi
+allows_absent_planning_context() {
+  make_hub
+  rm "$HUB/ai/workflow-context.md"
+  scenario_begin
+  run_product 0 1 $'ERROR: missing file: ai/workflow-context.md\n' bash "$SCRIPT" --hub "$HUB"
+  scenario_pass
+}
 
-# 3. битая строка правила отвергается
-HUB3="$(make_hub)"
-echo '- 2026-09-08 | правило без основания' >>"$HUB3/ai/workflow-context.md"
-if bash "$SCRIPT" --hub "$HUB3" >/dev/null 2>&1; then
-  fail "битая строка правила отвергается" "скрипт завершился успешно"
-else
-  pass "битая строка правила отвергается"
-fi
+rejects_malformed_observation() {
+  make_hub
+  printf '%s\n' '- мусор без полей' >> "$HUB/ai/workflow-observations.md"
+  scenario_begin
+  run_product 1 1 $'ERROR: bad observation line: - мусор без полей\n' bash "$SCRIPT" --hub "$HUB"
+  scenario_pass
+}
 
-# 4. превышение лимита в 100 правил отвергается
-HUB4="$(make_hub)"
-i=0
-while [ "$i" -lt 100 ]; do
-  echo "- 2026-09-08 | правило номер $i | основание: 3 повтора за 2 недели" >>"$HUB4/ai/workflow-context.md"
-  i=$((i + 1))
-done
-OUT="$(bash "$SCRIPT" --hub "$HUB4" 2>&1)" && RC=0 || RC=1
-if [ "$RC" -eq 1 ] && printf '%s' "$OUT" | grep -q 'too many rules'; then
-  pass "лимит в 100 правил проверяется"
-else
-  fail "лимит в 100 правил проверяется" "$OUT"
-fi
+rejects_context_without_basis() {
+  make_hub
+  printf '%s\n' '- 2026-09-08 | правило без основания' >> "$HUB/ai/workflow-context.md"
+  scenario_begin
+  run_product 1 1 $'ERROR: bad rule line: - 2026-09-08 | правило без основания\n' bash "$SCRIPT" --hub "$HUB"
+  scenario_pass
+}
 
-# 6. невалидная строка под заголовком "## Схема" в workflow-observations.md не мешает проверке
-HUB6="$(make_hub)"
-cat >"$HUB6/ai/workflow-observations.md" <<'OBS'
+rejects_over_100_rules() {
+  make_hub
+  i=0
+  while [ "$i" -lt 100 ]; do
+    printf '%s\n' "- 2026-09-08 | правило номер $i | основание: 3 повтора за 2 недели" >> "$HUB/ai/workflow-context.md"
+    i=$((i + 1))
+  done
+  scenario_begin
+  run_product 1 1 $'ERROR: too many rules: 101 > 100\n' bash "$SCRIPT" --hub "$HUB"
+  scenario_pass
+}
+
+skips_observation_schema_example() {
+  make_hub
+  cat > "$HUB/ai/workflow-observations.md" <<'OBS'
 # Журнал наблюдений
 
 ## Схема
@@ -92,15 +125,14 @@ cat >"$HUB6/ai/workflow-observations.md" <<'OBS'
 
 - 2026-09-08 | day-plan | friction | пришлось спрашивать про длительность редактуры
 OBS
-if bash "$SCRIPT" --hub "$HUB6" >/dev/null 2>&1; then
-  pass "строка-образец под «## Схема» в workflow-observations.md не мешает проверке"
-else
-  fail "строка-образец под «## Схема» в workflow-observations.md не мешает проверке"
-fi
+  scenario_begin
+  run_product 0 1 $'ERROR: bad observation line: - YYYY-MM-DD | day-plan|evening-review|weekly-review | friction|calendar | суть\n' bash "$SCRIPT" --hub "$HUB"
+  scenario_pass
+}
 
-# 7. невалидная строка под заголовком "## Схема" в workflow-context.md не мешает проверке
-HUB7="$(make_hub)"
-cat >"$HUB7/ai/workflow-context.md" <<'CTX'
+skips_context_schema_example() {
+  make_hub
+  cat > "$HUB/ai/workflow-context.md" <<'CTX'
 # Усвоенный контекст
 
 ## Схема
@@ -111,60 +143,66 @@ cat >"$HUB7/ai/workflow-context.md" <<'CTX'
 
 - 2026-09-08 | редактура занимает около часа, а не 30 минут | основание: 3 повтора за 2 недели
 CTX
-if bash "$SCRIPT" --hub "$HUB7" >/dev/null 2>&1; then
-  pass "строка-образец под «## Схема» в workflow-context.md не мешает проверке"
-else
-  fail "строка-образец под «## Схема» в workflow-context.md не мешает проверке"
-fi
+  scenario_begin
+  run_product 0 1 $'ERROR: bad rule line: - YYYY-MM-DD | day-plan|evening-review|weekly-review | friction|calendar | суть\n' bash "$SCRIPT" --hub "$HUB"
+  scenario_pass
+}
 
-# 5. отсутствующий журнал наблюдений отвергается
-HUB5="$(make_hub)"
-rm "$HUB5/ai/workflow-observations.md"
-if bash "$SCRIPT" --hub "$HUB5" >/dev/null 2>&1; then
-  fail "отсутствующий файл отвергается" "скрипт завершился успешно"
-else
-  pass "отсутствующий файл отвергается"
-fi
+rejects_missing_observation_file() {
+  make_hub
+  rm "$HUB/ai/workflow-observations.md"
+  scenario_begin
+  run_product 1 1 $'ERROR: missing file: ai/workflow-observations.md\n' bash "$SCRIPT" --hub "$HUB"
+  scenario_pass
+}
 
-# 8. ровно 100 правил проходят проверку
-HUB8="$(make_hub)"
-i=1
-while [ "$i" -lt 100 ]; do
-  echo "- 2026-09-08 | правило номер $i | основание: 3 повтора за 2 недели" >>"$HUB8/ai/workflow-context.md"
-  i=$((i + 1))
-done
-OUT="$(bash "$SCRIPT" --hub "$HUB8" 2>&1)" && RC=0 || RC=1
-if [ "$RC" -eq 0 ] && printf '%s' "$OUT" | grep -q 'правил: 100'; then
-  pass "ровно 100 правил проходят проверку"
-else
-  fail "ровно 100 правил проходят проверку" "$OUT"
-fi
+accepts_exactly_100_rules() {
+  make_hub
+  i=0
+  while [ "$i" -lt 99 ]; do
+    printf '%s\n' "- 2026-09-08 | правило номер $i | основание: 3 повтора за 2 недели" >> "$HUB/ai/workflow-context.md"
+    i=$((i + 1))
+  done
+  scenario_begin
+  run_product 0 1 $'ERROR: too many rules: 100 > 99\n' bash "$SCRIPT" --hub "$HUB"
+  assert_value "$(< "$OUTPUT")" 'ok: наблюдений и правил — формат корректен, правил: 100'
+  scenario_pass
+}
 
-# 9. битая последняя строка без перевода строки отвергается
-HUB9="$(make_hub)"
-printf '%s' '- мусор без полей' >>"$HUB9/ai/workflow-observations.md"
-if bash "$SCRIPT" --hub "$HUB9" >/dev/null 2>&1; then
-  fail "битая последняя строка без перевода строки отвергается" "скрипт завершился успешно"
-else
-  pass "битая последняя строка без перевода строки отвергается"
-fi
+rejects_final_malformed_observation_no_newline() {
+  make_hub
+  printf '%s' '- мусор без полей' >> "$HUB/ai/workflow-observations.md"
+  scenario_begin
+  run_product 1 1 $'ERROR: bad observation line: - мусор без полей\n' bash "$SCRIPT" --hub "$HUB"
+  scenario_pass
+}
 
-# 10. битая последняя строка правил без перевода строки отвергается
-HUB10="$(make_hub)"
-printf '%s' '- 2026-09-08 | правило без основания' >>"$HUB10/ai/workflow-context.md"
-if bash "$SCRIPT" --hub "$HUB10" >/dev/null 2>&1; then
-  fail "битая последняя строка правил без перевода строки отвергается" "скрипт завершился успешно"
-else
-  pass "битая последняя строка правил без перевода строки отвергается"
-fi
+rejects_final_malformed_context_no_newline() {
+  make_hub
+  printf '%s' '- 2026-09-08 | правило без основания' >> "$HUB/ai/workflow-context.md"
+  scenario_begin
+  run_product 1 1 $'ERROR: bad rule line: - 2026-09-08 | правило без основания\n' bash "$SCRIPT" --hub "$HUB"
+  scenario_pass
+}
 
-# 11. невозможная дата наблюдения отвергается (локальный кейс до слияния)
-HUB11="$(make_hub)"
-echo '- 2026-02-30 | day-plan | friction | invalid leap day' >>"$HUB11/ai/workflow-observations.md"
-if bash "$SCRIPT" --hub "$HUB11" >/dev/null 2>&1; then
-  fail "невозможная дата наблюдения отвергается" "скрипт завершился успешно"
-else
-  pass "невозможная дата наблюдения отвергается"
-fi
+rejects_impossible_observation_date() {
+  make_hub
+  printf '%s\n' '- 2026-02-30 | day-plan | friction | invalid leap day' >> "$HUB/ai/workflow-observations.md"
+  scenario_begin
+  run_product 1 1 $'ERROR: impossible observation date: - 2026-02-30 | day-plan | friction | invalid leap day\n' bash "$SCRIPT" --hub "$HUB"
+  scenario_pass
+}
 
-exit "$FAILED"
+scenario_declare accepts-valid-memory accepts_valid_memory
+scenario_declare allows-absent-planning-context allows_absent_planning_context
+scenario_declare rejects-malformed-observation rejects_malformed_observation
+scenario_declare rejects-context-without-basis rejects_context_without_basis
+scenario_declare rejects-over-100-rules rejects_over_100_rules
+scenario_declare skips-observation-schema-example skips_observation_schema_example
+scenario_declare skips-context-schema-example skips_context_schema_example
+scenario_declare rejects-missing-observation-file rejects_missing_observation_file
+scenario_declare accepts-exactly-100-rules accepts_exactly_100_rules
+scenario_declare rejects-final-malformed-observation-no-newline rejects_final_malformed_observation_no_newline
+scenario_declare rejects-final-malformed-context-no-newline rejects_final_malformed_context_no_newline
+scenario_declare rejects-impossible-observation-date rejects_impossible_observation_date
+scenario_main "$@"

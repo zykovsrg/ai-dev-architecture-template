@@ -144,14 +144,57 @@ def parse_groups(path):
 CARD_ID_RE = re.compile(r"^Project ID:\s*(.+)$")
 CARD_PRIMARY_RE = re.compile(r"^primary_archiproject:\s*(.+)$")
 CARD_CALENDAR_RE = re.compile(r"^Calendar name:\s*(.+)$")
+CARD_STATUS_RE = re.compile(r"^Status:\s*(.*)$")
+CARD_REPLACEMENT_RE = re.compile(r"^Replacement project:\s*(.*)$")
 GROUP_PROJECT = "—"
 FORBIDDEN_FIELDS = ("archiproject_contribution:", "related_archiprojects:")
+
+
+def _active_registered_cards(hub):
+    """Активные карточки из реестра с безопасным корнем проекта."""
+    hub = Path(hub).resolve()
+    registry = hub / "ai/project-registry.md"
+    projects_root = hub / "projects"
+    if (registry.is_symlink() or not registry.is_file()
+            or projects_root.is_symlink() or not projects_root.is_dir()):
+        return set()
+    entries = {}
+    current = None
+    try:
+        for line in registry.read_text(encoding="utf-8").splitlines():
+            if line.startswith("## "):
+                project_id = line[3:].strip()
+                if not ID_RE.fullmatch(project_id) or project_id in entries:
+                    return set()
+                current = entries[project_id] = {}
+            elif current is not None and ": " in line:
+                key, value = line.split(": ", 1)
+                if key in {"Status", "Path", "Card"}:
+                    if key in current:
+                        return set()
+                    current[key] = value.strip()
+    except (OSError, UnicodeError):
+        return set()
+    active = set()
+    for project_id, entry in entries.items():
+        if entry.get("Status") != "active" or not entry.get("Path") or not entry.get("Card"):
+            continue
+        root = Path(entry["Path"])
+        card = hub / entry["Card"]
+        if (not root.is_absolute() or ".." in root.parts or root.is_symlink()
+                or not root.is_dir() or root.resolve().parent != projects_root
+                or card.is_symlink() or not card.is_file()
+                or card.resolve().parent != hub / "ai/project-cards"):
+            continue
+        active.add((project_id, card.resolve()))
+    return active
 
 
 def read_cards(hub):
     """Read ai/project-cards/*.md, returning list of dicts with card data."""
     cards_dir = Path(hub) / "ai" / "project-cards"
     cards = []
+    active_registered = _active_registered_cards(hub)
     if not cards_dir.is_dir():
         return cards
     for card_path in sorted(cards_dir.glob("*.md")):
@@ -159,6 +202,8 @@ def read_cards(hub):
         project_id = None
         primary = None
         calendar = None
+        status = None
+        replacement = None
         forbidden = False
         for line in text.splitlines():
             id_match = CARD_ID_RE.match(line)
@@ -173,6 +218,14 @@ def read_cards(hub):
             if calendar_match:
                 calendar = calendar_match.group(1).strip()
                 continue
+            status_match = CARD_STATUS_RE.match(line)
+            if status_match:
+                status = status_match.group(1).strip()
+                continue
+            replacement_match = CARD_REPLACEMENT_RE.match(line)
+            if replacement_match:
+                replacement = replacement_match.group(1).strip()
+                continue
             if any(line.startswith(field) for field in FORBIDDEN_FIELDS):
                 forbidden = True
         cards.append({
@@ -180,6 +233,9 @@ def read_cards(hub):
             "project_id": project_id,
             "primary_archiproject": primary,
             "calendar_name": calendar,
+            "status": status,
+            "replacement_project": replacement,
+            "registered_active": (project_id, card_path.resolve()) in active_registered,
             "forbidden_fields": forbidden,
         })
     return cards
@@ -285,6 +341,8 @@ def resolve_title(groups, cards, title):
 
     The longest matching chain wins; legacy `<category>/<project-id>/<task>`
     titles still resolve through the project ID in the second part.
+    Поле замены направляет старое название в активный проект-преемник.
+    Отсутствующий, неоднозначный, циклический или неактивный преемник отклоняется.
     """
     parts = title.split("/")
     folded = [part.strip().casefold() for part in parts]
@@ -304,7 +362,22 @@ def resolve_title(groups, cards, title):
     if len(best) != 1:
         return None
     task = "/".join(parts[best_len:]).strip()
-    return (best[0]["project_id"], task) if task else None
+    if not task:
+        return None
+    card = best[0]
+    seen = {card["project_id"]}
+    redirected = False
+    while card.get("replacement_project") is not None:
+        replacement = card["replacement_project"]
+        targets = [candidate for candidate in cards if candidate["project_id"] == replacement]
+        if len(targets) != 1 or replacement in seen:
+            return None
+        seen.add(replacement)
+        card = targets[0]
+        redirected = True
+    if redirected and (card.get("status") != "active" or not card.get("registered_active")):
+        return None
+    return card["project_id"], task
 
 
 def _calendar_errors(groups, cards):

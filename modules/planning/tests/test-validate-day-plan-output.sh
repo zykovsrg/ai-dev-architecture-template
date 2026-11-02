@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
-set -uo pipefail
-
-ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+SOURCE="$(cd "$ROOT/../.." && pwd -P)"
 VALIDATOR="$ROOT/scripts/validate-day-plan-output.py"
-FAILED=0
+source "$SOURCE/tests/helpers/shell-scenarios.sh"
+TMP="$(mktemp -d "${TMPDIR:-/private/tmp}/day-plan-scenarios.XXXXXX")"
+trap 'rm -rf "$TMP"' EXIT
 
-pass() { echo "ok   - $1"; }
-fail() { echo "FAIL - $1"; [ -n "${2:-}" ] && echo "       $2"; FAILED=1; }
-
-valid_draft() {
-  cat <<'DRAFT'
+# Каждый случай получает независимый вход и точный договор предметного отказа.
+case_0() {
+  local rc
+  scenario_begin
+  cat >"$TMP/input" <<'DRAFT'
 Read-only workflow: no changes were made.
 
 ## Текущий календарь
@@ -21,56 +23,146 @@ Read-only workflow: no changes were made.
 ## Просроченные задачи
 - Нет.
 DRAFT
+  scenario_accept_exit 1 'ERROR: expected exactly the three day-plan headings in order'$'\n'
+  scenario_exec rc python3 "$VALIDATOR" <"$TMP/input" >"$TMP/output"
+  scenario_assert_exit 0 "$rc"
+  scenario_accept_exit 1 ''
+  scenario_exec rc grep -Fxq 'day-plan structure valid' "$TMP/output"
+  scenario_assert_exit 0 "$rc"
+  scenario_pass
 }
 
-OUT="$(valid_draft | python3 "$VALIDATOR" 2>&1)"
-if [ $? -eq 0 ] && [ "$OUT" = "day-plan structure valid" ]; then
-  pass "полная структура из трёх разделов принимается"
-else
-  fail "полная структура из трёх разделов принимается" "$OUT"
-fi
+case_1() {
+  local rc
+  scenario_begin
+  cat >"$TMP/input" <<'DRAFT'
+Read-only workflow: no changes were made.
 
-OUT="$( { valid_draft; echo; echo 'Разбор сессий: последний — 2026-10-04; новых: «Клод» 1, «Кодекс» 0. Запустить разбор?'; } | python3 "$VALIDATOR" 2>&1)"
-if [ $? -eq 0 ] && [ "$OUT" = "day-plan structure valid" ]; then
-  pass "строка о разборе сессий после разделов принимается"
-else
-  fail "строка о разборе сессий после разделов принимается" "$OUT"
-fi
+## Текущий календарь
+- 09:00–10:00 — дела/работа
 
-OUT="$(valid_draft | grep -v '^## Просроченные задачи$' | python3 "$VALIDATOR" 2>&1)"
-if [ $? -ne 0 ]; then
-  pass "пропущенный раздел отклоняется"
-else
-  fail "пропущенный раздел отклоняется" "$OUT"
-fi
+## Синхронизация
+- Нет.
 
-OUT="$(valid_draft | sed 's/^## Синхронизация$/## Конфликты/' | python3 "$VALIDATOR" 2>&1)"
-if [ $? -ne 0 ]; then
-  pass "удалённый раздел «Конфликты» больше не является частью структуры"
-else
-  fail "удалённый раздел «Конфликты» больше не является частью структуры" "$OUT"
-fi
+## Просроченные задачи
+- Нет.
 
-REORDERED="$(printf '## Просроченные задачи\n- Нет.\n\n## Текущий календарь\n- 09:00–10:00 — дела/работа\n\n## Задачи вне календаря\n- Нет.\n\n## Рекомендации\n- Нет.\n\n## Синхронизация\n- Нет.\n')"
-OUT="$(printf '%s' "$REORDERED" | python3 "$VALIDATOR" 2>&1)"
-if [ $? -ne 0 ]; then
-  pass "нарушенный порядок разделов отклоняется"
-else
-  fail "нарушенный порядок разделов отклоняется" "$OUT"
-fi
+Разбор сессий: последний — 2026-10-04; новых сессий: «Клод» 1, «Кодекс» 0; записей журнала: 0. Запустить разбор?
+DRAFT
+  scenario_accept_exit 1 'ERROR: expected exactly the three day-plan headings in order'$'\n'
+  scenario_exec rc python3 "$VALIDATOR" <"$TMP/input" >"$TMP/output"
+  scenario_assert_exit 0 "$rc"
+  scenario_accept_exit 1 ''
+  scenario_exec rc grep -Fxq 'day-plan structure valid' "$TMP/output"
+  scenario_assert_exit 0 "$rc"
+  scenario_pass
+}
 
-OUT="$(valid_draft | sed '/^## Синхронизация$/{n;d;}' | python3 "$VALIDATOR" 2>&1)"
-if [ $? -ne 0 ]; then
-  pass "пустой раздел отклоняется"
-else
-  fail "пустой раздел отклоняется" "$OUT"
-fi
+case_2() {
+  local rc
+  scenario_begin
+  cat >"$TMP/input" <<'DRAFT'
+Read-only workflow: no changes were made.
 
-OUT="$(valid_draft | grep -v '^## Синхронизация$' | python3 "$VALIDATOR" 2>&1)"
-if [ $? -ne 0 ]; then
-  pass "план без раздела «Синхронизация» отклоняется"
-else
-  fail "план без раздела «Синхронизация» отклоняется" "$OUT"
-fi
+## Текущий календарь
+- 09:00–10:00 — дела/работа
 
-exit "$FAILED"
+## Синхронизация
+- Нет.
+
+- Нет.
+DRAFT
+  scenario_accept_exit 1 'ERROR: expected exactly the three day-plan headings in order'$'\n'
+  scenario_exec rc python3 "$VALIDATOR" <"$TMP/input" >"$TMP/output"
+  scenario_assert_exit 1 "$rc"
+  scenario_pass
+}
+
+case_3() {
+  local rc
+  scenario_begin
+  cat >"$TMP/input" <<'DRAFT'
+Read-only workflow: no changes were made.
+
+## Текущий календарь
+- 09:00–10:00 — дела/работа
+
+## Конфликты
+- Нет.
+
+## Просроченные задачи
+- Нет.
+DRAFT
+  scenario_accept_exit 1 'ERROR: expected exactly the three day-plan headings in order'$'\n'
+  scenario_exec rc python3 "$VALIDATOR" <"$TMP/input" >"$TMP/output"
+  scenario_assert_exit 1 "$rc"
+  scenario_pass
+}
+
+case_4() {
+  local rc
+  scenario_begin
+  cat >"$TMP/input" <<'DRAFT'
+## Просроченные задачи
+- Нет.
+
+## Текущий календарь
+- 09:00–10:00 — дела/работа
+
+## Синхронизация
+- Нет.
+DRAFT
+  scenario_accept_exit 1 'ERROR: expected exactly the three day-plan headings in order'$'\n'
+  scenario_exec rc python3 "$VALIDATOR" <"$TMP/input" >"$TMP/output"
+  scenario_assert_exit 1 "$rc"
+  scenario_pass
+}
+
+case_5() {
+  local rc
+  scenario_begin
+  cat >"$TMP/input" <<'DRAFT'
+Read-only workflow: no changes were made.
+
+## Текущий календарь
+- 09:00–10:00 — дела/работа
+
+## Синхронизация
+
+## Просроченные задачи
+- Нет.
+DRAFT
+  scenario_accept_exit 1 'ERROR: empty day-plan section: ## Синхронизация'$'\n'
+  scenario_exec rc python3 "$VALIDATOR" <"$TMP/input" >"$TMP/output"
+  scenario_assert_exit 1 "$rc"
+  scenario_pass
+}
+
+case_6() {
+  local rc
+  scenario_begin
+  cat >"$TMP/input" <<'DRAFT'
+Read-only workflow: no changes were made.
+
+## Текущий календарь
+- 09:00–10:00 — дела/работа
+
+- Нет.
+
+## Просроченные задачи
+- Нет.
+DRAFT
+  scenario_accept_exit 1 'ERROR: expected exactly the three day-plan headings in order'$'\n'
+  scenario_exec rc python3 "$VALIDATOR" <"$TMP/input" >"$TMP/output"
+  scenario_assert_exit 1 "$rc"
+  scenario_pass
+}
+
+scenario_declare accepts-complete-structure case_0
+scenario_declare accepts-session-review-tail case_1
+scenario_declare rejects-missing-overdue-heading case_2
+scenario_declare rejects-retired-conflicts-heading case_3
+scenario_declare rejects-reordered-headings case_4
+scenario_declare rejects-empty-section case_5
+scenario_declare rejects-missing-sync-heading case_6
+scenario_main "$@"

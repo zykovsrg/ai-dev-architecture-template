@@ -1,62 +1,111 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
-ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+SOURCE="$(cd "$ROOT/../.." && pwd -P)"
 BRIDGE="$ROOT/policy/bridge"
+BUILDER="$ROOT/scripts/build-calendar-bridge.sh"
+source "$SOURCE/tests/helpers/shell-scenarios.sh"
+WORK="$(mktemp -d "${TMPDIR:-/private/tmp}/calendar-bridge-scenarios.XXXXXX")"
+trap 'rm -rf "$WORK"' EXIT
 
-fail() {
-  printf 'FAIL: %s\n' "$*" >&2
-  exit 1
+expect_ok() {
+  local code
+  scenario_accept_exit 1 ''
+  scenario_exec code "$@"
+  scenario_assert_exit 0 "$code"
 }
 
-[ -f "$BRIDGE/hub_eventkit_bridge.swift" ] || fail "missing local EventKit bridge"
-[ -f "$BRIDGE/Info.plist" ] || fail "missing bridge Info.plist"
-[ -f "$BRIDGE/SHA256SUMS" ] || fail "missing bridge checksum manifest"
+assets_and_checksums() {
+  local code
+  scenario_begin
+  expect_ok test -f "$BRIDGE/hub_eventkit_bridge.swift"
+  expect_ok test -f "$BRIDGE/Info.plist"
+  expect_ok test -f "$BRIDGE/SHA256SUMS"
+  scenario_accept_exit 1 $'shasum: WARNING: 1 computed checksum did NOT match\n'
+  scenario_exec code bash -c 'cd "$1" && shasum -a 256 -c SHA256SUMS' calendar-checksum "$BRIDGE" >"$WORK/checksums"
+  scenario_assert_exit 0 "$code"
+  scenario_pass
+}
 
-(cd "$BRIDGE" && shasum -a 256 -c SHA256SUMS >/dev/null) || fail "bridge checksum mismatch"
+access_and_identity() {
+  local token
+  scenario_begin
+  for token in requestFullAccessToEvents authorizationStatus responsibility_spawnattrs_setdisclaim; do
+    expect_ok grep -Fq "$token" "$BRIDGE/hub_eventkit_bridge.swift"
+  done
+  scenario_pass
+}
 
-grep -Fq 'requestFullAccessToEvents' "$BRIDGE/hub_eventkit_bridge.swift" || fail "bridge lost its access gate"
-grep -Fq 'authorizationStatus' "$BRIDGE/hub_eventkit_bridge.swift" || fail "bridge lost its promptless status path"
-grep -Fq 'responsibility_spawnattrs_setdisclaim' "$BRIDGE/hub_eventkit_bridge.swift" \
-  || fail "bridge lost its own-identity re-spawn"
+all_day_boundaries() {
+  local token
+  scenario_begin
+  for token in 'inclusiveEnd(end)' 'exclusiveEnd(event.endDate)' 'byAdding: .day'; do
+    expect_ok grep -Fq "$token" "$BRIDGE/hub_eventkit_bridge.swift"
+  done
+  scenario_pass
+}
 
-# EventKit's all-day end is inclusive and the policy layer's is exclusive. Only
-# the bridge converts, and nothing above it can notice if that conversion goes
-# missing, so its presence is checked here.
-grep -Fq 'inclusiveEnd(end)' "$BRIDGE/hub_eventkit_bridge.swift" \
-  || fail "bridge lost the all-day end conversion on write"
-grep -Fq 'exclusiveEnd(event.endDate)' "$BRIDGE/hub_eventkit_bridge.swift" \
-  || fail "bridge lost the all-day end conversion on read"
-grep -Fq 'byAdding: .day' "$BRIDGE/hub_eventkit_bridge.swift" \
-  || fail "bridge shifts all-day boundaries by seconds instead of calendar days"
+timezone_text() {
+  local token
+  scenario_begin
+  for token in 'func isoText(_ date: Date, timezone: TimeZone)' 'formatter.timeZone = timezone' \
+    'let eventZone = event.timeZone ?? TimeZone.current' \
+    '"start": isoText(event.startDate, timezone: eventZone)' \
+    '"end": isoText(event.isAllDay ? (exclusiveEnd(event.endDate) ?? event.endDate) : event.endDate, timezone: eventZone)'; do
+    expect_ok grep -Fq "$token" "$BRIDGE/hub_eventkit_bridge.swift"
+  done
+  scenario_pass
+}
 
-grep -Fq 'func isoText(_ date: Date, timezone: TimeZone)' "$BRIDGE/hub_eventkit_bridge.swift" \
-  || fail "bridge does not format event times in their timezone"
-grep -Fq 'formatter.timeZone = timezone' "$BRIDGE/hub_eventkit_bridge.swift" \
-  || fail "bridge timestamp formatter ignores the event timezone"
-grep -Fq 'let eventZone = event.timeZone ?? TimeZone.current' "$BRIDGE/hub_eventkit_bridge.swift" \
-  || fail "bridge has no local-timezone fallback"
-grep -Fq '"start": isoText(event.startDate, timezone: eventZone)' "$BRIDGE/hub_eventkit_bridge.swift" \
-  || fail "bridge start timestamp is not timezone-aware"
-grep -Fq '"end": isoText(event.isAllDay ? (exclusiveEnd(event.endDate) ?? event.endDate) : event.endDate, timezone: eventZone)' "$BRIDGE/hub_eventkit_bridge.swift" \
-  || fail "bridge end timestamp is not timezone-aware"
+bundle_metadata() {
+  local code
+  scenario_begin
+  scenario_accept_exit 1 $'Print: Entry, ":NSCalendarsFullAccessUsageDescription", Does Not Exist\n'
+  scenario_exec code /usr/libexec/PlistBuddy -c 'Print :NSCalendarsFullAccessUsageDescription' "$BRIDGE/Info.plist" >"$WORK/usage"
+  scenario_assert_exit 0 "$code"
+  scenario_accept_exit 1 $'Print: Entry, ":CFBundleExecutable", Does Not Exist\n'
+  scenario_exec code /usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$BRIDGE/Info.plist" >"$WORK/executable"
+  scenario_assert_exit 0 "$code"
+  expect_ok grep -Fxq HubCalendarBridge "$WORK/executable"
+  scenario_pass
+}
 
-# Without this key macOS refuses the Calendar prompt without ever showing it.
-/usr/libexec/PlistBuddy -c 'Print :NSCalendarsFullAccessUsageDescription' "$BRIDGE/Info.plist" >/dev/null 2>&1 \
-  || fail "Info.plist is missing NSCalendarsFullAccessUsageDescription"
-[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$BRIDGE/Info.plist")" = "HubCalendarBridge" ] \
-  || fail "Info.plist names an unexpected executable"
+real_compile_and_signature() {
+  local code executable compiler developer sdk build="$WORK/build"
+  scenario_begin
+  command -v swiftc >/dev/null 2>&1 || scenario__die 'swiftc is required for the existing compile contract'
+  command -v codesign >/dev/null 2>&1 || scenario__die 'codesign is required for the existing signature contract'
+  expect_ok grep -Fq 'swiftc -O -j 2 -num-threads 1' "$BUILDER"
+  developer="$(/usr/bin/xcode-select -p)"
+  compiler="$developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+  sdk="$developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
+  if [ ! -x "$compiler" ]; then
+    compiler="$developer/usr/bin/swiftc"
+    sdk="$developer/SDKs/MacOSX.sdk"
+  fi
+  [ -x "$compiler" ] && [ -d "$sdk" ] || scenario__die 'configured compiler or SDK is unavailable'
+  mkdir -p "$build" "$WORK/bin"
+  # Реальный компилятор получает только временный кэш; его код не имитируется.
+  cat > "$WORK/bin/swiftc" <<WRAPPER
+#!/bin/sh
+exec "$compiler" -sdk "$sdk" -module-cache-path "$WORK/module-cache" "\$@"
+WRAPPER
+  chmod +x "$WORK/bin/swiftc"
+  cp "$BRIDGE/hub_eventkit_bridge.swift" "$BRIDGE/Info.plist" "$build/"
+  scenario_exec code env PATH="$WORK/bin:$PATH" bash "$BUILDER" --bridge-dir "$build" >"$WORK/build-output"
+  scenario_assert_exit 0 "$code"
+  executable="$(tail -1 "$WORK/build-output")"
+  expect_ok test -x "$executable"
+  scenario_exec code codesign --verify "$build/HubCalendarBridge.app"
+  scenario_assert_exit 0 "$code"
+  # Созданный исполняемый файл никогда не запускается: это только сборка и подпись.
+  scenario_pass
+}
 
-# Building only compiles and signs; it never runs the bridge or reads Calendar.
-if command -v swiftc >/dev/null 2>&1; then
-  BUILD_DIR="$(mktemp -d)"
-  trap 'rm -rf "$BUILD_DIR"' EXIT
-  cp "$BRIDGE/hub_eventkit_bridge.swift" "$BRIDGE/Info.plist" "$BUILD_DIR/"
-  executable="$(bash "$ROOT/scripts/build-calendar-bridge.sh" --bridge-dir "$BUILD_DIR" 2>/dev/null | tail -1)"
-  [ -x "$executable" ] || fail "the bridge bundle did not build"
-  codesign --verify "$BUILD_DIR/HubCalendarBridge.app" 2>/dev/null || fail "the built bundle is not signed"
-else
-  printf 'SKIP: swiftc is unavailable, bridge build not checked.\n'
-fi
-
-printf 'PASS: local EventKit bridge is present and buildable.\n'
+scenario_declare bridge-assets-and-checksums assets_and_checksums
+scenario_declare bridge-access-status-and-own-identity access_and_identity
+scenario_declare bridge-all-day-boundaries all_day_boundaries
+scenario_declare bridge-timezone-aware-text timezone_text
+scenario_declare bridge-bundle-metadata bundle_metadata
+scenario_declare bridge-real-compile-and-signature real_compile_and_signature
+scenario_main "$@"

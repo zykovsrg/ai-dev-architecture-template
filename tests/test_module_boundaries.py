@@ -56,6 +56,16 @@ class BoundaryTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stdout)
             self.assertNotIn("WARN", result.stdout)
 
+    def test_declared_optional_dependency_is_allowed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.fixture(root, "core")
+            path = root / "modules/a/module.md"
+            path.write_text(path.read_text().replace("Uses if present: —", "Uses if present: b"))
+            result = self.run_check(root, "--strict")
+            self.assertEqual(result.returncode, 0, result.stdout)
+            self.assertNotIn("WARN", result.stdout)
+
     def test_always_installed_module_is_allowed_optional_is_not(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

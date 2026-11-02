@@ -1,4 +1,4 @@
-# Module: release
+# Модуль: release
 
 Id: release
 Required: no
@@ -10,8 +10,8 @@ Keywords: —
 
 ## Purpose
 
-Build the Hub release manifest from module passports and run repository-only
-consistency and installer checks; nothing here is installed into a Hub.
+Собирать манифест выпуска Хаба из паспортов модулей и запускать проверки
+согласованности и установщика только в репозитории; ничто отсюда не устанавливается в Хаб.
 
 ## Installs
 
@@ -27,6 +27,14 @@ consistency and installer checks; nothing here is installed into a Hub.
 - scripts/install.sh
 - scripts/check-consistency.sh
 - scripts/architecture-test.sh
+- scripts/mutation-test.py
+- scripts/mutation-test-strict.py
+- scripts/mutation-filesystem.py
+- scripts/mutation-inventory.py
+- scripts/mutation-check.py
+- scripts/test-method-capture.py
+- scripts/test-shell-capture.py
+- scripts/python_compat.py
 - scripts/hub-smoke-test.sh
 - scripts/assistant-workflows.sh
 - scripts/assistant-workflows-test.sh
@@ -36,11 +44,11 @@ consistency and installer checks; nothing here is installed into a Hub.
 
 ## Reads
 
-- module passports and the installed Hub's manifest
+- паспорта модулей и манифест установленного Хаба
 
 ## Writes
 
-- the Hub release manifest
+- манифест выпуска Хаба
 
 ## Subscribes
 

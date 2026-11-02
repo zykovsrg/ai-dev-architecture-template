@@ -73,14 +73,13 @@ class EveningReviewTests(unittest.TestCase):
         ev = event('хадасса/промостраницы/страница/текст', ident='e')
         task = dict(project_id='p', task_id='T', title='Текст')
         result = self.prepare([ev], tasks=[task], resolve=resolve)
-        self.assertEqual((result['queue'][0]['project_id'], result['queue'][0]['task_id']), ('p', 'T'))
+        self.assertEqual([(r['project_id'], r['task_id']) for r in result['queue']], [('p', 'T')])
 
     def test_unique_legacy_link_maps_project_without_title_convention(self):
         ev = event('Старая встреча', ident='e')
         task = dict(project_id='p', task_id='T', title='Встреча', event_link=dict(calendar_id='normal',event_id='e'))
         result = self.prepare([ev], tasks=[task])
-        self.assertEqual(result['queue'][0]['project_id'], 'p')
-        self.assertEqual(result['queue'][0]['task_id'], 'T')
+        self.assertEqual([(r['project_id'], r['task_id']) for r in result['queue']], [('p', 'T')])
 
     def test_conflicting_legacy_links_skip_ambiguous_event(self):
         task = dict(project_id='p',task_id='T',title='one',event_link=dict(calendar_id='normal',event_id='e'))

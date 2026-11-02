@@ -1,0 +1,735 @@
+{
+  "suites": {
+    "hub": {
+      "commands": [
+        [
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_hub_release.py",
+          "-q"
+        ],
+        [
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_module_passports.py",
+          "-q"
+        ]
+      ]
+    },
+    "tasks": {
+      "commands": [
+        [
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_schedule_validation.py",
+          "-q"
+        ]
+      ]
+    },
+    "planning": {
+      "commands": [
+        [
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "modules/planning/tests",
+          "-p",
+          "test_plan_validation.py",
+          "-q"
+        ]
+      ]
+    },
+    "learning": {
+      "commands": [
+        [
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "modules/learning/tests",
+          "-p",
+          "test_session_rules.py",
+          "-q"
+        ]
+      ]
+    },
+    "calendar": {
+      "commands": [
+        [
+          "-m",
+          "pytest",
+          "-q",
+          "modules/calendar/policy/tests/test_policy.py",
+          "modules/calendar/policy/tests/test_preview.py"
+        ]
+      ]
+    },
+    "boundaries": {
+      "commands": [
+        [
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_module_events.py",
+          "-q"
+        ],
+        [
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_module_boundaries.py",
+          "-q"
+        ]
+      ]
+    },
+    "policy": {
+      "commands": [
+        [
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_mutation_policy.py",
+          "-q"
+        ]
+      ]
+    },
+    "runner": {
+      "commands": [
+        [
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_mutation_runner.py",
+          "-q"
+        ]
+      ]
+    },
+    "memory": {
+      "commands": [
+        [
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_memory_isolation.py"
+        ]
+      ]
+    },
+    "update": {
+      "commands": [
+        [
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_release_safety.py",
+          "-q"
+        ],
+        [
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_hub_release_retired.py",
+          "-q"
+        ],
+        [
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_hub_release.py",
+          "-q",
+          "-k",
+          "test_create_if_missing_memory_is_untouched_when_present"
+        ]
+      ]
+    },
+    "routing": {
+      "commands": [
+        [
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-p",
+          "test_routing_safety.py",
+          "-v"
+        ]
+      ]
+    }
+  },
+  "mutations": [
+    {
+      "id": "path-absolute",
+      "suite": "hub",
+      "source": "scripts/hub_release.py",
+      "symbol": "target_path",
+      "before": "relative.is_absolute() or ",
+      "after": ""
+    },
+    {
+      "id": "path-parent",
+      "suite": "hub",
+      "source": "scripts/hub_release.py",
+      "symbol": "target_path",
+      "before": "\"..\" in relative.parts or ",
+      "after": ""
+    },
+    {
+      "id": "path-empty",
+      "suite": "hub",
+      "source": "scripts/hub_release.py",
+      "symbol": "target_path",
+      "before": " or not relative.parts",
+      "after": ""
+    },
+    {
+      "id": "path-symlink",
+      "suite": "hub",
+      "source": "scripts/hub_release.py",
+      "symbol": "target_path",
+      "before": "if probe.is_symlink():",
+      "after": "if False:"
+    },
+    {
+      "id": "path-first-only",
+      "suite": "hub",
+      "source": "scripts/hub_release.py",
+      "symbol": "target_path",
+      "before": "for part in relative.parts:",
+      "after": "for part in relative.parts[:1]:"
+    },
+    {
+      "id": "path-skip-leaf",
+      "suite": "hub",
+      "source": "scripts/hub_release.py",
+      "symbol": "target_path",
+      "before": "for part in relative.parts:",
+      "after": "for part in relative.parts[:-1]:"
+    },
+    {
+      "id": "path-return-root",
+      "suite": "hub",
+      "source": "scripts/hub_release.py",
+      "symbol": "target_path",
+      "before": "return result",
+      "after": "return root"
+    },
+    {
+      "id": "path-redundant-containment",
+      "suite": "hub",
+      "source": "scripts/hub_release.py",
+      "symbol": "target_path",
+      "before": "result.resolve().relative_to(root)",
+      "after": "pass",
+      "equivalent_reason": "При неизменной файловой системе абсолютные пути, .. и символические ссылки уже отвергаются; гонки не проверяются."
+    },
+    {
+      "id": "release-overwrite-local",
+      "suite": "hub",
+      "source": "scripts/hub_release.py",
+      "symbol": "decide",
+      "before": "if installed is not None and current == installed:",
+      "after": "if installed is not None:"
+    },
+    {
+      "id": "release-create-is-conflict",
+      "suite": "hub",
+      "source": "scripts/hub_release.py",
+      "symbol": "decide",
+      "before": "return \"create\"",
+      "after": "return \"conflict\""
+    },
+    {
+      "id": "module-ignore-dependency",
+      "suite": "hub",
+      "source": "scripts/module_passports.py",
+      "symbol": "resolve_selection",
+      "before": "if dep not in chosen:",
+      "after": "if False:"
+    },
+    {
+      "id": "module-allow-project-target",
+      "suite": "hub",
+      "source": "scripts/module_passports.py",
+      "symbol": "parse_passport",
+      "before": "target.startswith(\"projects/\") and target != \"projects/.gitkeep\"",
+      "after": "False"
+    },
+    {
+      "id": "tasks-allow-equal-time",
+      "suite": "tasks",
+      "source": "modules/tasks/scripts/task_records.py",
+      "symbol": "_validated_span",
+      "before": "if last <= first:",
+      "after": "if last < first:"
+    },
+    {
+      "id": "tasks-allow-reverse-time",
+      "suite": "tasks",
+      "source": "modules/tasks/scripts/task_records.py",
+      "symbol": "_validated_span",
+      "before": "if last <= first:",
+      "after": "if False:"
+    },
+    {
+      "id": "planning-extra-section",
+      "suite": "planning",
+      "source": "modules/planning/scripts/validate-day-plan-output.py",
+      "symbol": "main",
+      "before": "if actual != HEADINGS:",
+      "after": "if False:"
+    },
+    {
+      "id": "planning-empty-section",
+      "suite": "planning",
+      "source": "modules/planning/scripts/validate-day-plan-output.py",
+      "symbol": "main",
+      "before": "if not any(line.strip() for line in lines[position + 1:end]):",
+      "after": "if False:"
+    },
+    {
+      "id": "learning-six-sessions",
+      "suite": "learning",
+      "source": "modules/learning/scripts/session_rules.py",
+      "symbol": "_base",
+      "before": "if sessions >= 6:",
+      "after": "if sessions > 6:"
+    },
+    {
+      "id": "learning-hub-as-project",
+      "suite": "learning",
+      "source": "modules/learning/scripts/session_rules.py",
+      "symbol": "scope",
+      "before": " - {\"hub\"}",
+      "after": " - set()"
+    },
+    {
+      "id": "calendar-read-unselected",
+      "suite": "calendar",
+      "source": "modules/calendar/policy/src/hub_calendar_policy/policy.py",
+      "symbol": "CalendarPolicy.authorize_read",
+      "before": "if calendar_id not in self.allowed_calendar_ids:",
+      "after": "if False:"
+    },
+    {
+      "id": "calendar-write-readonly",
+      "suite": "calendar",
+      "source": "modules/calendar/policy/src/hub_calendar_policy/policy.py",
+      "symbol": "CalendarPolicy.authorize_change",
+      "before": "if not calendar.writable:",
+      "after": "if False:"
+    },
+    {
+      "id": "calendar-reuse-preview",
+      "suite": "calendar",
+      "source": "modules/calendar/policy/src/hub_calendar_policy/preview.py",
+      "symbol": "PreviewGrantStore.consume",
+      "before": "grant.state = \"used\"",
+      "after": "grant.state = \"active\""
+    },
+    {
+      "id": "calendar-expiry-boundary",
+      "suite": "calendar",
+      "source": "modules/calendar/policy/src/hub_calendar_policy/preview.py",
+      "symbol": "PreviewGrantStore.consume",
+      "before": "if self._now() >= grant.expires_at:",
+      "after": "if self._now() > grant.expires_at:"
+    },
+    {
+      "id": "calendar-change-payload",
+      "suite": "calendar",
+      "source": "modules/calendar/policy/src/hub_calendar_policy/preview.py",
+      "symbol": "PreviewGrantStore.consume",
+      "before": "if _payload_hash(request) != grant.payload_hash:",
+      "after": "if False:"
+    },
+    {
+      "id": "calendar-change-source",
+      "suite": "calendar",
+      "source": "modules/calendar/policy/src/hub_calendar_policy/preview.py",
+      "symbol": "PreviewGrantStore.consume",
+      "before": "if source_fingerprint != grant.source_fingerprint:",
+      "after": "if False:"
+    },
+    {
+      "id": "boundaries-remove-optional-declaration",
+      "suite": "boundaries",
+      "source": "modules/tasks/module.md",
+      "symbol": "@document",
+      "before": "Uses if present: learning, planning",
+      "after": "Uses if present: learning"
+    },
+    {
+      "id": "boundaries-forget-optional",
+      "suite": "boundaries",
+      "source": "scripts/check-module-boundaries.py",
+      "symbol": "find_violations",
+      "before": ", *passport.uses_if_present",
+      "after": ""
+    },
+    {
+      "id": "boundaries-ignore-undeclared",
+      "suite": "boundaries",
+      "source": "scripts/check-module-boundaries.py",
+      "symbol": "find_violations",
+      "before": "if other in allowed:",
+      "after": "if True:"
+    },
+    {
+      "id": "boundaries-undeclared-calendar",
+      "suite": "boundaries",
+      "source": "modules/tasks/rules.md",
+      "symbol": "@document",
+      "before": "# Правила модуля задач",
+      "after": "# Правила модуля задач\n\nИспользуйте hub-calendar."
+    },
+    {
+      "id": "policy-remove-shared-rule",
+      "suite": "policy",
+      "source": "modules/core/data/ai/architecture.md",
+      "symbol": "@document",
+      "before": "## Мутационное подтверждение новых тестов",
+      "after": "## Проверки качества"
+    },
+    {
+      "id": "policy-weaken-per-test-proof",
+      "suite": "policy",
+      "source": "modules/core/data/ai/architecture.md",
+      "symbol": "@document",
+      "before": "каждый новый тест отдельно",
+      "after": "весь набор сразу"
+    },
+    {
+      "id": "policy-remove-agents",
+      "suite": "policy",
+      "source": "modules/core/data/AGENTS.md",
+      "symbol": "@document",
+      "before": "Каждый новый тест подтверждайте мутацией",
+      "after": "Мутационное подтверждение необязательно"
+    },
+    {
+      "id": "policy-remove-claude",
+      "suite": "policy",
+      "source": "modules/core/data/CLAUDE.md",
+      "symbol": "@document",
+      "before": "Каждый новый тест подтверждайте мутацией",
+      "after": "Мутационное подтверждение необязательно"
+    },
+    {
+      "id": "policy-remove-project-inheritance",
+      "suite": "policy",
+      "source": "modules/projects/skills/hub-project-create/SKILL.md",
+      "symbol": "@document",
+      "before": "Новый проект наследует правило мутационного подтверждения тестов",
+      "after": "Новый проект не наследует правило"
+    },
+    {
+      "id": "runner-disable-document-mutation",
+      "suite": "runner",
+      "source": "scripts/mutation-test.py",
+      "symbol": "mutate",
+      "before": "if item['symbol'] == '@document':",
+      "after": "if False:"
+    },
+    {
+      "id": "memory-read-archived",
+      "suite": "memory",
+      "source": "modules/tasks/scripts/read-compact-task-index.py",
+      "symbol": "build_index",
+      "before": "if project[\"status\"] != \"active\":",
+      "after": "if False:"
+    },
+    {
+      "id": "memory-read-foreign-group",
+      "suite": "memory",
+      "source": "modules/tasks/scripts/read-compact-task-index.py",
+      "symbol": "build_index",
+      "before": "if allowed_project_ids is not None and project[\"project_id\"] not in allowed_project_ids:",
+      "after": "if False:"
+    },
+    {
+      "id": "memory-follow-intermediate-link",
+      "suite": "memory",
+      "source": "modules/tasks/scripts/read-compact-task-index.py",
+      "symbol": "safe_record",
+      "before": "path.resolve().relative_to(project_root)",
+      "after": "pass  # Удалена проверка конечного пути записи"
+    },
+    {
+      "id": "memory-follow-record-link",
+      "suite": "memory",
+      "source": "modules/tasks/scripts/read-compact-task-index.py",
+      "symbol": "safe_record",
+      "before": "if path.is_symlink() or not path.is_file():",
+      "after": "if not path.is_file():"
+    },
+    {
+      "id": "memory-registry-outside-root",
+      "suite": "memory",
+      "source": "modules/tasks/scripts/read-compact-task-index.py",
+      "symbol": "registered_project_root",
+      "before": "if not resolved.is_dir() or resolved.parent != allowed_root:",
+      "after": "if not resolved.is_dir():"
+    },
+    {
+      "id": "memory-read-noncanonical-record",
+      "suite": "memory",
+      "source": "modules/tasks/scripts/read-compact-task-index.py",
+      "symbol": "build_index",
+      "before": "for kind, relative in SOURCE_FILES.items():",
+      "after": "for kind, relative in {**SOURCE_FILES, \"future\": \"ai/private.md\"}.items():"
+    },
+    {
+      "id": "update-revision-guard",
+      "suite": "update",
+      "source": "scripts/hub_release.py",
+      "symbol": "apply",
+      "before": "if source_sha != confirmed_source_sha:",
+      "after": "if False:"
+    },
+    {
+      "id": "update-reviewed-plan-guard",
+      "suite": "update",
+      "source": "scripts/hub_release.py",
+      "symbol": "apply",
+      "before": "if plan[\"plan_sha256\"] != confirmed_plan:",
+      "after": "if False:"
+    },
+    {
+      "id": "update-local-conflict-guard",
+      "suite": "update",
+      "source": "scripts/hub_release.py",
+      "symbol": "apply",
+      "before": "if conflicts:",
+      "after": "if False:"
+    },
+    {
+      "id": "update-metadata-link",
+      "suite": "update",
+      "source": "scripts/hub_release.py",
+      "symbol": "load_installed_manifest",
+      "before": "if installed_file.is_symlink():",
+      "after": "if False:"
+    },
+    {
+      "id": "update-rollback-file",
+      "suite": "update",
+      "source": "scripts/hub_release.py",
+      "symbol": "apply",
+      "before": "os.replace(backup, target)",
+      "after": "pass"
+    },
+    {
+      "id": "update-retired-local-file",
+      "suite": "update",
+      "source": "scripts/hub_release.py",
+      "symbol": "decide",
+      "before": "return \"remove\" if installed is not None and current == installed else \"conflict\"",
+      "after": "return \"remove\""
+    },
+    {
+      "id": "update-memory-policy",
+      "suite": "update",
+      "source": "scripts/hub_release.py",
+      "symbol": "is_memory_target",
+      "before": "return target in MEMORY_FILES or target.startswith((\"ai/project-cards/\", \"ai/archive/\"))",
+      "after": "return False"
+    },
+    {
+      "id": "runner-disable-shell-mutation",
+      "suite": "runner",
+      "source": "scripts/mutation-test.py",
+      "symbol": "mutate",
+      "before": "if item['symbol'] == '@shell':",
+      "after": "if False:"
+    },
+    {
+      "id": "runner-ignore-shell-syntax",
+      "suite": "runner",
+      "source": "scripts/mutation-test.py",
+      "symbol": "mutate",
+      "before": "if validation.returncode:",
+      "after": "if False:"
+    },
+    {
+      "id": "routing-valid-output",
+      "suite": "routing",
+      "source": "modules/core/scripts/read-compact-project-index.sh",
+      "symbol": "@shell",
+      "before": "printf 'project_id\\tname\\ttags\\tstatus\\tpurpose_brief\\tgroup\\n'",
+      "after": "printf 'name\\tproject_id\\ttags\\tstatus\\tpurpose_brief\\tgroup\\n'"
+    },
+    {
+      "id": "routing-allowed-root",
+      "suite": "routing",
+      "source": "modules/core/scripts/check-hub-registry.sh",
+      "symbol": "@shell",
+      "before": "[ \"$recorded_root\" = \"$PROJECTS_ROOT\" ] \\\n    || die \"allowed root must be exactly the canonical projects root: $PROJECTS_ROOT\"",
+      "after": ": # skipped allowed-root boundary"
+    },
+    {
+      "id": "routing-direct-project",
+      "suite": "routing",
+      "source": "modules/core/scripts/check-hub-registry.sh",
+      "symbol": "@shell",
+      "before": "[ \"$(dirname \"$canonical_path\")\" = \"$PROJECTS_ROOT\" ] \\\n    || die \"project path must be a direct child of the canonical projects root: $raw_path\"",
+      "after": ": # skipped direct-child boundary"
+    },
+    {
+      "id": "routing-memory-owner",
+      "suite": "routing",
+      "source": "modules/core/scripts/check-hub-registry.sh",
+      "symbol": "@shell",
+      "before": "case \"$canonical_memory\" in \"$canonical_path/ai/\"*) ;; *)",
+      "after": "case \"$canonical_memory\" in \"$HUB_DIR/projects/\"*) ;; *)"
+    },
+    {
+      "id": "routing-card-link-registry",
+      "suite": "routing",
+      "source": "modules/core/scripts/check-hub-registry.sh",
+      "symbol": "@shell",
+      "before": "canonical_card=\"$(canonicalize_path \"$card_target\")\" \\\n    || die \"card path must stay beneath ai/project-cards: $card_path\"",
+      "after": "canonical_card=\"$card_target\""
+    },
+    {
+      "id": "routing-card-link-index",
+      "suite": "routing",
+      "source": "modules/core/scripts/read-compact-project-index.sh",
+      "symbol": "@shell",
+      "before": "require_safe_regular_file() {\n  local rel=\"$1\" path parent canonical_parent\n  path=\"$HUB_DIR/$rel\"\n\n  [ ! -L \"$path\" ] || die \"symlink is not allowed: $rel\"",
+      "after": "require_safe_regular_file() {\n  local rel=\"$1\" path parent canonical_parent\n  path=\"$HUB_DIR/$rel\"\n\n  : # regular-file link guard removed"
+    },
+    {
+      "id": "routing-missing-name",
+      "suite": "routing",
+      "source": "modules/core/scripts/read-compact-project-index.sh",
+      "symbol": "@shell",
+      "before": "name_count != 1 || name == \"\"",
+      "after": "name_count > 1"
+    },
+    {
+      "id": "routing-duplicate-name",
+      "suite": "routing",
+      "source": "modules/core/scripts/read-compact-project-index.sh",
+      "symbol": "@shell",
+      "before": "name_count != 1 || name == \"\"",
+      "after": "name_count < 1 || name == \"\""
+    },
+    {
+      "id": "routing-missing-tags",
+      "suite": "routing",
+      "source": "modules/core/scripts/read-compact-project-index.sh",
+      "symbol": "@shell",
+      "before": "tags_count != 1 || tags == \"\"",
+      "after": "tags_count > 1"
+    },
+    {
+      "id": "routing-duplicate-tags",
+      "suite": "routing",
+      "source": "modules/core/scripts/read-compact-project-index.sh",
+      "symbol": "@shell",
+      "before": "tags_count != 1 || tags == \"\"",
+      "after": "tags_count < 1 || tags == \"\""
+    },
+    {
+      "id": "routing-missing-status",
+      "suite": "routing",
+      "source": "modules/core/scripts/read-compact-project-index.sh",
+      "symbol": "@shell",
+      "before": "status_count != 1 || !status_ok(status)",
+      "after": "status_count > 1"
+    },
+    {
+      "id": "routing-duplicate-status",
+      "suite": "routing",
+      "source": "modules/core/scripts/read-compact-project-index.sh",
+      "symbol": "@shell",
+      "before": "status_count != 1 || !status_ok(status)",
+      "after": "status_count < 1 || !status_ok(status)"
+    },
+    {
+      "id": "routing-missing-purpose",
+      "suite": "routing",
+      "source": "modules/core/scripts/read-compact-project-index.sh",
+      "symbol": "@shell",
+      "before": "purpose_count != 1 || purpose == \"\"",
+      "after": "purpose_count > 1"
+    },
+    {
+      "id": "routing-duplicate-purpose",
+      "suite": "routing",
+      "source": "modules/core/scripts/read-compact-project-index.sh",
+      "symbol": "@shell",
+      "before": "purpose_count != 1 || purpose == \"\"",
+      "after": "purpose_count < 1 || purpose == \"\""
+    },
+    {
+      "id": "routing-duplicate-group",
+      "suite": "routing",
+      "source": "modules/core/scripts/read-compact-project-index.sh",
+      "symbol": "@shell",
+      "before": "if (group_count > 1) die(",
+      "after": "if (group_count > 2) die("
+    },
+    {
+      "id": "routing-duplicate-registry-field",
+      "suite": "routing",
+      "source": "modules/core/scripts/check-hub-registry.sh",
+      "symbol": "@shell",
+      "before": "*\"|$field|\"*) die \"duplicate $field for $current_id\" ;;",
+      "after": "*\"|$field|\"*) : ;;"
+    },
+    {
+      "id": "routing-registry-field-reset",
+      "suite": "routing",
+      "source": "modules/core/scripts/check-hub-registry.sh",
+      "symbol": "@shell",
+      "before": "entry_fields_seen=\"|\"",
+      "after": "entry_fields_seen=\"${entry_fields_seen:-|}\""
+    },
+    {
+      "id": "routing-registry-final-line",
+      "suite": "routing",
+      "source": "modules/core/scripts/check-hub-registry.sh",
+      "symbol": "@shell",
+      "before": "while IFS= read -r line || [ -n \"$line\" ]; do",
+      "after": "while IFS= read -r line; do"
+    }
+  ]
+}

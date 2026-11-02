@@ -1,67 +1,96 @@
-# Knowledge Module Rules
+# Правила модуля знаний
 
-## Hub-Managed Project Flow
+## Процессы проектов под управлением хаба
 
-- `hub-knowledge-capture` — creates or updates one explicitly selected record in
-  the confirmed project's local `knowledge/` tree directly and reports it.
-- `hub-knowledge-review` — checks one explicit project-local record, folder, or
-  task-linked set and applies the edits the user asks for; deleting a record
-  waits for an explicit yes.
+- `hub-knowledge-capture` — непосредственно создаёт или обновляет одну явно
+  выбранную запись в локальном дереве `knowledge/` выбранного проекта и сообщает результат.
+- `hub-knowledge-review` — проверяет одну явно заданную локальную запись, папку
+  или связанный с задачей набор и применяет запрошенные пользователем изменения;
+  удаление записи ожидает явного согласия.
 
-## Optional Project Knowledge
+## Необязательные знания проекта (knowledge, on-demand)
 
-`knowledge/` is optional local reference material, not default context and not
-an automatic conversation archive. A new project receives only the empty
-knowledge scaffold as part of its project-creation operation
-(see `## after-project-create`).
-Hub-created projects use the central hub-owned `hub-knowledge-capture` and
-`hub-knowledge-review` workflows; generic project skills are never copied into
-them. Both workflows canonicalize the confirmed project and selected paths,
-reject absolute paths, traversal, and symlink components, and keep every record
-inside that project's `knowledge/` tree and matching type category.
+`knowledge/` — необязательные локальные справочные материалы, а не автоматический
+архив бесед. Подходящие записи находят ограниченным поиском по теме, описанным
+ниже; весь каталог никогда не становится контекстом по умолчанию. Новый проект
+получает только пустой каркас знаний при создании
+(см. `## after-project-create`).
+Проекты, созданные хабом, используют центральные процессы `hub-knowledge-capture`
+и `hub-knowledge-review`; общие навыки проектов никогда не копируются в них.
+Оба процесса приводят выбранный проект и выбранные пути к каноническому виду,
+отклоняют абсолютные пути, выход за границы каталогов и компоненты символических
+ссылок. Каждая запись остаётся в дереве `knowledge/` этого проекта и категории своего типа.
 
-For an existing confirmed registered hub project, use `hub-knowledge-enable` when
-the user asks for it, naming the project ID and exact registered path in the
-report. It may inspect only the registry identity and the exact
-scaffold paths, must not follow symlinks, and must not read records or unrelated
-project content. Its preview names `knowledge/README.md`,
-`knowledge/record-template.md`, and all four category directories. It creates only absent scaffold files and directories;
-it never overwrites records or creates project instructions, skills, Git, code,
-dependencies, services, registry entries, cards, or active-project changes.
-Its preflight uses `lstat`: the confirmed project and category paths must be
-real directories, while existing README and record-template paths must be
-regular files.
+Для существующего выбранного зарегистрированного проекта хаба используйте
+`hub-knowledge-enable` по запросу пользователя, указывая в отчёте идентификатор
+проекта и точный зарегистрированный путь. Он может проверять только идентичность
+регистрации и точные пути каркаса, не должен переходить по символическим ссылкам,
+читать записи или постороннее содержимое проекта. Предпросмотр перечисляет
+`knowledge/README.md`, `knowledge/record-template.md` и все четыре каталога категорий.
+Он создаёт только отсутствующие файлы и каталоги каркаса; никогда не перезаписывает
+записи и не создаёт инструкции проекта, навыки, Git, код, зависимости, службы,
+записи реестра, карточки или изменения активного проекта.
+Предварительная проверка использует `lstat`: выбранный проект и пути
+категорий должны быть настоящими каталогами, а существующие README и шаблон
+записи — обычными файлами.
 
-All record workflows prohibit secrets, personal data, and client data and omit
-or redact rejected material without echoing it. Reviews validate required
-frontmatter, the exact four types and five statuses, record dates, source dates,
-contradictions, and type/category agreement. Stale and superseded records stay
-at their original paths and link to their replacements; they are never silently
-deleted.
+Все процессы записей запрещают секреты, персональные и клиентские данные,
+пропускают или скрывают запрещённые материалы без повторения их значений.
+Проверки контролируют обязательные вводные метаданные, точные четыре типа и пять
+статусов, даты записей и источников, противоречия и соответствие типа категории.
+Устаревшие и заменённые записи остаются на исходных путях и ссылаются на замены;
+они никогда не удаляются молча.
 
-Knowledge enablement applies only to existing hub projects. Legacy standalone
-migration is out of scope; it neither imports, copies, nor transforms a legacy
-knowledge directory.
+Включение знаний применяется только к существующим проектам хаба. Перенос старых
+самостоятельных проектов вне области работы: старый каталог знаний не
+импортируется, не копируется и не преобразуется.
 
-## Information Updates
+## Поиск по теме перед разработкой
 
-For temporary meeting text scoped to one confirmed project, use the
-`hub-info-update` workflow.
+Когда установлен `knowledge`, перед разработкой, проектированием или изучением
+выбранного проекта найдите справочные записи по текущей теме.
+Сначала проверьте названия и заголовки либо выполните ограниченный поиск по словам
+в `knowledge/` выбранного проекта и опубликованной библиотеке хаба `ai/knowledge/`.
+Читайте только подходящие записи; используйте несколько подходящих терминов,
+включая синонимы на разных языках. Если обоих каталогов нет или подходящие записи
+не найдены, продолжайте обычную работу. Не просите пользователя создать базу
+знаний и не загружайте всю библиотеку.
+
+Запись — справочное свидетельство, а не инструкция или автоматическое решение
+об архитектуре. Проверяйте её статус, дату, источник, противоречия и применимость.
+Черновые и устаревшие записи, а также непроверенные утверждения источников требуют
+подходящей проверки перед использованием в значимом решении. Кратко объясняйте
+полезные свидетельства в результате, если они повлияли на выбор.
+
+Общая библиотека содержит только общие материалы, которые пользователь явно
+опубликовал для повторного использования. Ссылки на другие проекты не дают доступа:
+никогда не ищите в знаниях другого проекта без его явного подтверждения или
+разрешённой пользователем области из нескольких проектов. Не переходите по
+компонентам символических ссылок; поиск проекта остаётся внутри его канонического
+зарегистрированного корня, а справочные материалы хаба — внутри `ai/knowledge/`.
+Поиск работает только на чтение и никогда не запускает сохранение, проверку,
+переписывание или создание навыков. Новые записи остаются локальными для проекта,
+если пользователь не просит поделиться ими.
+
+## Обновление информации
+
+Для временного текста встречи, относящегося к одному подтверждённому проекту,
+используйте процесс `hub-info-update`.
 
 ## before-task-close
 
-When a task closure fires `before-task-close` and durable records linked from
-this task may need a focused check, the agent may offer `hub-knowledge-review`,
-but must never start it automatically. Declining it has no effect on closure.
-The offer does not authorize reading or writing knowledge records.
+Когда закрытие задачи вызывает `before-task-close` и связанные с ней долговременные
+записи могут требовать точечной проверки, агент может предложить `hub-knowledge-review`,
+но никогда не должен запускать его автоматически. Отказ не влияет на закрытие.
+Предложение не разрешает чтение или запись материалов знаний.
 
 ## after-project-create
 
-When project creation fires `after-project-create`, add this block to the same
-creation preview:
+Когда создание проекта вызывает `after-project-create`, добавьте этот блок
+в тот же предпросмотр создания:
 
 ```text
-Knowledge scaffold:
+Каркас знаний:
 - <canonical-path>/knowledge/README.md
 - <canonical-path>/knowledge/record-template.md
 - <canonical-path>/knowledge/research/
@@ -71,12 +100,12 @@ Knowledge scaffold:
 - <canonical-path>/knowledge/inbox/
 ```
 
-During project creation, create only the absent scaffold at
-`<canonical-path>/knowledge/`: `README.md`, `record-template.md`, and the empty
-`research/`, `decisions/`, `risks/`, `runbooks/`, and `inbox/` directories.
-Inbox holds weak observations and is not a durable category. Write the two
-files with the canonical contents in
-`ai/skills/hub-knowledge-enable/SKILL.md` § Canonical scaffold files. Never
-overwrite records or any existing scaffold file. The created project uses the
-hub-owned `hub-knowledge-capture` and `hub-knowledge-review` workflows; do not
-copy them into it.
+При создании проекта создавайте только отсутствующий каркас в
+`<canonical-path>/knowledge/`: `README.md`, `record-template.md` и пустые каталоги
+`research/`, `decisions/`, `risks/`, `runbooks/` и `inbox/`.
+Входящие содержат слабые наблюдения и не являются долговременной категорией.
+Запишите два файла с каноническим содержимым из
+`ai/skills/hub-knowledge-enable/SKILL.md`, раздел Canonical scaffold files. Никогда
+не перезаписывайте записи или существующие файлы каркаса. Созданный проект
+использует процессы хаба `hub-knowledge-capture` и `hub-knowledge-review`;
+не копируйте их в проект.

@@ -88,6 +88,51 @@ def is_memory_target(target):
     return target in MEMORY_FILES or target.startswith(("ai/project-cards/", "ai/archive/"))
 
 
+def validate_local_scope(metadata):
+    hub = metadata.get("hub")
+    if (metadata.get("scope") != "local-hub-only" or not isinstance(hub, str)
+            or not Path(hub).is_absolute() or str(Path(hub).resolve()) != hub):
+        raise ValueError("invalid local release scope")
+
+
+def valid_digest(value):
+    return isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value) is not None
+
+
+def package_local_overrides(root, passports):
+    path = root / "LOCAL-RELEASE.json"
+    if not path.exists() and not path.is_symlink():
+        return {}
+    if path.is_symlink() or not path.is_file() or path.stat().st_size > 1048576:
+        raise ValueError("unsafe local release metadata")
+    metadata = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(metadata, dict):
+        raise ValueError("invalid local release metadata")
+    validate_local_scope(metadata)
+    overrides = metadata.get("local_overrides")
+    originals = metadata.get("source_sha256")
+    if not isinstance(overrides, dict) or not overrides or not isinstance(originals, dict):
+        raise ValueError("invalid local override records")
+    pairs = dict(install_pairs(root, passports, installable(passports)))
+    records = {}
+    for source, record in overrides.items():
+        if not isinstance(record, dict) or set(record) != {
+                "installed_target", "installed_sha256", "generic_source_sha256", "reason"}:
+            raise ValueError("invalid local override record")
+        target = record["installed_target"]
+        if source not in pairs or pairs[source] != target or is_memory_target(target):
+            raise ValueError("invalid local override source or target")
+        source_path = target_path(root, source)
+        if (not valid_digest(record["installed_sha256"])
+                or not valid_digest(record["generic_source_sha256"])
+                or originals.get(source) != record["generic_source_sha256"]
+                or digest(source_path) != record["installed_sha256"]
+                or not isinstance(record["reason"], str) or not record["reason"].strip()):
+            raise ValueError("invalid local override hash or provenance")
+        records[target] = dict(record, source=source)
+    return {"hub": metadata["hub"], "scope": metadata["scope"], "local_overrides": records}
+
+
 def build_manifest(source, modules=None, passports=None):
     root = source_root(source)
     if passports is None:
@@ -102,8 +147,15 @@ def build_manifest(source, modules=None, passports=None):
     files.sort(key=lambda entry: entry["target"])
     if len({entry["target"] for entry in files}) != len(files):
         raise ValueError("duplicate manifest target")
-    return {"format": 1, "modules": selected, "files": files, "remove": [],
-            "ignore_lines": ["/.local/", "/projects/", "/ai/tmp/"]}
+    manifest = {"format": 1, "modules": selected, "files": files, "remove": [],
+                "ignore_lines": ["/.local/", "/projects/", "/ai/tmp/"]}
+    local = package_local_overrides(root, passports)
+    if local:
+        targets = {entry["target"] for entry in files}
+        local["local_overrides"] = {target: record for target, record in local["local_overrides"].items()
+                                    if target in targets}
+        manifest.update(local)
+    return manifest
 
 
 def release_sources(root):
@@ -138,6 +190,27 @@ def preview(source, hub, source_sha=None, with_=(), without=()):
     passports = load_passports(source_root(source))
     selected = resolve_selection(passports, previous_modules, list(with_), list(without))
     manifest = build_manifest(source, selected, passports=passports)
+    local_overrides = {}
+    for metadata in (installed_manifest, manifest):
+        if "local_overrides" not in metadata:
+            continue
+        validate_local_scope(metadata)
+        if metadata["hub"] != str(hub):
+            raise ValueError("local release belongs to another hub")
+        records = metadata["local_overrides"]
+        if not isinstance(records, dict):
+            raise ValueError("invalid installed local overrides")
+        for target, record in records.items():
+            target_path(hub, target)
+            if (not isinstance(record, dict) or record.get("installed_target") != target
+                    or not valid_digest(record.get("installed_sha256"))
+                    or not valid_digest(record.get("generic_source_sha256"))):
+                raise ValueError("invalid installed local override")
+            if target in local_overrides and local_overrides[target] != record:
+                raise ValueError("local override provenance changed")
+            local_overrides[target] = record
+    if local_overrides:
+        manifest.update(hub=str(hub), scope="local-hub-only", local_overrides=local_overrides)
     installed_entries = {entry["target"]: entry for entry in installed_manifest.get("files", [])}
     incoming_targets = {entry["target"] for entry in manifest["files"]}
     operations = []
@@ -147,7 +220,13 @@ def preview(source, hub, source_sha=None, with_=(), without=()):
         current = digest(destination) if destination.is_file() else None
         previous = installed_entries.get(entry["target"])
         previous_sha = previous.get("sha256") if previous else None
-        if entry["policy"] == "create-if-missing":
+        override = local_overrides.get(entry["target"])
+        if override and entry["sha256"] != override["installed_sha256"]:
+            # Неизменённый общий исходник не требует слияния: местный файл остаётся.
+            unchanged = (entry["sha256"] == override["generic_source_sha256"]
+                         and current == override["installed_sha256"])
+            action = "keep" if unchanged else "conflict"
+        elif entry["policy"] == "create-if-missing":
             action = "create" if current is None else "keep"
         else:
             action = decide(current, previous_sha, entry["sha256"])
@@ -159,7 +238,7 @@ def preview(source, hub, source_sha=None, with_=(), without=()):
             continue
         destination = target_path(hub, target)
         current = digest(destination) if destination.is_file() else None
-        action = decide(current, previous.get("sha256"), None)
+        action = "conflict" if target in local_overrides else decide(current, previous.get("sha256"), None)
         operations.append({"target": target, "action": action,
                            "current_sha256": current, "incoming_sha256": None})
 

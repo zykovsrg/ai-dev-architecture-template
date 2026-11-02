@@ -1,15 +1,53 @@
 #!/usr/bin/env bash
-set -uo pipefail
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+source "$ROOT/tests/helpers/shell-scenarios.sh"
+SANDBOX="$(mktemp -d "${TMPDIR:-/tmp}/shell-memory-goals.XXXXXX")"
+cleanup() { rm -rf "$SANDBOX"; }
+trap cleanup EXIT
 
-SCRIPT="$(cd "$(dirname "$0")/.." && pwd -P)/modules/goals/scripts/count-goal-progress.sh"
-FAILED=0
+# Каждый продуктовый запуск сохраняет stdout отдельно, а stderr проверяет сборщик.
+run_product() {
+  local expected="$1" accepted="$2" diagnostic="$3" observed
+  shift 3
+  scenario_accept_exit "$accepted" "$diagnostic"
+  scenario_exec observed "$@" > "$OUTPUT"
+  scenario_assert_exit "$expected" "$observed"
+}
 
-pass() { echo "ok   - $1"; }
-fail() { echo "FAIL - $1"; [ -n "${2:-}" ] && echo "       $2"; FAILED=1; }
+# Нормальный false доверенного oracle: код 1 и пустой stderr. Сбой test/grep/awk
+# остаётся инфраструктурой; он не превращается в собственное утверждение.
+assert_value() {
+  local observed
+  scenario_accept_exit 1 ''
+  scenario_exec observed test "$1" = "$2"
+  scenario_assert_exit 0 "$observed"
+}
+assert_contains() {
+  local observed
+  scenario_accept_exit 1 ''
+  scenario_exec observed grep -Fq -- "$1" "$OUTPUT"
+  scenario_assert_exit 0 "$observed"
+}
+assert_absent() {
+  local observed
+  scenario_accept_exit 1 ''
+  scenario_exec observed grep -Fiq -- "$1" "$OUTPUT"
+  scenario_assert_exit 1 "$observed"
+}
+assert_fields() {
+  local observed
+  scenario_accept_exit 0 ''
+  scenario_exec observed awk -F'\t' "$1" "$OUTPUT" > "$FIELD"
+  scenario_assert_exit 0 "$observed"
+  assert_value "$(< "$FIELD")" "$2"
+}
+
+SCRIPT="$ROOT/modules/goals/scripts/count-goal-progress.sh"
 
 make_hub() {
   local dir
-  dir="$(mktemp -d)"
+  dir="$(mktemp -d "$SANDBOX/hub.XXXXXX")"
   mkdir -p "$dir/ai"
   cat >"$dir/ai/archiprojects.md" <<'ARCHI'
 # Archiprojects
@@ -72,13 +110,16 @@ GOALS
 | 2026-09-05 | promo-32 | 2 | release-page-endoscopy-center | эндоскопия |
 | 2026-09-06 | promo-32 | 1 | release-page-stroke-center | инсульт |
 LOG
-  echo "$dir"
+  HUB="$(cd "$dir" && pwd -P)"
+  OUTPUT="$HUB/output"
+  FIELD="$HUB/field"
 }
+
 
 make_pace_hub() {
   local due="$1"
   local dir
-  dir="$(mktemp -d)"
+  dir="$(mktemp -d "$SANDBOX/hub.XXXXXX")"
   mkdir -p "$dir/ai"
   cat >"$dir/ai/archiprojects.md" <<'ARCHI'
 # Archiprojects
@@ -113,37 +154,24 @@ GOALS
 | дата | goal_id | сколько | проект | заметка |
 | --- | --- | --- | --- | --- |
 LOG
-  echo "$dir"
+  HUB="$(cd "$dir" && pwd -P)"
+  OUTPUT="$HUB/output"
+  FIELD="$HUB/field"
 }
 
-# --- parsing ---
-HUB="$(make_hub)"
-out="$(bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07 --format tsv 2>&1)"
 
-# Check exactly one line of output
-line_count="$(printf '%s\n' "$out" | wc -l | tr -d ' ')"
-if [ "$line_count" != "1" ]; then
-  fail "goals are read from ai/goals.md, schema placeholder skipped" "expected 1 line, got $line_count: $out"
-else
-  # Verify content: id, target, unit, due in the 13-field report row
-  id="$(printf '%s\n' "$out" | cut -f1)"
-  target="$(printf '%s\n' "$out" | cut -f3)"
-  unit="$(printf '%s\n' "$out" | cut -f4)"
-  due="$(printf '%s\n' "$out" | cut -f6)"
+reads_goals_and_skips_schema_placeholder() {
+  make_hub
+  scenario_begin
+  run_product 0 1 '' bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07 --format tsv
+  assert_fields 'END{print NR}' '1'
+  assert_fields '{print $1"/"$3"/"$4"/"$6}' 'promo-32/32/pages/2026-09-30'
+  scenario_pass
+}
 
-  if [ "$id" = "promo-32" ] && [ "$target" = "32" ] && \
-     [ "$unit" = "pages" ] && [ "$due" = "2026-09-30" ]; then
-    pass "goals are read from ai/goals.md, schema placeholder skipped"
-  else
-    fail "goals are read from ai/goals.md, schema placeholder skipped" \
-      "got: id=$id, target=$target, unit=$unit, due=$due"
-  fi
-fi
-rm -rf "$HUB"
-
-# --- a goal in ai/archiprojects.md is no longer read ---
-HUB="$(make_hub)"
-cat >>"$HUB/ai/archiprojects.md" <<'ARCHI'
+does_not_read_goals_from_group_registry() {
+  make_hub
+  cat >> "$HUB/ai/archiprojects.md" <<'ARCHI'
 
 ## legacy-goal
 
@@ -154,15 +182,14 @@ status: active
 kind: group
 ```
 ARCHI
-out="$(bash "$SCRIPT" --hub "$HUB" --goal legacy-goal --as-of 2026-09-07 2>&1)"; rc=$?
-[ "$rc" -ne 0 ] && printf '%s' "$out" | grep -q "unknown goal: legacy-goal" \
-  && pass "a goal id present only in ai/archiprojects.md is not read as a goal" \
-  || fail "a goal id present only in ai/archiprojects.md is not read as a goal" "rc=$rc out=$out"
-rm -rf "$HUB"
+  scenario_begin
+  run_product 1 1 "ERROR: unknown goal: legacy-goal"$'\n' bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07 --goal legacy-goal
+  scenario_pass
+}
 
-# --- unknown goal group fails ---
-HUB="$(make_hub)"
-cat >>"$HUB/ai/goals.md" <<'GOALS'
+rejects_unknown_goal_group() {
+  make_hub
+  cat >> "$HUB/ai/goals.md" <<'GOALS'
 
 ## bad-group-goal
 
@@ -176,17 +203,14 @@ unit: pages
 due: 2026-09-30
 ```
 GOALS
-out="$(bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07 2>&1)"; rc=$?
-[ "$rc" -ne 0 ] && printf '%s' "$out" | grep -q "no-such-group" \
-  && pass "a goal with an unknown archiproject group is rejected" \
-  || fail "a goal with an unknown archiproject group is rejected" "rc=$rc out=$out"
-rm -rf "$HUB"
+  scenario_begin
+  run_product 1 1 "ERROR: unknown archiproject group for goal bad-group-goal in $HUB/ai/goals.md: no-such-group"$'\n' bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07
+  scenario_pass
+}
 
-# --- a broken group registry (archiprojects.py exit 1) is distinguished from
-# an unknown group (archiprojects.py exit 2): the message must say the
-# registry is invalid, not that the group is unknown. ---
-HUB="$(make_hub)"
-cat >"$HUB/ai/archiprojects.md" <<'ARCHI'
+distinguishes_invalid_group_registry() {
+  make_hub
+  cat > "$HUB/ai/archiprojects.md" <<'ARCHI'
 # Archiprojects
 
 ## hadassah
@@ -197,168 +221,104 @@ name: Хадасса
 status: active
 ```
 ARCHI
-out="$(bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07 2>&1)"; rc=$?
-if [ "$rc" -ne 0 ] && printf '%s' "$out" | grep -q "group registry invalid"; then
-  pass "a malformed archiprojects.md is reported as an invalid registry, not an unknown group"
-else
-  fail "a malformed archiprojects.md is reported as an invalid registry, not an unknown group" "rc=$rc out=$out"
-fi
-rm -rf "$HUB"
-
-# --- output includes the goal's group ---
-HUB="$(make_hub)"
-out="$(bash "$SCRIPT" --hub "$HUB" --goal promo-32 --as-of 2026-09-07 2>&1)"
-printf '%s' "$out" | grep -q "группа: hadassah" \
-  && pass "text output shows the goal's group" \
-  || fail "text output shows the goal's group" "$out"
-out_tsv="$(bash "$SCRIPT" --hub "$HUB" --goal promo-32 --as-of 2026-09-07 --format tsv 2>&1)"
-[ "$(printf '%s' "$out_tsv" | awk -F'\t' '{print $13}')" = "hadassah" ] \
-  && pass "tsv output exposes the goal's group as the 13th field" \
-  || fail "tsv output exposes the goal's group as the 13th field" "$out_tsv"
-rm -rf "$HUB"
-
-# --- validation ---
-expect_failure() {
-  local label="$1" logline="$2" needle="$3" hub out rc
-  hub="$(make_hub)"
-  printf '%s\n' "$logline" >>"$hub/ai/goal-log.md"
-  out="$(bash "$SCRIPT" --hub "$hub" --as-of 2026-09-07 2>&1)"; rc=$?
-  if [ "$rc" -ne 0 ] && printf '%s' "$out" | grep -q "$needle"; then
-    pass "$label"
-  else
-    fail "$label" "rc=$rc out=$out"
-  fi
-  rm -rf "$hub"
+  scenario_begin
+  run_product 1 1 "ERROR: group registry invalid: ERROR: missing kind in archiproject entry: hadassah"$'\n' bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07
+  scenario_pass
 }
 
-expect_failure "unknown goal_id is rejected" \
-  "| 2026-09-06 | no-such-goal | 1 | — | — |" "no-such-goal"
-expect_failure "a group id is not a goal" \
-  "| 2026-09-06 | hadassah | 1 | — | — |" "hadassah"
-expect_failure "malformed date is rejected" \
-  "| 06.09.2026 | promo-32 | 1 | — | — |" "06.09.2026"
-expect_failure "non-positive amount is rejected" \
-  "| 2026-09-06 | promo-32 | 0 | — | — |" "amount must be a positive integer"
-expect_failure "short row is rejected" \
-  "| 2026-09-06 | promo-32 |" "malformed row"
-expect_failure "empty date is rejected" \
-  "| | promo-32 | 1 | — | — |" "bad date"
+renders_group_in_text_and_tsv() {
+  make_hub
+  scenario_begin
+  run_product 0 0 '' bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07 --goal promo-32
+  assert_contains 'группа: hadassah'
+  run_product 0 0 '' bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07 --goal promo-32 --format tsv
+  assert_fields '{print $13}' 'hadassah'
+  scenario_pass
+}
 
-# --- counting ---
-HUB="$(make_hub)"
-out="$(bash "$SCRIPT" --hub "$HUB" --goal promo-32 --as-of 2026-09-07 2>&1)"
-printf '%s' "$out" | grep -q "выпущено 12 / 32 pages" \
-  && pass "counts amounts up to --as-of" \
-  || fail "counts amounts up to --as-of" "$out"
-printf '%s' "$out" | grep -q "осталось 20" \
-  && pass "reports remaining" \
-  || fail "reports remaining" "$out"
-printf '%s' "$out" | grep -q "не хватает" \
-  && pass "reports that the pace is short" \
-  || fail "reports that the pace is short" "$out"
+counts_progress_remaining_and_pace() {
+  make_hub
+  scenario_begin
+  run_product 0 0 '' bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07 --goal promo-32
+  assert_contains 'выпущено 12 / 32 pages'
+  assert_contains 'осталось 20'
+  assert_contains 'темпа не хватает'
+  run_product 0 0 '' bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-04 --goal promo-32
+  assert_contains 'выпущено 9 / 32 pages'
+  run_product 0 0 '' bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07 --goal promo-32 --format tsv
+  assert_fields '{print $2"/"$5"/"$12}' '12/20/slow'
+  scenario_pass
+}
 
-out="$(bash "$SCRIPT" --hub "$HUB" --goal promo-32 --as-of 2026-09-04 2>&1)"
-printf '%s' "$out" | grep -q "выпущено 9 / 32 pages" \
-  && pass "--as-of excludes later entries" \
-  || fail "--as-of excludes later entries" "$out"
+rate7_window_boundary() {
+  make_pace_hub "2099-01-01"
+  printf '%s\n' '| 2026-09-01 | pace-test | 5 | — | inside |' >> "$HUB/ai/goal-log.md"
+  printf '%s\n' '| 2026-08-31 | pace-test | 100 | — | outside |' >> "$HUB/ai/goal-log.md"
+  scenario_begin
+  run_product 0 0 '' bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07 --goal pace-test --format tsv
+  assert_fields '{print $8}' '5'
+  scenario_pass
+}
 
-out="$(bash "$SCRIPT" --hub "$HUB" --goal promo-32 --as-of 2026-09-07 --format tsv 2>&1)"
-[ "$(printf '%s' "$out" | awk -F'\t' '{print $2"/"$5"/"$12}')" = "12/20/slow" ] \
-  && pass "tsv exposes achieved, remaining and verdict" \
-  || fail "tsv exposes achieved, remaining and verdict" "$out"
-rm -rf "$HUB"
+rate28_window_and_weekly_average() {
+  make_pace_hub "2099-01-01"
+  printf '%s\n' '| 2026-08-11 | pace-test | 8 | — | inside |' >> "$HUB/ai/goal-log.md"
+  printf '%s\n' '| 2026-08-10 | pace-test | 100 | — | outside |' >> "$HUB/ai/goal-log.md"
+  scenario_begin
+  run_product 0 0 '' bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07 --goal pace-test --format tsv
+  assert_fields '{print $9}' '2'
+  scenario_pass
+}
 
-# --- rate7 window boundary (7 days ending on --as-of) ---
-HUB="$(make_pace_hub "2099-01-01")"
-{
-  echo "| 2026-09-01 | pace-test | 5 | — | 6 days before as-of, inside window |"
-  echo "| 2026-08-31 | pace-test | 100 | — | 7 days before as-of, outside window |"
-} >>"$HUB/ai/goal-log.md"
-out="$(bash "$SCRIPT" --hub "$HUB" --goal pace-test --as-of 2026-09-07 --format tsv 2>&1)"
-rate7="$(printf '%s' "$out" | awk -F'\t' '{print $8}')"
-[ "$rate7" = "5" ] \
-  && pass "rate7 sums exactly the 7-day window ending on --as-of" \
-  || fail "rate7 sums exactly the 7-day window ending on --as-of" "$out (rate7=$rate7)"
-rm -rf "$HUB"
+pace_equality_is_ok() {
+  make_pace_hub "2026-09-14"
+  printf '%s\n' '| 2026-08-01 | pace-test | 80 | — | outside |' >> "$HUB/ai/goal-log.md"
+  printf '%s\n' '| 2026-09-05 | pace-test | 10 | — | inside |' >> "$HUB/ai/goal-log.md"
+  scenario_begin
+  run_product 0 0 '' bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07 --goal pace-test --format tsv
+  assert_fields '{print $2"/"$5"/"$8"/"$10"/"$12}' '90/10/10/10/ok'
+  scenario_pass
+}
 
-# --- rate28 window and its division by four ---
-HUB="$(make_pace_hub "2099-01-01")"
-{
-  echo "| 2026-08-11 | pace-test | 8 | — | 27 days before as-of, inside window |"
-  echo "| 2026-08-10 | pace-test | 100 | — | 28 days before as-of, outside window |"
-} >>"$HUB/ai/goal-log.md"
-out="$(bash "$SCRIPT" --hub "$HUB" --goal pace-test --as-of 2026-09-07 --format tsv 2>&1)"
-rate28="$(printf '%s' "$out" | awk -F'\t' '{print $9}')"
-[ "$rate28" = "2" ] \
-  && pass "rate28 sums the 28-day window and divides by four" \
-  || fail "rate28 sums the 28-day window and divides by four" "$out (rate28=$rate28)"
-rm -rf "$HUB"
+pace_below_boundary_is_slow() {
+  make_pace_hub "2026-09-14"
+  printf '%s\n' '| 2026-08-01 | pace-test | 80 | — | outside |' >> "$HUB/ai/goal-log.md"
+  printf '%s\n' '| 2026-09-05 | pace-test | 9 | — | inside |' >> "$HUB/ai/goal-log.md"
+  scenario_begin
+  run_product 0 0 '' bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07 --goal pace-test --format tsv
+  assert_fields '{print $2"/"$5"/"$8"/"$10"/"$12}' '89/11/9/11/slow'
+  scenario_pass
+}
 
-# --- verdict boundary: rate7 == needed_rate exactly -> ok ---
-HUB="$(make_pace_hub "2026-09-14")"
-{
-  echo "| 2026-08-01 | pace-test | 80 | — | outside the 7-day window |"
-  echo "| 2026-09-05 | pace-test | 10 | — | inside the 7-day window |"
-} >>"$HUB/ai/goal-log.md"
-out="$(bash "$SCRIPT" --hub "$HUB" --goal pace-test --as-of 2026-09-07 --format tsv 2>&1)"
-fields="$(printf '%s' "$out" | awk -F'\t' '{print $2"/"$5"/"$8"/"$10"/"$12}')"
-[ "$fields" = "90/10/10/10/ok" ] \
-  && pass "verdict is ok when rate7 equals needed_rate exactly" \
-  || fail "verdict is ok when rate7 equals needed_rate exactly" "$out (fields=$fields)"
-rm -rf "$HUB"
+counts_final_row_without_newline() {
+  make_hub
+  printf '%s' '| 2026-09-02 | promo-32 | 7 | p | b |' >> "$HUB/ai/goal-log.md"
+  scenario_begin
+  run_product 0 0 '' bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07 --goal promo-32
+  assert_contains 'выпущено 19 / 32 pages'
+  scenario_pass
+}
 
-# --- one unit less progress in the same fixture -> slow ---
-HUB="$(make_pace_hub "2026-09-14")"
-{
-  echo "| 2026-08-01 | pace-test | 80 | — | outside the 7-day window |"
-  echo "| 2026-09-05 | pace-test | 9 | — | one unit less than the boundary fixture |"
-} >>"$HUB/ai/goal-log.md"
-out="$(bash "$SCRIPT" --hub "$HUB" --goal pace-test --as-of 2026-09-07 --format tsv 2>&1)"
-fields="$(printf '%s' "$out" | awk -F'\t' '{print $2"/"$5"/"$8"/"$10"/"$12}')"
-[ "$fields" = "89/11/9/11/slow" ] \
-  && pass "verdict is slow one unit below the boundary" \
-  || fail "verdict is slow one unit below the boundary" "$out (fields=$fields)"
-rm -rf "$HUB"
+parses_indented_row() {
+  make_hub
+  printf '%s\n' '  | 2026-09-06 | promo-32 | 5 | p | b |' >> "$HUB/ai/goal-log.md"
+  scenario_begin
+  run_product 0 0 '' bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07 --goal promo-32
+  assert_contains 'выпущено 17 / 32 pages'
+  scenario_pass
+}
 
+header_values_not_skipped_in_data() {
+  make_hub
+  printf '%s\n' '| notadate | goal_id | -3 | p | b |' >> "$HUB/ai/goal-log.md"
+  scenario_begin
+  run_product 1 1 "ERROR: bad date in $HUB/ai/goal-log.md: notadate"$'\n' bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07 --goal promo-32
+  scenario_pass
+}
 
-# --- log entry on final line with no trailing newline is not dropped ---
-HUB="$(make_hub)"
-printf '| 2026-09-02 | promo-32 | 7 | p | b |' >>"$HUB/ai/goal-log.md"
-out="$(bash "$SCRIPT" --hub "$HUB" --goal promo-32 --as-of 2026-09-07 2>&1)"
-printf '%s' "$out" | grep -q "выпущено 19 / 32 pages" \
-  && pass "final log line without trailing newline is still counted" \
-  || fail "final log line without trailing newline is still counted" "$out"
-rm -rf "$HUB"
-
-# --- indented row is parsed, not silently skipped ---
-HUB="$(make_hub)"
-printf '  | 2026-09-06 | promo-32 | 5 | p | b |\n' >>"$HUB/ai/goal-log.md"
-out="$(bash "$SCRIPT" --hub "$HUB" --goal promo-32 --as-of 2026-09-07 2>&1)"
-printf '%s' "$out" | grep -q "выпущено 17 / 32 pages" \
-  && pass "row indented by leading whitespace is parsed normally" \
-  || fail "row indented by leading whitespace is parsed normally" "$out"
-rm -rf "$HUB"
-
-# --- header-like row is only skipped as the actual first row ---
-HUB="$(make_hub)"
-printf '| notadate | goal_id | -3 | p | b |\n' >>"$HUB/ai/goal-log.md"
-out="$(bash "$SCRIPT" --hub "$HUB" --goal promo-32 --as-of 2026-09-07 2>&1)"; rc=$?
-[ "$rc" -ne 0 ] && printf '%s' "$out" | grep -q "bad date" \
-  && pass "header-cell values are rejected as data when not the first row" \
-  || fail "header-cell values are rejected as data when not the first row" "rc=$rc out=$out"
-rm -rf "$HUB"
-
-# --- short row missing the final column is rejected ---
-expect_failure "short row with only four columns is rejected" \
-  "| 2026-09-06 | promo-32 | 5 | p" "malformed row"
-
-# --- oversized amount is rejected before the numeric comparison overflows ---
-expect_failure "oversized amount is rejected cleanly" \
-  "| 2026-09-06 | promo-32 | 99999999999999999999 | p | b |" "amount too large"
-
-# --- duplicated goal id in the registry dies with a clear error ---
-HUB="$(make_hub)"
-cat >>"$HUB/ai/goals.md" <<'GOALS'
+rejects_duplicate_goal_id() {
+  make_hub
+  cat >> "$HUB/ai/goals.md" <<'GOALS'
 
 ## promo-32-dup
 
@@ -372,44 +332,128 @@ unit: pages
 due: 2026-09-30
 ```
 GOALS
-out="$(bash "$SCRIPT" --hub "$HUB" --goal promo-32 --as-of 2026-09-07 2>&1)"; rc=$?
-[ "$rc" -ne 0 ] && printf '%s' "$out" | grep -q "duplicate goal_id.*promo-32" \
-  && pass "duplicated goal id in the registry is rejected with a clear error" \
-  || fail "duplicated goal id in the registry is rejected with a clear error" "rc=$rc out=$out"
-rm -rf "$HUB"
+  scenario_begin
+  run_product 1 1 "ERROR: duplicate goal_id in $HUB/ai/goals.md: promo-32"$'\n' bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07 --goal promo-32
+  scenario_pass
+}
 
-# --- tsv format always uses a dot decimal separator, regardless of locale ---
-HUB="$(make_pace_hub "2099-01-01")"
-echo "| 2026-09-01 | pace-test | 34 | — | forces a fractional rate28 |" >>"$HUB/ai/goal-log.md"
-# stderr is kept apart: a runner without de_DE.UTF-8 prints a setlocale warning there.
-out="$(LC_ALL=de_DE.UTF-8 bash "$SCRIPT" --hub "$HUB" --goal pace-test --as-of 2026-09-07 --format tsv 2>"$HUB/stderr")"
-rate28="$(printf '%s' "$out" | awk -F'\t' '{print $9}')"
-[ "$rate28" = "8.5" ] \
-  && pass "tsv format uses a dot decimal separator under a comma locale" \
-  || fail "tsv format uses a dot decimal separator under a comma locale" "$out (rate28=$rate28)"
-rm -rf "$HUB"
+tsv_decimal_dot_under_comma_locale() {
+  make_pace_hub "2099-01-01"
+  printf '%s\n' '| 2026-09-01 | pace-test | 34 | — | fractional |' >> "$HUB/ai/goal-log.md"
+  scenario_begin
+  run_product 0 0 '' env LC_ALL=de_DE.UTF-8 bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07 --goal pace-test --format tsv
+  assert_fields '{print $9}' '8.5'
+  scenario_pass
+}
 
-# --- Russian text mode renders the comma decimal correctly under a comma locale ---
-HUB="$(make_pace_hub "2099-01-01")"
-echo "| 2026-09-01 | pace-test | 34 | — | forces a fractional rate28 |" >>"$HUB/ai/goal-log.md"
-out="$(LC_ALL=de_DE.UTF-8 bash "$SCRIPT" --hub "$HUB" --goal pace-test --as-of 2026-09-07 2>&1)"
-printf '%s' "$out" | grep -q '8,5/нед за 28 дней' \
-  && ! printf '%s' "$out" | grep -qi 'invalid number' \
-  && pass "text mode renders comma decimal correctly under de_DE.UTF-8 locale" \
-  || fail "text mode renders comma decimal correctly under de_DE.UTF-8 locale" "$out"
-rm -rf "$HUB"
+text_decimal_comma_under_comma_locale() {
+  make_pace_hub "2099-01-01"
+  printf '%s\n' '| 2026-09-01 | pace-test | 34 | — | fractional |' >> "$HUB/ai/goal-log.md"
+  scenario_begin
+  run_product 0 0 '' env LC_ALL=de_DE.UTF-8 bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07 --goal pace-test
+  assert_contains '8,5/нед за 28 дней'
+  assert_absent 'invalid number'
+  scenario_pass
+}
 
-# --- pace window is unaffected by the October DST transition ---
-HUB="$(make_pace_hub "2099-01-01")"
-echo "| 2026-10-22 | pace-test | 7 | — | 6 days before as-of, across DST |" >>"$HUB/ai/goal-log.md"
-out_utc="$(TZ=UTC bash "$SCRIPT" --hub "$HUB" --goal pace-test --as-of 2026-10-28 --format tsv 2>&1)"
-out_berlin="$(TZ=Europe/Berlin bash "$SCRIPT" --hub "$HUB" --goal pace-test --as-of 2026-10-28 --format tsv 2>&1)"
-rate7_utc="$(printf '%s' "$out_utc" | awk -F'\t' '{print $8}')"
-rate7_berlin="$(printf '%s' "$out_berlin" | awk -F'\t' '{print $8}')"
-[ "$rate7_utc" = "7" ] && [ "$rate7_berlin" = "7" ] \
-  && pass "rate7 window is stable across the October DST transition, UTC vs Europe/Berlin" \
-  || fail "rate7 window is stable across the October DST transition, UTC vs Europe/Berlin" \
-    "utc=$rate7_utc berlin=$rate7_berlin"
-rm -rf "$HUB"
+rate_window_stable_across_dst() {
+  make_pace_hub "2099-01-01"
+  printf '%s\n' '| 2026-10-22 | pace-test | 7 | — | across DST |' >> "$HUB/ai/goal-log.md"
+  scenario_begin
+  run_product 0 0 '' env TZ=UTC bash "$SCRIPT" --hub "$HUB" --as-of 2026-10-28 --goal pace-test --format tsv
+  assert_fields '{print $8}' '7'
+  run_product 0 0 '' env TZ=Europe/Berlin bash "$SCRIPT" --hub "$HUB" --as-of 2026-10-28 --goal pace-test --format tsv
+  assert_fields '{print $8}' '7'
+  scenario_pass
+}
 
-exit "$FAILED"
+rejects_unknown_goal_in_log() {
+  make_hub
+  printf '%s\n' '| 2026-09-06 | no-such-goal | 1 | — | — |' >> "$HUB/ai/goal-log.md"
+  scenario_begin
+  run_product 1 1 "ERROR: unknown goal_id in $HUB/ai/goal-log.md: no-such-goal"$'\n' bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07
+  scenario_pass
+}
+
+rejects_group_id_is_not_goal() {
+  make_hub
+  printf '%s\n' '| 2026-09-06 | hadassah | 1 | — | — |' >> "$HUB/ai/goal-log.md"
+  scenario_begin
+  run_product 1 1 "ERROR: unknown goal_id in $HUB/ai/goal-log.md: hadassah"$'\n' bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07
+  scenario_pass
+}
+
+rejects_malformed_log_date() {
+  make_hub
+  printf '%s\n' '| 06.09.2026 | promo-32 | 1 | — | — |' >> "$HUB/ai/goal-log.md"
+  scenario_begin
+  run_product 1 1 "ERROR: bad date in $HUB/ai/goal-log.md: 06.09.2026"$'\n' bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07
+  scenario_pass
+}
+
+rejects_nonpositive_amount() {
+  make_hub
+  printf '%s\n' '| 2026-09-06 | promo-32 | 0 | — | — |' >> "$HUB/ai/goal-log.md"
+  scenario_begin
+  run_product 1 1 "ERROR: amount must be a positive integer in $HUB/ai/goal-log.md: 0"$'\n' bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07
+  scenario_pass
+}
+
+rejects_short_log_row() {
+  make_hub
+  printf '%s\n' '| 2026-09-06 | promo-32 |' >> "$HUB/ai/goal-log.md"
+  scenario_begin
+  run_product 1 1 "ERROR: malformed row in $HUB/ai/goal-log.md:  2026-09-06 | promo-32 |"$'\n' bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07
+  scenario_pass
+}
+
+rejects_empty_log_date() {
+  make_hub
+  printf '%s\n' '| | promo-32 | 1 | — | — |' >> "$HUB/ai/goal-log.md"
+  scenario_begin
+  run_product 1 1 "ERROR: bad date in $HUB/ai/goal-log.md: "$'\n' bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07
+  scenario_pass
+}
+
+rejects_four_column_log_row() {
+  make_hub
+  printf '%s\n' '| 2026-09-06 | promo-32 | 5 | p' >> "$HUB/ai/goal-log.md"
+  scenario_begin
+  run_product 1 1 "ERROR: malformed row in $HUB/ai/goal-log.md:  2026-09-06 | promo-32 | 5 | p"$'\n' bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07
+  scenario_pass
+}
+
+rejects_oversized_amount() {
+  make_hub
+  printf '%s\n' '| 2026-09-06 | promo-32 | 99999999999999999999 | p | b |' >> "$HUB/ai/goal-log.md"
+  scenario_begin
+  run_product 1 1 "ERROR: amount too large in $HUB/ai/goal-log.md: 99999999999999999999"$'\n' bash "$SCRIPT" --hub "$HUB" --as-of 2026-09-07
+  scenario_pass
+}
+
+scenario_declare reads-goals-and-skips-schema-placeholder reads_goals_and_skips_schema_placeholder
+scenario_declare does-not-read-goals-from-group-registry does_not_read_goals_from_group_registry
+scenario_declare rejects-unknown-goal-group rejects_unknown_goal_group
+scenario_declare distinguishes-invalid-group-registry distinguishes_invalid_group_registry
+scenario_declare renders-group-in-text-and-tsv renders_group_in_text_and_tsv
+scenario_declare counts-progress-remaining-and-pace counts_progress_remaining_and_pace
+scenario_declare rate7-window-boundary rate7_window_boundary
+scenario_declare rate28-window-and-weekly-average rate28_window_and_weekly_average
+scenario_declare pace-equality-is-ok pace_equality_is_ok
+scenario_declare pace-below-boundary-is-slow pace_below_boundary_is_slow
+scenario_declare counts-final-row-without-newline counts_final_row_without_newline
+scenario_declare parses-indented-row parses_indented_row
+scenario_declare header-values-not-skipped-in-data header_values_not_skipped_in_data
+scenario_declare rejects-duplicate-goal-id rejects_duplicate_goal_id
+scenario_declare tsv-decimal-dot-under-comma-locale tsv_decimal_dot_under_comma_locale
+scenario_declare text-decimal-comma-under-comma-locale text_decimal_comma_under_comma_locale
+scenario_declare rate-window-stable-across-dst rate_window_stable_across_dst
+scenario_declare rejects-unknown-goal-in-log rejects_unknown_goal_in_log
+scenario_declare rejects-group-id-is-not-goal rejects_group_id_is_not_goal
+scenario_declare rejects-malformed-log-date rejects_malformed_log_date
+scenario_declare rejects-nonpositive-amount rejects_nonpositive_amount
+scenario_declare rejects-short-log-row rejects_short_log_row
+scenario_declare rejects-empty-log-date rejects_empty_log_date
+scenario_declare rejects-four-column-log-row rejects_four_column_log_row
+scenario_declare rejects-oversized-amount rejects_oversized_amount
+scenario_main "$@"

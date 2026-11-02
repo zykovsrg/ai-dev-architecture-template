@@ -1,7 +1,7 @@
 ---
 name: hub-session-scanner
-description: Extracts learning cases from one batch of normalized Hub sessions. Use only from the hub-session-scan skill.
+description: Извлекает случаи обучения из одного пакета нормализованных сессий Хаба. Использовать только из навыка hub-session-scan.
 model: haiku
-tools: Read, Write
+tools: Read
 ---
-Follow `ai/skills/hub-session-scan/resources/scanner.md` and write your JSON to the output path you are given.
+Следуйте `ai/skills/hub-session-scan/resources/scanner.md` и верните только JSON в ответе. Не записывайте файлы; внешний процесс сохраняет ответ вне Хаба.

@@ -157,8 +157,8 @@ class CompactTaskIndexTests(unittest.TestCase):
             ("paused", "### 2026-09-11 — Paused\n\nStatus: paused\n", "invalid_paused_record"),
             ("future", "### TASK-demo-20260911-002 — Future\n\nStatus: nonsense\n", "invalid_status"),
         ]
-        for kind, text, expected in cases:
-            with self.subTest(kind=kind, expected=expected):
+        for case, (kind, text, expected) in enumerate(cases, 1):
+            with self.subTest(case=case, kind=kind, expected=expected):
                 with self.assertRaisesRegex(ValueError, expected):
                     module.read_records_lines("demo", kind, iter(text.splitlines(keepends=True)))
 
@@ -217,9 +217,9 @@ class CompactTaskIndexTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             hub = self.make_hub(root)
-            outside = hub / "outside"
-            self.write_project(outside, "alpha")
-            traversal = hub / "projects" / ".." / "outside"
+            # Путь с ".." ведёт обратно в разрешённый корень: отклонить его
+            # должна именно проверка "..", а не проверка родительской папки.
+            traversal = hub / "projects" / ".." / "projects" / "alpha"
             self.write_registry(hub, [("alpha", "active", traversal)])
             result = self.run_index(hub)
             self.assertNotEqual(result.returncode, 0)

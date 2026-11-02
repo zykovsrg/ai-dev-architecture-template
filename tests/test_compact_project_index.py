@@ -36,10 +36,39 @@ def make_hub(tmp, entries):
 
 
 class CompactProjectIndexGroupColumnTests(unittest.TestCase):
-    def run_index(self, hub):
+    def run_index(self, hub, *options):
         return subprocess.run(
-            ["bash", str(SCRIPT), str(hub)], text=True, capture_output=True,
+            ["bash", str(SCRIPT), str(hub), *options], text=True, capture_output=True,
         )
+
+    def test_archived_card_is_not_read_by_default(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            hub = make_hub(tmp, [("seo-tech", "active", None),
+                                 ("hadassah-seo-tech", "archived", None)])
+            # Архивная карточка недоступна: обычный выбор не должен её открывать.
+            (hub / "ai/project-cards/hadassah-seo-tech.md").unlink()
+            result = self.run_index(hub)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("seo-tech\t", result.stdout)
+            self.assertNotIn("hadassah-seo-tech", result.stdout)
+
+    def test_explicit_archive_option_includes_archived_project(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            hub = make_hub(tmp, [("seo-tech", "active", None),
+                                 ("hadassah-seo-tech", "archived", None)])
+            self.assertNotIn("hadassah-seo-tech", self.run_index(hub).stdout)
+            result = self.run_index(hub, "--include-archived")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("hadassah-seo-tech\t", result.stdout)
+            self.assertIn("seo-tech\t", result.stdout)
+
+    def test_unknown_index_option_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            hub = make_hub(tmp, [("alpha", "active", None)])
+            result = self.run_index(hub, "--include-archive-typo")
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("unknown option", result.stderr)
+            self.assertEqual(result.stdout, "")
 
     def test_header_has_six_columns_including_group(self):
         with tempfile.TemporaryDirectory() as tmp:

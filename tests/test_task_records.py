@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from modules.tasks.scripts.task_records import _valid_task_id, read_due, read_project_records, read_records, validate_project_dates
+from modules.tasks.scripts.task_records import _valid_task_id, read_due, read_project_records, read_records, read_records_lines, validate_project_dates
 
 
 CURRENT = """Status: active
@@ -30,6 +30,28 @@ Status: paused
 
 
 class TaskRecordTests(unittest.TestCase):
+    def test_future_completed_alias_is_done_in_full_and_compact_reads(self):
+        text = FUTURE.replace("Status: ready", "Status: completed")
+        text += "\n### FT-20260909-002 — Still actionable\n\nStatus: ready\n"
+        for mode, reader in (
+            ("full", lambda: read_records("demo", "future", text)),
+            ("compact", lambda: read_records_lines("demo", "future", iter(text.splitlines()))),
+        ):
+            with self.subTest(reader=mode):
+                records = reader()
+                self.assertEqual([r["status"] for r in records], ["done", "ready"])
+                self.assertEqual(records[0]["due"], "2026-09-11")
+
+    def test_future_unknown_status_is_still_rejected(self):
+        text = FUTURE.replace("Status: ready", "Status: finished-maybe")
+        for compact in (False, True):
+            with self.subTest(compact=compact):
+                with self.assertRaisesRegex(ValueError, "invalid_status"):
+                    if compact:
+                        read_records_lines("demo", "future", iter(text.splitlines()))
+                    else:
+                        read_records("demo", "future", text)
+
     def test_project_scoped_id_requires_compact_date(self):
         self.assertTrue(
             _valid_task_id(

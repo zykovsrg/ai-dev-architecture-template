@@ -1,46 +1,45 @@
 ---
 name: hub-registry-check
-description: Audit hub registration metadata and apply the maintenance fixes the user asks for.
+description: Проверить метаданные регистрации Хаба и применить исправления сопровождения по запросу пользователя.
 ---
 
-# Registry Check
+# Проверка реестра
 
-Use this skill to inspect hub registration health. The audit itself is read-only: it must not edit allowed roots, registry entries, cards,
-signals, archives, active-project data, or any registered project.
+Используйте навык для проверки состояния регистрации Хаба. Сама проверка
+только читает: она не должна менять разрешённые корни, записи реестра,
+карточки, сигналы, архивы, данные активного проекта или любой зарегистрированный проект.
 
-Module rules: `ai/rules/projects.md`.
+Правила модуля: `ai/rules/projects.md`.
 
-## Audit procedure
+## Порядок проверки
 
-1. Run `scripts/check-hub-registry.sh` against the hub and record its output
-   and exit status. A validator failure is a finding, not permission to fix
-   anything.
-2. Read hub-owned registry metadata only as needed to report:
-   - registered paths that are missing or no longer canonical;
-   - stale or missing cards and card relationships that no longer name a
-     registered project;
-   - unregistered direct children of the sole allowed root, using names only
-     and without recursive scanning or project-content reads;
-   - archive candidates indicated by registry status or clearly obsolete hub
-     metadata;
-   - old signals in `ai/cross-project-signals.md`, based on their recorded
-     status and date, without treating a signal as project permission.
-3. Present a report with evidence, confidence, and a separate proposed action
-   for every finding. Clearly distinguish verified observations from inferred
-   archive candidates.
-4. Apply the fixes the user asks for without a further confirmation step and
-   report each one. Re-run the validator after every hub-metadata fix. A fix
-   that deletes data waits for an explicit yes.
+1. Запустите `scripts/check-hub-registry.sh` для Хаба и запишите вывод и код
+   завершения. Ошибка проверки — наблюдение, а не разрешение что-либо исправлять.
+2. Читайте метаданные реестра Хаба только по необходимости для отчёта:
+   - зарегистрированные пути, которые отсутствуют или больше не канонические;
+   - устаревшие или отсутствующие карточки и связи, больше не называющие
+     зарегистрированный проект;
+   - незарегистрированные прямые потомки единственного разрешённого корня:
+     только имена, без рекурсивного сканирования и чтения содержимого проектов;
+   - кандидаты в архив по статусу реестра или явно устаревшим метаданным Хаба;
+   - старые сигналы `ai/cross-project-signals.md` по записанным статусу и дате,
+     без трактовки сигнала как разрешения доступа к проекту.
+3. Покажите отчёт с доказательствами, уверенностью и отдельным предлагаемым
+   действием для каждого наблюдения. Ясно отличайте проверенные наблюдения
+   от предполагаемых кандидатов в архив.
+4. Примените исправления по запросу пользователя без дополнительного подтверждения
+   и сообщите каждое. Повторяйте проверку после каждого исправления метаданных
+   Хаба. Исправление с удалением данных ждёт явного согласия.
 
-A weekly reminder may offer this skill, but cannot invoke it automatically.
-The reminder must not run the validator, enumerate roots, or create a report.
+Недельное напоминание может предложить навык, но не вызывать автоматически.
+Напоминание не должно запускать проверку, перечислять корни или создавать отчёт.
 
-Project/task files remain canonical; project cards are metadata only and a link
-never grants a project read. Waiting is task/subtask-only: do not place a
-project in Waiting while other work is actionable. Related archiproject links
-never add contribution.
+Файлы проектов и задач остаются каноническими; карточки — только метаданные,
+а ссылка никогда не разрешает чтение проекта. Ожидание относится только
+к задаче или подзадаче: не переводите проект в Waiting, пока другая работа
+доступна. Ссылки на связанные архитектурные группы никогда не добавляют вклад.
 
-## Russian report template
+## Русский шаблон отчёта
 
 ```text
 Проверка реестра: <пройдена|обнаружены проблемы>
@@ -53,3 +52,14 @@ never add contribution.
 
 Ничего не изменено. Подтвердите отдельно каждое действие, которое нужно выполнить.
 ```
+
+## Архивирование и структура «Напоминаний»
+
+Раздел действует, только если `planning` указан в `ai/modules.md` и «Напоминания» включены (`enabled: true`).
+Иначе архивирование — только смена статуса в реестре.
+При явной просьбе архивировать проект выполните [согласованное архивирование](resources/archive.md).
+Не ограничивайтесь изменением статуса реестра: проверьте обе системы, сохраните
+привязки, историю и восстановление. Не применяйте удаление как способ архивирования.
+Другие изменения структуры сверяйте штатным процессом из `ai/rules/planning.md`:
+сначала просмотр точных идентификаторов и границ разрешения, затем применение,
+повторное чтение обеих сторон и явный отчёт частичных сбоев.

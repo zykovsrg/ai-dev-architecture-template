@@ -15,6 +15,12 @@ REMOVED = {
         "ai/skills/hub-knowledge-capture/SKILL.md",
         "ai/skills/hub-knowledge-review/SKILL.md",
         "ai/skills/hub-info-update/SKILL.md",
+        "ai/knowledge/README.md",
+        "ai/knowledge/research/database-normalization.md",
+        "ai/knowledge/research/firecracker-warm-pools.md",
+        "ai/knowledge/research/monolith-microservices.md",
+        "ai/knowledge/research/python-api-caching.md",
+        "ai/knowledge/research/sql-indexes.md",
     },
     "goals": {
         "ai/rules/goals.md",
@@ -32,9 +38,15 @@ REMOVED = {
         "ai/skills/hub-session-scan/SKILL.md",
         "ai/skills/hub-session-scan/resources/scanner.md",
         "ai/skills/hub-session-scan/resources/consolidator.md",
+        "ai/skills/hub-session-scan/resources/case-review.md",
         "scripts/session_collect.py",
+        "scripts/session_case_queue.py",
+        "scripts/session_case_review.py",
+        "scripts/session_scan_run.py",
         "scripts/session_rules.py",
         "scripts/session_scan_model.py",
+        "scripts/session_cost.py",
+        "scripts/open_task_check.py",
         ".claude/agents/hub-session-scanner.md",
         ".claude/agents/hub-learning-consolidator.md",
     },
@@ -204,8 +216,12 @@ class OptionalModulesSwitchTests(unittest.TestCase):
                             for identifier in identifiers:
                                 if identifier not in paragraph:
                                     continue
+                                compact_paragraph = " ".join(paragraph.split())
                                 guarded = (f"`{module_id}`" in paragraph
-                                           and "listed in `ai/modules.md`" in paragraph)
+                                           and any(phrase in compact_paragraph for phrase in (
+                                               "listed in `ai/modules.md`",
+                                               "указан в `ai/modules.md`",
+                                           )))
                                 if not guarded:
                                     violations.append(
                                         f"{path.relative_to(hub)}: {identifier!r} unguarded for {module_id!r}")

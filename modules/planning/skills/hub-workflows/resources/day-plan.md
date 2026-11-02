@@ -1,173 +1,82 @@
 # day-plan
 
-This resource defines only the `day-plan` scenario. The core `SKILL.md` remains authoritative for scope, security, canonical-source rules, proposal envelopes, write policy, and learning lifecycle. Nothing here widens those permissions.
+Основной core `SKILL.md` задаёт пределы доступа и правила записи. Этот материал
+определяет короткий ежедневный процесс при включённых «Напоминаниях».
+При выключенном режиме прочитайте только `resources/day-plan-legacy.md`.
 
-When the request names an archiproject group, resolve it via
-`scripts/archiprojects.py tree --hub <hub>` and pass `--group <group-id>` to
-`scripts/read-compact-task-index.py`, same as the core `SKILL.md` group
-filter; report an unknown group instead of guessing. This only narrows task
-discovery to the group's member projects — it never substitutes for project
-routing elsewhere.
+## Подготовка
 
-Read `resources/calendar-context.md` on every run. Day planning may maintain that local noncanonical calendar context buffer; calendar events and project task records follow the normal write policy.
+1. Получите защищённые `list_calendar_metadata` и `read_events` за выбранный
+   день D. Используйте только разрешённые идентификаторы и часовой пояс.
+   Проверьте `availability_complete` и `unavailable_calendar_ids`.
+   Не читайте окно 61 день; другую дату читайте лишь при обсуждении переноса.
+2. Получите `python3 scripts/review_reminders.py collect --sync --hub <hub> --day <D>`.
+   Команда выполняет полную синхронизацию и возвращает итоговый список без
+   повторного чтения всего приложения. Отдельный sync перед ней не запускайте.
+3. Поле `open` содержит все открытые напоминания разрешённых списков:
+   сегодняшние, просроченные, будущие и без даты. Не заменяйте его `inventory`:
+   каноническая копия может не включать несвязанные записи приложения.
+   Проверяйте `sync_complete`, `sync_errors`, `complete`, `warnings`, `missing_lists`.
+   При ошибке показывайте доступное, точно называя недоступные источники.
+4. Выполните утреннюю проверку новых сессий по следующему разделу. После её
+   изменений перечитайте изменённые задачи и напоминания, чтобы план был свежим.
 
-A successful `day-plan` renders these headings in this exact order:
+## Утренняя проверка текущих задач
 
-1. `## Текущий календарь`
-2. `## Синхронизация`
-3. `## Просроченные задачи`
+Если установлен `learning`, один раз вызовите `hub-session-scan` в режиме
+утреннего краткого отчёта. Запрос планирования уже разрешает запуск: отдельно
+«Запустить разбор?» не спрашивайте. Обрабатывайте только новые сессии;
+не повторяйте обработанные. Этот же проход проверяет каждый критерий текущих
+задач в области запроса: подтверждённые закрывает, остальные ставит на паузу.
+Не выполняйте перед ним второй отдельный обход текущих задач. Задачи,
+изменённые сегодня, защищены действующими правилами сканера.
+Сохраняйте Task ID, Due:, Запланировано:, Событие: и будущие этапы. Пауза
+не удаляет событие. Недостаточные доказательства не означают выполнение.
+Удаление требует просмотра и явного согласия; до согласия не закрывайте
+задачу способом, который требует такого удаления. Прямое подтверждение
+пользователя и канонические доказательства имеют свои обычные пределы.
+Для группового плана используйте --group в указателе и не меняйте другие
+группы; если сканер не поддерживает такую область, не запускайте общий обход
+задач: сообщите ограничение и сохраните задачи вне области без изменений.
+Если learning не установлен, не запускайте самообучение и не имитируйте его.
 
-Only when `learning` is listed in `ai/modules.md`: after the final section,
-run `python3 scripts/session_collect.py --hub <hub> status` and add one plain
-line without a heading: `Разбор сессий: последний — <date or «не было»>; новых: «Клод» <n>, «Кодекс» <m>. Запустить разбор?`
-Starting the scan uses `hub-session-scan`.
+## Вывод
 
-Do not add task-outside-calendar or recommendation sections. Overdue tasks are
-always the final section; calendar synchronization does not replace their check.
-Report actual writes truthfully: a cache-only write is not a task write, and a
-successful task synchronization must not be described as "tasks unchanged".
+Ровно два раздела: `## Календарь`, затем `## Напоминания`.
+Дата указана рядом с планом. События с временем перечисляйте хронологически,
+каждое отдельной строкой `1. HH:MM–HH:MM — название`. События «весь день»
+утром не показывайте; не удаляйте их из календаря или снимков.
+Сохраняйте названия дословно: не сокращайте, не переводите, не объединяйте и не пересказывайте.
 
-## Before composing the plan
+Под напоминаниями разделяйте рабочие и личные задачи, сохраняйте название,
+проект или список и день выполнения: сегодня, просрочено с датой, будущая дата,
+без даты. Показывайте все открытые записи, включая приостановленные и
+связанные архивные списки. Не сокращайте список до первых пяти и не заменяйте
+его ссылкой. Несвязанные записи показывайте с исходным списком; владельца
+проекта не угадывайте. Номера сквозные и стабильные в разговоре.
+Срок Due отличается от планового дня: не переносите крайний срок молча.
 
-The user first arranges approximate work in Calendar. Every requested day plan
-then performs the following steps, without a scheduled automation or reminder:
+После списков — `Синхронизация: завершена.` только при полном успехе;
+иначе конкретное ограничение. Затем краткий фактический итог сессий и
+один вопрос: `Что берём на сегодня?`. Спорные правила требуют отдельного
+решения, не принимайте их за пользователя и не устраивайте обязательный
+обход очереди обучения внутри плана. Не назначайте срок или часы по догадке.
 
-1. Read allowed Calendar metadata, today's events and the complete context window.
-2. Discover canonical tasks through the compact task index and run synchronization
-   using the complete fresh calendar response as described below.
-3. Apply unambiguous task-time changes using Calendar as the source of truth.
-   Validate task records, then reload the compact index and changed canonical
-   records before ranking work or composing any task section.
-4. Render the three sections from the refreshed state, with overdue tasks last.
-5. Refine the day with the user. After accepted edits, verify only affected dates
-   and task records and refresh their cache buckets; do not repeat full-window
-   synchronization in the same run.
+## После решений
 
-Partial Calendar access must not produce inferred free time or task mutations.
-On a read or write failure, say precisely what remains unsynchronized and use
-only verified state. Do not claim the plan uses synchronized data after failure.
+Прямые однозначные решения пользователя (`update_task`, `update_due`,
+`update_waiting`, `create_task`) применяются штатным проверенным механизмом:
+сначала «Напоминания», затем Хаб. Для каждой записи известны путь цели,
+идентификатор и различия; при неоднозначности уточните только нужный пункт.
+Принятые предложения агента не требуют повторного согласования.
+Календарь меняйте через `hub-calendar` только по запросу изменения события.
+Дата задачи сама по себе не создаёт календарный блок. События не доказывают
+выполнение. После записи проверьте результат на обеих сторонах; повторное
+полное чтение нужно только если изменились другие данные или нарушена полнота.
+Не запускайте редакционное обучение, вопросы о целях и затруднениях.
 
-## Calendar rendering
-
-Under `## Текущий календарь`, first call `list_calendar_metadata`. Only after a successful response call `read_events` with exactly the returned calendar IDs and the calendar timezone. Render each timed event separately, in start order, as `- <HH:MM>–<HH:MM> — <title>`. Render each all-day event separately as `- весь день — <title>`. Include the calendar name only when needed to disambiguate. Keep event titles verbatim: do not shorten, translate, group, or paraphrase them.
-
-Never call `read_events` before successful metadata. If the MCP is unreachable, permission is missing, or the allowlist is empty, state which condition occurred rather than inventing an empty schedule. Do not report an empty allowlist without a successful metadata response and never claim a free day you could not read. On `CALENDAR_NOT_ALLOWED`, read the local allowlist file and retry with exactly its IDs; report an empty allowlist only when that file is confirmed empty.
-
-For each successful `read_events` response, inspect `availability_complete` and `unavailable_calendar_ids`. If coverage is incomplete, render returned events and name unavailable calendar IDs; never interpret missing events as free time. If a calendar-context window read is incomplete, state that synchronization is incomplete and do not use partial data.
-
-When the requested date's read is complete, pipe one `HH:MM|HH:MM|<title>|<calendar>` line per event, in start-time order, to `bash scripts/snapshot-calendar.sh --hub <hub> --at <date>-<HHMM>`. This morning snapshot is the plan that the evening review compares against; a snapshot failure is reported and does not block the day plan.
-
-## Task sections
-
-Under `## Просроченные задачи`, render every actionable task due before the requested date as `<exact canonical task title> — <project-id>; срок: <YYYY-MM-DD>; просрочено: <N> дн.; источник: <canonical-path>`. Use the exact canonical task title, never a generated summary. Do not repeat a task in another day-plan section.
-
-## Editing the plan
-
-After rendering, every user statement that changes or adds work becomes a proposal in the same reply. Map exactly one grounded statement to exactly one action:
-
-| Statement | Envelope action |
-|---|---|
-| Work is done, built, sent, or otherwise advanced | `update_task` |
-| The due date moves | `update_due` |
-| A wait starts, changes, or ends | `update_waiting` |
-| New work or a reminder is named | `create_task` |
-| A block time or duration changes | `calendar-event` |
-
-Preserve the exact user-stated task title unless the user explicitly replaces it. Each proposal keeps its own exact target and diff. When a task carries a schedule, write its calendar event together with the task under `hub-calendar`. A selectable package may span active projects, but every proposal retains its own project ID, `target_path`, and diff.
-
-For a direct, unambiguous user statement about one canonical task, apply
-exactly one `update_task`, `update_due`, or `update_waiting` change to the
-canonical record at once, plus the calendar change only when the task schedule
-changes, and report the project ID, target path, and diff. If the task
-reference is ambiguous, change nothing and ask which task is meant.
-
-For a new or changed action with relative and explicit dates, resolve the date
-in the calendar timezone. Preserve an explicit interval unchanged. A date-only
-statement uses the first 30-minute free interval on that date; never move an
-existing event. Put the result in `Запланировано: YYYY-MM-DD HH:MM-HH:MM` in
-the task record and create the matching calendar event without asking. A past date does not infer completion.
-
-Do not guess project ownership. If one active registered project cannot be identified, ask which project owns the statement and write no task or event. If the canonical record already contains the statement, say so rather than emitting an empty diff.
-
-## Sync section
-
-Run sync only when all calendar-context window reads are complete (`availability_complete: true` and no `unavailable_calendar_ids`). Otherwise report that synchronization is incomplete and render no discrepancy items from partial data.
-
-Before composing the plan, pipe the guarded `read_events` response for the
-calendar-context window [D-30, D+31) to
-`python3 scripts/calendar_task_sync.py --hub <hub> --now "<YYYY-MM-DD HH:MM>"`.
-Reuse a complete window response already fetched in this run; do not read the
-same window again solely for sync. After task or calendar edits, re-read only
-the affected dates to verify changed events and refresh their calendar-context
-buckets. Do not repeat the full-window sync after those edits in the same run;
-the next day-plan run performs the normal sync.
-Report results under `## Синхронизация`: one numbered item per discrepancy
-in Russian, stating what moved and from/to times. The output section does not
-delay synchronization until after composing the plan:
-
-- `calendar_moved` → `update_task` proposal: set `Запланировано:` to the event
-  time and refresh `синхронизировано`.
-- `task_moved` → task diff restoring `Запланировано:` to the linked Calendar
-  event time and refreshing `синхронизировано`; do not move Calendar implicitly.
-- `stale_sync` → task diff refreshing `синхронизировано` only.
-- `both_moved` → use Calendar only when the linked event and its occurrence
-  are unambiguous; otherwise ask one question and make no mutation.
-- `event_missing` → a question; no proposal.
-- `event_ambiguous` → ask which occurrence belongs to the task; no proposal.
-- `closed_with_future_event` → delete preview plus a task diff removing the
-  `Событие:` line.
-- `unlinked` → task diff adding the `Событие:` line.
-- `scheduled_after_due` → the block (`event`, Calendar time) lands after
-  `Due:`. Apply an `update_due` directly, without asking (user decision
-  2026-10-06): set `Due:` to `proposed_due` (the block date) and add
-  `Перенесено с <old due>: блок стоит <block date> (синхронизация <today>).`
-  Report it as done. No other mutation.
-- `schedule_passed` → an open task's block ended before today and no later
-  block is linked. Ask when to reschedule it; no proposal until the user names
-  a date. Blocks that ended earlier today are left to the evening review.
-
-Synchronization changes `Due:` only through `scheduled_after_due`, and only
-later, to the block date; no other item touches `Due:`. A task whose deadline
-passed with no later block stays in the overdue section until the user changes
-its deadline or confirms completion.
-Apply unambiguous `calendar_moved`, `task_moved`, `both_moved`, `stale_sync`,
-`scheduled_after_due`, and `unlinked` items
-directly and list them as done. A `closed_with_future_event` item deletes an
-event and waits for an explicit yes; the user may answer for all such items or
-selected numbers. If the calendar read failed, say so and render no
-items; render `- Нет.` when the list is empty. The script is read-only.
-
-The script converts event times to the calendar timezone taken from the
-`read_events` response before comparing them; each returned item also carries
-the task's `due` field for the after-`Due:` check; note that event IDs can
-change after a full calendar re-sync, which surfaces as `event_missing` and is
-only a question, not a definite discrepancy.
-
-## Joint planning and validation
-
-Use the past 30 days and next 14 days from `resources/calendar-context.md`,
-canonical deadlines, learned rules from `<hub>/ai/workflow-context.md`, and
-available goal-progress results to support joint planning. These inputs stay
-internal to analysis; they create no recommendation section, calendar block,
-or task change by themselves. Historical events do not prove completion.
-A learned rule naming a removed output section does not restore that section.
-
-When discussing workload with the user, use only recorded durations, scope or
-done-criteria counts, or explicitly unknown effort. Never invent estimates.
-Do not silently move or shorten other people's meetings, sleep, meals, travel
-or personal care. Apply user-requested changes through the existing editing
-path and verify their exact task/calendar targets afterwards.
-
-Discovery warnings, access limitations and required scheduling decisions belong
-under `## Синхронизация`, with their project and canonical source where known.
-Keep that section even if synchronization found no discrepancies (`- Нет.`).
-
-Before sending the result, pass the complete draft on stdin to
-`scripts/validate-day-plan-output.py`. Send only after it exits successfully;
-otherwise rewrite and validate again. Cache failures do not change the required
-three-section format.
-
-Linked events are matched by calendar ID and event ID. A recurring series
-requires one exact synchronized occurrence; ambiguity never authorizes a
-schedule change. Unlinked matches require the exact project and task title,
-a unique task and non-recurring event, and no existing owner of that event.
+Сохраните полный снимок календаря D через `snapshot-calendar.sh`, как описано
+в основном навыке: это данные недельного разбора, не дополнительный диалог.
+Перед первым полным выводом проверьте текст командой
+`python3 scripts/validate-day-plan-output.py --reminders` через стандартный ввод.
+После небольшого изменения достаточно показать изменённые строки и итог записи.

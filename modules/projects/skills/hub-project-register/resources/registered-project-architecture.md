@@ -1,13 +1,13 @@
-# Registered Project Architecture
+# Архитектура зарегистрированного проекта
 
-The shared architecture for this registered project belongs to the Personal AI
-Hub at `../../..`:
+Общая архитектура зарегистрированного проекта принадлежит личному Хабу ИИ
+в `../../..`:
 
-- `../../../AGENTS.md` or `../../../CLAUDE.md` for the active agent;
-- `../../../ai/architecture.md` for shared workflows and rule precedence.
+- `../../../AGENTS.md` или `../../../CLAUDE.md` для активного агента;
+- `../../../ai/architecture.md` для общих процессов и приоритета правил.
 
-Keep project-specific facts in `project-context.md` and project-specific
-invariants in `decisions.md`. This file must not duplicate shared hub rules.
-If the project is moved outside this hub, this pointer is no longer valid.
-Return through Hub routing and confirm a registered location; never guess
-another hub or restore the retired standalone architecture.
+Храните факты проекта в `project-context.md`, а неизменные условия проекта —
+в `decisions.md`. Этот файл не должен дублировать общие правила Хаба.
+Если проект перенесён за пределы Хаба, указатель больше не действует.
+Вернитесь через выбор проекта Хаба и подтвердите зарегистрированное расположение;
+никогда не угадывайте другой Хаб и не восстанавливайте отменённую автономную архитектуру.

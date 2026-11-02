@@ -2,97 +2,128 @@
 name: hub-workflows
 type: worker
 description: |
-  Use for day plans, evening reviews, and weekly reviews after
-  the required source/scope gates. The personal-assistant contract lives in
-  `hub-task-overview`; learning rules live here; scenario detail is loaded only
-  from the matching resource.
+  Использовать для планов дня, вечерних и недельных разборов после обязательных
+  допусков источника и пределов. Договор личного помощника находится в
+  `hub-task-overview`; правила обучения — здесь; подробности сценария
+  загружаются только из подходящего материала.
 ---
+## Недельное самообучение архитектуры
 
-# Hub Workflows
+Для `weekly-review` сразу прочитайте `resources/weekly-review.md` и выполните
+только самообучение архитектуры. Это отдельная ветка: ежедневные этапы ниже
+к ней не применяются. Не запускайте синхронизацию «Напоминаний», календарь,
+обзор задач, целей или архитектурных групп. Из `hub-task-overview` действуют
+только границы доступа, оболочка предложения и правила записи; его поиск
+задач, входной процесс и формат вывода в недельном разборе не выполняются.
+При принятом изменении задачи действуют обычные проверенные записи и синхронизация
+этой задачи; это не повод запускать общий обзор. Разрешённые источники обучения
+определяются `ai/rules/learning.md`. Без установленного learning сообщите об
+этом одной строкой и завершите разбор.
 
-Use this skill for `day-plan`, `evening-review`, or `weekly-review`.
-Writes follow the Write Confirmation Policy in `ai/architecture.md`. A change
-the user states (task done, moved, new action, goal amount) is applied at once
-and reported; only deletions wait for an explicit yes. Blocks the agent itself
-suggests in a plan are suggestions; once the user accepts them they are applied
-without another confirmation step.
+## Включённый режим «Напоминаний»
 
-Module rules: `ai/rules/planning.md`.
+Перед применением режима прочитайте «Главная копия задач в приложении»
+в `ai/rules/tasks.md`. Выполняйте этот договор и его условия полноты чтения.
 
-Read schedules only through the guarded `hub_calendar` MCP and only with its
-read tools. Never call `preview_change` or `apply_change` here; Calendar writes
-go through `hub-calendar`. Do not perform a vault
-migration, start a session audit, scan arbitrary transcripts, copy source text
-into project memory, add an apply command, or create a persistent proposal
-queue.
+При `enabled: true` в `ai/reminders-sync.json` day-plan/evening-review начинают с
+одной полной синхронизации. Для day-plan её выполняет `review_reminders.py
+collect --sync`, для evening-review — `evening_review.py --reminders --sync`.
+Эти команды также возвращают список из итогового свежего снимка; отдельный
+предварительный `reminders_sync.py sync` не запускайте.
+Затем используйте канонические записи после повторного чтения. При последующих
+изменениях данных нужны свежие проверки; начальный результат их не заменяет.
+В этом режиме календарь определяет только события с фиксированным началом,
+а дни задач, выполнение и новые задачи синхронизируются с «Напоминаниями».
+Не запускайте calendar_task_sync.py или прежний режим evening_review.py для
+определения статусов/расписания задач: они привязаны к календарным блокам.
+Для evening-review используйте `evening_review.py --reminders`: он объединяет
+календарь, выполненные после прошлого ревью напоминания и список «сегодня»;
+проверку календарной синхронизации задач в этом режиме не выполняет.
+При конфликте или частичном результате сообщите затронутые задачи и продолжайте
+только по проверенным данным. Фоновую синхронизацию не создавать.
+Для ежедневных сценариев действует короткий путь ниже.
 
-Pending learning uses `resources/learning-lifecycle.md`. Showing a proposal
-never consumes or resolves a pending observation.
 
-## Scenario dispatch
 
-After applying this core contract and the `hub-task-overview` contract, read
-exactly the matching scenario resource:
+# Процессы Хаба
 
-- `day-plan` → `resources/day-plan.md` and its referenced calendar context;
+Используйте навык для `day-plan`, `evening-review` или `weekly-review`.
+Записи следуют правилам подтверждения записи `ai/architecture.md`.
+Заявленное пользователем изменение — задача завершена, перенесена, новое
+действие, количество цели — применяется сразу с сообщением; только удаления
+ждут явного согласия. Блоки, предлагаемые самим агентом в плане, остаются
+предложениями; после принятия пользователем применяются без повторного подтверждения.
+
+Правила модуля: `ai/rules/planning.md`.
+
+Читайте расписание только через защищённый MCP `hub_calendar` и только его
+инструментами чтения. Никогда не вызывайте `preview_change` или `apply_change`
+здесь; записи календаря проходят через `hub-calendar`. Не переносите
+хранилище, не сканируйте произвольные расшифровки,
+не копируйте исходный текст в память проекта, не добавляйте команду применения
+и не создавайте постоянную очередь предложений. Утреннее обучение использует
+только установленный `hub-session-scan`; редакционную очередь не вызывайте.
+
+Ожидающее обучение использует `resources/learning-lifecycle.md`. Показ
+предложения никогда не потребляет и не разрешает ожидающее наблюдение.
+
+## Выбор сценария
+
+После применения этого основного договора и договора `hub-task-overview`
+прочитайте ровно подходящий материал сценария:
+
+- `day-plan` → `resources/day-plan.md`;
 - `evening-review` → `resources/evening-review.md`;
 - `weekly-review` → `resources/weekly-review.md`.
 
-Scenario resources provide output/detail rules only. They cannot override the
-scope, allowed roots, secret handling, canonical sources, write policy,
-or proposal schema in this core `SKILL.md` or in the `hub-task-overview`
-contract.
+Материалы сценариев задают только правила вывода и подробностей. Они не могут
+отменять пределы, разрешённые корни, обращение с секретами, канонические
+источники, правила записи или схему предложений основного `SKILL.md`
+либо договора `hub-task-overview`.
 
-Use the personal-assistant contract in `hub-task-overview` (scope, inputs, proposal envelope, write boundary).
+Используйте договор личного помощника `hub-task-overview`: пределы, входные
+данные, оболочка предложения, граница записи.
 
-## Fixed sequence
+## Фиксированная последовательность
 
-1. **Select one source.** Receive exactly one user-selected pasted text,
-   explicitly selected regular non-symlink text/review file, dictated task, or
-   requested Rolling Audio Recorder period. Do not discover other source files.
-   `evening-review` may instead use the requested date's calendar as its only
-   source; calendar-derived facts remain unverified until confirmed by the user.
-2. **Handle recorder JSON only.** The only source-side write is the explicitly
-   requested `rar export --minutes <1..120> --json`. Poll only with
-   `rar status <job-id> --json`. Parse JSON, not human-readable output. Pending
-   or failed jobs stop before project reads. On success accept only the returned
-   regular non-symlink `.txt` under the recorder exports directory.
-3. **Find candidates with the minimum metadata.** A card, link, index row, or
-   inferred match is discovery evidence, not permission to read code, knowledge,
-   Git, credentials, or linked targets. Personal-assistant task discovery uses
-   the compact task index rule in `hub-task-overview`; other project routing follows the Hub
-   router's metadata-only candidate rules.
-4. **Establish scope before richer reads.** Personal-assistant workflows use
-   only their read boundary in `hub-task-overview`. Otherwise wait for explicit confirmation of
-   the project or named project set and repeat every project ID and exact
-   registered path. Read only the smallest required canonical `ai/` records and
-   explicitly selected knowledge paths; never widen scope silently.
-5. **Perform semantic analysis.** For `day-plan`, first synchronize from the
-   complete fresh calendar response and reload changed canonical task records,
-   as required by `resources/day-plan.md`. Then The AI agent extracts meaning, classifies and
-   ranks work, and renders the selected scenario contract. Bash may validate
-   paths, flags, and structured field syntax only. Ground output in the selected
-   source or permitted canonical records and label inference.
-6. **Apply or suggest after analysis.** Apply user-stated changes directly and
-   report each exact target and diff. Show agent-generated ideas as
-   suggestions. Unknown targets become questions rather than guessed writes.
+Для включённых «Напоминаний» в day-plan/evening-review:
+1. Одна начальная полная синхронизация всех разрешённых связанных задач и структуры.
+2. Свежие защищённые события только дня D и полный список напоминаний по материалу сценария.
+3. Утром — проверка новых сессий; вечером — только комментарии пользователя.
+4. Применение прямых решений через штатные проверенные записи, контроль обеих сторон.
+5. Короткий итог. Неполное чтение или ошибка не означают пустоту или успешную синхронизацию.
 
-## Preserved learning lifecycle
+Сценарий определяет только вывод и детали. Общие пределы `hub-task-overview`
+и правилам подтверждения записи Хаба следуют все записи. Не ищите произвольные
+исходные файлы или расшифровки. Исключение — утренний `hub-session-scan` в его
+собственной разрешённой области. Канонический статус задачи определяется
+«Напоминаниями» и проверенными решениями, никогда событием календаря.
 
-Only when `goals` is listed in `ai/modules.md`: for numeric goals, day
-planning may render the existing goal-progress result, evening review may
-record a user-stated `goal_progress` entry directly, and weekly review may render
-pace/forecast.
+Недельный разбор использует только самообучение из `resources/weekly-review.md`
+и правила сохранения наблюдений `resources/learning-lifecycle.md`. При выключенном режиме напоминаний
+дневные сценарии используют только свои материалы `*-legacy.md`.
 
-Day planning may record noncanonical friction and calendar snapshots through
-`snapshot-calendar.sh`.
+## Снимки для недельного разбора
 
-Only when `learning` is listed in `ai/modules.md`: evening review reads
-pending friction and may offer one `add_observation` proposal per grounded
-issue. Proposal display leaves it pending. Acceptance or rejection resolves
-it according to `resources/learning-lifecycle.md`;
-accepted observations are appended to the journal before resolution,
-rejection resolves without append, and failed append remains pending.
-Weekly review shows the session-learning report and may offer `retire_rule`
-after the workflow-memory check. Observation changes are applied once accepted; `retire_rule`
-waits for an explicit yes; for a catalog rule it runs `session_rules.py retire`.
+После полного защищённого чтения дня D сохраняйте все события, включая
+целодневные, через `bash scripts/snapshot-calendar.sh --hub <hub> --at <D>-<HHMM>`.
+Вход: по одной строке `HH:MM|HH:MM|<title>|<calendar>` в порядке начала;
+для целодневного события используйте границы его дня. Неполный календарь
+не сохраняйте как полный. Ошибка снимка не блокирует просмотр, но сообщается.
+Вечером при установленном learning выполните
+`python3 scripts/calendar_drift.py --hub <hub> diff --day <D> --write`.
+Это сохранение данных для обучения; дополнительных вопросов,
+разбора затруднений или самостоятельного принятия правил не добавляйте.
+
+## Сохранённый жизненный цикл обучения
+
+Ежедневные сценарии не запускают редакционное обучение, обход целей,
+затруднений и очереди предложений. Утром остаётся только `hub-session-scan`
+с кратким отчётом; спорные правила остаются ожидающими без обязательного
+обхода очереди. По отдельному запросу действует полный договор обучения.
+
+Недельный разбор показывает краткий итог самообучения архитектуры. Предложения наблюдений и `retire_rule` используют
+`resources/learning-lifecycle.md`: Proposal display leaves it pending — показ
+не потребляет наблюдение; принятие
+сначала сохраняет журнал, отклонение разрешает без добавления, ошибка
+сохраняет ожидание. Удаление правила требует явного согласия.

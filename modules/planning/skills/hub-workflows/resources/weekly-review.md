@@ -1,52 +1,80 @@
 # weekly-review
 
-This resource defines only the `weekly-review` scenario. The core `SKILL.md` remains authoritative for scope, security, canonical-source rules, proposal envelopes, write policy, and learning lifecycle. Nothing here widens those permissions.
+## Только самообучение архитектуры
 
-Render these blocks in this exact order:
+Этот материал определяет сценарий `weekly-review`. Основной core `SKILL.md`
+сохраняет пределы, безопасность, оболочки предложений и правила записи.
+Недельное ревью не запускает полную синхронизацию, чтение «Напоминаний» или
+календаря, обзор задач и архитектурных групп, цели и три результата недели.
+Не запускайте утреннюю проверку задач, повторный разбор исходных сессий или
+редакционное обучение. Снимки ежедневных сценариев не меняйте.
 
-1. `## Архипроекты`
-2. one `### <archiproject-id> — <name>` block per scoped primary archiproject
-3. optional `#### Детали проектов` immediately after its owning archiproject block
-4. `## Три результата недели`
-5. `## Нужны решения`
+Если `learning` отсутствует в `ai/modules.md`, сообщите «Самообучение не
+установлено» и завершите разбор. Иначе используйте только разрешённые источники
+`ai/rules/learning.md`: каталог обучения, усвоенные правила, журнал наблюдений,
+контекст процессов и разрешённые разделы предложений разборов.
 
-Each archiproject block uses this field order: `- Цель:`, `- Вклад основного проекта:`, `- Срок/прогноз:`, `- Ожидания и follow-up:`, `- Риск:`. Only canonical primary-archiproject membership counts; a related link never implies contribution.
+## Проход
 
-Show `#### Детали проектов` only for a dated risk, blocker, or waiting record. Render detail as `- <project-id> — <risk, blocker, or waiting>; дата: <YYYY-MM-DD>; источник: <canonical-path>`.
+1. Выполните `check-workflow-memory.sh` до предложения изменения правил.
+   Ошибка блокирует изменения правил, но позволяет показать проверенные данные.
+2. Выполните только раздел «Недельный проход» навыка `hub-session-scan`:
+   объединение правил и `session_rules.py report` с последнего завершённого
+   недельного разбора, включая пропущенные недели. Не выполняйте утренний проход.
+3. Проверьте место правила по `ai/rules/learning.md` § Место правила:
+   дубли, перенос в файл-владелец, утечки, пределы длины. Не читайте навыки
+   другого проекта без его выбора и проверки. Покажите только значимые
+   изменения и предложения с источником, без пустых разделов.
+4. Проверьте активные усвоенные правила и повторные затруднения: где проверка,
+   шаг навыка или обработчик события надёжнее инструкции агенту. Сохраняйте все
+   обоснованные кандидаты, сильнейшие доказательства первыми. Для гипотезы
+   отделите проблему от предполагаемой причины; выберите одно полезное
+   сравнение старого и нового порядка на одинаковых задачах, включая
+   контрпример. Качество, время исправлений, длительность и стоимость должны
+   быть измерены; отсутствующие данные обозначайте «неизвестно». Укажите
+   критерий принятия, источник результата и способ возврата. Не создавайте
+   опыт, если кандидатов нет. Прямое указание не требует сравнительного опыта.
+5. Выполните `python3 scripts/session_cost.py --hub <hub> week --until <date>`.
+   Используйте результат для поиска причин технических потерь. Покажите
+   только обоснованные выводы, максимум три, и подтверждающие числа.
+   Повтор теста или проверки состояния сам по себе не доказывает растрату;
+   отсутствие данных не означает отсутствие потерь. Не выводите подробную
+   таблицу сессий и токенов без отдельного запроса.
+6. Обработайте открытые предложения по `ai/rules/learning.md`
+   § Открытые предложения разборов: старейшие первыми, не более десяти,
+   сообщите число оставшихся. Показывайте только предложения об архитектуре
+   и работе агента; прочие оставляйте без изменений. Не открывайте обзор
+   задач ради предложения. Задавайте не более одного вопроса за ход.
 
-Under `## Три результата недели`, render exactly three numbered executable outcomes grounded in canonical records. If a grounded result is unavailable, preserve the slot and write `Недостаточно канонических данных для результата.` Do not invent an outcome.
+## Решения и завершение
 
-If `ai/archiprojects.md` is missing or has no scoped archiproject, state that under `## Архипроекты`, omit invented archiproject blocks, still show safe project-level risks, then keep all three result slots.
+Предложения агента не применяются от одного показа или молчания пользователя.
+Сохраняйте жизненный цикл `resources/learning-lifecycle.md`: неудачная запись
+оставляет наблюдение ожидающим. Принятие гипотезы разрешает проверку, не
+доказывает пользу и не превращает её в постоянное правило.
+Внедрение механизмов следует процессу «Суперпауэрс» и правилам архитектуры;
+изменение навыка — `superpowers:writing-skills`. Выбор проекта и его проверка
+обязательны перед проектными изменениями. Принятие конкретного изменения
+не требует повторного согласия, если оно уже разрешено пользователем.
 
-When the request names an archiproject group, resolve it via `scripts/archiprojects.py tree --hub <hub>` and pass `--group <group-id>` to `scripts/read-compact-task-index.py`, same as the core `SKILL.md` group filter; report an unknown group instead of guessing. This only narrows which projects' task records are read — it never substitutes for project confirmation elsewhere.
+Объединения выполняются по недельному проходу `hub-session-scan`, отражаются
+в отчёте; сообщите возможность отменить объединение. Вывод правила из действия
+требует явного согласия и штатного `session_rules.py retire`; история сохраняется.
 
-Render active numeric goal pace/forecast only when `goals` is listed in `ai/modules.md`.
+Сначала покажите отчёт. `session_rules.py weekly-done --date <today>` выполните
+только после успешного завершения обязательного прохода и получения полного
+отчёта. Ошибка, неполные источники или незавершённое объединение не позволяют
+сдвинуть границу: назовите ограничение, сохраните предыдущую дату.
+Открытые предложения, ожидающие решения пользователя, могут остаться в очереди;
+это не ошибка прохода и не разрешение применить их.
 
-Only when `learning` is listed in `ai/modules.md`, read the observation journal and run `python3 scripts/calendar_drift.py --hub <hub> summary --until <date>` for calendar repeat candidates (kind, project, count), group repeated friction/calendar drift, then run the `hub-session-scan` weekly pass and show `session_rules.py report`
-(since the last weekly review; several weeks if reviews were skipped): rules
-added, changed, made global, merged or unmerged, in plain Russian; offer to undo
-any merge; offer `retire_rule` only for a catalog rule the user wants removed, and only after the user's explicit yes run `python3 scripts/session_rules.py --hub <hub> retire --rule R-n` (status `retired`, shown in the report). Before either rule-change proposal run `check-workflow-memory.sh`; failure blocks rule changes only. All learning changes use the core proposal/confirmation contract.
+## Короткий результат
 
-Only when `learning` is listed in `ai/modules.md`, run a mechanism review
-(asked for by the user 2026-10-05). Go through every active learned rule in
-`ai/learned-rules.md` and `ai/learned-rules/*.md`, every rule in
-`ai/workflow-context.md`, and the friction repeated this week. For each, decide
-whether a mechanism would enforce it better than an instruction the agent must
-remember: a script check, a validator, a skill step, or a hook. Signs: the rule
-is deterministic and checkable (format, IDs, scope, paths, counts, model
-names); it was broken although it was written down; or breaking it is costly.
-Show each candidate under `## Нужны решения` as
-`- <rule id or source> — <proposed mechanism>; почему: <evidence>`, every
-candidate with no count limit (user's choice, 2026-10-05), strongest evidence
-first; write `- Механизмы: кандидатов нет.`
-when there are none. Implement each candidate the user accepts in the same
-session through the Superpowers workflow (user's choice, 2026-10-05):
-`superpowers:brainstorming`, then `superpowers:writing-plans`, then
-`superpowers:test-driven-development` and
-`superpowers:verification-before-completion`. If Superpowers is not
-available, say so and ask before using another method. The change goes to the
-Hub copy and is ported to the `ai-dev-architecture` source after that project
-is confirmed through routing.
-Retire the rule the mechanism replaces only after the user's explicit yes.
+Покажите `## Самообучение архитектуры` и только непустые пункты:
+- Что изменилось в правилах и навыках, простыми словами.
+- Какие проблемы подтверждены и что предлагается улучшить.
+- Один вопрос по первому решению, если оно требуется; число остальных ожидающих.
 
-Only when `learning` is listed in `ai/modules.md`, also handle open session-review proposals as `ai/rules/learning.md` § Open review proposals defines: oldest first, at most ten per review, and report how many remain.
+Если значимых изменений и предложений нет: «Самообучение архитектуры выполнено.
+Новых изменений и предложений нет». Не подменяйте этой строкой ошибку проверки.
+Не добавляйте обязательные цели, итоги работы недели или план следующей недели.

@@ -62,7 +62,7 @@ rm -rf "$APP"
 mkdir -p "$MACOS_DIR"
 cp "$PLIST" "$APP/Contents/Info.plist"
 
-swiftc -O "$SOURCE" -o "$MACOS_DIR/$APP_NAME" \
+swiftc -O -j 2 -num-threads 1 "$SOURCE" -o "$MACOS_DIR/$APP_NAME" \
   -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __info_plist -Xlinker "$PLIST" \
   || die "bridge did not compile"
 

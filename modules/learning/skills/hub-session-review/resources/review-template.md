@@ -1,22 +1,22 @@
-# Session review
+# Разбор сессии
 
-Review ID: <unique local identifier>
-Project ID: <registered project ID>
-Task ID: <actual task ID|none>
-Session ID: <actual source ID|unavailable>
+Review ID: <уникальный локальный идентификатор>
+Project ID: <зарегистрированный идентификатор проекта>
+Task ID: <фактический идентификатор задачи|none>
+Session ID: <фактический идентификатор источника|unavailable>
 Trigger: <task-close|user-request>
 Coverage: <complete|partial>
-Evidence range: <visible message IDs/range or honest description>
-Missing evidence: <none|concrete missing span>
-Chronology audit: <every available message reviewed|partial; explain omitted span>
-Claim action audit: <material claims and their preceding evidence|no material claims>
-Prior review audit: <reviewed records, recurring mechanisms and reused proposals|none found>
+Evidence range: <идентификаторы или диапазон видимых сообщений либо честное описание>
+Missing evidence: <none|конкретный отсутствующий диапазон>
+Chronology audit: <every available message reviewed|partial; объясните пропущенный диапазон>
+Claim action audit: <существенные заявления и предшествующие доказательства|no material claims>
+Prior review audit: <изученные записи, повторяющиеся механизмы и использованные предложения|none found>
 Result: <no-issue-observed|issues-found|insufficient-evidence>
-Supplements: <earlier review path|none>
+Supplements: <путь прежнего разбора|none>
 
 ## Goal and result
 
-<Task goal, expected result, and observed outcome.>
+<Цель задачи, ожидаемый результат и наблюдаемый итог.>
 
 ## Findings
 

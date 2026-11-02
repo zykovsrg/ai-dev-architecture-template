@@ -1,88 +1,91 @@
 ---
 name: hub-calendar
 type: worker
-description: Safely read selected Apple Calendar calendars and apply changes; only deletions wait for confirmation.
+description: Безопасно читать выбранные календари Apple Calendar и применять изменения; только удаления ждут подтверждения.
 ---
 
-# Hub Calendar
+# Календарь Хаба
 
-Use only the guarded local Apple Calendar MCP. Never configure or call the raw
-upstream MCP. The local source is pinned; automatic updates are forbidden.
+Используйте только защищённый локальный MCP Apple Calendar. Никогда не
+настраивайте и не вызывайте исходный MCP поставщика. Локальный источник
+закреплён; автоматические обновления запрещены.
 
-Module rules: `ai/rules/calendar.md`.
+Правила модуля: `ai/rules/calendar.md`.
 
-Read only calendar IDs listed in the local allowlist. Never infer IDs from
-names. Every read response must state `Apple Calendar / EventKit` and its IANA
-timezone. Reads never change events.
+Читайте только идентификаторы календарей локального разрешённого списка.
+Никогда не выводите идентификаторы из имён. Каждый ответ чтения должен
+указывать `Apple Calendar / EventKit` и часовой пояс IANA. Чтение никогда не меняет события.
 
-For a calendar read, call `list_calendar_metadata` first. Its returned entries
-are the authoritative list of available allowed calendars; use only their IDs
-in `read_events`. A successful empty response means the allowlist has no
-available calendar. Do not report an empty allowlist when this call was not
-made or failed: state instead whether the calendar bridge is unavailable or
-permission was denied.
+Для чтения календаря сначала вызовите `list_calendar_metadata`. Возвращённые
+записи — канонический список доступных разрешённых календарей; используйте
+только их идентификаторы в `read_events`. Успешный пустой ответ означает, что
+в разрешённом списке нет доступного календаря. Не сообщайте пустой список,
+если вызов не сделан или завершился ошибкой: укажите недоступность моста
+календаря либо отказ в доступе.
 
-Every successful `read_events` and `find_free_slots` response includes
-`availability_complete` and `unavailable_calendar_ids`. If that list is
-non-empty, say the result is partial and name the affected IDs. Never describe
-partial event data as a free day, use partial free-slot output to recommend
-availability, ingest partial events into rolling context, or write a snapshot
-from them. Partial `find_free_slots` responses contain no slots.
+Каждый успешный ответ `read_events` и `find_free_slots` включает
+`availability_complete` и `unavailable_calendar_ids`. Если список непуст,
+сообщите о частичном результате и назовите затронутые идентификаторы. Никогда
+не описывайте частичные данные событий как свободный день, не используйте
+частичный вывод свободных промежутков для рекомендаций доступности, не добавляйте
+частичные события в скользящий контекст и не записывайте из них снимок.
+Частичные ответы `find_free_slots` не содержат промежутков.
 
 Для создания и явного переименования события проекта бери название из
 `python3 scripts/archiprojects.py calendar-title --hub <hub> --project <id> --task "<задача>"`.
 Оно показывает всю доступную цепочку вложенности кириллицей: русские имена
 групп архипроекта от корня, затем русское имя проекта, затем задачу, например
-`хадасса/промостраницы/варикоцеле/доработать текст по комментариям врача`.
+`работа/страницы/проект-сайта/доработать текст по замечаниям`.
 Проект без архипроекта даёт `<проект>/<задача>`. Общий проект группы
 отмечен в карточке `Calendar name: —` и не добавляет своего уровня:
-`хадасса/промостраницы/<задача>`. Имена берутся из
+`работа/страницы/<задача>`. Имена берутся из
 `calendar_name:` группы в `ai/archiprojects.md` и `Calendar name:` карточки
 проекта. Событие без проекта называй `категория/задача` строчными буквами;
 `/` не окружён пробелами. Не переименовывай существующее событие
 автоматически ради этого правила. Старые названия вида
 `категория/<project-id>/задача` продолжают распознаваться.
 
-For create or update, call `preview_change`, check that the preview matches the
-request (action, calendar, title, start/end with timezone, event ID, recurrence
-scope), then call `apply_change` in the same turn without asking the user.
-Afterwards report briefly what was created or changed. For delete, show the
-complete preview and apply it only after the user's explicit yes; that yes
-never authorizes another deletion. Do not create background checks,
-notifications, task-to-calendar transfers, or files containing events,
-secrets, or tokens.
-Caches defined by an installed subscriber are cache exceptions. They authorize
-neither publishing event data nor changing events.
+Для создания или обновления вызовите `preview_change`, проверьте соответствие
+просмотра запросу: действие, календарь, название, начало и конец с часовым поясом,
+идентификатор события, пределы повторения. Затем вызовите `apply_change`
+в том же ходе без вопроса пользователю. После кратко сообщите созданное или
+изменённое. Для удаления покажите полный просмотр и примените только после
+явного согласия пользователя; оно никогда не разрешает другое удаление.
+Не создавайте фоновые проверки, уведомления, переносы задач в календарь или
+файлы с событиями, секретами или токенами.
+Кеши установленного подписчика — исключения кеширования. Они не разрешают
+ни публикацию данных событий, ни изменение событий.
 
-An authorized writable calendar may update or delete events whether they are
-past or future. For a recurring event require exactly `this` or `future` scope and the
-start of the occurrence being changed. Every occurrence of a series shares
-one identifier, so without that date the change would hit the series.
+Разрешённый записываемый календарь может менять или удалять прошлые и будущие
+события. Для повторяющегося события требуйте ровно пределы `this` или `future`
+и начало изменяемого повторения. Все повторения серии имеют один идентификатор,
+поэтому без даты изменение затронет серию.
 
-A delete always removes one single event, never a series: for an occurrence
-send `recurring: true`, `recurrence_scope: this` and its `occurrence_start`;
-`future` is refused for delete (`SERIES_DELETE_FORBIDDEN`). The tool checks
-that the event is gone. If EventKit left the last occurrence as a standalone
-event, the tool removes that same event once more. If the event still remains,
-it reports `DELETE_NOT_APPLIED`: tell the user and do not report a deletion.
-For an update, omit `title` unless the user asks to rename the event, and omit
-`all_day` unless the change turns the event into or out of an all-day event:
-an omitted `all_day` keeps the event's own flag.
+Удаление всегда убирает одно событие, никогда не серию: для повторения
+отправьте `recurring: true`, `recurrence_scope: this` и его `occurrence_start`;
+`future` запрещён для удаления (`SERIES_DELETE_FORBIDDEN`). Инструмент проверяет
+отсутствие события. Если EventKit оставил последнее повторение отдельным
+событием, инструмент удаляет то же событие ещё раз. Если оно осталось,
+сообщается `DELETE_NOT_APPLIED`: скажите пользователю и не сообщайте об удалении.
+При обновлении не передавайте `title`, если пользователь не просит переименовать
+событие, и `all_day`, если изменение не переводит событие в целодневное или
+обратно: отсутствие `all_day` сохраняет собственный признак события.
 
-A `preview_change` response for a recurring event echoes the start of the
-series, not the occurrence being changed. A preview whose `start` precedes the
-requested date therefore identifies a series; this is expected and is not a
-mismatch, so never treat it as an unsafe or wrong target. Send `recurring:
-true`, `recurrence_scope: this`, and `occurrence_start` set to the start of the
-occurrence being changed. A delete preview is the cheap way to learn whether an
-event is a series before proposing any change to it.
+Ответ `preview_change` для повторяющегося события возвращает начало серии,
+а не изменяемого повторения. Поэтому просмотр с `start` раньше запрошенной
+даты определяет серию; это ожидаемо, не является несовпадением, и никогда
+не считайте такую цель небезопасной или неправильной. Отправьте `recurring:
+true`, `recurrence_scope: this` и `occurrence_start`, равный началу изменяемого
+повторения. Просмотр удаления — дешёвый способ выяснить, является ли событие
+серией, до предложения любого изменения.
 
-macOS Calendar access is requested only after a separate user confirmation.
-The allowlist starts empty and is changed only after the user selects exact IDs.
+Доступ к календарю macOS запрашивается только после отдельного подтверждения
+пользователя. Разрешённый список изначально пуст и меняется только после выбора
+пользователем точных идентификаторов.
 
 ## after-calendar-change
 
-After a successful `apply_change`, run the `after-calendar-change` event: read
-`<hub>/ai/modules.md` and follow each subscriber's rules with the affected
-calendar ID and date. A subscriber failure is reported and never undoes the
-applied change.
+После успешного `apply_change` запустите `after-calendar-change`: прочитайте
+`<hub>/ai/modules.md` и следуйте правилам каждого подписчика с затронутыми
+идентификатором календаря и датой. Сообщайте ошибку подписчика; она никогда
+не отменяет применённое изменение.

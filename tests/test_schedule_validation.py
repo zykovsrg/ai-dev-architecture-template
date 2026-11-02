@@ -23,7 +23,11 @@ class ScheduleValidation(unittest.TestCase):
             records.parse_scheduled("Запланировано: 2026-99-99 (весь день).")
 
     def test_schedule_with_comment(self):
-        self.assertEqual(records.parse_scheduled("Запланировано: 2026-10-02 15:45-16:00 (Europe/Kirov), по дороге."), ("2026-10-02 15:45", "2026-10-02 16:00"))
+        try:
+            span = records.parse_scheduled("Запланировано: 2026-10-02 15:45-16:00 (Europe/Kirov), по дороге.")
+        except ValueError as error:
+            self.fail(f"schedule with a comment was rejected: {error}")
+        self.assertEqual(span, ("2026-10-02 15:45", "2026-10-02 16:00"))
 
     def test_legacy_start_only_is_readable_without_inventing_end(self):
         self.assertIsNone(records.parse_scheduled("Запланировано: 2026-09-18 14:00 (Europe/Kirov)."))

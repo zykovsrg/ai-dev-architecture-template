@@ -1,29 +1,30 @@
 ---
 name: hub-environment-check
-description: Check one confirmed registered project's AI task state through the hub-managed flow.
+description: Проверить состояние задачи ИИ одного выбранного зарегистрированного проекта через процесс, управляемый Хабом.
 ---
 
-# Hub Environment Check
+# Проверка среды Хаба
 
-Use this skill only after explicit confirmation of a confirmed registered
-project and successful hub registry validation. Its scope is the selected
-project `ai/` memory only; do not require or read duplicated project
-`AGENTS.md` or `CLAUDE.md` files.
+Используйте навык только после выбора и проверки зарегистрированного проекта
+и успешной проверки реестра Хаба. Его пределы — только память `ai/` выбранного
+проекта; не требуйте и не читайте дубликаты `AGENTS.md` или `CLAUDE.md` проекта.
 
-Module rules: `ai/rules/tasks.md`.
+Правила модуля: `ai/rules/tasks.md`.
 
-## Procedure
+## Порядок действий
 
-1. Restate the confirmed project ID and canonical registered path.
-2. Validate that the exact memory path and its components remain inside the
-   confirmed project and are not symlinks before reading. Read `ai/current-task.md` and, only when needed to explain an unfinished
-   task, `ai/paused-tasks.md` inside that project.
-3. If current-task memory is missing or invalid, report adaptation needed and
-   use the readiness procedure in `hub-project-register` for the already
-   confirmed registered project. Do not infer an empty task from missing data.
-4. Report whether task memory is available, the recorded status/stage, and
-   whether `hub-task-intake`, `hub-task-switch`, or `hub-task-finish` is the next hub-owned
-   workflow. Do not change memory during this check.
+1. Повторите подтверждённый идентификатор проекта и канонический зарегистрированный путь.
+2. До чтения проверьте, что точный путь памяти и его компоненты находятся внутри
+   выбранного проекта и не являются символическими ссылками. Прочитайте
+   `ai/current-task.md` и, только если нужно объяснить незавершённую задачу,
+   `ai/paused-tasks.md` этого проекта.
+3. Если память текущей задачи отсутствует или некорректна, сообщите о необходимой
+   адаптации и используйте процедуру готовности `hub-project-register` для уже
+   выбранного зарегистрированного проекта. Не выводите пустоту задачи
+   из отсутствия данных.
+4. Сообщите доступность памяти задачи, записанный статус и этап, а также
+   следующий процесс Хаба: `hub-task-intake`, `hub-task-switch` или
+   `hub-task-finish`. Не меняйте память во время проверки.
 
-This workflow cannot override hub routing, allowed roots, secret, or
-memory-isolation rules. It never reads another project's files or secret data.
+Этот процесс не может отменять правила Хаба о выборе проекта, разрешённых
+корнях, секретах и изоляции памяти. Он никогда не читает файлы другого проекта или секретные данные.

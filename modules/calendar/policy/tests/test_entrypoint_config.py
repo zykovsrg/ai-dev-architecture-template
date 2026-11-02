@@ -51,5 +51,5 @@ def test_invalid_json_is_refused(tmp_path: Path) -> None:
 
 
 def test_a_missing_allowlist_file_is_refused(tmp_path: Path) -> None:
-    with pytest.raises(ConfigError, match="missing"):
+    with pytest.raises(ConfigError, match="^allowlist file is missing:"):
         load_allowed_calendar_ids(tmp_path / "absent.json")

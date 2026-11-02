@@ -2,6 +2,10 @@
 """Shared strict helpers for canonical task-record dates and records."""
 
 import argparse
+import hashlib
+import importlib.util
+import os
+import tempfile
 import json
 import re
 import sys
@@ -212,9 +216,11 @@ def _read_records_lines(project_id, kind, lines, *, compact):
         task_id, title = match.groups()
         if task_id.startswith("TASK-") and not task_id.startswith(f"TASK-{project_id}-"):
             raise ValueError("foreign_task_id")
-        if status not in {"idea", "ready", "blocked", "promoted", "done", "dropped"}:
+        # Совместимость с completed, уже допустимым в текущих задачах.
+        canonical_status = "done" if status == "completed" else status
+        if canonical_status not in {"idea", "ready", "blocked", "promoted", "done", "dropped"}:
             raise ValueError("invalid_status")
-        records.append({"task_id": task_id, "title": title, "status": status, "due": _finish_due(due_values), "scheduled": scheduled, "event_link": event_link})
+        records.append({"task_id": task_id, "title": title, "status": canonical_status, "due": _finish_due(due_values), "scheduled": scheduled, "event_link": event_link})
 
     for raw in lines:
         line = raw.rstrip("\r\n")
@@ -309,9 +315,118 @@ def validate_project_dates(current_text, future_text, paused_text):
     }
 
 
+TASK_FILES = {"current": "current-task.md", "future": "future-tasks.md", "paused": "paused-tasks.md"}
+
+
+def gateway_module():
+    """Внешняя команда и проверенный resolver используют один исполнитель процесса."""
+    name = 'hub_reminders_task_gateway'
+    module = sys.modules.get(name)
+    if module is None:
+        path = Path(__file__).with_name('reminders_task_gateway.py')
+        if not path.is_file():
+            raise ValueError('reminders_task_gateway_missing')
+        spec = importlib.util.spec_from_file_location(name, path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        sys.modules[name] = module
+    return module
+
+
+def reminders_mode(hub):
+    path = Path(hub) / 'ai/reminders-sync.json' if hub is not None else None
+    if path is None or not path.is_file():
+        return False
+    config = json.loads(path.read_text(encoding='utf-8'))
+    if 'task_authority' not in config:
+        return False
+    return gateway_module().sync_module().authority_enabled(config)
+
+
+def _record_ids(project_id, kind, text):
+    return {record["task_id"] for record in read_records(project_id, kind, text) if record["task_id"]}
+
+
+def _lost_task_ids(project_dir, project_id, kind, before, text):
+    """Идентификаторы, которые новый текст убирает и которых нет в других файлах задач."""
+    try:
+        old_ids = _record_ids(project_id, kind, before.decode("utf-8"))
+    except ValueError:
+        return set()
+    lost = old_ids - _record_ids(project_id, kind, text)
+    for other, filename in TASK_FILES.items():
+        path = project_dir / "ai" / filename
+        if other != kind and lost and path.is_file():
+            lost -= _record_ids(project_id, other, path.read_text(encoding="utf-8"))
+    return lost
+
+
+def write_task_file(hub, project_id, kind, expected_sha256, text, allow_removal=()):
+    """Проверить весь новый текст до замены зарегистрированного файла задач."""
+    if hub is None or not project_id or not kind or not expected_sha256:
+        raise ValueError("incomplete_write_request")
+    if not re.fullmatch(r"[0-9a-f]{64}", expected_sha256):
+        raise ValueError("invalid_expected_sha256")
+    hub = hub.resolve(strict=True)
+    section = None
+    paths = []
+    for line in (hub / "ai/project-registry.md").read_text(encoding="utf-8").splitlines():
+        if line.startswith("## "):
+            section = line[3:].strip()
+        elif section == project_id and line.startswith("Path: "):
+            paths.append(Path(line[6:].strip()))
+    adopted = None
+    if reminders_mode(hub):
+        sync = gateway_module().sync_module()
+        config = sync.load_config(hub)
+        authority = sync.authority_module()
+        authority.validate_policy(hub, config)
+        adopted = authority.bound_projects(hub, config).get(project_id)
+        if adopted is None:
+            raise ValueError('unbound_project')
+    if adopted is None and len(paths) != 1:
+        raise ValueError("unregistered_project")
+    project = adopted or paths[0]
+    root = hub / "projects"
+    if (root.is_symlink() or project.is_symlink() or not project.is_absolute()
+            or (adopted is None and project.resolve(strict=True).parent != root.resolve(strict=True))):
+        raise ValueError("unsafe_task_path")
+    project = project.resolve(strict=True)
+    filename = TASK_FILES[kind]
+    target = project / "ai" / filename
+    if target.parent.is_symlink() or target.is_symlink() or not target.is_file():
+        raise ValueError("unsafe_task_path")
+    before = target.read_bytes()
+    if hashlib.sha256(before).hexdigest() != expected_sha256:
+        raise ValueError("task_file_changed")
+    read_records(project_id, kind, text)
+    if unrecognized_headings(kind, text.splitlines()):
+        raise ValueError("unrecognized_heading")
+    lost = _lost_task_ids(project, project_id, kind, before, text) - set(allow_removal)
+    if lost:
+        raise ValueError("task_id_lost:" + ",".join(sorted(lost)))
+    staged = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=target.parent, prefix=".task-record-", delete=False) as stream:
+            staged = Path(stream.name)
+            os.fchmod(stream.fileno(), target.stat().st_mode & 0o777)
+            stream.write(text.encode("utf-8"))
+            stream.flush()
+            os.fsync(stream.fileno())
+        if target.is_symlink() or target.parent.is_symlink() or target.read_bytes() != before:
+            raise ValueError("task_file_changed")
+        os.replace(staged, target)
+    finally:
+        if staged is not None and staged.exists():
+            staged.unlink()
+    return {"result": "written", "path": str(target), "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest()}
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("read", nargs="?")
+    parser.add_argument("action", nargs="?", choices=("read", "write", "write-batch"), default="read")
+    parser.add_argument("--hub", type=Path)
+    parser.add_argument("--expected-sha256")
     parser.add_argument("--file", type=Path)
     parser.add_argument("--current-file", type=Path)
     parser.add_argument("--future-file", type=Path)
@@ -320,8 +435,25 @@ def main():
     parser.add_argument("--project-id")
     parser.add_argument("--kind", choices=("current", "future", "paused"))
     parser.add_argument("--strict-headings", action="store_true")
+    parser.add_argument("--allow-removal", action="append", default=[])
     args = parser.parse_args()
     try:
+        if args.action in {"write", "write-batch"}:
+            if args.file or args.current_file or args.future_file or args.paused_file:
+                raise ValueError("write_target_is_derived_from_registry")
+            if args.action == 'write-batch':
+                if not reminders_mode(args.hub):
+                    raise ValueError('batch_requires_reminders_authority')
+                value = json.load(sys.stdin)
+                result = gateway_module().write_batch_from_texts(sys.modules[__name__], args.hub, args.project_id,
+                                                               value['expected_sha256'], value['texts'])
+            elif reminders_mode(args.hub):
+                result = gateway_module().write_from_text(sys.modules[__name__], args.hub, args.project_id, args.kind,
+                                                         args.expected_sha256, sys.stdin.read(), args.allow_removal)
+            else:
+                result = write_task_file(args.hub, args.project_id, args.kind, args.expected_sha256, sys.stdin.read(), args.allow_removal)
+            print(json.dumps(result, ensure_ascii=False))
+            return 0
         if args.current_file or args.future_file or args.paused_file:
             if not (args.current_file and args.future_file and args.paused_file):
                 raise ValueError("incomplete_project_records")
@@ -347,7 +479,7 @@ def main():
                     return 2
             return 0
         due = read_due(text.splitlines())
-    except ValueError as error:
+    except (ValueError, OSError) as error:
         print(str(error), file=sys.stderr)
         return 2
     print(json.dumps({"due": due}, ensure_ascii=False))

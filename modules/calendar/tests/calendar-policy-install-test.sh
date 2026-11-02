@@ -1,94 +1,148 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
-ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
-SYNC="$ROOT/scripts/sync-calendar-policy.sh"
-WORK="$(mktemp -d)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+SOURCE="$(cd "$ROOT/../.." && pwd -P)"
+source "$SOURCE/tests/helpers/shell-scenarios.sh"
+WORK="$(mktemp -d "${TMPDIR:-/private/tmp}/calendar-install-scenarios.XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT
 
-# This test covers the tool-directory install/rerun/removal safety, not the
-# server's Python venv (see calendar-venv-install-test.sh for that); skip it
-# so this test needs no network and leaves no venv caches for the checks below.
-export HUB_CALENDAR_SKIP_VENV=1
+# Проверяем исходный установщик; его соседний сборщик заменён безопасной фикстурой.
+mkdir -p "$WORK/subject" "$WORK/bin"
+cp "$ROOT/scripts/sync-calendar-policy.sh" "$WORK/subject/sync-calendar-policy.sh"
+SYNC="$WORK/subject/sync-calendar-policy.sh"
+cat > "$WORK/subject/build-calendar-bridge.sh" <<'STUB'
+#!/usr/bin/env bash
+set -euo pipefail
+[ "$#" -eq 2 ] && [ "$1" = --bridge-dir ] || exit 91
+app="$2/HubCalendarBridge.app"
+mkdir -p "$app/Contents/MacOS"
+cp "$2/Info.plist" "$app/Contents/Info.plist"
+printf '#!/bin/sh\nexit 99\n' > "$app/Contents/MacOS/HubCalendarBridge"
+chmod +x "$app/Contents/MacOS/HubCalendarBridge"
+printf '%s\n' "$app" >> "${BUILD_LOG:?}"
+printf '%s\n' "$app/Contents/MacOS/HubCalendarBridge"
+STUB
+cat > "$WORK/bin/uname" <<'STUB'
+#!/bin/sh
+if [ "$#" -eq 1 ] && [ "$1" = -s ]; then printf 'Darwin\n'; else exec /usr/bin/uname "$@"; fi
+STUB
+chmod +x "$WORK/bin/uname"
 
-fail() {
-  printf 'FAIL: %s\n' "$*" >&2
-  exit 1
+expect_ok() {
+  local code
+  scenario_accept_exit 1 ''
+  scenario_exec code "$@"
+  scenario_assert_exit 0 "$code"
 }
 
-make_source() {
-  local dest="$WORK/$1"
-  mkdir -p "$dest/scripts" "$dest/modules/calendar/policy"
-  cp -R "$ROOT/policy/src" "$dest/modules/calendar/policy/src"
-  mkdir -p "$dest/modules/calendar/policy/src/hub_calendar_policy/__pycache__"
-  : > "$dest/modules/calendar/policy/src/hub_calendar_policy/__pycache__/server.cpython-314.pyc"
-  cp -R "$ROOT/policy/bridge" "$dest/modules/calendar/policy/bridge"
-  cp "$ROOT/policy/pyproject.toml" "$dest/modules/calendar/policy/pyproject.toml"
-  printf '%s\n' "$dest"
+assert_no_find_results() {
+  local code found
+  scenario_accept_exit 0 ''
+  scenario_exec code find "$@" > "$WORK/found-paths"
+  scenario_assert_exit 0 "$code"
+  found="$(< "$WORK/found-paths")"
+  expect_ok test -z "$found"
 }
 
-make_hub() {
-  local hub="$WORK/$1"
-  mkdir -p "$hub"
+assert_local_ignore_once() {
+  local code count
+  scenario_accept_exit 1 ''
+  scenario_exec code grep -Fxc '/.local/' "$hub/.gitignore" > "$WORK/local-ignore-count"
+  scenario_assert_exit 0 "$code"
+  count="$(< "$WORK/local-ignore-count")"
+  expect_ok test "$count" = 1
+}
+
+make_fixture() {
+  local name="$1"
+  source_dir="$WORK/$name-source"; hub="$WORK/$name-hub"; tool="$hub/tools/apple-calendar-policy"
+  mkdir -p "$source_dir/modules/calendar/policy" "$hub"
+  cp -R "$ROOT/policy/src" "$ROOT/policy/bridge" "$source_dir/modules/calendar/policy/"
+  cp "$ROOT/policy/pyproject.toml" "$source_dir/modules/calendar/policy/pyproject.toml"
+  mkdir -p "$source_dir/modules/calendar/policy/src/hub_calendar_policy/__pycache__"
+  : > "$source_dir/modules/calendar/policy/src/hub_calendar_policy/__pycache__/server.cpython-314.pyc"
   printf '%s\n' '/projects/' 'my-own-entry/' > "$hub/.gitignore"
-  printf '%s\n' "$hub"
 }
 
-# A fresh hub receives the tool, an empty allowlist, and the ignore line.
-source_dir="$(make_source source-1)"
-hub="$(make_hub hub-1)"
-bash "$SYNC" --source "$source_dir" --hub "$hub" >/dev/null
+install_subject() {
+  local code
+  scenario_accept_exit 0 ''
+  scenario_exec code env PATH="$WORK/bin:$PATH" BUILD_LOG="$WORK/build.log" HUB_CALENDAR_SKIP_VENV=1 HUB_CALENDAR_SKIP_BRIDGE=0 \
+    bash "$SYNC" --source "$source_dir" --hub "$hub" "$@" >"$WORK/install.out"
+  scenario_assert_exit 0 "$code"
+}
 
-tool="$hub/tools/apple-calendar-policy"
-[ -f "$tool/src/hub_calendar_policy/__main__.py" ] || fail "entrypoint was not installed"
-[ -f "$tool/bridge/hub_eventkit_bridge.swift" ] || fail "bridge was not installed"
-[ -f "$tool/bridge/SHA256SUMS" ] || fail "bridge manifest was not installed"
-[ -f "$tool/pyproject.toml" ] || fail "manifest was not installed"
-grep -Fqx '.venv/' "$tool/.gitignore" || fail "the runtime environment is not ignored"
-grep -Fqx 'bridge/HubCalendarBridge.app/' "$tool/.gitignore" \
-  || fail "the built bundle is not ignored"
-# Running the installed server writes caches back into the tool directory.
-grep -Fqx '__pycache__/' "$tool/.gitignore" || fail "runtime caches are not ignored"
-[ -x "$tool/bridge/HubCalendarBridge.app/Contents/MacOS/HubCalendarBridge" ] \
-  || fail "the bridge bundle was not built during install"
-/usr/libexec/PlistBuddy -c 'Print :NSCalendarsFullAccessUsageDescription' \
-  "$tool/bridge/HubCalendarBridge.app/Contents/Info.plist" >/dev/null 2>&1 \
-  || fail "the installed bundle cannot ask for Calendar access"
-[ -f "$hub/.local/apple-calendar/allowlist.json" ] || fail "allowlist was not created"
-grep -Fq '"calendar_ids": []' "$hub/.local/apple-calendar/allowlist.json" \
-  || fail "installed allowlist is not empty"
-grep -Fqx '/.local/' "$hub/.gitignore" || fail "ignore line was not added"
-[ -z "$(find "$tool" -name '__pycache__' -o -name '*.pyc')" ] \
-  || fail "compiled caches were installed"
-grep -Fqx 'my-own-entry/' "$hub/.gitignore" || fail "existing ignore entries were lost"
+fresh_install() {
+  scenario_begin
+  make_fixture fresh
+  install_subject
+  expect_ok test -f "$tool/src/hub_calendar_policy/__main__.py"
+  expect_ok test -f "$tool/bridge/hub_eventkit_bridge.swift"
+  expect_ok test -f "$tool/bridge/SHA256SUMS"
+  expect_ok test -f "$tool/pyproject.toml"
+  expect_ok grep -Fxq '.venv/' "$tool/.gitignore"
+  expect_ok grep -Fxq 'bridge/HubCalendarBridge.app/' "$tool/.gitignore"
+  expect_ok grep -Fxq '__pycache__/' "$tool/.gitignore"
+  expect_ok test -x "$tool/bridge/HubCalendarBridge.app/Contents/MacOS/HubCalendarBridge"
+  expect_ok test -s "$WORK/build.log"
+  expect_ok test -f "$tool/bridge/HubCalendarBridge.app/Contents/Info.plist"
+  expect_ok grep -Fq NSCalendarsFullAccessUsageDescription "$tool/bridge/HubCalendarBridge.app/Contents/Info.plist"
+  expect_ok grep -Fq '"calendar_ids": []' "$hub/.local/apple-calendar/allowlist.json"
+  expect_ok grep -Fxq '/.local/' "$hub/.gitignore"
+  expect_ok grep -Fxq 'my-own-entry/' "$hub/.gitignore"
+  assert_no_find_results "$tool" -name '__pycache__' -o -name '*.pyc'
+  scenario_pass
+}
 
-# A rerun must also clear caches an earlier install already left behind:
-# rsync protects excluded files on the receiver unless they are deleted too.
-mkdir -p "$tool/src/hub_calendar_policy/__pycache__"
-: > "$tool/src/hub_calendar_policy/__pycache__/stale.cpython-314.pyc"
-bash "$SYNC" --source "$source_dir" --hub "$hub" >/dev/null
-[ -z "$(find "$tool" -name '*.pyc')" ] || fail "a stale cache survived a rerun"
+rerun_clears_cache() {
+  scenario_begin
+  make_fixture cache
+  install_subject
+  mkdir -p "$tool/src/hub_calendar_policy/__pycache__"
+  : > "$tool/src/hub_calendar_policy/__pycache__/stale.cpython-314.pyc"
+  install_subject
+  assert_no_find_results "$tool" -name '*.pyc'
+  scenario_pass
+}
 
-# A rerun must never overwrite a selection the user already made.
-printf '%s\n' '{"calendar_ids": ["chosen-calendar"]}' > "$hub/.local/apple-calendar/allowlist.json"
-bash "$SYNC" --source "$source_dir" --hub "$hub" >/dev/null
-grep -Fq 'chosen-calendar' "$hub/.local/apple-calendar/allowlist.json" \
-  || fail "rerun overwrote the user's allowlist"
-[ "$(grep -Fxc '/.local/' "$hub/.gitignore")" -eq 1 ] || fail "ignore line was duplicated"
+rerun_preserves_selection() {
+  scenario_begin
+  make_fixture preserve
+  install_subject
+  printf '%s\n' '{"calendar_ids": ["chosen-calendar"]}' > "$hub/.local/apple-calendar/allowlist.json"
+  install_subject
+  expect_ok grep -Fq chosen-calendar "$hub/.local/apple-calendar/allowlist.json"
+  assert_local_ignore_once
+  scenario_pass
+}
 
-# A bridge that no longer matches its manifest must not be installed.
-tampered="$(make_source source-tampered)"
-printf '\n// tampered\n' >> "$tampered/modules/calendar/policy/bridge/hub_eventkit_bridge.swift"
-hub_tampered="$(make_hub hub-tampered)"
-if bash "$SYNC" --source "$tampered" --hub "$hub_tampered" >/dev/null 2>&1; then
-  fail "a tampered bridge was installed"
-fi
-[ ! -e "$hub_tampered/tools" ] || fail "a tampered source left files behind"
+tampered_source_is_rejected() {
+  local code
+  scenario_begin
+  make_fixture tampered
+  printf '\n// tampered\n' >> "$source_dir/modules/calendar/policy/bridge/hub_eventkit_bridge.swift"
+  scenario_accept_exit 1 $'ERROR: calendar policy bridge checksum mismatch; refusing to install\n'
+  scenario_exec code env PATH="$WORK/bin:$PATH" BUILD_LOG="$WORK/build.log" HUB_CALENDAR_SKIP_VENV=1 HUB_CALENDAR_SKIP_BRIDGE=0 \
+    bash "$SYNC" --source "$source_dir" --hub "$hub" >"$WORK/rejected.out"
+  scenario_assert_exit 1 "$code"
+  expect_ok test ! -e "$hub/tools"
+  expect_ok test ! -e "$hub/.local"
+  scenario_pass
+}
 
-# A dry run reports the plan and writes nothing.
-hub_dry="$(make_hub hub-dry)"
-bash "$SYNC" --source "$source_dir" --hub "$hub_dry" --dry-run >/dev/null
-[ ! -e "$hub_dry/tools" ] || fail "dry run installed files"
-[ ! -e "$hub_dry/.local" ] || fail "dry run created runtime files"
+dry_run_writes_nothing() {
+  scenario_begin
+  make_fixture dry
+  install_subject --dry-run
+  expect_ok test ! -e "$hub/tools"
+  expect_ok test ! -e "$hub/.local"
+  expect_ok test ! -e "$hub/.mcp.json"
+  scenario_pass
+}
 
-printf 'PASS: guarded Calendar policy install is safe and repeatable.\n'
+scenario_declare policy-fresh-install-and-empty-selection fresh_install
+scenario_declare policy-rerun-removes-stale-cache rerun_clears_cache
+scenario_declare policy-rerun-preserves-selection-and-ignore rerun_preserves_selection
+scenario_declare policy-rejects-tampered-source-without-writes tampered_source_is_rejected
+scenario_declare policy-dry-run-writes-nothing dry_run_writes_nothing
+scenario_main "$@"

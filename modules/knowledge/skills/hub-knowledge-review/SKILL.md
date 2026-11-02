@@ -2,72 +2,82 @@
 name: hub-knowledge-review
 type: review
 description: |
-  Use on demand to review an explicit knowledge scope inside the currently
-  confirmed registered hub project; edits are applied and reported.
+  Используйте по запросу для проверки явно заданной области знаний
+  внутри текущего выбранного зарегистрированного проекта хаба;
+  изменения применяются с отчётом.
 ---
 
-# Hub Knowledge Review
+# Проверка знаний проекта через хаб
 
-This is a central hub-owned workflow. Do not copy it or any other generic
-workflow into a project. It may act only on the currently confirmed registered
-project and cannot override hub routing, allowed roots, secret, or
-memory-isolation rules.
+Это центральный процесс хаба. Не копируйте его или другие общие процессы
+в проект. Он может работать только с текущим подтверждённым зарегистрированным
+проектом и не может отменять правила выбора проектов, разрешённых корней,
+секретов или изоляции памяти хаба.
 
-Module rules: `ai/rules/knowledge.md`.
+Правила модуля: `ai/rules/knowledge.md`.
 
-Record edits need no confirmation; report every edited path. Deleting a record
-needs an explicit yes.
+Изменения записей не требуют подтверждения; сообщайте каждый изменённый путь.
+Удаление записи требует явного согласия.
 
-## Scope and containment
+## Область работы и границы
 
-1. Revalidate the confirmed project ID and registered path against the registry
-   and require the path to remain a canonical direct child of the sole allowed projects root.
-2. Review only one explicit project-relative record, folder, or task-linked set
-   whose paths are named in the selected project `ai/` memory. If no scope is
-   explicit, ask; do not infer one from conversation history.
-3. Resolve the canonical registered project root and require it and
-   `knowledge/` to be real directories, not symlinks.
-4. Reject absolute paths and any path containing a `..` segment. Also reject
-   empty, `.` or ambiguous path segments.
-5. Inspect every existing path component with `lstat` and reject any symlink component without following it. Canonicalize only validated components and
-   require each selected path to remain in this project's canonical `knowledge/` tree. Do not follow symlink entries in a selected folder.
+1. Повторно сверяйте подтверждённый идентификатор проекта и зарегистрированный
+   путь с реестром; путь должен оставаться каноническим непосредственным
+   дочерним каталогом единственного разрешённого корня проектов.
+2. Проверяйте только одну явно заданную запись, папку или связанный с задачей
+   набор с путями относительно проекта, указанными в памяти `ai/` выбранного
+   проекта. Если область не задана явно, спросите; не выводите её из истории беседы.
+3. Определите канонический зарегистрированный корень проекта; он и `knowledge/`
+   должны быть настоящими каталогами, а не символическими ссылками.
+4. Отклоняйте абсолютные пути и пути с сегментом `..`. Также отклоняйте
+   пустые, `.` или неоднозначные сегменты.
+5. Проверяйте каждый существующий компонент пути через `lstat` и отклоняйте
+   любые символические ссылки, не переходя по ним. Приводите к каноническому
+   виду только проверенные компоненты; каждый выбранный путь должен оставаться
+   в каноническом дереве `knowledge/` этого проекта. Не переходите по символическим
+   ссылкам внутри выбранной папки.
 
-Stop without reading or writing on any mismatch. The user's request never authorizes
-path traversal, symlink access, another project, or an unregistered path.
+При любом несовпадении остановитесь без чтения или записи. Запрос пользователя
+никогда не разрешает выход за границы каталогов, доступ через символическую
+ссылку, другой проект или незарегистрированный путь.
 
-## Review contract
+## Требования проверки
 
-For every selected record:
+Для каждой выбранной записи:
 
-1. Validate the required frontmatter keys: `type`, `status`, `origin`, `valid_from`, `created`, `reviewed`, and `sources`.
-2. Require `type` to be exactly `research`, `decision`, `risk`, or `runbook`;
-   the type must match its category directory. Require `status` to be exactly `draft`, `verified`, `needs-review`, `stale`, or `superseded`.
-3. Validate `created` and `reviewed` as real `YYYY-MM-DD` dates. Report record
-   freshness from `reviewed`, using `created` only if review date is absent and
-   flagging the missing field.
-   Validate `valid_from` as `null` or a real `YYYY-MM-DD` date. Report
-   `origin: inferred` separately from stated records and flag an observation
-   outside the inbox.
-4. Inspect and report the publication or update date of each cited source separately from record metadata when available. Report missing, malformed,
-   unavailable, or unverifiable source dates without inferring them.
-5. Report explicit contradictions among selected records and distinguish
-   verified evidence from interpretations, unresolved claims, and uncertainty.
-6. Flag secrets, personal data or client data. Recommend omission or redaction
-   without echoing the rejected value and refer to an approved secure location
-   when one exists.
-7. Never delete a stale or superseded record. Require it to remain at its
-   original path with a link to its replacement under `Related records`; a
-   missing replacement link is a review defect.
+1. Проверьте обязательные ключи вводных метаданных: `type`, `status`, `origin`,
+   `valid_from`, `created`, `reviewed` и `sources`.
+2. Требуйте, чтобы `type` был строго `research`, `decision`, `risk` или `runbook`;
+   тип должен соответствовать каталогу категории. Требуйте, чтобы `status`
+   был строго `draft`, `verified`, `needs-review`, `stale` или `superseded`.
+3. Проверьте `created` и `reviewed` как настоящие даты `YYYY-MM-DD`. Сообщайте
+   актуальность записи по `reviewed`; используйте `created` только при отсутствии
+   даты проверки и отмечайте отсутствующее поле.
+   Проверьте `valid_from` как `null` или настоящую дату `YYYY-MM-DD`.
+   Сообщайте `origin: inferred` отдельно от заявленных записей и отмечайте
+   наблюдения вне входящих.
+4. Изучите и сообщите дату публикации или обновления каждого цитируемого
+   источника отдельно от метаданных записи, если дата доступна. Сообщайте
+   об отсутствующих, неверно оформленных, недоступных или непроверяемых датах
+   источников, не выводя их предположительно.
+5. Сообщайте явные противоречия между выбранными записями и отделяйте
+   проверенные свидетельства от толкований, неразрешённых утверждений и неопределённости.
+6. Отмечайте секреты, персональные или клиентские данные. Рекомендуйте
+   пропуск или скрытие без повторения запрещённых значений и ссылайтесь
+   на одобренное безопасное хранилище, если оно есть.
+7. Никогда не удаляйте устаревшую или заменённую запись. Она должна оставаться
+   на исходном пути со ссылкой на замену в `Related records`;
+   отсутствие ссылки на замену — недостаток, выявленный при проверке.
 
-For an explicitly selected inbox scope, propose only promotion to a selected
-durable category, retention, or deletion; deletion waits for an explicit yes.
+Для явно выбранной области входящих предлагайте только перенос в выбранную
+долговременную категорию, сохранение или удаление; удаление ожидает явного согласия.
 
-## Edit gate
+## Условия изменения
 
-Apply the edits the user asked for without a separate confirmation. Right
-before writing, repeat all registry, containment, and symlink checks, make only
-those edits, and report each exact path. Deleting a record waits for an
-explicit yes.
+Применяйте запрошенные пользователем изменения без отдельного подтверждения.
+Непосредственно перед записью повторите все проверки реестра, границ и
+символических ссылок, внесите только эти изменения и сообщите каждый точный путь.
+Удаление записи ожидает явного согласия.
 
-Do not change hub metadata, another project, project instructions, generic
-skills, Git, application code, or unrelated task memory.
+Не меняйте метаданные хаба, другой проект, инструкции проекта, общие
+навыки, Git, код приложения или постороннюю память задач.

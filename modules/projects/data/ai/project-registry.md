@@ -1,3 +1,3 @@
-# Project Registry
+# Реестр проектов
 
-<!-- Add one project card per project. -->
+<!-- Добавьте одну карточку на каждый проект. -->

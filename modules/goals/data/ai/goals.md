@@ -1,13 +1,13 @@
-# Goals
+# Цели
 
-Canonical hub-owned numeric goal registry. Each goal references a group in
-`ai/archiprojects.md` via `group`; `ai/archiprojects.md` never references
-goals. `ai/goal-log.md` records progress against a goal's `id` here.
+Канонический реестр числовых целей Хаба. Каждая цель ссылается на группу
+`ai/archiprojects.md` через `group`; `ai/archiprojects.md` никогда не ссылается
+на цели. `ai/goal-log.md` записывает продвижение по `id` цели отсюда.
 
 ## Schema
 
-Use one human heading and one fenced YAML block for each goal. `group` must
-name a known group in `ai/archiprojects.md`.
+Используйте один читаемый заголовок и один блок YAML для каждой цели.
+`group` должен назвать известную группу `ai/archiprojects.md`.
 
 ## <goal-id>
 
